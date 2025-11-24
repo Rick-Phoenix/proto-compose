@@ -1,4 +1,4 @@
-use syn::{punctuated::IterMut, ItemEnum, ItemStruct, MetaNameValue};
+use syn::MetaNameValue;
 
 use crate::*;
 
@@ -62,7 +62,7 @@ fn get_full_name(
 }
 
 pub enum ModuleItem {
-  Raw(Item),
+  Raw(Box<Item>),
   Oneof(Ident),
   Message(Ident),
   Enum(Ident),
@@ -97,7 +97,7 @@ pub fn process_module_items(
         let derives = Derives::new(&s.attrs)?;
 
         if !derives.contains("Message") {
-          mod_items.push(ModuleItem::Raw(Item::Struct(s)));
+          mod_items.push(ModuleItem::Raw(Item::Struct(s).into()));
           continue;
         }
 
@@ -122,7 +122,7 @@ pub fn process_module_items(
         let enum_kind = if let Some(kind) = derives.enum_kind() {
           kind
         } else {
-          mod_items.push(ModuleItem::Raw(Item::Enum(e)));
+          mod_items.push(ModuleItem::Raw(Item::Enum(e).into()));
           continue;
         };
 
@@ -140,7 +140,7 @@ pub fn process_module_items(
         };
       }
       _ => {
-        mod_items.push(ModuleItem::Raw(item));
+        mod_items.push(ModuleItem::Raw(item.into()));
       }
     };
   }
@@ -179,7 +179,7 @@ pub fn process_module_items(
 
   for item in mod_items {
     processed_items.push(match item {
-      ModuleItem::Raw(item) => item,
+      ModuleItem::Raw(item) => *item,
       ModuleItem::Oneof(ident) => {
         Item::Enum(oneofs.remove(&ident).expect("Oneof not found").into())
       }
@@ -217,58 +217,9 @@ pub struct ModuleAttrs {
   pub package: String,
 }
 
-pub struct TopLevelItemsTokens {
-  pub top_level_messages: TokenStream2,
-  pub top_level_enums: TokenStream2,
-}
-
 pub enum EnumKind {
   Oneof,
   Enum,
-}
-
-fn find_tag_attribute(attr: &Attribute) -> Result<Option<i32>, Error> {
-  if attr.path().is_ident("proto") {
-    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
-
-    for meta in &args.inner {
-      if let Meta::NameValue(nv) = meta && nv.path.is_ident("tag") {
-        let tag = extract_i32(&nv.value)?;
-
-        return Ok(Some(tag));
-      }
-    }
-  }
-
-  Ok(None)
-}
-
-fn process_enum_variants(
-  target_enum: &mut ItemEnum,
-) -> impl Iterator<Item = Result<&mut Variant, Error>> {
-  target_enum.variants.iter_mut().map(|variant| {
-    if let Fields::Unnamed(fields) = &mut variant.fields && fields.unnamed.len() == 1 {
-      Ok(variant)
-    } else {
-      Err(spanned_error!(
-        variant.ident.clone(),
-        "Must be an enum variant with a single unnamed field"
-      ))
-    }
-  })
-}
-
-pub fn process_struct_fields(
-  target_struct: &'_ mut ItemStruct,
-) -> Result<IterMut<'_, Field>, Error> {
-  if let Fields::Named(fields) = &mut target_struct.fields {
-    Ok(fields.named.iter_mut())
-  } else {
-    Err(spanned_error!(
-      target_struct.ident.clone(),
-      "Must be a struct with named fields"
-    ))
-  }
 }
 
 impl Parse for ModuleAttrs {
