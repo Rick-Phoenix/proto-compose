@@ -1,5 +1,6 @@
 use crate::*;
 
+#[derive(Debug)]
 pub struct OneofVariant {
   pub tokens: Variant,
   pub tag: Option<i32>,
@@ -13,6 +14,7 @@ impl OneofVariant {
   }
 }
 
+#[derive(Debug)]
 pub struct OneofData {
   pub data: OneofAttrs,
   pub tokens: EnumRaw,
@@ -40,6 +42,7 @@ impl From<OneofData> for ItemEnum {
   }
 }
 
+#[derive(Debug)]
 pub struct EnumRaw {
   pub attrs: Vec<Attribute>,
   pub vis: Visibility,

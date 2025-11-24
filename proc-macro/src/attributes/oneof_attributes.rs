@@ -1,5 +1,6 @@
 use crate::*;
 
+#[derive(Debug)]
 pub struct OneofAttrs {
   pub options: ProtoOptions,
   pub name: String,

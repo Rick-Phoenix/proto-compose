@@ -73,7 +73,11 @@ pub fn process_derive_field_attrs(
     }
   }
 
-  let tag = tag.ok_or(spanned_error!(original_name, "Field tag is missing"))?;
+  let tag = if is_ignored || is_oneof {
+    0
+  } else {
+    tag.ok_or(spanned_error!(original_name, "Field tag is missing"))?
+  };
 
   if !is_ignored {
     Ok(Some(FieldAttrs {

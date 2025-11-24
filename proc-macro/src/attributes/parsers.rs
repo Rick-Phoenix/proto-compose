@@ -35,7 +35,7 @@ pub fn extract_i32(expr: &Expr) -> Result<i32, Error> {
   }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub(crate) struct ProtoOptions(pub Option<TokenStream2>);
 
 impl ToTokens for ProtoOptions {

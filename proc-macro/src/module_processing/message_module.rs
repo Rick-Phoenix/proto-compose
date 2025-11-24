@@ -38,9 +38,9 @@ pub(crate) fn process_message_from_module(
         if variant.tag.is_none() {
           let tag = tag_allocator.next_tag();
 
-          let field_attr: Attribute = parse_quote!(#[proto(tag = #tag)]);
+          let variant_attr: Attribute = parse_quote!(#[proto(tag = #tag)]);
 
-          field.inject_attr(field_attr);
+          variant.inject_attr(variant_attr);
         }
       }
 

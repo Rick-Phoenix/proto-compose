@@ -4,6 +4,7 @@ use syn::FieldsNamed;
 
 use crate::*;
 
+#[derive(Debug)]
 pub struct MessageData {
   pub tokens: StructRaw,
   pub fields: Vec<FieldData>,
@@ -25,11 +26,8 @@ impl MessageData {
 
 impl From<MessageData> for ItemStruct {
   fn from(value: MessageData) -> Self {
-    let fields: Punctuated<Field, Token![,]> = value
-      .fields
-      .into_iter()
-      .map(|field| field.field_raw)
-      .collect();
+    let fields: Punctuated<Field, Token![,]> =
+      value.fields.into_iter().map(|field| field.tokens).collect();
 
     let fields_named = FieldsNamed {
       named: fields,
@@ -48,8 +46,9 @@ impl From<MessageData> for ItemStruct {
   }
 }
 
+#[derive(Debug)]
 pub struct FieldData {
-  pub field_raw: Field,
+  pub tokens: Field,
   pub tag: Option<i32>,
   pub name: String,
   pub is_oneof: bool,
@@ -58,10 +57,11 @@ pub struct FieldData {
 
 impl FieldData {
   pub fn inject_attr(&mut self, attr: Attribute) {
-    self.field_raw.attrs.push(attr);
+    self.tokens.attrs.push(attr);
   }
 }
 
+#[derive(Debug)]
 pub struct StructRaw {
   pub attrs: Vec<Attribute>,
   pub vis: Visibility,
@@ -102,7 +102,9 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
       tag,
       name,
       is_oneof,
-    } = if let Some(field_attrs) = process_module_field_attrs(&ident, &attrs)? {
+    } = if let Some(field_attrs) =
+      process_module_field_attrs(field.ident.as_ref().unwrap(), &field.attrs)?
+    {
       field_attrs
     } else {
       continue;
@@ -127,7 +129,7 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
 
     fields_data.push(FieldData {
       type_: field_type.path().clone(),
-      field_raw: field,
+      tokens: field,
       tag,
       name,
       is_oneof,

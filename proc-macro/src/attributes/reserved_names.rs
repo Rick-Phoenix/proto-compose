@@ -1,5 +1,6 @@
 use crate::*;
 
+#[derive(Debug)]
 pub enum ReservedNames {
   List(Vec<String>),
   Expr(Expr),

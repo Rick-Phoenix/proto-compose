@@ -147,6 +147,10 @@ pub fn process_module_items(
     mod_items.push(Item::Enum(enum_.into()));
   }
 
+  for (_, oneof) in oneofs {
+    mod_items.push(Item::Enum(oneof.into()));
+  }
+
   module.content = Some((brace, mod_items));
 
   Ok(module)

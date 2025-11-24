@@ -57,17 +57,17 @@ pub(crate) fn process_message_derive(tokens: DeriveInput) -> Result<TokenStream2
       _ => panic!("Must be a path type"),
     };
 
+    let processed_type = extract_type_from_path(field_type);
+
+    let proto_type = processed_type.path();
+
     if is_oneof {
       fields_data.push(quote! {
-        MessageEntry::Oneof(#field_type::to_oneof(&mut tag_allocator))
+        MessageEntry::Oneof(#proto_type::to_oneof())
       });
 
       continue;
     }
-
-    let processed_type = extract_type_from_path(field_type);
-
-    let proto_type = processed_type.path();
 
     let is_optional = processed_type.is_option();
 

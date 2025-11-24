@@ -7,7 +7,7 @@ pub struct EnumAttrs {
   pub name: String,
   pub file: String,
   pub package: String,
-  pub full_name: Option<String>,
+  pub full_name: String,
 }
 
 pub fn process_derive_enum_attrs(
@@ -69,6 +69,7 @@ pub fn process_derive_enum_attrs(
   }
 
   let name = proto_name.unwrap_or_else(|| ccase!(pascal, rust_name.to_string()));
+  let full_name = full_name.unwrap_or_else(|| name.clone());
   let file = file.expect("missing file");
   let package = package.expect("missing package");
 
