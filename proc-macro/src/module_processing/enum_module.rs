@@ -2,6 +2,7 @@ use crate::*;
 
 pub fn process_enum_from_module(
   enum_data: &mut EnumData,
+  parent_message: Option<String>,
   package_attribute: &Attribute,
 ) -> Result<(), Error> {
   let EnumData {

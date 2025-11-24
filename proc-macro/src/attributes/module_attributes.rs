@@ -61,8 +61,15 @@ fn get_full_name(
   }
 }
 
+pub enum ModuleItem {
+  Raw(Item),
+  Oneof(Ident),
+  Message(Ident),
+  Enum(Ident),
+}
+
 pub fn process_module_items(
-  package_attr: &Attribute,
+  module_attrs: ModuleAttrs,
   mut module: ItemMod,
 ) -> Result<ItemMod, Error> {
   let (brace, content) = if let Some((brace, content)) = module.content {
@@ -71,7 +78,11 @@ pub fn process_module_items(
     return Ok(module);
   };
 
-  let mut mod_items: Vec<Item> = Vec::new();
+  let ModuleAttrs { file, package } = module_attrs;
+
+  let package_attr: Attribute = parse_quote! { #[proto(file = #file, package = #package)] };
+
+  let mut mod_items: Vec<ModuleItem> = Vec::new();
 
   let mut oneofs: HashMap<Ident, OneofData> = HashMap::new();
   let mut messages: HashMap<Ident, MessageData> = HashMap::new();
@@ -86,7 +97,7 @@ pub fn process_module_items(
         let derives = Derives::new(&s.attrs)?;
 
         if !derives.contains("Message") {
-          mod_items.push(Item::Struct(s));
+          mod_items.push(ModuleItem::Raw(Item::Struct(s)));
           continue;
         }
 
@@ -102,6 +113,7 @@ pub fn process_module_items(
           enums_relational_map.insert(item_ident.clone(), nested_enum.clone());
         }
 
+        mod_items.push(ModuleItem::Message(item_ident.clone()));
         messages.insert(item_ident, message_data);
       }
       Item::Enum(e) => {
@@ -110,7 +122,7 @@ pub fn process_module_items(
         let enum_kind = if let Some(kind) = derives.enum_kind() {
           kind
         } else {
-          mod_items.push(Item::Enum(e));
+          mod_items.push(ModuleItem::Raw(Item::Enum(e)));
           continue;
         };
 
@@ -118,40 +130,84 @@ pub fn process_module_items(
 
         match enum_kind {
           EnumKind::Oneof => {
+            mod_items.push(ModuleItem::Oneof(item_ident.clone()));
             oneofs.insert(item_ident, parse_oneof(e)?);
           }
           EnumKind::Enum => {
+            mod_items.push(ModuleItem::Enum(item_ident.clone()));
             enums.insert(item_ident, parse_enum(e)?);
           }
         };
       }
       _ => {
-        mod_items.push(item);
+        mod_items.push(ModuleItem::Raw(item));
       }
     };
   }
+
+  let mut top_level_enums = TokenStream2::new();
+  let mut top_level_messages = TokenStream2::new();
 
   for msg in messages_relational_map.keys() {
     register_full_name(msg, &messages_relational_map, &mut messages);
   }
 
-  for (_, mut msg) in messages {
-    process_message_from_module(&mut msg, &mut oneofs, package_attr)?;
+  for (ident, msg) in messages.iter_mut() {
+    let is_top_level = !messages_relational_map.contains_key(ident);
 
-    mod_items.push(Item::Struct(msg.into()));
+    if is_top_level {
+      top_level_messages.extend(quote! { #ident::to_message(), });
+    }
+
+    process_message_from_module(msg, &mut oneofs, &package_attr)?;
   }
 
-  for (_, mut enum_) in enums {
-    process_enum_from_module(&mut enum_, package_attr)?;
+  for (ident, enum_) in enums.iter_mut() {
+    let parent_message = if let Some(parent) = enums_relational_map.get(ident) {
+      let parent = messages.get(parent).expect("Message not found");
 
-    mod_items.push(Item::Enum(enum_.into()));
+      Some(parent.full_name.get().unwrap_or(&parent.name).clone())
+    } else {
+      top_level_enums.extend(quote! { #ident::to_enum(), });
+      None
+    };
+
+    process_enum_from_module(enum_, parent_message, &package_attr)?;
   }
 
-  for (_, oneof) in oneofs {
-    mod_items.push(Item::Enum(oneof.into()));
+  let mut processed_items: Vec<Item> = Vec::new();
+
+  for item in mod_items {
+    processed_items.push(match item {
+      ModuleItem::Raw(item) => item,
+      ModuleItem::Oneof(ident) => {
+        Item::Enum(oneofs.remove(&ident).expect("Oneof not found").into())
+      }
+      ModuleItem::Message(ident) => {
+        Item::Struct(messages.remove(&ident).expect("Message not found").into())
+      }
+      ModuleItem::Enum(ident) => Item::Enum(enums.remove(&ident).expect("Enum not found").into()),
+    });
   }
 
-  module.content = Some((brace, mod_items));
+  let aggregator_fn: ItemFn = parse_quote! {
+    pub fn proto_file() -> ProtoFile {
+      let mut file = ProtoFile {
+        name: #file.into(),
+        package: #package.into(),
+        ..Default::default()
+      };
+
+      file.add_messages([ #top_level_messages ]);
+      file.add_enums([ #top_level_enums ]);
+
+      file
+    }
+  };
+
+  processed_items.push(Item::Fn(aggregator_fn));
+
+  module.content = Some((brace, processed_items));
 
   Ok(module)
 }

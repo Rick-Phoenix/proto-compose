@@ -14,10 +14,10 @@ use syn::{
   parse_macro_input, parse_quote,
   punctuated::Punctuated,
   token,
-  token::{Brace, Paren, Semi, Struct},
-  Attribute, Data, DeriveInput, Error, Expr, ExprClosure, Field, Fields, FieldsUnnamed, Generics,
-  Ident, Item, ItemEnum, ItemFn, ItemMod, ItemStruct, Lit, LitStr, Meta, Path, RangeLimits, Token,
-  Type, Variant, Visibility,
+  token::{Brace, Struct},
+  Attribute, Data, DeriveInput, Error, Expr, ExprClosure, Field, Fields, Generics, Ident, Item,
+  ItemEnum, ItemFn, ItemMod, ItemStruct, Lit, LitStr, Meta, Path, RangeLimits, Token, Type,
+  Variant, Visibility,
 };
 use type_extraction::*;
 
@@ -65,11 +65,9 @@ pub fn oneof_derive(input: TokenStream) -> TokenStream {
 pub fn proto_module(attrs: TokenStream, input: TokenStream) -> TokenStream {
   let module = parse_macro_input!(input as ItemMod);
 
-  let ModuleAttrs { file, package } = parse_macro_input!(attrs as ModuleAttrs);
+  let module_attrs = parse_macro_input!(attrs as ModuleAttrs);
 
-  let file_attribute: Attribute = parse_quote! { #[proto(file = #file, package = #package)] };
-
-  match process_module_items(&file_attribute, module) {
+  match process_module_items(module_attrs, module) {
     Ok(processed_module) => quote! { #processed_module }.into(),
     Err(e) => e.to_compile_error().into(),
   }
