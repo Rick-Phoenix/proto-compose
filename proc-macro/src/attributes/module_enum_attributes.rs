@@ -1,7 +1,6 @@
 use crate::*;
 
 pub struct ModuleEnumAttrs {
-  pub reserved_names: ReservedNames,
   pub reserved_numbers: ReservedNumbers,
   pub name: String,
 }
@@ -10,7 +9,6 @@ pub fn process_module_enum_attrs(
   rust_name: &Ident,
   attrs: &Vec<Attribute>,
 ) -> Result<ModuleEnumAttrs, Error> {
-  let mut reserved_names = ReservedNames::default();
   let mut reserved_numbers = ReservedNumbers::default();
   let mut proto_name: Option<String> = None;
 
@@ -24,11 +22,7 @@ pub fn process_module_enum_attrs(
     for arg in args.inner {
       match arg {
         Meta::List(list) => {
-          if list.path.is_ident("reserved_names") {
-            let names = list.parse_args::<StringList>().unwrap();
-
-            reserved_names = ReservedNames::List(names.list);
-          } else if list.path.is_ident("reserved_numbers") {
+          if list.path.is_ident("reserved_numbers") {
             let numbers = list.parse_args::<ReservedNumbers>().unwrap();
 
             reserved_numbers = numbers;
@@ -37,8 +31,6 @@ pub fn process_module_enum_attrs(
         Meta::NameValue(nameval) => {
           if nameval.path.is_ident("name") {
             proto_name = Some(extract_string_lit(&nameval.value).unwrap());
-          } else if nameval.path.is_ident("reserved_names") {
-            reserved_names = ReservedNames::Expr(nameval.value);
           }
         }
         Meta::Path(_) => {}
@@ -49,7 +41,6 @@ pub fn process_module_enum_attrs(
   let name = proto_name.unwrap_or_else(|| ccase!(pascal, rust_name.to_string()));
 
   Ok(ModuleEnumAttrs {
-    reserved_names,
     reserved_numbers,
     name,
   })

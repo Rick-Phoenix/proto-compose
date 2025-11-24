@@ -21,7 +21,9 @@ use syn::{
 };
 use type_extraction::*;
 
-use crate::{enum_derive::*, message_derive::*, module_processing::*, oneof_derive::*};
+use crate::{
+  enum_derive::*, message_derive::*, module_processing::*, oneof_derive::*, type_extraction::*,
+};
 
 mod enum_derive;
 mod message_derive;

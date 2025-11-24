@@ -1,20 +1,40 @@
+use std::cmp::Ordering;
+
 use crate::*;
 
 #[derive(Default, Clone, Debug)]
-pub(crate) struct ReservedNumbers(pub Vec<Range<i32>>);
+pub struct ReservedNumbers(pub Vec<Range<i32>>);
 
 pub const PROTOBUF_MAX_TAG: i32 = 536_870_911;
 
+fn is_reserved(id: i32, sorted_ranges: &[Range<i32>]) -> bool {
+  let result = sorted_ranges.binary_search_by(|range| {
+    if range.contains(&id) {
+      Ordering::Equal
+    } else if id < range.start {
+      Ordering::Greater
+    } else {
+      Ordering::Less
+    }
+  });
+
+  result.is_ok()
+}
+
 impl ReservedNumbers {
-  pub fn build_unavailable_ranges(self, manual_tags: Vec<i32>) -> Self {
+  pub fn contains(&self, tag: i32) -> bool {
+    is_reserved(tag, &self.0)
+  }
+
+  pub fn build_unavailable_ranges(self, manual_tags: &[i32]) -> Vec<Range<i32>> {
     if manual_tags.is_empty() {
-      return self;
+      return self.0;
     }
 
     let mut ranges = self.0;
 
     for tag in manual_tags {
-      ranges.push(tag..(tag + 1));
+      ranges.push(*tag..(*tag + 1));
     }
 
     ranges.sort_by_key(|r| r.start);
@@ -24,9 +44,7 @@ impl ReservedNumbers {
     let mut current = ranges[0].clone();
 
     for next in ranges.into_iter().skip(1) {
-      if next.start < current.end {
-        panic!("Using a taken tag");
-      } else if next.start == current.end {
+      if next.start <= current.end {
         // Extend current to the max end
         current.end = std::cmp::max(current.end, next.end);
       } else {
@@ -37,7 +55,7 @@ impl ReservedNumbers {
     }
     merged.push(current);
 
-    Self(merged)
+    merged
   }
 }
 

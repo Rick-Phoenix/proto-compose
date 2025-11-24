@@ -51,25 +51,32 @@ pub(crate) fn process_message_derive(tokens: DeriveInput) -> Result<TokenStream2
       is_oneof,
     } = field_attrs;
 
-    let mut field_type = match &field.ty {
-      Type::Path(type_path) => &type_path.path,
+    if reserved_numbers.contains(tag) {
+      return Err(spanned_error!(
+        field,
+        format!("Tag number {tag} is reserved")
+      ));
+    }
 
-      _ => panic!("Must be a path type"),
-    };
+    let field_type = extract_type(&field.ty)?;
 
-    let processed_type = extract_type_from_path(field_type);
-
-    let proto_type = processed_type.path();
+    let proto_type = field_type.inner();
+    let outer_type = &field_type.outer;
 
     if is_oneof {
+      if !field_type.is_option() {
+        return Err(spanned_error!(
+          &field.ty,
+          "Oneofs must be wrapped in Option"
+        ));
+      }
+
       fields_data.push(quote! {
         MessageEntry::Oneof(#proto_type::to_oneof())
       });
 
       continue;
     }
-
-    let is_optional = processed_type.is_option();
 
     let validator_tokens = if let Some(validator) = validator {
       match validator {
@@ -84,11 +91,7 @@ pub(crate) fn process_message_derive(tokens: DeriveInput) -> Result<TokenStream2
       quote! { None }
     };
 
-    let field_type_tokens = if is_optional {
-      quote! { <Option<#proto_type> as AsProtoType>::proto_type() }
-    } else {
-      quote! { <#proto_type as AsProtoType>::proto_type() }
-    };
+    let field_type_tokens = quote! { <#outer_type as AsProtoType>::proto_type() };
 
     fields_data.push(quote! {
       MessageEntry::Field(
@@ -101,6 +104,17 @@ pub(crate) fn process_message_derive(tokens: DeriveInput) -> Result<TokenStream2
         }
       )
     });
+  }
+
+  let mut nested_messages_tokens = TokenStream2::new();
+  let mut nested_enums_tokens = TokenStream2::new();
+
+  for ident in nested_messages {
+    nested_messages_tokens.extend(quote! { #ident::to_message(), });
+  }
+
+  for ident in nested_enums {
+    nested_enums_tokens.extend(quote! { #ident::to_enum(), });
   }
 
   let output = quote! {
@@ -137,10 +151,9 @@ pub(crate) fn process_message_derive(tokens: DeriveInput) -> Result<TokenStream2
           reserved_names: #reserved_names,
           reserved_numbers: vec![ #reserved_numbers ],
           options: #options,
-          // messages: vec![ #nested_messages ],
-          // enums: vec![ #nested_enums ],
+          messages: vec![ #nested_messages_tokens ],
+          enums: vec![ #nested_enums_tokens ],
           entries: vec![ #(#fields_data,)* ],
-          ..Default::default()
         };
 
         new_msg

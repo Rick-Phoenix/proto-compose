@@ -4,7 +4,6 @@ use syn::FieldsNamed;
 
 use crate::*;
 
-#[derive(Debug)]
 pub struct MessageData {
   pub tokens: StructRaw,
   pub fields: Vec<FieldData>,
@@ -46,13 +45,12 @@ impl From<MessageData> for ItemStruct {
   }
 }
 
-#[derive(Debug)]
 pub struct FieldData {
   pub tokens: Field,
   pub tag: Option<i32>,
   pub name: String,
   pub is_oneof: bool,
-  pub type_: Path,
+  pub type_: FieldType,
 }
 
 impl FieldData {
@@ -113,14 +111,7 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
     let field_type = extract_type(&field.ty)?;
 
     if is_oneof {
-      if !field_type.is_option() {
-        return Err(spanned_error!(
-          &field.ty,
-          "Oneof fields must be wrapped in Option"
-        ));
-      }
-
-      oneofs.push(field_type.path().require_ident()?.clone());
+      oneofs.push(field_type.inner().require_ident()?.clone());
     }
 
     if let Some(tag) = tag {
@@ -128,7 +119,7 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
     }
 
     fields_data.push(FieldData {
-      type_: field_type.path().clone(),
+      type_: field_type,
       tokens: field,
       tag,
       name,

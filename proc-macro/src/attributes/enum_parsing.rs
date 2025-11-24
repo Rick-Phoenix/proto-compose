@@ -2,7 +2,6 @@ use crate::*;
 
 pub struct EnumData {
   pub name: String,
-  pub reserved_names: ReservedNames,
   pub reserved_numbers: ReservedNumbers,
   pub variants: Vec<EnumVariant>,
   pub used_tags: Vec<i32>,
@@ -49,7 +48,6 @@ impl EnumVariant {
 
 pub fn parse_enum(item: ItemEnum) -> Result<EnumData, Error> {
   let ModuleEnumAttrs {
-    reserved_names,
     reserved_numbers,
     name,
   } = process_module_enum_attrs(&item.ident, &item.attrs)?;
@@ -65,8 +63,8 @@ pub fn parse_enum(item: ItemEnum) -> Result<EnumData, Error> {
       ));
     }
 
-    let EnumVariantAttrs { name, tag, .. } =
-      process_enum_variants_attrs(&name, &variant.ident, &variant.attrs, true);
+    let ModuleEnumVariantAttrs { name, tag, .. } =
+      process_module_enum_variants_attrs(&name, &variant.ident, &variant.attrs)?;
 
     if let Some(tag) = tag {
       used_tags.push(tag);
@@ -81,7 +79,6 @@ pub fn parse_enum(item: ItemEnum) -> Result<EnumData, Error> {
 
   Ok(EnumData {
     name,
-    reserved_names,
     reserved_numbers,
     variants: variants_data,
     tokens: EnumRaw {

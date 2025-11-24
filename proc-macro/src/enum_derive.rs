@@ -33,10 +33,15 @@ pub(crate) fn process_enum_derive(tokens: DeriveInput) -> Result<TokenStream2, E
       panic!("Must be a unit variant");
     }
 
-    let variant_name = variant.ident;
-
     let EnumVariantAttrs { tag, options, name } =
-      process_enum_variants_attrs(&proto_name, &variant_name, &variant.attrs, false);
+      process_derive_enum_variants_attrs(&proto_name, &variant.ident, &variant.attrs)?;
+
+    if reserved_numbers.contains(tag) {
+      return Err(spanned_error!(
+        variant,
+        format!("Tag number {tag} is reserved")
+      ));
+    }
 
     variants_tokens.push(quote! {
       EnumVariant { name: #name.to_string(), options: #options, tag: #tag, }

@@ -1,11 +1,10 @@
 use crate::*;
 
-#[derive(Debug)]
 pub struct OneofVariant {
   pub tokens: Variant,
   pub tag: Option<i32>,
   pub name: String,
-  pub type_: Path,
+  pub type_: FieldType,
 }
 
 impl OneofVariant {
@@ -14,7 +13,6 @@ impl OneofVariant {
   }
 }
 
-#[derive(Debug)]
 pub struct OneofData {
   pub data: OneofAttrs,
   pub tokens: EnumRaw,
@@ -86,13 +84,13 @@ pub fn parse_oneof(item: ItemEnum) -> Result<OneofData, Error> {
 
     if variant_type.is_option() {
       return Err(spanned_error!(
-        variant_type.path(),
+        &variant_type.outer,
         "Oneof variants cannot be Option"
       ));
     }
 
     variants_data.push(OneofVariant {
-      type_: variant_type.path().clone(),
+      type_: variant_type,
       tokens: variant,
       tag,
       name,

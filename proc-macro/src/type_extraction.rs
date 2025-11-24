@@ -2,69 +2,62 @@ use syn::{GenericArgument, PathArguments, PathSegment};
 
 use crate::*;
 
-pub enum FieldTypeKind<'a> {
-  Normal(&'a Path),
-  Option(&'a Path),
+pub enum FieldTypeKind {
+  Normal,
+  Option,
+  Boxed,
 }
 
-impl<'a> FieldTypeKind<'a> {
-  pub fn path(&self) -> &Path {
-    match self {
-      FieldTypeKind::Normal(path) => path,
-      FieldTypeKind::Option(path) => path,
-    }
+pub struct FieldType {
+  pub outer: Path,
+  pub inner: Option<Path>,
+  pub kind: FieldTypeKind,
+}
+
+impl FieldType {
+  pub fn inner(&self) -> &Path {
+    self.inner.as_ref().unwrap_or(&self.outer)
   }
 
   pub fn is_option(&self) -> bool {
-    matches!(self, Self::Option(_))
+    matches!(self.kind, FieldTypeKind::Option)
+  }
+  pub fn is_boxed(&self) -> bool {
+    matches!(self.kind, FieldTypeKind::Boxed)
   }
 }
 
-fn extract_inner_type(path_segment: &PathSegment) -> Option<&Path> {
+fn extract_inner_type(path_segment: &PathSegment) -> Option<Path> {
   if let PathArguments::AngleBracketed(args) = &path_segment.arguments
     && let GenericArgument::Type(inner_ty) = args.args.first()? && let Type::Path(type_path) = inner_ty {
-      return Some(&type_path.path);
+      return Some(type_path.path.clone());
     }
 
   None
 }
 
-pub fn extract_type<'a>(ty: &'a Type) -> Result<FieldTypeKind<'a>, Error> {
-  let field_type = match ty {
-    Type::Path(type_path) => &type_path.path,
+pub fn extract_type(ty: &Type) -> Result<FieldType, Error> {
+  let outer = match ty {
+    Type::Path(type_path) => type_path.path.clone(),
 
     _ => return Err(spanned_error!(ty, "Must be a type path")),
   };
 
-  let last_segment = field_type.segments.last().unwrap();
+  let last_segment = outer.segments.last().unwrap();
 
-  let extracted_type = if last_segment.ident == "Option" {
-    let inner = extract_inner_type(last_segment).unwrap();
-
-    FieldTypeKind::Option(inner)
+  let (inner, kind) = if last_segment.ident == "Option" {
+    (
+      Some(extract_inner_type(last_segment).unwrap()),
+      FieldTypeKind::Option,
+    )
   } else if last_segment.ident == "Box" {
-    let inner = extract_inner_type(last_segment).unwrap();
-
-    FieldTypeKind::Normal(inner)
+    (
+      Some(extract_inner_type(last_segment).unwrap()),
+      FieldTypeKind::Boxed,
+    )
   } else {
-    FieldTypeKind::Normal(field_type)
+    (None, FieldTypeKind::Normal)
   };
 
-  Ok(extracted_type)
-}
-
-pub fn extract_type_from_path<'a>(ty: &'a Path) -> FieldTypeKind<'a> {
-  let last_segment = ty.segments.last().unwrap();
-
-  if last_segment.ident == "Option" {
-    let inner = extract_inner_type(last_segment).unwrap();
-
-    FieldTypeKind::Option(inner)
-  } else if last_segment.ident == "Box" {
-    let inner = extract_inner_type(last_segment).unwrap();
-
-    FieldTypeKind::Normal(inner)
-  } else {
-    FieldTypeKind::Normal(ty)
-  }
+  Ok(FieldType { outer, inner, kind })
 }

@@ -57,7 +57,6 @@ mod inner {
     #[proto(tag = 50, validate = repeated_validator())]
     num: Vec<i32>,
 
-    #[proto(type_(ProtoMap<String, Sint32>))]
     #[proto(validate = |v| v.min_pairs(0).keys(|k| k.min_len(25)).values(|v| v.lt(25)))]
     map: HashMap<String, i32>,
 

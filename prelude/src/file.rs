@@ -19,6 +19,12 @@ impl ProtoFile {
     }
   }
 
+  pub fn merge_with(&mut self, other: Self) {
+    self.imports.extend(other.imports);
+    self.messages.extend(other.messages);
+    self.enums.extend(other.enums);
+  }
+
   pub fn add_messages<I: IntoIterator<Item = Message>>(&mut self, messages: I) {
     for message in messages.into_iter() {
       self.messages.push(message);

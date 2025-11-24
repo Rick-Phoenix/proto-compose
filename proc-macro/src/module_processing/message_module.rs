@@ -22,16 +22,16 @@ pub(crate) fn process_message_from_module(
     used_tags.extend(taken_tags);
   }
 
-  let unavailable_tags = reserved_numbers
-    .clone()
-    .build_unavailable_ranges(used_tags.clone());
+  let reserved_numbers = std::mem::take(reserved_numbers);
 
-  let mut tag_allocator = TagAllocator::new(&unavailable_tags.0);
+  let unavailable_tags = reserved_numbers.build_unavailable_ranges(&used_tags);
+
+  let mut tag_allocator = TagAllocator::new(&unavailable_tags);
 
   for field in fields {
     if field.is_oneof {
       let oneof = oneofs_map
-        .get_mut(field.type_.require_ident()?)
+        .get_mut(field.type_.inner().require_ident()?)
         .expect("Failed to find oneof");
 
       for variant in &mut oneof.variants {
