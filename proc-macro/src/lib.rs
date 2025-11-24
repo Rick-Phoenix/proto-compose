@@ -1,7 +1,7 @@
 #[macro_use]
 mod macros;
 
-use std::{collections::HashMap, ops::Range};
+use std::{collections::HashMap, ops::Range, rc::Rc};
 
 use attributes::*;
 pub(crate) use convert_case::ccase;
@@ -10,10 +10,14 @@ use proc_macro2::Span;
 pub(crate) use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, ToTokens};
 use syn::{
-  parse::Parse, parse_macro_input, parse_quote, punctuated::Punctuated, token::Paren, Attribute,
-  Data, DeriveInput, Error, Expr, ExprClosure, Field, Fields, FieldsUnnamed, Generics, Ident, Item,
-  ItemEnum, ItemFn, ItemMod, ItemStruct, Lit, LitStr, Meta, Path, RangeLimits, Token, Type,
-  Variant, Visibility,
+  parse::Parse,
+  parse_macro_input, parse_quote,
+  punctuated::Punctuated,
+  token,
+  token::{Brace, Paren, Semi, Struct},
+  Attribute, Data, DeriveInput, Error, Expr, ExprClosure, Field, Fields, FieldsUnnamed, Generics,
+  Ident, Item, ItemEnum, ItemFn, ItemMod, ItemStruct, Lit, LitStr, Meta, Path, RangeLimits, Token,
+  Type, Variant, Visibility,
 };
 use type_extraction::*;
 

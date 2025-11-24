@@ -1,9 +1,147 @@
 use std::{fmt::Write, rc::Rc};
 
-use itertools::Either;
 use syn::{punctuated::IterMut, ItemEnum, ItemStruct, MetaNameValue};
 
 use crate::*;
+
+pub enum ModuleItem2 {
+  Message(MessageData),
+  Oneof(OneofData),
+}
+
+fn register_full_name(
+  msg: &Ident,
+  relational_map: &HashMap<Ident, Ident>,
+  messages_map: &mut HashMap<Ident, MessageData>,
+) {
+  let is_registered = messages_map.get(msg).unwrap().full_name.get().is_some();
+
+  if !is_registered {
+    let short_name = messages_map.get(msg).unwrap().name.clone();
+
+    if let Some(parent) = relational_map.get(msg) {
+      let parent_name = get_full_name(parent, relational_map, messages_map);
+
+      let full_name = format!("{parent_name}.{short_name}");
+
+      let _ = messages_map.get_mut(msg).unwrap().full_name.set(full_name);
+    }
+  }
+}
+
+fn get_full_name(
+  msg: &Ident,
+  relational_map: &HashMap<Ident, Ident>,
+  messages_map: &mut HashMap<Ident, MessageData>,
+) -> String {
+  let mut is_full = false;
+
+  let name = {
+    let msg_data = messages_map.get(msg).unwrap();
+    if let Some(full_name) = msg_data.full_name.get() {
+      is_full = true;
+      full_name.clone()
+    } else {
+      msg_data.name.clone()
+    }
+  };
+
+  if is_full {
+    return name;
+  } else {
+    match relational_map.get(msg) {
+      None => name,
+      Some(parent) => {
+        let parent_name = get_full_name(parent, relational_map, messages_map);
+
+        let full_name = format!("{parent_name}.{name}");
+
+        let _ = messages_map
+          .get_mut(msg)
+          .unwrap()
+          .full_name
+          .set(full_name.clone());
+
+        full_name
+      }
+    }
+  }
+}
+
+pub fn process_module_items(
+  module_attrs: ModuleAttrs,
+  mut module: ItemMod,
+) -> Result<ItemMod, Error> {
+  let (brace, content) = if let Some((brace, content)) = module.content {
+    (brace, content)
+  } else {
+    return Ok(module);
+  };
+
+  let mut mod_items: Vec<Item> = Vec::new();
+
+  let mut messages_keys: Vec<Ident> = Vec::new();
+
+  let mut oneofs: HashMap<Ident, OneofData> = HashMap::new();
+  let mut messages: HashMap<Ident, MessageData> = HashMap::new();
+  let mut enums: HashMap<Ident, EnumData> = HashMap::new();
+
+  let mut proto_items: HashMap<Ident, ModuleItem2> = HashMap::new();
+  let mut relational_map: HashMap<Ident, Ident> = HashMap::new();
+
+  for item in content {
+    match item {
+      Item::Struct(s) => {
+        let derives = Derives::new(&s.attrs)?;
+
+        if !derives.contains("Message") {
+          mod_items.push(Item::Struct(s));
+          continue;
+        }
+
+        let item_ident = s.ident.clone();
+
+        let message_data = parse_message(s)?;
+
+        for nested_msg in &message_data.nested_messages {
+          relational_map.insert(item_ident.clone(), nested_msg.clone());
+        }
+
+        proto_items.insert(item_ident, ModuleItem2::Message(message_data));
+      }
+      Item::Enum(e) => {
+        let derives = Derives::new(&e.attrs)?;
+
+        let enum_kind = if let Some(kind) = derives.enum_kind() {
+          kind
+        } else {
+          mod_items.push(Item::Enum(e));
+          continue;
+        };
+
+        let item_ident = e.ident.clone();
+
+        let module_item = match enum_kind {
+          EnumKind::Oneof => ModuleItem2::Oneof(parse_oneof(e)?),
+          EnumKind::Enum => todo!(),
+        };
+
+        proto_items.insert(item_ident, module_item);
+      }
+      _ => {
+        mod_items.push(item);
+      }
+    };
+  }
+
+  for msg in relational_map.keys() {
+    register_full_name(msg, &relational_map, &mut messages);
+  }
+
+  module.content = Some((brace, mod_items));
+
+  Ok(module)
+}
 
 pub struct ModuleAttrs {
   pub file: String,
@@ -74,56 +212,6 @@ pub struct ParentMessage {
 enum EnumKind {
   Oneof,
   Enum,
-}
-
-pub enum ModuleItem2 {
-  Message(MessageData),
-}
-
-pub fn process_module_items(
-  module_attrs: ModuleAttrs,
-  mut module: ItemMod,
-) -> Result<ItemMod, Error> {
-  let (brace, content) = if let Some((brace, content)) = module.content {
-    (brace, content)
-  } else {
-    return Ok(module);
-  };
-
-  let mut mod_items: Vec<Item> = Vec::new();
-  let mut proto_items: Vec<ModuleItem2> = Vec::new();
-
-  for item in content {
-    match item {
-      Item::Struct(s) => {
-        let derives = Derives::new(&s.attrs)?;
-
-        if !derives.contains("Message") {
-          mod_items.push(Item::Struct(s));
-          continue;
-        }
-
-        let message_data = parse_message(s)?;
-      }
-      Item::Enum(e) => {
-        let derives = Derives::new(&e.attrs)?;
-
-        let enum_kind = if let Some(kind) = derives.enum_kind() {
-          kind
-        } else {
-          mod_items.push(Item::Enum(e));
-          continue;
-        };
-      }
-      _ => {
-        mod_items.push(item);
-      }
-    };
-  }
-
-  module.content = Some((brace, mod_items));
-
-  Ok(module)
 }
 
 pub fn process_module_items2(

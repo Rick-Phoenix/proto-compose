@@ -1,4 +1,3 @@
-use super::nested_items::*;
 use crate::*;
 
 pub struct MessageAttrs {
@@ -6,12 +5,8 @@ pub struct MessageAttrs {
   pub reserved_numbers: ReservedNumbers,
   pub options: ProtoOptions,
   pub name: String,
-  pub full_name: String,
-  pub file: String,
-  pub package: String,
-  pub nested_messages: Option<NestedMessages>,
-  pub nested_enums: Option<NestedEnums>,
-  pub oneofs: Option<Oneofs>,
+  pub nested_messages: Vec<Ident>,
+  pub nested_enums: Vec<Ident>,
 }
 
 pub fn process_message_attrs(
@@ -22,12 +17,8 @@ pub fn process_message_attrs(
   let mut reserved_numbers = ReservedNumbers::default();
   let mut options: Option<TokenStream2> = None;
   let mut proto_name: Option<String> = None;
-  let mut full_name: Option<String> = None;
-  let mut file: Option<String> = None;
-  let mut package: Option<String> = None;
-  let mut nested_messages: Option<NestedMessages> = None;
-  let mut nested_enums: Option<NestedEnums> = None;
-  let mut oneofs: Option<Oneofs> = None;
+  let mut nested_messages: Vec<Ident> = Vec::new();
+  let mut nested_enums: Vec<Ident> = Vec::new();
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -52,17 +43,13 @@ pub fn process_message_attrs(
 
             options = Some(quote! { vec! [ #exprs ] });
           } else if list.path.is_ident("nested_messages") {
-            let paths = list.parse_args::<PunctuatedParser<Path>>().unwrap();
+            let idents = list.parse_args::<PunctuatedParser<Ident>>()?.inner;
 
-            nested_messages = Some(NestedMessages { paths });
+            nested_messages.extend(idents);
           } else if list.path.is_ident("nested_enums") {
-            let paths = list.parse_args::<PunctuatedParser<Path>>().unwrap();
+            let idents = list.parse_args::<PunctuatedParser<Ident>>()?.inner;
 
-            nested_enums = Some(NestedEnums { paths });
-          } else if list.path.is_ident("oneofs") {
-            let paths = list.parse_args::<PunctuatedParser<Path>>().unwrap();
-
-            oneofs = Some(Oneofs { paths });
+            nested_enums.extend(idents);
           }
         }
         Meta::NameValue(nameval) => {
@@ -72,14 +59,8 @@ pub fn process_message_attrs(
             options = Some(quote! { #func_call });
           } else if nameval.path.is_ident("name") {
             proto_name = Some(extract_string_lit(&nameval.value).unwrap());
-          } else if nameval.path.is_ident("full_name") {
-            full_name = Some(extract_string_lit(&nameval.value).unwrap());
           } else if nameval.path.is_ident("reserved_names") {
             reserved_names = ReservedNames::Expr(nameval.value);
-          } else if nameval.path.is_ident("file") {
-            file = Some(extract_string_lit(&nameval.value)?);
-          } else if nameval.path.is_ident("package") {
-            package = Some(extract_string_lit(&nameval.value)?);
           }
         }
         Meta::Path(_) => {}
@@ -87,21 +68,14 @@ pub fn process_message_attrs(
     }
   }
 
-  let file = file.ok_or(error!(Span::call_site(), "File attribute is missing"))?;
-  let package = package.ok_or(error!(Span::call_site(), "Package attribute is missing"))?;
-
   let name = proto_name.unwrap_or_else(|| ccase!(pascal, rust_name.to_string()));
 
   Ok(MessageAttrs {
     reserved_names,
     reserved_numbers,
     options: attributes::ProtoOptions(options),
-    full_name: full_name.unwrap_or_else(|| name.clone()),
     name,
-    file,
-    package,
     nested_messages,
     nested_enums,
-    oneofs,
   })
 }
