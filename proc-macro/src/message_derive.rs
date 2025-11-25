@@ -49,6 +49,7 @@ pub(crate) fn process_message_derive(tokens: DeriveInput) -> Result<TokenStream2
       options,
       name,
       is_oneof,
+      is_enum,
       custom_type,
     } = field_attrs;
 

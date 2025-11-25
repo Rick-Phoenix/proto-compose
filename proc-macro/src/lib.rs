@@ -43,14 +43,27 @@ pub fn message_derive(input: TokenStream) -> TokenStream {
   }
 }
 
-#[proc_macro_derive(Enum, attributes(proto))]
-pub fn enum_derive(input: TokenStream) -> TokenStream {
-  let tokens = parse_macro_input!(input as DeriveInput);
+#[proc_macro_attribute]
+pub fn proto_enum(_args: TokenStream, input: TokenStream) -> TokenStream {
+  let mut item = parse_macro_input!(input as ItemEnum);
 
-  match process_enum_derive(tokens) {
-    Ok(output) => output.into(),
+  let extra_tokens = match process_enum_derive(&mut item) {
+    Ok(output) => output,
     Err(e) => e.to_compile_error().into(),
+  };
+
+  quote! {
+    #[derive(Enum)]
+    #item
+
+    #extra_tokens
   }
+  .into()
+}
+
+#[proc_macro_derive(Enum, attributes(proto))]
+pub fn enum_derive(_input: TokenStream) -> TokenStream {
+  TokenStream::new()
 }
 
 #[proc_macro_derive(Oneof, attributes(proto))]

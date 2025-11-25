@@ -27,10 +27,11 @@ mod inner {
     validators::{ProtoValidator, ValidatorMap, *},
     *,
   };
+  use proc_macro_impls::proto_enum;
 
   use super::*;
 
-  #[derive(Enum)]
+  #[proto_enum]
   #[proto(reserved_numbers(1, 2, 10..))]
   enum PseudoEnum {
     AbcDeg,

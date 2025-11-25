@@ -1,12 +1,15 @@
 use crate::*;
 
-pub(crate) fn process_enum_derive(tokens: DeriveInput) -> Result<TokenStream2, Error> {
-  let DeriveInput {
+pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
+  let ItemEnum {
     attrs,
     ident: enum_name,
-    data,
+    variants,
     ..
-  } = tokens;
+  } = item;
+
+  let repr_attr: Attribute = parse_quote!(#[repr(i32)]);
+  attrs.push(repr_attr);
 
   let EnumAttrs {
     reserved_names,
@@ -18,37 +21,48 @@ pub(crate) fn process_enum_derive(tokens: DeriveInput) -> Result<TokenStream2, E
     full_name,
   } = process_derive_enum_attrs(&enum_name, &attrs).unwrap();
 
-  let data = if let Data::Enum(enum_data) = data {
-    enum_data
-  } else {
-    panic!("The enum derive can only be used on enums");
-  };
-
-  let mut output_tokens = TokenStream2::new();
+  let reserved_numbers_tokens = reserved_numbers.to_token_stream();
 
   let mut variants_tokens: Vec<TokenStream2> = Vec::new();
 
-  for variant in data.variants {
+  let mut used_tags: Vec<i32> = Vec::new();
+
+  for variant in variants.iter() {
+    if let Some((_, expr)) = &variant.discriminant {
+      let num = extract_i32(expr)?;
+
+      used_tags.push(num);
+    }
+  }
+
+  let unavailable_ranges = reserved_numbers.build_unavailable_ranges(&used_tags);
+  let mut tag_allocator = TagAllocator::new(&unavailable_ranges);
+
+  for variant in variants {
     if !variant.fields.is_empty() {
       panic!("Must be a unit variant");
     }
 
-    let EnumVariantAttrs { tag, options, name } =
+    let EnumVariantAttrs { options, name } =
       process_derive_enum_variants_attrs(&proto_name, &variant.ident, &variant.attrs)?;
 
-    if reserved_numbers.contains(tag) {
-      return Err(spanned_error!(
-        variant,
-        format!("Tag number {tag} is reserved")
-      ));
-    }
+    let tag = if let Some((_, expr)) = &variant.discriminant {
+      extract_i32(expr)?
+    } else {
+      let next_tag = tag_allocator.next_tag();
+
+      let tag_expr: Expr = parse_quote!(#next_tag);
+      variant.discriminant = Some((token::Eq::default(), tag_expr));
+
+      next_tag
+    };
 
     variants_tokens.push(quote! {
       EnumVariant { name: #name.to_string(), options: #options, tag: #tag, }
     });
   }
 
-  output_tokens.extend(quote! {
+  let output_tokens = quote! {
     impl ProtoEnumTrait for #enum_name {}
 
     impl ProtoValidator<#enum_name> for ValidatorMap {
@@ -81,12 +95,12 @@ pub(crate) fn process_enum_derive(tokens: DeriveInput) -> Result<TokenStream2, E
           file: #file.into(),
           variants: vec! [ #(#variants_tokens,)* ],
           reserved_names: #reserved_names,
-          reserved_numbers: vec![ #reserved_numbers ],
+          reserved_numbers: vec![ #reserved_numbers_tokens ],
           options: #options,
         }
       }
     }
-  });
+  };
 
   Ok(output_tokens)
 }

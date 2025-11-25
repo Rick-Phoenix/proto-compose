@@ -119,11 +119,24 @@ pub fn process_module_items(
       Item::Enum(e) => {
         let derives = Derives::new(&e.attrs)?;
 
-        let enum_kind = if let Some(kind) = derives.enum_kind() {
-          kind
+        let enum_kind = if derives.contains("Oneof") {
+          EnumKind::Oneof
         } else {
-          mod_items.push(ModuleItem::Raw(Item::Enum(e).into()));
-          continue;
+          let mut is_enum = false;
+
+          for attr in &e.attrs {
+            if attr.path().is_ident("proto_enum") {
+              is_enum = true;
+              break;
+            }
+          }
+
+          if is_enum {
+            EnumKind::Enum
+          } else {
+            mod_items.push(ModuleItem::Raw(Item::Enum(e).into()));
+            continue;
+          }
         };
 
         let item_ident = e.ident.clone();
@@ -163,16 +176,22 @@ pub fn process_module_items(
   }
 
   for (ident, enum_) in enums.iter_mut() {
-    let parent_message = if let Some(parent) = enums_relational_map.get(ident) {
+    if let Some(parent) = enums_relational_map.get(ident) {
       let parent = messages.get(parent).expect("Message not found");
 
-      Some(parent.full_name.get().unwrap_or(&parent.name).clone())
+      let parent_message_name = parent.full_name.get().unwrap_or(&parent.name);
+      let enum_proto_name = &enum_.name;
+
+      let full_name = format!("{parent_message_name}.{enum_proto_name}");
+
+      let full_name_attr: Attribute = parse_quote!(#[proto(full_name = #full_name)]);
+
+      enum_.tokens.attrs.push(full_name_attr);
     } else {
       top_level_enums.extend(quote! { #ident::to_enum(), });
-      None
     };
 
-    process_enum_from_module(enum_, parent_message, &package_attr)?;
+    enum_.tokens.attrs.push(package_attr.clone());
   }
 
   let mut processed_items: Vec<Item> = Vec::new();

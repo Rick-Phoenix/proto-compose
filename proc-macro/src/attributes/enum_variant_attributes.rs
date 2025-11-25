@@ -2,7 +2,6 @@ use crate::*;
 
 pub struct EnumVariantAttrs {
   pub name: String,
-  pub tag: i32,
   pub options: ProtoOptions,
 }
 
@@ -11,7 +10,6 @@ pub fn process_derive_enum_variants_attrs(
   rust_variant_name: &Ident,
   attrs: &Vec<Attribute>,
 ) -> Result<EnumVariantAttrs, Error> {
-  let mut tag: Option<i32> = None;
   let mut options: Option<TokenStream2> = None;
   let mut name: Option<String> = None;
 
@@ -25,9 +23,7 @@ pub fn process_derive_enum_variants_attrs(
     for meta in args.inner {
       match meta {
         Meta::NameValue(nameval) => {
-          if nameval.path.is_ident("tag") {
-            tag = Some(extract_i32(&nameval.value).unwrap());
-          } else if nameval.path.is_ident("options") {
+          if nameval.path.is_ident("options") {
             let func_call = nameval.value;
 
             options = Some(quote! { #func_call });
@@ -53,10 +49,7 @@ pub fn process_derive_enum_variants_attrs(
     name.unwrap_or_else(|| ccase!(constant, rust_variant_name.to_string()))
   );
 
-  let tag = tag.ok_or(spanned_error!(rust_variant_name, "Missing tag number"))?;
-
   Ok(EnumVariantAttrs {
-    tag,
     options: attributes::ProtoOptions(options),
     name,
   })
