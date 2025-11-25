@@ -1,6 +1,25 @@
 use itertools::Either;
+use syn::LitInt;
 
 use crate::*;
+
+pub struct NumList {
+  pub list: Vec<i32>,
+}
+
+impl Parse for NumList {
+  fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    let items = Punctuated::<LitInt, Token![,]>::parse_terminated(input)?;
+
+    let mut list: Vec<i32> = Vec::new();
+
+    for item in items {
+      list.push(item.base10_parse()?);
+    }
+
+    Ok(Self { list })
+  }
+}
 
 pub fn get_proto_args(attr: &Attribute) -> Result<impl Iterator<Item = Meta>, Error> {
   if attr.path().is_ident("proto") {

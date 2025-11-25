@@ -19,7 +19,9 @@ pub(crate) fn process_message_derive(item: &mut ItemStruct) -> Result<TokenStrea
     file,
     package,
     into,
-  } = process_derive_message_attrs(&struct_name, &attrs)?;
+  } = process_derive_message_attrs(struct_name, attrs)?;
+
+  let make_shadow_struct = into;
 
   let mut fields_data: Vec<TokenStream2> = Vec::new();
 
@@ -39,9 +41,11 @@ pub(crate) fn process_message_derive(item: &mut ItemStruct) -> Result<TokenStrea
       name,
       custom_type,
       kind,
+      oneof_tags,
     } = field_attrs;
 
     let field_type_path = extract_type_path(&field.ty)?;
+
     let field_type = extract_type(&field.ty)?;
 
     let proto_type = field_type.inner();
@@ -54,12 +58,35 @@ pub(crate) fn process_message_derive(item: &mut ItemStruct) -> Result<TokenStrea
         ));
       }
 
+      let oneof_path_str = proto_type.to_token_stream().to_string();
+      let mut oneof_tags_str = String::new();
+
+      for (i, tag) in oneof_tags.iter().enumerate() {
+        oneof_tags_str.push_str(&tag.to_string());
+
+        if i != oneof_tags.len() - 1 {
+          oneof_tags_str.push_str(", ");
+        }
+      }
+
+      let oneof_attr: Attribute =
+        parse_quote!(#[proto(oneof = #oneof_path_str, tags = #oneof_tags_str)]);
+
+      field.attrs.push(oneof_attr);
+
       fields_data.push(quote! {
         MessageEntry::Oneof(#proto_type::to_oneof())
       });
 
       continue;
     }
+
+    let proto_type2 = get_proto_type_outer(field_type_path);
+    let tag_as_str = tag.to_string();
+
+    let field_prost_attr: Attribute = parse_quote!(#[proto(#proto_type2, tag2 = #tag_as_str)]);
+
+    field.attrs.push(field_prost_attr);
 
     let validator_tokens = if let Some(validator) = validator {
       match validator {

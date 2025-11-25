@@ -37,6 +37,7 @@ pub struct FieldAttrs {
   pub name: String,
   pub kind: ProtoFieldType,
   pub custom_type: Option<Path>,
+  pub oneof_tags: Vec<i32>,
 }
 
 pub enum ValidatorExpr {
@@ -55,6 +56,7 @@ pub fn process_derive_field_attrs(
   let mut custom_type: Option<Path> = None;
   let mut kind = ProtoFieldType::default();
   let mut is_ignored = false;
+  let mut oneof_tags: Vec<i32> = Vec::new();
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -91,6 +93,10 @@ pub fn process_derive_field_attrs(
             let exprs = list.parse_args::<PunctuatedParser<Expr>>().unwrap().inner;
 
             options = Some(quote! { vec! [ #exprs ] });
+          } else if list.path.is_ident("oneof_tags") {
+            let nums = list.parse_args::<NumList>()?.list;
+
+            oneof_tags = nums;
           }
         }
         Meta::Path(path) => {
@@ -122,6 +128,7 @@ pub fn process_derive_field_attrs(
       name: name.unwrap_or_else(|| ccase!(snake, original_name.to_string())),
       custom_type,
       kind,
+      oneof_tags,
     }))
   } else {
     Ok(None)

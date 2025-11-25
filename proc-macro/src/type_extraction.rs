@@ -3,6 +3,8 @@ use syn::{GenericArgument, PathArguments, PathSegment};
 
 use crate::*;
 
+pub fn get_type_info(field_type: &Path, proto_kind: ProtoFieldType) {}
+
 #[derive(Debug)]
 pub enum ProtoTypes {
   String,

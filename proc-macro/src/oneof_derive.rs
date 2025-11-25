@@ -12,7 +12,7 @@ pub(crate) fn process_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, 
     options,
     name: proto_name,
     required,
-  } = process_oneof_attrs(&enum_name, attrs, false);
+  } = process_oneof_attrs(enum_name, attrs, false);
 
   let mut variants_tokens: Vec<TokenStream2> = Vec::new();
 
@@ -45,6 +45,13 @@ pub(crate) fn process_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, 
     } else {
       panic!("Enum can only have one unnamed field")
     };
+
+    let proto_type2 = get_proto_type_outer(&proto_type);
+    let tag_as_str = tag.to_string();
+
+    let prost_attr: Attribute = parse_quote!(#[proto(#proto_type2, tag2 = #tag_as_str)]);
+
+    variant.attrs.push(prost_attr);
 
     let validator_tokens = if let Some(validator) = validator {
       match validator {

@@ -153,8 +153,6 @@ pub fn process_module_items(
   let mut top_level_enums = TokenStream2::new();
   let mut top_level_messages = TokenStream2::new();
 
-  eprintln!("{:#?}", messages);
-
   for msg in messages_relational_map.keys() {
     register_full_name(msg, &messages_relational_map, &mut messages);
   }

@@ -28,7 +28,7 @@ pub(crate) fn process_message_from_module(
   let mut tag_allocator = TagAllocator::new(&unavailable_tags);
 
   for field in fields {
-    if field.kind.is_oneof() {
+    if field.is_oneof {
       let oneof = oneofs_map
         .get_mut(field.type_.inner().require_ident()?)
         .expect("Failed to find oneof");
@@ -45,13 +45,6 @@ pub(crate) fn process_message_from_module(
 
           variant.inject_attr(variant_attr);
         }
-
-        let variant_proto_type = &variant.type2;
-        let tag_as_str = variant.tag.unwrap().to_string();
-
-        let prost_attr: Attribute = parse_quote!(#[proto(#variant_proto_type, tag2 = #tag_as_str)]);
-
-        variant.inject_attr(prost_attr);
       }
 
       let mut oneof_tags = String::new();
@@ -63,9 +56,10 @@ pub(crate) fn process_message_from_module(
         }
       }
 
-      let oneof_path = field.type_.inner().to_token_stream().to_string();
+      let oneof_tags = &oneof.used_tags;
 
-      let oneof_attr: Attribute = parse_quote!(#[proto(oneof = #oneof_path, tags = #oneof_tags)]);
+      let oneof_attr: Attribute = parse_quote!(#[proto(oneof_tags(#(#oneof_tags),*))]);
+
       field.inject_attr(oneof_attr);
 
       continue;
@@ -80,13 +74,6 @@ pub(crate) fn process_message_from_module(
 
       field.inject_attr(field_attr);
     }
-
-    let field_prost_type = &field.type2;
-    let tag_as_str = field.tag.unwrap().to_string();
-
-    let field_prost_attr: Attribute = parse_quote!(#[proto(#field_prost_type, tag2 = #tag_as_str)]);
-
-    field.inject_attr(field_prost_attr);
   }
 
   if let Some(full_name) = msg.full_name.get() {
