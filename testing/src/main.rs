@@ -64,7 +64,7 @@ mod inner {
     #[proto(oneof)]
     oneof: Option<PseudoOneof>,
 
-    #[proto(validate = |v| v.defined_only())]
+    #[proto(enum_, validate = |v| v.defined_only())]
     enum_field: PseudoEnum,
   }
 

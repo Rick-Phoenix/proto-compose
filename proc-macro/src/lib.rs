@@ -49,7 +49,7 @@ pub fn proto_enum(_args: TokenStream, input: TokenStream) -> TokenStream {
 
   let extra_tokens = match process_enum_derive(&mut item) {
     Ok(output) => output,
-    Err(e) => e.to_compile_error().into(),
+    Err(e) => return e.to_compile_error().into(),
   };
 
   quote! {

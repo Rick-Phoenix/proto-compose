@@ -10,3 +10,4 @@ keywords.workspace = true
 [dependencies]
 proc-macro-impls = { path = "../proc-macro/" }
 prelude = { path = "../prelude" }
+# prost-derive = "0.14.1"

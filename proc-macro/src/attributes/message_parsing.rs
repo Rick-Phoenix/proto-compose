@@ -123,10 +123,16 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
       used_tags.push(tag);
     }
 
+    let type2 = if is_enum {
+      ProtoTypeKind::Single(ProtoTypes::Enum(type_path.clone()))
+    } else {
+      get_proto_type_outer(type_path)
+    };
+
     fields_data.push(FieldData {
       is_enum,
       type_: field_type,
-      type2: get_proto_type_outer(type_path),
+      type2,
       tokens: field,
       tag,
       name,

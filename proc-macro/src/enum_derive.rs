@@ -19,7 +19,7 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
     file,
     package,
     full_name,
-  } = process_derive_enum_attrs(&enum_name, &attrs).unwrap();
+  } = process_derive_enum_attrs(enum_name, attrs).unwrap();
 
   let reserved_numbers_tokens = reserved_numbers.to_token_stream();
 
@@ -38,7 +38,7 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
   let unavailable_ranges = reserved_numbers.build_unavailable_ranges(&used_tags);
   let mut tag_allocator = TagAllocator::new(&unavailable_ranges);
 
-  for variant in variants {
+  for (i, variant) in variants.iter_mut().enumerate() {
     if !variant.fields.is_empty() {
       panic!("Must be a unit variant");
     }
@@ -47,9 +47,18 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
       process_derive_enum_variants_attrs(&proto_name, &variant.ident, &variant.attrs)?;
 
     let tag = if let Some((_, expr)) = &variant.discriminant {
-      extract_i32(expr)?
+      let tag = extract_i32(expr)?;
+
+      if i == 0 && tag != 0 {
+        return Err(spanned_error!(
+          expr,
+          "The first variant of a protobuf enum must have have a tag of 0"
+        ));
+      }
+
+      tag
     } else {
-      let next_tag = tag_allocator.next_tag();
+      let next_tag = if i == 0 { 0 } else { tag_allocator.next_tag() };
 
       let tag_expr: Expr = parse_quote!(#next_tag);
       variant.discriminant = Some((token::Eq::default(), tag_expr));
