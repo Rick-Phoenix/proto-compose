@@ -3,13 +3,39 @@ use syn::ExprCall;
 
 use crate::*;
 
+#[derive(Default, Debug)]
+pub enum ProtoFieldType {
+  Message,
+  Enum,
+  Oneof,
+  #[default]
+  Normal,
+}
+
+impl ProtoFieldType {
+  pub fn is_message(&self) -> bool {
+    matches!(self, Self::Message)
+  }
+
+  pub fn is_enum(&self) -> bool {
+    matches!(self, Self::Enum)
+  }
+
+  pub fn is_oneof(&self) -> bool {
+    matches!(self, Self::Oneof)
+  }
+
+  pub fn is_normal(&self) -> bool {
+    matches!(self, Self::Normal)
+  }
+}
+
 pub struct FieldAttrs {
   pub tag: i32,
   pub validator: Option<ValidatorExpr>,
   pub options: ProtoOptions,
   pub name: String,
-  pub is_oneof: bool,
-  pub is_enum: bool,
+  pub kind: ProtoFieldType,
   pub custom_type: Option<Path>,
 }
 
@@ -27,9 +53,8 @@ pub fn process_derive_field_attrs(
   let mut options: Option<TokenStream2> = None;
   let mut name: Option<String> = None;
   let mut custom_type: Option<Path> = None;
+  let mut kind = ProtoFieldType::default();
   let mut is_ignored = false;
-  let mut is_oneof = false;
-  let mut is_enum = false;
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -72,16 +97,18 @@ pub fn process_derive_field_attrs(
           if path.is_ident("ignore") {
             is_ignored = true;
           } else if path.is_ident("oneof") {
-            is_oneof = true;
+            kind = ProtoFieldType::Oneof;
           } else if path.is_ident("enum_") {
-            is_enum = true;
+            kind = ProtoFieldType::Enum;
+          } else if path.is_ident("message") {
+            kind = ProtoFieldType::Message;
           }
         }
       };
     }
   }
 
-  let tag = if is_ignored || is_oneof {
+  let tag = if is_ignored || !kind.is_normal() {
     0
   } else {
     tag.ok_or(spanned_error!(original_name, "Field tag is missing"))?
@@ -93,9 +120,8 @@ pub fn process_derive_field_attrs(
       tag,
       options: attributes::ProtoOptions(options),
       name: name.unwrap_or_else(|| ccase!(snake, original_name.to_string())),
-      is_oneof,
       custom_type,
-      is_enum,
+      kind,
     }))
   } else {
     Ok(None)

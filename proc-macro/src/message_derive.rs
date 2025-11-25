@@ -1,12 +1,12 @@
 use crate::*;
 
-pub(crate) fn process_message_derive(tokens: DeriveInput) -> Result<TokenStream2, Error> {
-  let DeriveInput {
+pub(crate) fn process_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, Error> {
+  let ItemStruct {
     attrs,
     ident: struct_name,
-    data,
+    fields,
     ..
-  } = tokens;
+  } = item;
 
   let MessageAttrs {
     reserved_names,
@@ -18,19 +18,8 @@ pub(crate) fn process_message_derive(tokens: DeriveInput) -> Result<TokenStream2
     full_name,
     file,
     package,
-  } = process_derive_message_attrs(&struct_name, &attrs).unwrap();
-
-  let data = if let Data::Struct(struct_data) = data {
-    struct_data
-  } else {
-    panic!()
-  };
-
-  let fields = if let Fields::Named(fields) = data.fields {
-    fields.named
-  } else {
-    panic!()
-  };
+    into,
+  } = process_derive_message_attrs(&struct_name, &attrs)?;
 
   let mut fields_data: Vec<TokenStream2> = Vec::new();
 
@@ -48,24 +37,16 @@ pub(crate) fn process_message_derive(tokens: DeriveInput) -> Result<TokenStream2
       validator,
       options,
       name,
-      is_oneof,
-      is_enum,
       custom_type,
+      kind,
     } = field_attrs;
 
-    if reserved_numbers.contains(tag) {
-      return Err(spanned_error!(
-        field,
-        format!("Tag number {tag} is reserved.")
-      ));
-    }
-
+    let field_type_path = extract_type_path(&field.ty)?;
     let field_type = extract_type(&field.ty)?;
 
     let proto_type = field_type.inner();
-    let outer_type = &field_type.outer;
 
-    if is_oneof {
+    if kind.is_oneof() {
       if !field_type.is_option() {
         return Err(spanned_error!(
           &field.ty,
@@ -93,7 +74,7 @@ pub(crate) fn process_message_derive(tokens: DeriveInput) -> Result<TokenStream2
       quote! { None }
     };
 
-    let field_type_tokens = quote! { <#outer_type as AsProtoType>::proto_type() };
+    let field_type_tokens = quote! { <#field_type_path as AsProtoType>::proto_type() };
 
     fields_data.push(quote! {
       MessageEntry::Field(

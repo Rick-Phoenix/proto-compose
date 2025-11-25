@@ -4,6 +4,7 @@ use syn::FieldsNamed;
 
 use crate::*;
 
+#[derive(Debug)]
 pub struct MessageData {
   pub tokens: StructRaw,
   pub fields: Vec<FieldData>,
@@ -45,12 +46,12 @@ impl From<MessageData> for ItemStruct {
   }
 }
 
+#[derive(Debug)]
 pub struct FieldData {
   pub tokens: Field,
   pub tag: Option<i32>,
   pub name: String,
-  pub is_oneof: bool,
-  pub is_enum: bool,
+  pub kind: ProtoFieldType,
   pub type_: FieldType,
   pub type2: ProtoTypeKind,
 }
@@ -101,9 +102,8 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
     let ModuleFieldAttrs {
       tag,
       name,
-      is_oneof,
       custom_type,
-      is_enum,
+      kind,
     } = if let Some(field_attrs) =
       process_module_field_attrs(field.ident.as_ref().unwrap(), &field.attrs)?
     {
@@ -115,7 +115,7 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
     let field_type = extract_type(&field.ty)?;
     let type_path = extract_type_path(&field.ty)?;
 
-    if is_oneof {
+    if kind.is_oneof() {
       oneofs.push(field_type.inner().require_ident()?.clone());
     }
 
@@ -123,20 +123,19 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
       used_tags.push(tag);
     }
 
-    let type2 = if is_enum {
+    let type2 = if kind.is_enum() {
       ProtoTypeKind::Single(ProtoTypes::Enum(type_path.clone()))
     } else {
       get_proto_type_outer(type_path)
     };
 
     fields_data.push(FieldData {
-      is_enum,
       type_: field_type,
       type2,
       tokens: field,
       tag,
       name,
-      is_oneof,
+      kind,
     });
   }
 

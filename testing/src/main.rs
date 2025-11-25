@@ -27,7 +27,7 @@ mod inner {
     validators::{ProtoValidator, ValidatorMap, *},
     *,
   };
-  use proc_macro_impls::proto_enum;
+  use proc_macro_impls::{proto_enum, proto_message, proto_oneof};
 
   use super::*;
 
@@ -39,7 +39,7 @@ mod inner {
     C,
   }
 
-  #[derive(Oneof)]
+  #[proto_oneof]
   #[proto(required)]
   enum PseudoOneof {
     #[proto(tag = 12, validate = |v| v)]
@@ -47,7 +47,7 @@ mod inner {
     B(i32),
   }
 
-  #[derive(Message)]
+  #[proto_message]
   #[proto(reserved_numbers(1, 2, 3..9))]
   #[proto(nested_messages(Nested))]
   #[proto(nested_enums(PseudoEnum))]
@@ -68,13 +68,13 @@ mod inner {
     enum_field: PseudoEnum,
   }
 
-  #[derive(Message)]
+  #[proto_message]
   #[proto(nested_messages(Nested2))]
   pub struct Nested {
     name: String,
   }
 
-  #[derive(Message)]
+  #[proto_message]
   pub struct Nested2 {
     name: String,
 

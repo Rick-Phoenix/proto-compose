@@ -3,6 +3,7 @@ use syn::{GenericArgument, PathArguments, PathSegment};
 
 use crate::*;
 
+#[derive(Debug)]
 pub enum ProtoTypes {
   String,
   Bool,
@@ -31,6 +32,7 @@ impl ToTokens for ProtoTypes {
   }
 }
 
+#[derive(Debug)]
 pub enum ProtoTypeKind {
   Single(ProtoTypes),
   Repeated(ProtoTypes),
@@ -177,12 +179,14 @@ pub fn get_proto_type_outer(original_type: &Path) -> ProtoTypeKind {
   }
 }
 
+#[derive(Debug)]
 pub enum FieldTypeKind {
   Normal,
   Option,
   Boxed,
 }
 
+#[derive(Debug)]
 pub struct FieldType {
   pub outer: Path,
   pub inner: Option<Path>,

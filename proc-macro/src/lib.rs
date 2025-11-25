@@ -33,14 +33,27 @@ mod type_extraction;
 
 mod attributes;
 
-#[proc_macro_derive(Message, attributes(proto))]
-pub fn message_derive(input: TokenStream) -> TokenStream {
-  let tokens = parse_macro_input!(input as DeriveInput);
+#[proc_macro_attribute]
+pub fn proto_message(_args: TokenStream, input: TokenStream) -> TokenStream {
+  let mut item = parse_macro_input!(input as ItemStruct);
 
-  match process_message_derive(tokens) {
-    Ok(output) => output.into(),
-    Err(e) => e.to_compile_error().into(),
+  let extra_tokens = match process_message_derive(&mut item) {
+    Ok(output) => output,
+    Err(e) => return e.to_compile_error().into(),
+  };
+
+  quote! {
+    #[derive(Message)]
+    #item
+
+    #extra_tokens
   }
+  .into()
+}
+
+#[proc_macro_derive(Message, attributes(proto))]
+pub fn message_derive(_input: TokenStream) -> TokenStream {
+  TokenStream::new()
 }
 
 #[proc_macro_attribute]
@@ -66,14 +79,27 @@ pub fn enum_derive(_input: TokenStream) -> TokenStream {
   TokenStream::new()
 }
 
-#[proc_macro_derive(Oneof, attributes(proto))]
-pub fn oneof_derive(input: TokenStream) -> TokenStream {
-  let tokens = parse_macro_input!(input as DeriveInput);
+#[proc_macro_attribute]
+pub fn proto_oneof(_args: TokenStream, input: TokenStream) -> TokenStream {
+  let mut item = parse_macro_input!(input as ItemEnum);
 
-  match process_oneof_derive(tokens) {
-    Ok(output) => output.into(),
-    Err(e) => e.to_compile_error().into(),
+  let extra_tokens = match process_oneof_derive(&mut item) {
+    Ok(output) => output,
+    Err(e) => return e.to_compile_error().into(),
+  };
+
+  quote! {
+    #[derive(Oneof)]
+    #item
+
+    #extra_tokens
   }
+  .into()
+}
+
+#[proc_macro_derive(Oneof, attributes(proto))]
+pub fn oneof_derive(_input: TokenStream) -> TokenStream {
+  TokenStream::new()
 }
 
 #[proc_macro_attribute]
@@ -86,28 +112,4 @@ pub fn proto_module(attrs: TokenStream, input: TokenStream) -> TokenStream {
     Ok(processed_module) => quote! { #processed_module }.into(),
     Err(e) => e.to_compile_error().into(),
   }
-
-  // if let Some((_, content)) = &mut module.content {
-  //   let TopLevelItemsTokens {
-  //     top_level_messages,
-  //     top_level_enums,
-  //   } = process_module_items2(file_attribute, content).unwrap();
-  //
-  //   let aggregator_fn: ItemFn = parse_quote! {
-  //     pub fn proto_file() -> ProtoFile {
-  //       let mut file = ProtoFile {
-  //         name: #file.into(),
-  //         package: #package.into(),
-  //         ..Default::default()
-  //       };
-  //
-  //       file.add_messages([ #top_level_messages ]);
-  //       file.add_enums([ #top_level_enums ]);
-  //
-  //       file
-  //     }
-  //   };
-  //
-  //   content.push(Item::Fn(aggregator_fn));
-  // }
 }

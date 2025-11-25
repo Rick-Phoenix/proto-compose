@@ -5,8 +5,7 @@ use crate::*;
 pub struct ModuleFieldAttrs {
   pub tag: Option<i32>,
   pub name: String,
-  pub is_oneof: bool,
-  pub is_enum: bool,
+  pub kind: ProtoFieldType,
   pub custom_type: Option<Path>,
 }
 
@@ -17,8 +16,7 @@ pub fn process_module_field_attrs(
   let mut tag: Option<i32> = None;
   let mut name: Option<String> = None;
   let mut custom_type: Option<Path> = None;
-  let mut is_oneof = false;
-  let mut is_enum = false;
+  let mut kind = ProtoFieldType::default();
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -42,9 +40,11 @@ pub fn process_module_field_attrs(
           if path.is_ident("ignore") {
             return Ok(None);
           } else if path.is_ident("oneof") {
-            is_oneof = true;
+            kind = ProtoFieldType::Oneof;
           } else if path.is_ident("enum_") {
-            is_enum = true;
+            kind = ProtoFieldType::Enum;
+          } else if path.is_ident("message") {
+            kind = ProtoFieldType::Message;
           }
         }
         Meta::List(_) => {}
@@ -55,8 +55,7 @@ pub fn process_module_field_attrs(
   Ok(Some(ModuleFieldAttrs {
     tag,
     name: name.unwrap_or_else(|| ccase!(snake, original_name.to_string())),
-    is_oneof,
     custom_type,
-    is_enum,
+    kind,
   }))
 }

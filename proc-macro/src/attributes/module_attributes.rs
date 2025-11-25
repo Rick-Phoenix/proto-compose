@@ -7,17 +7,30 @@ fn register_full_name(
   relational_map: &HashMap<Ident, Ident>,
   messages_map: &mut HashMap<Ident, MessageData>,
 ) {
-  let is_registered = messages_map.get(msg).unwrap().full_name.get().is_some();
+  let is_registered = messages_map
+    .get(msg)
+    .expect("could not find message")
+    .full_name
+    .get()
+    .is_some();
 
   if !is_registered {
-    let short_name = messages_map.get(msg).unwrap().name.clone();
+    let short_name = messages_map
+      .get(msg)
+      .expect("could not find message")
+      .name
+      .clone();
 
     if let Some(parent) = relational_map.get(msg) {
       let parent_name = get_full_name(parent, relational_map, messages_map);
 
       let full_name = format!("{parent_name}.{short_name}");
 
-      let _ = messages_map.get_mut(msg).unwrap().full_name.set(full_name);
+      let _ = messages_map
+        .get_mut(msg)
+        .expect("could not find message")
+        .full_name
+        .set(full_name);
     }
   }
 }
@@ -30,7 +43,7 @@ fn get_full_name(
   let mut is_full = false;
 
   let name = {
-    let msg_data = messages_map.get(msg).unwrap();
+    let msg_data = messages_map.get(msg).expect("could not find message");
     if let Some(full_name) = msg_data.full_name.get() {
       is_full = true;
       full_name.clone()
@@ -92,15 +105,15 @@ pub fn process_module_items(
   let mut enums_relational_map: HashMap<Ident, Ident> = HashMap::new();
 
   for item in content {
+    let item_kind = if let Some(kind) = ItemKind::detect(&item)? {
+      kind
+    } else {
+      mod_items.push(ModuleItem::Raw(item.into()));
+      continue;
+    };
+
     match item {
       Item::Struct(s) => {
-        let derives = Derives::new(&s.attrs)?;
-
-        if !derives.contains("Message") {
-          mod_items.push(ModuleItem::Raw(Item::Struct(s).into()));
-          continue;
-        }
-
         let item_ident = s.ident.clone();
 
         let message_data = parse_message(s)?;
@@ -117,39 +130,18 @@ pub fn process_module_items(
         messages.insert(item_ident, message_data);
       }
       Item::Enum(e) => {
-        let derives = Derives::new(&e.attrs)?;
-
-        let enum_kind = if derives.contains("Oneof") {
-          EnumKind::Oneof
-        } else {
-          let mut is_enum = false;
-
-          for attr in &e.attrs {
-            if attr.path().is_ident("proto_enum") {
-              is_enum = true;
-              break;
-            }
-          }
-
-          if is_enum {
-            EnumKind::Enum
-          } else {
-            mod_items.push(ModuleItem::Raw(Item::Enum(e).into()));
-            continue;
-          }
-        };
-
         let item_ident = e.ident.clone();
 
-        match enum_kind {
-          EnumKind::Oneof => {
+        match item_kind {
+          ItemKind::Oneof => {
             mod_items.push(ModuleItem::Oneof(item_ident.clone()));
             oneofs.insert(item_ident, parse_oneof(e)?);
           }
-          EnumKind::Enum => {
+          ItemKind::Enum => {
             mod_items.push(ModuleItem::Enum(item_ident.clone()));
             enums.insert(item_ident, parse_enum(e)?);
           }
+          _ => unreachable!(),
         };
       }
       _ => {
@@ -160,6 +152,8 @@ pub fn process_module_items(
 
   let mut top_level_enums = TokenStream2::new();
   let mut top_level_messages = TokenStream2::new();
+
+  eprintln!("{:#?}", messages);
 
   for msg in messages_relational_map.keys() {
     register_full_name(msg, &messages_relational_map, &mut messages);
@@ -236,11 +230,6 @@ pub struct ModuleAttrs {
   pub package: String,
 }
 
-pub enum EnumKind {
-  Oneof,
-  Enum,
-}
-
 impl Parse for ModuleAttrs {
   fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
     let mut file: Option<String> = None;
@@ -263,54 +252,66 @@ impl Parse for ModuleAttrs {
   }
 }
 
-pub struct Derives {
-  pub list: Vec<Path>,
+pub enum ItemKind {
+  Message,
+  Enum,
+  Oneof,
 }
 
-impl Derives {
-  pub fn contains(&self, value: &str) -> bool {
-    for item in &self.list {
-      let last_segment = item.segments.last().unwrap();
+impl ItemKind {
+  pub fn detect(item: &Item) -> Result<Option<Self>, Error> {
+    let mut is_struct = false;
 
-      if last_segment.ident == value {
-        return true;
+    let attrs = match item {
+      Item::Struct(s) => {
+        is_struct = true;
+        &s.attrs
       }
-    }
-
-    false
-  }
-
-  pub fn enum_kind(&self) -> Option<EnumKind> {
-    for item in &self.list {
-      let last_segment = item.segments.last().unwrap();
-
-      if last_segment.ident == "Oneof" {
-        return Some(EnumKind::Oneof);
-      } else if last_segment.ident == "Enum" {
-        return Some(EnumKind::Enum);
-      }
-    }
-
-    None
-  }
-}
-
-impl Derives {
-  pub fn new(attrs: &[Attribute]) -> Result<Self, Error> {
-    let mut list: Vec<Path> = Vec::new();
+      Item::Enum(e) => &e.attrs,
+      _ => return Ok(None),
+    };
 
     for attr in attrs {
-      if attr.path().is_ident("derive") {
-        list.extend(
-          attr
-            .meta
-            .require_list()?
-            .parse_args::<PunctuatedParser<Path>>()?
-            .inner,
-        );
-      }
+      let ident = if let Some(path) = attr.path().segments.last() {
+        path.ident.to_string()
+      } else {
+        continue;
+      };
+
+      match ident.as_str() {
+        "proto_message" => {
+          if !is_struct {
+            return Err(spanned_error!(
+              item,
+              "proto_message can only be used on a struct"
+            ));
+          }
+
+          return Ok(Some(Self::Message));
+        }
+        "proto_enum" => {
+          if is_struct {
+            return Err(spanned_error!(
+              item,
+              "proto_enum can only be used on an enum"
+            ));
+          }
+          return Ok(Some(Self::Enum));
+        }
+        "proto_oneof" => {
+          if is_struct {
+            return Err(spanned_error!(
+              item,
+              "proto_oneof can only be used on an enum"
+            ));
+          }
+
+          return Ok(Some(Self::Oneof));
+        }
+        _ => {}
+      };
     }
 
-    Ok(Self { list })
+    Ok(None)
   }
 }

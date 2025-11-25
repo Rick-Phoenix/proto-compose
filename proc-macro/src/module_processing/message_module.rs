@@ -28,7 +28,7 @@ pub(crate) fn process_message_from_module(
   let mut tag_allocator = TagAllocator::new(&unavailable_tags);
 
   for field in fields {
-    if field.is_oneof {
+    if field.kind.is_oneof() {
       let oneof = oneofs_map
         .get_mut(field.type_.inner().require_ident()?)
         .expect("Failed to find oneof");

@@ -5,7 +5,7 @@ pub struct OneofVariant {
   pub tag: Option<i32>,
   pub name: String,
   pub type2: ProtoTypeKind,
-  pub is_enum: bool,
+  pub kind: ProtoFieldType,
 }
 
 impl OneofVariant {
@@ -60,8 +60,7 @@ pub fn parse_oneof(item: ItemEnum) -> Result<OneofData, Error> {
       tag,
       name,
       custom_type,
-      is_enum,
-      ..
+      kind,
     } = if let Some(data) = process_module_field_attrs(&variant.ident, &variant.attrs)? {
       data
     } else {
@@ -98,7 +97,7 @@ pub fn parse_oneof(item: ItemEnum) -> Result<OneofData, Error> {
     // }
 
     variants_data.push(OneofVariant {
-      is_enum,
+      kind,
       type2: variant_type,
       tokens: variant,
       tag,
