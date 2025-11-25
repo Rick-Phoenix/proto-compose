@@ -4,8 +4,6 @@ pub struct OneofVariant {
   pub tokens: Variant,
   pub tag: Option<i32>,
   pub name: String,
-  pub type2: ProtoTypeKind,
-  pub kind: ProtoFieldType,
 }
 
 impl OneofVariant {
@@ -56,49 +54,18 @@ pub fn parse_oneof(item: ItemEnum) -> Result<OneofData, Error> {
   let mut used_tags: Vec<i32> = Vec::new();
 
   for variant in item.variants {
-    let ModuleFieldAttrs {
-      tag,
-      name,
-      custom_type,
-      kind,
-    } = if let Some(data) = process_module_field_attrs(&variant.ident, &variant.attrs)? {
-      data
-    } else {
-      continue;
-    };
+    let ModuleFieldAttrs { tag, name, .. } =
+      if let Some(data) = process_module_field_attrs(&variant.ident, &variant.attrs)? {
+        data
+      } else {
+        continue;
+      };
 
     if let Some(tag) = tag {
       used_tags.push(tag);
     }
 
-    let variant_type = if let Fields::Unnamed(variant_fields) = &variant.fields {
-      if variant_fields.unnamed.len() != 1 {
-        return Err(spanned_error!(
-          &variant.ident,
-          "Oneof variants must contain a single value"
-        ));
-      }
-
-      let type_path = extract_type_path(&variant_fields.unnamed.first().unwrap().ty)?;
-
-      get_proto_type_outer(type_path)
-    } else {
-      return Err(spanned_error!(
-        &variant.ident,
-        "Oneof variants can only contain unnamed fields"
-      ));
-    };
-
-    // if variant_type.is_option() {
-    //   return Err(spanned_error!(
-    //     &variant_fields.unnamed.first().unwrap().ty,
-    //     "Oneof variants cannot be Option"
-    //   ));
-    // }
-
     variants_data.push(OneofVariant {
-      kind,
-      type2: variant_type,
       tokens: variant,
       tag,
       name,
