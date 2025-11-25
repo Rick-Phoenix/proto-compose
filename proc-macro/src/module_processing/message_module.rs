@@ -22,9 +22,7 @@ pub(crate) fn process_message_from_module(
     used_tags.extend(taken_tags);
   }
 
-  let reserved_numbers = std::mem::take(reserved_numbers);
-
-  let unavailable_tags = reserved_numbers.build_unavailable_ranges(&used_tags);
+  let unavailable_tags = reserved_numbers.clone().build_unavailable_ranges(used_tags);
 
   let mut tag_allocator = TagAllocator::new(&unavailable_tags);
 
@@ -37,6 +35,8 @@ pub(crate) fn process_message_from_module(
       for variant in &mut oneof.variants {
         if variant.tag.is_none() {
           let tag = tag_allocator.next_tag();
+
+          oneof.used_tags.push(tag);
 
           let variant_attr: Attribute = parse_quote!(#[proto(tag = #tag)]);
 

@@ -49,12 +49,13 @@ pub(crate) fn process_message_derive(tokens: DeriveInput) -> Result<TokenStream2
       options,
       name,
       is_oneof,
+      custom_type,
     } = field_attrs;
 
     if reserved_numbers.contains(tag) {
       return Err(spanned_error!(
         field,
-        format!("Tag number {tag} is reserved")
+        format!("Tag number {tag} is reserved.")
       ));
     }
 

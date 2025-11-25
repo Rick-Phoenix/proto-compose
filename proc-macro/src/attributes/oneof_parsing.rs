@@ -55,12 +55,16 @@ pub fn parse_oneof(item: ItemEnum) -> Result<OneofData, Error> {
   let mut used_tags: Vec<i32> = Vec::new();
 
   for variant in item.variants {
-    let ModuleFieldAttrs { tag, name, .. } =
-      if let Some(data) = process_module_field_attrs(&variant.ident, &variant.attrs)? {
-        data
-      } else {
-        continue;
-      };
+    let ModuleFieldAttrs {
+      tag,
+      name,
+      custom_type,
+      ..
+    } = if let Some(data) = process_module_field_attrs(&variant.ident, &variant.attrs)? {
+      data
+    } else {
+      continue;
+    };
 
     if let Some(tag) = tag {
       used_tags.push(tag);

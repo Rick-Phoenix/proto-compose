@@ -6,6 +6,7 @@ pub struct ModuleFieldAttrs {
   pub tag: Option<i32>,
   pub name: String,
   pub is_oneof: bool,
+  pub custom_type: Option<Path>,
 }
 
 pub fn process_module_field_attrs(
@@ -14,6 +15,7 @@ pub fn process_module_field_attrs(
 ) -> Result<Option<ModuleFieldAttrs>, Error> {
   let mut tag: Option<i32> = None;
   let mut name: Option<String> = None;
+  let mut custom_type: Option<Path> = None;
   let mut is_oneof = false;
 
   for attr in attrs {
@@ -30,6 +32,8 @@ pub fn process_module_field_attrs(
             tag = Some(extract_i32(&nameval.value).unwrap());
           } else if nameval.path.is_ident("name") {
             name = Some(extract_string_lit(&nameval.value).unwrap());
+          } else if nameval.path.is_ident("type_") {
+            custom_type = Some(extract_path(nameval.value)?);
           }
         }
         Meta::Path(path) => {
@@ -48,5 +52,6 @@ pub fn process_module_field_attrs(
     tag,
     name: name.unwrap_or_else(|| ccase!(snake, original_name.to_string())),
     is_oneof,
+    custom_type,
   }))
 }

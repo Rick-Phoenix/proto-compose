@@ -69,3 +69,11 @@ pub fn extract_string_lit(expr: &Expr) -> Result<String, Error> {
     Err(spanned_error!(expr, "Expected a string literal"))
   }
 }
+
+pub fn extract_path(expr: Expr) -> Result<Path, Error> {
+  if let Expr::Path(path) = expr {
+    Ok(path.path)
+  } else {
+    Err(spanned_error!(expr, "Expected a path"))
+  }
+}
