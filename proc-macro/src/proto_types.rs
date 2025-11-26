@@ -14,6 +14,29 @@ pub enum ProtoType {
 }
 
 impl ProtoType {
+  pub fn validator_expr(&self, validator: &ValidatorExpr) -> TokenStream2 {
+    let target_type = match self {
+      ProtoType::String => quote! { String },
+      ProtoType::Bool => quote! { bool },
+      ProtoType::Bytes => quote! { Vec<u8> },
+      ProtoType::Enum(_) => quote! { GenericProtoEnum },
+      ProtoType::Message => quote! { GenericMessage },
+      ProtoType::Int32 => quote! { i32 },
+      ProtoType::Map(_) => todo!(),
+      _ => todo!(),
+    };
+
+    match validator {
+      ValidatorExpr::Call(call) => {
+        quote! { Some(<ValidatorMap as ProtoValidator<#target_type>>::from_builder(#call)) }
+      }
+
+      ValidatorExpr::Closure(closure) => {
+        quote! { Some(<ValidatorMap as ProtoValidator<#target_type>>::build_rules(#closure)) }
+      }
+    }
+  }
+
   pub fn from_rust_type(type_info: &TypeInfo) -> Result<Self, Error> {
     let path = match &type_info.rust_type {
       RustType::Option(path) => path,

@@ -17,6 +17,16 @@ impl RustType {
       None
     }
   }
+
+  pub fn inner_path(&self) -> &Path {
+    match self {
+      RustType::Option(path) => path,
+      RustType::Boxed(path) => path,
+      RustType::Map(_) => panic!("Cannot access inner path for map type"),
+      RustType::Vec(path) => path,
+      RustType::Normal(path) => path,
+    }
+  }
 }
 
 impl RustType {

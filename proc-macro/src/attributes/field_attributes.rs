@@ -27,7 +27,7 @@ impl ProtoFieldType {
   }
 
   pub fn is_normal(&self) -> bool {
-    matches!(self, Self::Normal)
+    matches!(self, Self::Normal | Self::Enum)
   }
 }
 

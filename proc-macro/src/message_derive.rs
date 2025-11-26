@@ -96,8 +96,6 @@ pub(crate) fn process_message_derive(item: &mut ItemStruct) -> Result<TokenStrea
       Cow::Borrowed(&src_field_type)
     };
 
-    if kind.is_enum() {}
-
     if kind.is_oneof() {
       let oneof_path = src_field_type.as_inner_option_path().ok_or(spanned_error!(
         &src_field.ty,
@@ -125,6 +123,43 @@ pub(crate) fn process_message_derive(item: &mut ItemStruct) -> Result<TokenStrea
       });
 
       continue;
+    }
+
+    let mut manually_set_proto_type: Option<ProtoType> = None;
+
+    if kind.is_enum() {
+      let inner_path = src_field_type.rust_type.inner_path();
+
+      let output_type: Type = match &src_field_type.rust_type {
+        RustType::Option(_) => parse_quote! { Option<i32> },
+        RustType::Vec(_) => parse_quote! { Vec<i32> },
+        RustType::Normal(_) => parse_quote! { i32 },
+        _ => {
+          panic!("Unsupported kinds for enums")
+        }
+      };
+
+      dst_field.ty = output_type;
+
+      manually_set_proto_type = Some(ProtoType::Enum(inner_path.clone()));
+    } else if kind.is_message() {
+      let inner_path = src_field_type.rust_type.inner_path();
+      let last_segment = inner_path.segments.last().unwrap();
+
+      let new_last_segment = format_ident!("{}Proto", last_segment.ident);
+
+      let output_type: Type = match &src_field_type.rust_type {
+        RustType::Option(_) => parse_quote! { Option<#new_last_segment> },
+        RustType::Vec(_) => parse_quote! { Vec<#new_last_segment> },
+        RustType::Normal(_) => parse_quote! { #new_last_segment },
+        RustType::Boxed(_) => parse_quote! { Option<Box<#new_last_segment>> },
+        _ => {
+          panic!("Unsupported kinds for messages")
+        }
+      };
+
+      dst_field.ty = output_type;
+      manually_set_proto_type = Some(ProtoType::Message);
     }
 
     let proto_type = if let Some(custom_type) = &custom_type {
