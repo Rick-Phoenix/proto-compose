@@ -52,6 +52,9 @@ mod inner {
   #[proto(nested_messages(Nested))]
   #[proto(nested_enums(PseudoEnum))]
   pub struct Abc {
+    #[proto(type_(GenericMessage))]
+    boxed: Option<Box<Abc>>,
+
     #[proto(tag = 35, validate = string_validator())]
     name: Option<String>,
 

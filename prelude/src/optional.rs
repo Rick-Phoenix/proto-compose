@@ -1,5 +1,15 @@
 use crate::*;
 
+impl<T> AsProtoType for Box<T>
+where
+  T: AsProtoType,
+{
+  #[track_caller]
+  fn proto_type() -> ProtoType {
+    T::proto_type()
+  }
+}
+
 impl<T> AsProtoType for Option<T>
 where
   T: AsProtoType,

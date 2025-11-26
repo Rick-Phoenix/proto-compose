@@ -76,7 +76,7 @@ impl ToTokens for ProstCardinality {
       ProstCardinality::Repeated => quote! { repeated, },
       ProstCardinality::Optional => quote! { optional, },
       ProstCardinality::Single => TokenStream2::new(),
-      ProstCardinality::Boxed => quote! { optional, boxed },
+      ProstCardinality::Boxed => quote! { optional, boxed, },
     };
 
     tokens.extend(output);
@@ -93,10 +93,12 @@ impl RustType {
 
     match type_ident.as_str() {
       "Option" => {
-        let inner = last_segment.first_argument().unwrap();
+        let inner = PathWrapper::new(Cow::Borrowed(last_segment.first_argument().unwrap()));
 
-        if inner.is_ident("Box") {
-          let box_wrapper = PathWrapper::new(Cow::Borrowed(inner));
+        let inner_last_segment = inner.last_segment();
+
+        if inner_last_segment.ident() == "Box" {
+          let box_wrapper = PathWrapper::new(Cow::Borrowed(&inner.inner));
 
           let last_segment = box_wrapper.last_segment();
 
@@ -104,7 +106,7 @@ impl RustType {
 
           Self::Boxed(box_inner.clone())
         } else {
-          Self::Option(inner.clone())
+          Self::Option(inner.inner.into_owned())
         }
       }
       "Vec" | "ProtoRepeated" => {
