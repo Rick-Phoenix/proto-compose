@@ -1,3 +1,5 @@
+use std::{borrow::Cow, str::FromStr};
+
 use crate::*;
 
 fn clone_struct_without_attrs(item: &ItemStruct) -> ItemStruct {
@@ -108,7 +110,41 @@ pub(crate) fn process_message_derive(item: &mut ItemStruct) -> Result<TokenStrea
       continue;
     }
 
-    let prost_attr = field_type.to_prost_attr(tag);
+    let proto_type = if let Some(custom_type) = &custom_type {
+      let path_wrapper = PathWrapper::new(Cow::Borrowed(custom_type));
+
+      let last_segment = path_wrapper.last_segment();
+
+      let last_segment_str = last_segment.ident().to_string();
+
+      match last_segment_str.as_str() {
+        "ProtoEnum" => {
+          let path = field_type
+            .as_inner_option_path()
+            .unwrap_or(field_type.full_type.as_ref());
+
+          ProtoType::Enum(path.clone())
+        }
+        "ProtoMessage" => ProtoType::Message,
+        _ => ProtoType::from_rust_type(&field_type.rust_type)?,
+      }
+    } else if let RustType::Map((k, v)) = &field_type.rust_type {
+      let keys_str = k.require_ident()?.to_string();
+      let values_str = v.require_ident()?.to_string();
+
+      let keys = ProtoMapKeys::from_str(&keys_str).unwrap();
+      let values = if values_str == "ProtoEnum" {
+        ProtoMapValues::Enum(v.clone())
+      } else {
+        ProtoMapValues::from_str(&values_str).map_err(|e| spanned_error!(&field.ty, e))?
+      };
+
+      ProtoType::Map(Box::new(ProtoMap { keys, values }))
+    } else {
+      ProtoType::from_rust_type(&field_type.rust_type)?
+    };
+
+    let prost_attr = ProstAttrs::from_type_info(&field_type.rust_type, proto_type.clone(), tag);
 
     let field_prost_attr: Attribute = parse_quote!(#prost_attr);
 

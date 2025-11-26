@@ -64,7 +64,7 @@ mod inner {
     #[proto(oneof)]
     oneof: Option<PseudoOneof>,
 
-    #[proto(enum_, validate = |v| v.defined_only())]
+    #[proto(type_(ProtoEnum), validate = |v| v.defined_only())]
     enum_field: PseudoEnum,
   }
 
@@ -78,7 +78,7 @@ mod inner {
   pub struct Nested2 {
     name: String,
 
-    #[proto(validate = |v| v.ignore_always())]
+    #[proto(type_(ProtoMessage), validate = |v| v.ignore_always())]
     nested1: Nested,
   }
 }

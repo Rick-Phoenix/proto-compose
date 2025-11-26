@@ -13,22 +13,6 @@ pub enum RustType {
   Normal(Path),
 }
 
-impl ProtoTypes {
-  pub fn from_rust_type(rust_type: &RustType) -> Option<Self> {
-    let output = match rust_type {
-      RustType::Option(path) => Self::from_path(&path),
-      RustType::Boxed(path) => Self::from_path(&path),
-      RustType::Map((k, v)) => {
-        Self::Map((Box::new(Self::from_path(&k)), Box::new(Self::from_path(&v))))
-      }
-      RustType::Vec(path) => Self::from_path(&path),
-      RustType::Normal(path) => Self::from_path(&path),
-    };
-
-    Some(output)
-  }
-}
-
 impl RustType {
   pub fn as_option(&self) -> Option<&Path> {
     if let Self::Option(path) = self {
@@ -40,14 +24,14 @@ impl RustType {
 }
 
 pub struct ProstAttrs {
-  pub field_type: ProtoTypes,
+  pub proto_type: ProtoType,
   pub cardinality: ProstCardinality,
   pub tag: i32,
 }
 
 impl ProstAttrs {
-  pub fn from_type_info(type_info: &TypeInfo, tag: i32) -> Self {
-    let cardinality = match &type_info.rust_type {
+  pub fn from_type_info(rust_type: &RustType, proto_type: ProtoType, tag: i32) -> Self {
+    let cardinality = match rust_type {
       RustType::Option(_) => ProstCardinality::Optional,
       RustType::Boxed(_) => ProstCardinality::Boxed,
       RustType::Vec(_) => ProstCardinality::Repeated,
@@ -55,10 +39,8 @@ impl ProstAttrs {
       _ => ProstCardinality::Single,
     };
 
-    let field_type = type_info.proto_type.clone();
-
     Self {
-      field_type,
+      proto_type,
       cardinality,
       tag,
     }
@@ -68,7 +50,7 @@ impl ProstAttrs {
 impl ToTokens for ProstAttrs {
   fn to_tokens(&self, tokens: &mut TokenStream2) {
     let Self {
-      field_type,
+      proto_type: field_type,
       cardinality,
       tag,
     } = self;
@@ -149,14 +131,9 @@ pub struct TypeInfo<'a> {
   pub full_type: Cow<'a, Path>,
   pub custom_type: Option<Path>,
   pub rust_type: RustType,
-  pub proto_type: ProtoTypes,
 }
 
 impl<'a> TypeInfo<'a> {
-  pub fn to_prost_attr(&self, tag: i32) -> ProstAttrs {
-    ProstAttrs::from_type_info(self, tag)
-  }
-
   pub fn validator_tokens(&self, validator: &ValidatorExpr) -> TokenStream2 {
     let validator_type = match &self.rust_type {
       RustType::Option(path) => path,
@@ -191,55 +168,13 @@ impl<'a> TypeInfo<'a> {
 
   pub fn from_type(ty: &'a Type) -> Result<Self, Error> {
     let path = extract_type_path(ty)?;
-
-    Ok(Self::from_path(path))
-  }
-
-  pub fn from_path(path: &'a Path) -> Self {
     let rust_type = RustType::from_path(path);
-    let proto_type = ProtoTypes::from_rust_type(&rust_type).unwrap();
 
-    Self {
+    Ok(Self {
       full_type: Cow::Borrowed(path),
       custom_type: None,
       rust_type,
-      proto_type,
-    }
-  }
-}
-
-#[derive(Debug, Clone)]
-pub enum ProtoTypes {
-  String,
-  Bool,
-  Bytes,
-  Enum(Path),
-  Message,
-  Int32,
-  Map((Box<ProtoTypes>, Box<ProtoTypes>)),
-}
-
-impl ToTokens for ProtoTypes {
-  fn to_tokens(&self, tokens: &mut TokenStream2) {
-    let output = match self {
-      ProtoTypes::String => quote! { string },
-      ProtoTypes::Bool => quote! { bool },
-      ProtoTypes::Bytes => quote! { bytes = "bytes" },
-      ProtoTypes::Enum(path) => {
-        let path_as_str = path.to_token_stream().to_string();
-
-        quote! { enumeration = #path_as_str }
-      }
-      ProtoTypes::Message => quote! { message },
-      ProtoTypes::Int32 => quote! { int32 },
-      ProtoTypes::Map((k, v)) => {
-        let map_as_str = format!("{}, {}", k.to_token_stream(), v.to_token_stream());
-
-        quote! { map = #map_as_str }
-      }
-    };
-
-    tokens.extend(output)
+    })
   }
 }
 
@@ -308,29 +243,6 @@ impl<'a> PathSegmentWrapper<'a> {
         }
     })
   }
-}
-
-impl ProtoTypes {
-  pub fn from_path(path: &Path) -> Self {
-    let last_segment = PathSegmentWrapper::new(Cow::Borrowed(path.segments.last().unwrap()));
-    let type_ident = last_segment.ident().to_string();
-
-    match type_ident.as_str() {
-      "String" => Self::String,
-      "bool" => Self::Bool,
-      "i32" => Self::Int32,
-      _ => Self::Message,
-    }
-  }
-}
-
-fn extract_inner_type(path_segment: &PathSegment) -> Option<Path> {
-  if let PathArguments::AngleBracketed(args) = &path_segment.arguments
-    && let GenericArgument::Type(inner_ty) = args.args.first()? && let Type::Path(type_path) = inner_ty {
-      return Some(type_path.path.clone());
-    }
-
-  None
 }
 
 pub fn extract_type_path(ty: &Type) -> Result<&Path, Error> {

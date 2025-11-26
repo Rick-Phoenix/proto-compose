@@ -1,7 +1,117 @@
+use std::{fmt::Display, str::FromStr};
+
 use itertools::Either;
 use syn::LitInt;
 
 use crate::*;
+
+#[derive(Debug, Clone)]
+pub enum ProtoMapKeys {
+  String,
+  Int32,
+}
+
+impl From<ProtoMapKeys> for ProtoType {
+  fn from(value: ProtoMapKeys) -> Self {
+    match value {
+      ProtoMapKeys::String => Self::String,
+      ProtoMapKeys::Int32 => Self::Int32,
+    }
+  }
+}
+
+impl FromStr for ProtoMapKeys {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let output = match s {
+      "String" => Self::String,
+      "i32" => Self::Int32,
+      _ => return Err(format!("Unrecognized map key {s}")),
+    };
+
+    Ok(output)
+  }
+}
+
+#[derive(Debug, Clone)]
+pub enum ProtoMapValues {
+  String,
+  Int32,
+  Enum(Path),
+  Message,
+}
+
+impl Display for ProtoMapKeys {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      ProtoMapKeys::String => write!(f, ""),
+      ProtoMapKeys::Int32 => write!(f, ""),
+    }
+  }
+}
+
+impl FromStr for ProtoMapValues {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let output = match s {
+      "String" => Self::String,
+      "i32" => Self::Int32,
+      _ => return Err(format!("Unrecognized map value type {s}")),
+    };
+
+    Ok(output)
+  }
+}
+
+impl Display for ProtoMapValues {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      ProtoMapValues::String => write!(f, "string"),
+      ProtoMapValues::Int32 => write!(f, "int32"),
+      ProtoMapValues::Enum(path) => write!(f, "enumeration({})", path.to_token_stream()),
+      ProtoMapValues::Message => write!(f, "message"),
+    }
+  }
+}
+
+#[derive(Debug, Clone)]
+pub struct ProtoMap {
+  pub keys: ProtoMapKeys,
+  pub values: ProtoMapValues,
+}
+
+impl ToTokens for ProtoMap {
+  fn to_tokens(&self, tokens: &mut TokenStream2) {
+    let map_str = format!("{}, {}", self.keys, self.values);
+
+    let output = quote! { map = #map_str };
+
+    tokens.extend(output);
+  }
+}
+
+// impl Parse for ProtoMap {
+//   fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+//     let idents = Punctuated::<Ident, Token![,]>::parse_terminated(input)?;
+//
+//     let keys_ident = idents.first().ok_or(input.error("Expected two idents"))?.to_string();
+//     let values_ident = idents.last().ok_or(input.error("Expected two idents"))?.to_string();
+//
+//     let keys = ProtoMapKeys::from_str(&keys_ident).map_err(|e| input.error(e))?;
+//
+//     match values_ident.as_str() {
+//       ""
+//     }
+//     let values = ProtoMapValues::from_str(&values_ident.to_string()).map_err(|e| input.error(e))?;
+//
+//     Ok(Self {
+//       keys,
+//       values,
+//     })
+//   }
+// }
 
 pub struct NumList {
   pub list: Vec<i32>,

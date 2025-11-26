@@ -1,7 +1,7 @@
 #[macro_use]
 mod macros;
 
-use std::{collections::HashMap, ops::Range, rc::Rc};
+use std::{borrow::Cow, collections::HashMap, ops::Range, rc::Rc};
 
 use attributes::*;
 pub(crate) use convert_case::ccase;
@@ -22,13 +22,15 @@ use syn::{
 use type_extraction::*;
 
 use crate::{
-  enum_derive::*, message_derive::*, module_processing::*, oneof_derive::*, type_extraction::*,
+  enum_derive::*, message_derive::*, module_processing::*, oneof_derive::*, proto_types::*,
+  type_extraction::*,
 };
 
 mod enum_derive;
 mod message_derive;
 mod module_processing;
 mod oneof_derive;
+mod proto_types;
 mod type_extraction;
 
 mod attributes;
