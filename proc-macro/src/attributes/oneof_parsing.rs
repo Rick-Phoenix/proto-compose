@@ -55,11 +55,7 @@ pub fn parse_oneof(item: ItemEnum) -> Result<OneofData, Error> {
 
   for variant in item.variants {
     let ModuleFieldAttrs { tag, name, .. } =
-      if let Some(data) = process_module_field_attrs(&variant.ident, &variant.attrs)? {
-        data
-      } else {
-        continue;
-      };
+      process_module_field_attrs(&variant.ident, &variant.attrs)?;
 
     if let Some(tag) = tag {
       used_tags.push(tag);

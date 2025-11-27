@@ -50,30 +50,33 @@ impl ProtoType {
     }
   }
 
+  pub fn as_proto_type_trait_target(&self) -> TokenStream2 {
+    match self {
+      ProtoType::String => quote! { String },
+      ProtoType::Bool => quote! { bool },
+      ProtoType::Bytes => quote! { Vec<u8> },
+      ProtoType::Enum(path) => quote! { #path },
+      ProtoType::Message(path) => quote! { #path },
+      ProtoType::Int32 => quote! { i32 },
+      ProtoType::Map(map) => map.as_proto_type_trait_target(),
+      ProtoType::Sint32 => quote! { i32 },
+    }
+  }
+
   pub fn output_proto_type(&self) -> TokenStream2 {
     match self {
       ProtoType::String => quote! { String },
       ProtoType::Bool => quote! { bool },
       ProtoType::Bytes => quote! { Vec<u8> },
       ProtoType::Enum(_) => quote! { i32 },
-      ProtoType::Message(path) => quote! { #path },
+      ProtoType::Message(path) => {
+        let path_with_proto_suffix = append_proto_ident(path.clone());
+
+        path_with_proto_suffix.to_token_stream()
+      }
       ProtoType::Int32 => quote! { i32 },
       ProtoType::Map(map) => map.output_proto_type(),
       ProtoType::Sint32 => quote! { i32 },
-    }
-  }
-
-  pub fn validator_expr(&self, validator: &ValidatorExpr) -> TokenStream2 {
-    let target_type = self.validator_target_type();
-
-    match validator {
-      ValidatorExpr::Call(call) => {
-        quote! { Some(<ValidatorMap as ProtoValidator<#target_type>>::from_builder(#call)) }
-      }
-
-      ValidatorExpr::Closure(closure) => {
-        quote! { Some(<ValidatorMap as ProtoValidator<#target_type>>::build_rules(#closure)) }
-      }
     }
   }
 

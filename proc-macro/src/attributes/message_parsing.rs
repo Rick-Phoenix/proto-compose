@@ -52,6 +52,7 @@ pub struct FieldData {
   pub tag: Option<i32>,
   pub name: String,
   pub oneof_ident: Option<Ident>,
+  pub is_ignored: bool,
 }
 
 impl FieldData {
@@ -101,13 +102,8 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
       tag,
       name,
       is_oneof,
-    } = if let Some(field_attrs) =
-      process_module_field_attrs(field.ident.as_ref().unwrap(), &field.attrs)?
-    {
-      field_attrs
-    } else {
-      continue;
-    };
+      is_ignored,
+    } = process_module_field_attrs(field.ident.as_ref().unwrap(), &field.attrs)?;
 
     if let Some(tag) = tag {
       used_tags.push(tag);
@@ -127,6 +123,7 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
       tokens: field,
       tag,
       name,
+      is_ignored,
     });
   }
 

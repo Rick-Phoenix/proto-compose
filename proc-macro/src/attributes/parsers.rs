@@ -34,6 +34,10 @@ impl ProtoMapKeys {
       ProtoMapKeys::Int32 => quote! { i32 },
     }
   }
+
+  pub fn as_proto_type_trait_target(&self) -> TokenStream2 {
+    self.output_proto_type()
+  }
 }
 
 impl FromStr for ProtoMapKeys {
@@ -83,8 +87,8 @@ impl ProtoMapValues {
     match self {
       ProtoMapValues::String => quote! { String },
       ProtoMapValues::Int32 => quote! { i32 },
-      ProtoMapValues::Enum(_path) => quote! { GenericProtoEnum },
-      ProtoMapValues::Message(_path) => quote! { GenericMessage },
+      ProtoMapValues::Enum(_) => quote! { GenericProtoEnum },
+      ProtoMapValues::Message(_) => quote! { GenericMessage },
     }
   }
 
@@ -93,6 +97,20 @@ impl ProtoMapValues {
       ProtoMapValues::String => quote! { String },
       ProtoMapValues::Int32 => quote! { i32 },
       ProtoMapValues::Enum(_) => quote! { i32 },
+      ProtoMapValues::Message(path) => {
+        let path_with_proto_suffix =
+          append_proto_ident(path.clone().expect("missing message path in map"));
+
+        path_with_proto_suffix.to_token_stream()
+      }
+    }
+  }
+
+  pub fn as_proto_type_trait_target(&self) -> TokenStream2 {
+    match self {
+      ProtoMapValues::String => quote! { String },
+      ProtoMapValues::Int32 => quote! { i32 },
+      ProtoMapValues::Enum(path) => quote! { #path },
       ProtoMapValues::Message(path) => quote! { #path },
     }
   }
@@ -182,6 +200,13 @@ impl ProtoMap {
     let map_str = format!("{}, {}", self.keys, self.values);
 
     quote! { map = #map_str }
+  }
+
+  pub fn as_proto_type_trait_target(&self) -> TokenStream2 {
+    let keys = self.keys.as_proto_type_trait_target();
+    let values = self.values.as_proto_type_trait_target();
+
+    quote! { HashMap<#keys, #values> }
   }
 }
 

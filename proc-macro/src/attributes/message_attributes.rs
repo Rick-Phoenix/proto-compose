@@ -10,7 +10,7 @@ pub struct MessageAttrs {
   pub package: String,
   pub nested_messages: Vec<Ident>,
   pub nested_enums: Vec<Ident>,
-  pub into: bool,
+  pub direct: bool,
 }
 
 pub fn process_derive_message_attrs(
@@ -24,7 +24,7 @@ pub fn process_derive_message_attrs(
   let mut full_name: Option<String> = None;
   let mut file: Option<String> = None;
   let mut package: Option<String> = None;
-  let mut into = false;
+  let mut direct = false;
   let mut nested_messages: Vec<Ident> = Vec::new();
   let mut nested_enums: Vec<Ident> = Vec::new();
 
@@ -78,8 +78,8 @@ pub fn process_derive_message_attrs(
           }
         }
         Meta::Path(path) => {
-          if path.is_ident("into") {
-            into = true;
+          if path.is_ident("direct") {
+            direct = true;
           }
         }
       }
@@ -101,6 +101,6 @@ pub fn process_derive_message_attrs(
     package,
     nested_messages,
     nested_enums,
-    into,
+    direct,
   })
 }

@@ -38,9 +38,7 @@ pub struct FieldAttrs {
   pub options: ProtoOptions,
   pub name: String,
   pub kind: ProtoFieldType,
-  pub custom_type: Option<Path>,
   pub oneof_tags: Vec<i32>,
-  pub proto_type: Option<Path>,
 }
 
 pub enum ValidatorExpr {
@@ -56,10 +54,8 @@ pub fn process_derive_field_attrs(
   let mut tag: Option<i32> = None;
   let mut options: Option<TokenStream2> = None;
   let mut name: Option<String> = None;
-  let mut custom_type: Option<Path> = None;
   let mut kind = ProtoFieldType::default();
   let mut is_ignored = false;
-  let mut proto_type: Option<Path> = None;
   let mut oneof_tags: Vec<i32> = Vec::new();
 
   for attr in attrs {
@@ -98,6 +94,11 @@ pub fn process_derive_field_attrs(
           };
 
           match ident.as_str() {
+            "oneof_tags" => {
+              let tags = list.parse_args::<NumList>()?.list;
+
+              oneof_tags = tags;
+            }
             "message" => {
               let message_path = list.parse_args::<Path>()?;
 
@@ -118,12 +119,7 @@ pub fn process_derive_field_attrs(
 
               kind = ProtoFieldType::Map(map_data);
             }
-            "type_" => {
-              custom_type = Some(list.parse_args::<Path>()?);
-            }
-            "proto_type" => {
-              proto_type = Some(list.parse_args::<Path>()?);
-            }
+
             _ => {}
           };
         }
@@ -162,10 +158,8 @@ pub fn process_derive_field_attrs(
       tag,
       options: attributes::ProtoOptions(options),
       name: name.unwrap_or_else(|| ccase!(snake, original_name.to_string())),
-      custom_type,
       kind,
       oneof_tags,
-      proto_type,
     }))
   } else {
     Ok(None)

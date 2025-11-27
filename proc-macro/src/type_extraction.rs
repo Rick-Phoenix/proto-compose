@@ -3,35 +3,45 @@ use std::borrow::Cow;
 use crate::*;
 
 #[derive(Clone)]
-pub struct TypeInfo<'a> {
-  pub full_type: Cow<'a, Path>,
-  pub custom_type: Option<Path>,
+pub struct TypeInfo {
   pub rust_type: RustType,
 }
 
-impl<'a> TypeInfo<'a> {
-  pub fn validator_tokens(&self, validator: &ValidatorExpr) -> TokenStream2 {
-    let validator_type = if let Some(custom_type) = &self.custom_type {
-      custom_type
-    } else {
-      match &self.rust_type {
-        RustType::Option(path) => path,
-        RustType::Boxed(path) => path,
-        RustType::Map(_) => self.full_type.as_ref(),
-        RustType::Vec(_) => self.full_type.as_ref(),
-        RustType::Normal(path) => path,
-      }
-    };
+impl TypeInfo {
+  pub fn validator_tokens(
+    &self,
+    validator: &ValidatorExpr,
+    proto_type: &ProtoType,
+  ) -> TokenStream2 {
+    let mut target_type = proto_type.validator_target_type();
+
+    if matches!(self.rust_type, RustType::Vec(_)) {
+      target_type = quote! { Vec<#target_type> };
+    }
 
     match validator {
       ValidatorExpr::Call(call) => {
-        quote! { Some(<ValidatorMap as ProtoValidator<#validator_type>>::from_builder(#call)) }
+        quote! { Some(<ValidatorMap as ProtoValidator<#target_type>>::from_builder(#call)) }
       }
 
       ValidatorExpr::Closure(closure) => {
-        quote! { Some(<ValidatorMap as ProtoValidator<#validator_type>>::build_rules(#closure)) }
+        quote! { Some(<ValidatorMap as ProtoValidator<#target_type>>::build_rules(#closure)) }
       }
     }
+  }
+
+  pub fn as_proto_type_trait_expr(&self, proto_type: &ProtoType) -> TokenStream2 {
+    let base_target_type = proto_type.as_proto_type_trait_target();
+
+    let target_type = match &self.rust_type {
+      RustType::Option(_) => quote! { Option<#base_target_type> },
+      RustType::Boxed(_) => quote! { Option<#base_target_type> },
+      RustType::Map(_) => base_target_type,
+      RustType::Vec(_) => quote! { Vec<#base_target_type> },
+      RustType::Normal(_) => base_target_type,
+    };
+
+    quote! { <#target_type as AsProtoType>::proto_type() }
   }
 
   pub fn is_option(&self) -> bool {
@@ -46,24 +56,10 @@ impl<'a> TypeInfo<'a> {
     }
   }
 
-  pub fn from_path(path: &'a Path, custom_type: Option<Path>) -> Result<Self, Error> {
-    let rust_type = RustType::from_path(path);
-
-    Ok(Self {
-      full_type: Cow::Borrowed(path),
-      custom_type,
-      rust_type,
-    })
-  }
-
-  pub fn from_type(ty: &'a Type, custom_type: Option<Path>) -> Result<Self, Error> {
+  pub fn from_type(ty: &Type) -> Result<Self, Error> {
     let path = extract_type_path(ty)?;
     let rust_type = RustType::from_path(path);
 
-    Ok(Self {
-      full_type: Cow::Borrowed(path),
-      custom_type,
-      rust_type,
-    })
+    Ok(Self { rust_type })
   }
 }

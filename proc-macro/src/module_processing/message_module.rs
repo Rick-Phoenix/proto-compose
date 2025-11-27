@@ -28,6 +28,10 @@ pub(crate) fn process_message_from_module(
   let mut tag_allocator = TagAllocator::new(&unavailable_tags);
 
   for field in fields {
+    if field.is_ignored {
+      continue;
+    }
+
     if let Some(ident) = &field.oneof_ident {
       let oneof = oneofs_map.get_mut(ident).expect("Failed to find oneof");
 

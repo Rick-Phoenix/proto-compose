@@ -1,4 +1,14 @@
+use quote::format_ident;
+
 use crate::*;
+
+pub fn append_proto_ident(mut path: Path) -> Path {
+  let last_segment = path.segments.last_mut().unwrap();
+
+  last_segment.ident = format_ident!("{}Proto", last_segment.ident);
+
+  path
+}
 
 pub struct PathWrapper<'a> {
   pub inner: Cow<'a, Path>,

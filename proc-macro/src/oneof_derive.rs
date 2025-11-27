@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::*;
 
 pub(crate) fn process_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
@@ -36,7 +34,6 @@ pub(crate) fn process_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, 
       options,
       name,
       kind,
-      custom_type,
       ..
     } = field_attrs;
 
@@ -47,7 +44,7 @@ pub(crate) fn process_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, 
 
       let type_ = &variant_fields.unnamed.first().unwrap().ty;
 
-      TypeInfo::from_type(type_, custom_type.clone())?
+      TypeInfo::from_type(type_)?
     } else {
       panic!("Enum can only have one unnamed field")
     };
@@ -63,12 +60,12 @@ pub(crate) fn process_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, 
     variant.attrs.push(prost_attr);
 
     let validator_tokens = if let Some(validator) = validator {
-      variant_type.validator_tokens(&validator)
+      variant_type.validator_tokens(&validator, &proto_type)
     } else {
       quote! { None }
     };
 
-    let full_type_path = &variant_type.full_type;
+    let full_type_path = quote! {};
 
     variants_tokens.push(quote! {
       ProtoField {

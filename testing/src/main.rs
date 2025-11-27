@@ -4,8 +4,8 @@ use std::collections::HashMap;
 
 use prelude::{
   validators::{
-    RepeatedValidator, RepeatedValidatorBuilder, StringValidator, StringValidatorBuilder,
-    ValidatorBuilderFor,
+    EnumValidator, GenericProtoEnum, RepeatedValidator, RepeatedValidatorBuilder, StringValidator,
+    StringValidatorBuilder, ValidatorBuilderFor,
   },
   ProtoFile,
 };
@@ -19,6 +19,12 @@ fn repeated_validator() -> impl ValidatorBuilderFor<Vec<i32>> {
   let validator: RepeatedValidatorBuilder<i32> = RepeatedValidator::builder();
 
   validator.items(|i| i.lt(20)).min_items(1)
+}
+
+fn enum_validator() -> impl ValidatorBuilderFor<GenericProtoEnum> {
+  let validator = EnumValidator::builder();
+
+  validator.defined_only()
 }
 
 #[proc_macro_impls::proto_module(file = "abc.proto", package = "myapp.v1")]
@@ -68,13 +74,17 @@ mod inner {
 
     #[proto(map(string, enum_), validate = |v| v.values(|val| val.defined_only()))]
     enum_map: HashMap<String, PseudoEnum>,
-    // #[proto(oneof)]
-    // oneof: Option<PseudoOneof>,
-    #[proto(type_(GenericProtoEnum), enum_, validate = |v| v.defined_only())]
+
+    #[proto(map(string, message), validate = |v| v.values(|val| val.ignore_always()))]
+    message_map: HashMap<String, Nested>,
+
+    #[proto(enum_, validate = enum_validator())]
     enum_field: PseudoEnum,
 
-    #[proto(message(NestedProto))]
+    #[proto(message(Nested))]
     nested: Option<Nested>,
+    // #[proto(oneof)]
+    // oneof: Option<PseudoOneof>,
   }
 
   #[proto_message]
@@ -84,11 +94,11 @@ mod inner {
   }
 
   #[proto_message]
-  #[derive(Clone, Debug)]
+  #[proto(direct)]
   pub struct Nested2 {
     name: String,
-    // #[proto(type_(GenericMessage), message, validate = |v| v.ignore_always())]
-    // nested1: Option<Nested>,
+
+    num: i32,
   }
 }
 
