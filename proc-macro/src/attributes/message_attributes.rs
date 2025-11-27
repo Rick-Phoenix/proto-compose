@@ -11,7 +11,8 @@ pub struct MessageAttrs {
   pub nested_messages: Vec<Ident>,
   pub nested_enums: Vec<Ident>,
   pub direct: bool,
-  pub map_with: Option<PathOrClosure>,
+  pub from_proto: Option<PathOrClosure>,
+  pub into_proto: Option<PathOrClosure>,
 }
 
 pub fn process_derive_message_attrs(
@@ -28,7 +29,8 @@ pub fn process_derive_message_attrs(
   let mut direct = false;
   let mut nested_messages: Vec<Ident> = Vec::new();
   let mut nested_enums: Vec<Ident> = Vec::new();
-  let mut map_with: Option<PathOrClosure> = None;
+  let mut from_proto: Option<PathOrClosure> = None;
+  let mut into_proto: Option<PathOrClosure> = None;
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -70,10 +72,15 @@ pub fn process_derive_message_attrs(
           };
 
           match ident.as_str() {
-            "map_with" => {
+            "from_proto" => {
               let expr = parse_path_or_closure(nv.value)?;
 
-              map_with = Some(expr);
+              from_proto = Some(expr);
+            }
+            "into_proto" => {
+              let expr = parse_path_or_closure(nv.value)?;
+
+              into_proto = Some(expr);
             }
             "options" => {
               let func_call = nv.value;
@@ -123,6 +130,7 @@ pub fn process_derive_message_attrs(
     nested_messages,
     nested_enums,
     direct,
-    map_with,
+    from_proto,
+    into_proto,
   })
 }

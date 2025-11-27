@@ -83,18 +83,23 @@ mod inner {
 
     // #[proto(enum_, validate = enum_validator())]
     // enum_field: PseudoEnum,
-    #[proto(message(suffixed), map_with = |v| v.map(Into::into))]
+    #[proto(message(suffixed), from_proto = |v| v.map(Into::into))]
     nested: Option<Nested>,
     // #[proto(oneof)]
     // oneof: Option<PseudoOneof>,
   }
 
-  fn convert2(input: NestedProto) -> Nested {
+  fn from_proto(input: NestedProto) -> Nested {
     Nested { name: input.name }
   }
 
+  fn into_proto(input: Nested) -> NestedProto {
+    NestedProto { name: input.name }
+  }
+
   #[proto_message]
-  #[proto(map_with = |v| convert2(v))]
+  #[proto(from_proto = from_proto)]
+  #[proto(into_proto = |v| into_proto(v))]
   #[derive(Clone, Debug)]
   pub struct Nested {
     name: String,

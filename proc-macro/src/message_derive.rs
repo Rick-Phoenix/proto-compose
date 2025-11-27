@@ -45,7 +45,9 @@ pub(crate) fn process_message_derive_shadow(
   } = item;
 
   let mut fields_data: Vec<TokenStream2> = Vec::new();
-  let mut conversion_body = TokenStream2::new();
+
+  let mut from_proto = TokenStream2::new();
+  let mut into_proto = TokenStream2::new();
 
   let orig_struct_fields = fields.iter_mut();
   let shadow_struct_fields = shadow_struct.fields.iter_mut();
@@ -60,7 +62,8 @@ pub(crate) fn process_message_derive_shadow(
         continue;
       };
 
-    let map_with = field_attrs.map_with.clone();
+    let field_attrs_from_proto = field_attrs.from_proto.clone();
+    let field_attrs_into_proto = field_attrs.into_proto.clone();
 
     let src_field_type = TypeInfo::from_type(&src_field.ty)?;
 
@@ -68,8 +71,8 @@ pub(crate) fn process_message_derive_shadow(
 
     fields_data.push(field_tokens);
 
-    if message_attrs.map_with.is_none() {
-      let conversion_call = if let Some(expr) = map_with {
+    if message_attrs.from_proto.is_none() {
+      let conversion_call = if let Some(expr) = field_attrs_from_proto {
         match expr {
           PathOrClosure::Path(path) => quote! { #path(value.#src_field_ident) },
           PathOrClosure::Closure(closure) => {
@@ -84,7 +87,29 @@ pub(crate) fn process_message_derive_shadow(
         quote! { value.#src_field_ident.#call }
       };
 
-      conversion_body.extend(quote! {
+      from_proto.extend(quote! {
+        #[allow(clippy::redundant_closure)]
+        #src_field_ident: #conversion_call,
+      });
+    }
+
+    if message_attrs.into_proto.is_none() {
+      let conversion_call = if let Some(expr) = field_attrs_into_proto {
+        match expr {
+          PathOrClosure::Path(path) => quote! { #path(value.#src_field_ident) },
+          PathOrClosure::Closure(closure) => {
+            quote! {
+              prelude::apply(value.#src_field_ident, #closure)
+            }
+          }
+        }
+      } else {
+        let call = src_field_type.rust_type.conversion_call();
+
+        quote! { value.#src_field_ident.#call }
+      };
+
+      into_proto.extend(quote! {
         #[allow(clippy::redundant_closure)]
         #src_field_ident: #conversion_call,
       });
@@ -108,7 +133,7 @@ pub(crate) fn process_message_derive_shadow(
     }
   });
 
-  let conversion_body = if let Some(expr) = &message_attrs.map_with {
+  let from_proto = if let Some(expr) = &message_attrs.from_proto {
     match expr {
       PathOrClosure::Path(path) => quote! { #path(value) },
       PathOrClosure::Closure(closure) => quote! {
@@ -119,20 +144,46 @@ pub(crate) fn process_message_derive_shadow(
   } else {
     quote! {
       Self {
-        #conversion_body
+        #from_proto
       }
     }
   };
 
-  let conversion_tokens = quote! {
+  let from_proto_impl = quote! {
     impl From<#shadow_struct_ident> for #orig_struct_name {
       fn from(value: #shadow_struct_ident) -> Self {
-        #conversion_body
+        #from_proto
       }
     }
   };
 
-  output_tokens.extend(conversion_tokens);
+  output_tokens.extend(from_proto_impl);
+
+  let into_proto = if let Some(expr) = &message_attrs.into_proto {
+    match expr {
+      PathOrClosure::Path(path) => quote! { #path(value) },
+      PathOrClosure::Closure(closure) => quote! {
+        #[allow(clippy::redundant_closure)]
+        prelude::apply(value, #closure)
+      },
+    }
+  } else {
+    quote! {
+      Self {
+        #into_proto
+      }
+    }
+  };
+
+  let into_proto_impl = quote! {
+    impl From<#orig_struct_name> for #shadow_struct_ident {
+      fn from(value: #orig_struct_name) -> Self {
+        #into_proto
+      }
+    }
+  };
+
+  output_tokens.extend(into_proto_impl);
 
   Ok(output_tokens)
 }

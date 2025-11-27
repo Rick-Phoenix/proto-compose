@@ -66,7 +66,8 @@ pub struct FieldAttrs {
   pub name: String,
   pub kind: ProtoFieldType,
   pub oneof_tags: Vec<i32>,
-  pub map_with: Option<PathOrClosure>,
+  pub from_proto: Option<PathOrClosure>,
+  pub into_proto: Option<PathOrClosure>,
 }
 
 pub enum ValidatorExpr {
@@ -85,7 +86,8 @@ pub fn process_derive_field_attrs(
   let mut kind = ProtoFieldType::default();
   let mut is_ignored = false;
   let mut oneof_tags: Vec<i32> = Vec::new();
-  let mut map_with: Option<PathOrClosure> = None;
+  let mut from_proto: Option<PathOrClosure> = None;
+  let mut into_proto: Option<PathOrClosure> = None;
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -111,10 +113,15 @@ pub fn process_derive_field_attrs(
                 _ => panic!("Invalid validator"),
               };
             }
-            "map_with" => {
+            "from_proto" => {
               let value = parse_path_or_closure(nv.value)?;
 
-              map_with = Some(value);
+              from_proto = Some(value);
+            }
+            "into_proto" => {
+              let value = parse_path_or_closure(nv.value)?;
+
+              into_proto = Some(value);
             }
             "tag" => {
               tag = Some(extract_i32(&nv.value).unwrap());
@@ -209,8 +216,9 @@ pub fn process_derive_field_attrs(
       options: attributes::ProtoOptions(options),
       name: name.unwrap_or_else(|| ccase!(snake, original_name.to_string())),
       kind,
-      map_with,
+      from_proto,
       oneof_tags,
+      into_proto,
     }))
   } else {
     Ok(None)
