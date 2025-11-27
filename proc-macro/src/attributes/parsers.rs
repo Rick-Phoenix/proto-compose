@@ -79,7 +79,7 @@ pub enum ProtoMapValues {
   String,
   Int32,
   Enum(Option<Path>),
-  Message(Option<Path>),
+  Message(MessagePath),
 }
 
 impl ProtoMapValues {
@@ -97,12 +97,7 @@ impl ProtoMapValues {
       ProtoMapValues::String => quote! { String },
       ProtoMapValues::Int32 => quote! { i32 },
       ProtoMapValues::Enum(_) => quote! { i32 },
-      ProtoMapValues::Message(path) => {
-        let path_with_proto_suffix =
-          append_proto_ident(path.clone().expect("missing message path in map"));
-
-        path_with_proto_suffix.to_token_stream()
-      }
+      ProtoMapValues::Message(path) => path.to_token_stream(),
     }
   }
 
@@ -155,7 +150,7 @@ impl FromStr for ProtoMapValues {
     let output = match s {
       "String" => Self::String,
       "i32" | "int32" => Self::Int32,
-      "message" => Self::Message(None),
+      "message" => Self::Message(MessagePath::None),
       "enum_" => Self::Enum(None),
       _ => return Err(format!("Unrecognized map value type {s}")),
     };
@@ -228,8 +223,15 @@ impl Parse for ProtoMap {
 
         match list_ident.as_str() {
           "message" => {
-            let path = list.parse_args::<Path>()?;
-            ProtoMapValues::Message(Some(path))
+            let message_path = list.parse_args::<Path>()?;
+
+            let path_type = if message_path.is_ident("suffixed") {
+              MessagePath::Suffixed
+            } else {
+              MessagePath::Path(message_path)
+            };
+
+            ProtoMapValues::Message(path_type)
           }
           "enum_" => {
             let path = list.parse_args::<Path>()?;

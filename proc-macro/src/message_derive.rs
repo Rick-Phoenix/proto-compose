@@ -126,10 +126,16 @@ pub(crate) fn process_message_derive_direct(
         ProtoType::Enum(enum_path)
       }
       ProtoFieldType::Message(path) => {
-        let msg_path = if let Some(path) = path {
+        let msg_path = if let MessagePath::Path(path) = path {
           path
         } else {
-          src_field_type.rust_type.inner_path().ok_or(spanned_error!(&src_field.ty, "Failed to extract the inner type. Expected a type, or a type wrapped in Option or Vec"))?.clone()
+          let inner_type = src_field_type.rust_type.inner_path().ok_or(spanned_error!(&src_field.ty, "Failed to extract the inner type. Expected a type, or a type wrapped in Option or Vec"))?.clone();
+
+          if path.is_suffixed() {
+            append_proto_ident(inner_type)
+          } else {
+            inner_type
+          }
         };
 
         ProtoType::Message(msg_path)
@@ -337,10 +343,16 @@ pub(crate) fn process_message_derive_shadow(
         ProtoType::Enum(enum_path)
       }
       ProtoFieldType::Message(path) => {
-        let msg_path = if let Some(path) = path {
+        let msg_path = if let MessagePath::Path(path) = path {
           path
         } else {
-          src_field_type.rust_type.inner_path().ok_or(spanned_error!(&src_field.ty, "Failed to extract the inner type. Expected a type, or a type wrapped in Option or Vec"))?.clone()
+          let inner_type = src_field_type.rust_type.inner_path().ok_or(spanned_error!(&src_field.ty, "Failed to extract the inner type. Expected a type, or a type wrapped in Option or Vec"))?.clone();
+
+          if path.is_suffixed() {
+            append_proto_ident(inner_type)
+          } else {
+            inner_type
+          }
         };
 
         ProtoType::Message(msg_path)
@@ -498,18 +510,32 @@ pub fn set_map_proto_type(
   let proto_values = &mut proto_map.values;
 
   if let ProtoMapValues::Message(path) = proto_values {
-    if path.is_none() {
-      let RustType::Map((_, v)) = &rust_type else {
-      return Err(spanned_error!(path, "Could not infer the path to the message value, please set it manually"));
-    };
+    if !matches!(path, MessagePath::Path(_)) {
+      let value_path = if let RustType::Map((_, v)) = &rust_type {
+        v.clone()
+      } else {
+        return Err(spanned_error!(
+          path,
+          "Could not infer the path to the message value, please set it manually"
+        ));
+      };
 
-      *path = Some(v.clone());
+      if path.is_suffixed() {
+        *path = MessagePath::Path(append_proto_ident(value_path));
+      } else {
+        *path = MessagePath::Path(value_path);
+      }
     }
   } else if let ProtoMapValues::Enum(path) = proto_values {
     if path.is_none() {
-      let RustType::Map((_, v)) = &rust_type else {
-      return Err(spanned_error!(path, "Could not infer the path to the enum value, please set it manually"));
-    };
+      let v = if let RustType::Map((_, v)) = &rust_type {
+        v
+      } else {
+        return Err(spanned_error!(
+          path,
+          "Could not infer the path to the enum value, please set it manually"
+        ));
+      };
 
       *path = Some(v.clone());
     }

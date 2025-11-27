@@ -60,7 +60,7 @@ mod inner {
   #[proto(nested_enums(PseudoEnum))]
   #[derive(Clone, Debug, Default)]
   pub struct Abc {
-    #[proto(message)]
+    #[proto(message(AbcProto))]
     boxed: Option<Box<Abc>>,
 
     #[proto(tag = 35, validate = string_validator())]
@@ -75,13 +75,13 @@ mod inner {
     #[proto(map(string, enum_), validate = |v| v.values(|val| val.defined_only()))]
     enum_map: HashMap<String, PseudoEnum>,
 
-    #[proto(map(string, message), validate = |v| v.values(|val| val.ignore_always()))]
+    #[proto(map(string, message(suffixed)), validate = |v| v.values(|val| val.ignore_always()))]
     message_map: HashMap<String, Nested>,
 
     #[proto(enum_, validate = enum_validator())]
     enum_field: PseudoEnum,
 
-    #[proto(message(Nested))]
+    #[proto(message(suffixed))]
     nested: Option<Nested>,
     // #[proto(oneof)]
     // oneof: Option<PseudoOneof>,

@@ -69,11 +69,7 @@ impl ProtoType {
       ProtoType::Bool => quote! { bool },
       ProtoType::Bytes => quote! { Vec<u8> },
       ProtoType::Enum(_) => quote! { i32 },
-      ProtoType::Message(path) => {
-        let path_with_proto_suffix = append_proto_ident(path.clone());
-
-        path_with_proto_suffix.to_token_stream()
-      }
+      ProtoType::Message(path) => path.to_token_stream(),
       ProtoType::Int32 => quote! { i32 },
       ProtoType::Map(map) => map.output_proto_type(),
       ProtoType::Sint32 => quote! { i32 },

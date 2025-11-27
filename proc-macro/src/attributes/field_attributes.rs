@@ -5,13 +5,40 @@ use crate::*;
 
 #[derive(Default, Debug, Clone)]
 pub enum ProtoFieldType {
-  Message(Option<Path>),
+  Message(MessagePath),
   Enum(Option<Path>),
   Oneof,
   Map(ProtoMap),
   Sint32,
   #[default]
   None,
+}
+
+#[derive(Default, Debug, Clone)]
+pub enum MessagePath {
+  Path(Path),
+  Suffixed,
+  #[default]
+  None,
+}
+
+impl MessagePath {
+  pub fn is_suffixed(&self) -> bool {
+    matches!(self, Self::Suffixed)
+  }
+
+  pub fn is_none(&self) -> bool {
+    matches!(self, Self::None)
+  }
+}
+
+impl ToTokens for MessagePath {
+  fn to_tokens(&self, tokens: &mut TokenStream2) {
+    match self {
+      Self::Path(path) => tokens.extend(path.to_token_stream()),
+      _ => {}
+    };
+  }
 }
 
 impl ProtoFieldType {
@@ -102,7 +129,13 @@ pub fn process_derive_field_attrs(
             "message" => {
               let message_path = list.parse_args::<Path>()?;
 
-              kind = ProtoFieldType::Message(Some(message_path));
+              let path_type = if message_path.is_ident("suffixed") {
+                MessagePath::Suffixed
+              } else {
+                MessagePath::Path(message_path)
+              };
+
+              kind = ProtoFieldType::Message(path_type);
             }
             "enum_" => {
               let enum_path = list.parse_args::<Path>()?;
@@ -134,7 +167,7 @@ pub fn process_derive_field_attrs(
             "ignore" => is_ignored = true,
             "oneof" => kind = ProtoFieldType::Oneof,
             "enum_" => kind = ProtoFieldType::Enum(None),
-            "message" => kind = ProtoFieldType::Message(None),
+            "message" => kind = ProtoFieldType::Message(MessagePath::None),
             "sint32" => kind = ProtoFieldType::Sint32,
 
             _ => {}
