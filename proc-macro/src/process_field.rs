@@ -8,7 +8,7 @@ pub enum OutputType {
 pub fn process_field(
   field: &mut Field,
   field_attrs: FieldAttrs,
-  type_info: TypeInfo,
+  type_info: &TypeInfo,
   output_type: OutputType,
 ) -> Result<TokenStream2, Error> {
   let FieldAttrs {

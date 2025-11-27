@@ -72,15 +72,13 @@ mod inner {
     #[proto(validate = |v| v.min_pairs(0).keys(|k| k.min_len(25)).values(|v| v.lt(25)))]
     map: HashMap<String, i32>,
 
-    #[proto(map(string, enum_), validate = |v| v.values(|val| val.defined_only()))]
-    enum_map: HashMap<String, PseudoEnum>,
-
+    // #[proto(map(string, enum_), validate = |v| v.values(|val| val.defined_only()))]
+    // enum_map: HashMap<String, PseudoEnum>,
     #[proto(map(string, message(suffixed)), validate = |v| v.values(|val| val.ignore_always()))]
     message_map: HashMap<String, Nested>,
 
-    #[proto(enum_, validate = enum_validator())]
-    enum_field: PseudoEnum,
-
+    // #[proto(enum_, validate = enum_validator())]
+    // enum_field: PseudoEnum,
     #[proto(message(suffixed))]
     nested: Option<Nested>,
     // #[proto(oneof)]

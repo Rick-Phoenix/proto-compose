@@ -10,11 +10,13 @@ pub enum RustType {
 }
 
 impl RustType {
-  pub fn as_option(&self) -> Option<&Path> {
-    if let Self::Option(path) = self {
-      Some(path)
-    } else {
-      None
+  pub fn conversion_call(&self) -> TokenStream2 {
+    match self {
+      RustType::Option(_) => quote! { map(Into::into) },
+      RustType::Boxed(_) => quote! { map(|v| Box::new((*v).into())) },
+      RustType::Map(_) => quote! { into_iter().map(|(k, v)| (k, v.into())).collect() },
+      RustType::Vec(_) => quote! { into_iter().map(Into::into).collect() },
+      RustType::Normal(_) => quote! { into() },
     }
   }
 
