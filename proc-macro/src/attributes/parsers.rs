@@ -5,6 +5,31 @@ use syn::LitInt;
 
 use crate::*;
 
+#[derive(Clone)]
+pub enum PathOrClosure {
+  Path(Path),
+  Closure(ExprClosure),
+}
+
+impl ToTokens for PathOrClosure {
+  fn to_tokens(&self, tokens: &mut TokenStream2) {
+    let output = match self {
+      PathOrClosure::Path(path) => path.to_token_stream(),
+      PathOrClosure::Closure(expr_closure) => expr_closure.to_token_stream(),
+    };
+
+    tokens.extend(output);
+  }
+}
+
+pub fn parse_path_or_closure(expr: Expr) -> Result<PathOrClosure, Error> {
+  match expr {
+    Expr::Closure(closure) => Ok(PathOrClosure::Closure(closure)),
+    Expr::Path(expr_path) => Ok(PathOrClosure::Path(expr_path.path)),
+    _ => Err(spanned_error!(expr, "Expected a path or a closure")),
+  }
+}
+
 #[derive(Debug, Clone)]
 pub enum ProtoMapKeys {
   String,

@@ -66,6 +66,7 @@ pub struct FieldAttrs {
   pub name: String,
   pub kind: ProtoFieldType,
   pub oneof_tags: Vec<i32>,
+  pub map_with: Option<PathOrClosure>,
 }
 
 pub enum ValidatorExpr {
@@ -84,6 +85,7 @@ pub fn process_derive_field_attrs(
   let mut kind = ProtoFieldType::default();
   let mut is_ignored = false;
   let mut oneof_tags: Vec<i32> = Vec::new();
+  let mut map_with: Option<PathOrClosure> = None;
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -94,24 +96,39 @@ pub fn process_derive_field_attrs(
 
     for meta in args.inner {
       match meta {
-        Meta::NameValue(nameval) => {
-          if nameval.path.is_ident("validate") {
-            if let Expr::Closure(closure) = nameval.value {
-              validator = Some(ValidatorExpr::Closure(closure));
-            } else if let Expr::Call(call) = nameval.value {
-              validator = Some(ValidatorExpr::Call(call));
-            } else {
-              panic!("Invalid");
-            }
-          } else if nameval.path.is_ident("tag") {
-            tag = Some(extract_i32(&nameval.value).unwrap());
-          } else if nameval.path.is_ident("options") {
-            let func_call = nameval.value;
+        Meta::NameValue(nv) => {
+          let ident = if let Some(ident) = nv.path.get_ident() {
+            ident.to_string()
+          } else {
+            continue;
+          };
 
-            options = Some(quote! { #func_call });
-          } else if nameval.path.is_ident("name") {
-            name = Some(extract_string_lit(&nameval.value).unwrap());
-          }
+          match ident.as_str() {
+            "validate" => {
+              validator = match nv.value {
+                Expr::Closure(closure) => Some(ValidatorExpr::Closure(closure)),
+                Expr::Call(call) => Some(ValidatorExpr::Call(call)),
+                _ => panic!("Invalid validator"),
+              };
+            }
+            "map_with" => {
+              let value = parse_path_or_closure(nv.value)?;
+
+              map_with = Some(value);
+            }
+            "tag" => {
+              tag = Some(extract_i32(&nv.value).unwrap());
+            }
+            "options" => {
+              let func_call = nv.value;
+
+              options = Some(quote! { #func_call });
+            }
+            "name" => {
+              name = Some(extract_string_lit(&nv.value).unwrap());
+            }
+            _ => {}
+          };
         }
         Meta::List(list) => {
           let ident = if let Some(ident) = list.path.get_ident() {
@@ -192,6 +209,7 @@ pub fn process_derive_field_attrs(
       options: attributes::ProtoOptions(options),
       name: name.unwrap_or_else(|| ccase!(snake, original_name.to_string())),
       kind,
+      map_with,
       oneof_tags,
     }))
   } else {

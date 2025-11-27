@@ -60,17 +60,34 @@ pub(crate) fn process_message_derive_shadow(
         continue;
       };
 
+    let map_with = field_attrs.map_with.clone();
+
     let src_field_type = TypeInfo::from_type(&src_field.ty)?;
 
     let field_tokens = process_field(dst_field, field_attrs, &src_field_type, OutputType::Change)?;
 
     fields_data.push(field_tokens);
 
-    let conversion_call = src_field_type.rust_type.conversion_call();
+    if message_attrs.map_with.is_none() {
+      let conversion_call = if let Some(expr) = map_with {
+        match expr {
+          PathOrClosure::Path(path) => quote! { #path(value.#src_field_ident) },
+          PathOrClosure::Closure(closure) => {
+            quote! {
+              prelude::apply(value.#src_field_ident, #closure)
+            }
+          }
+        }
+      } else {
+        let call = src_field_type.rust_type.conversion_call();
 
-    conversion_body.extend(quote! {
-      #src_field_ident: value.#src_field_ident.#conversion_call,
-    });
+        quote! { value.#src_field_ident.#call }
+      };
+
+      conversion_body.extend(quote! {
+        #src_field_ident: #conversion_call,
+      });
+    }
   }
 
   let schema_impls = create_schema_impls(orig_struct_name, &message_attrs, fields_data);
@@ -89,6 +106,15 @@ pub(crate) fn process_message_derive_shadow(
       }
     }
   });
+
+  let conversion_body = if let Some(expr) = &message_attrs.map_with {
+    match expr {
+      PathOrClosure::Path(path) => quote! { #path() },
+      PathOrClosure::Closure(closure) => quote! { prelude::apply(value, #closure) },
+    }
+  } else {
+    conversion_body
+  };
 
   let conversion_tokens = quote! {
     impl From<#shadow_struct_ident> for #orig_struct_name {

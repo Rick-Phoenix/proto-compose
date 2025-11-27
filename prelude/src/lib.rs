@@ -28,3 +28,11 @@ pub use oneof::*;
 pub use proto_enum::*;
 pub use proto_type::*;
 pub use tag_allocator::*;
+
+#[doc(hidden)]
+pub fn apply<I, O, F>(input: I, f: F) -> O
+where
+  F: FnOnce(I) -> O,
+{
+  f(input)
+}

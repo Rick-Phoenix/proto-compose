@@ -55,6 +55,10 @@ mod inner {
     B(i32),
   }
 
+  fn convert(map: HashMap<String, NestedProto>) -> HashMap<String, Nested> {
+    map.into_iter().map(|(k, v)| (k, v.into())).collect()
+  }
+
   #[proto_message]
   #[proto(reserved_numbers(1, 2, 3..9))]
   #[proto(nested_enums(PseudoEnum))]

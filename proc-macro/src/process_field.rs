@@ -18,6 +18,7 @@ pub fn process_field(
     name,
     kind,
     oneof_tags,
+    ..
   } = field_attrs;
 
   if kind.is_oneof() {

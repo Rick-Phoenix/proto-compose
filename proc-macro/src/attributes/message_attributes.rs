@@ -11,6 +11,7 @@ pub struct MessageAttrs {
   pub nested_messages: Vec<Ident>,
   pub nested_enums: Vec<Ident>,
   pub direct: bool,
+  pub map_with: Option<PathOrClosure>,
 }
 
 pub fn process_derive_message_attrs(
@@ -27,6 +28,7 @@ pub fn process_derive_message_attrs(
   let mut direct = false;
   let mut nested_messages: Vec<Ident> = Vec::new();
   let mut nested_enums: Vec<Ident> = Vec::new();
+  let mut map_with: Option<PathOrClosure> = None;
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -60,22 +62,41 @@ pub fn process_derive_message_attrs(
             nested_enums.extend(idents.into_iter());
           }
         }
-        Meta::NameValue(nameval) => {
-          if nameval.path.is_ident("options") {
-            let func_call = nameval.value;
+        Meta::NameValue(nv) => {
+          let ident = if let Some(ident) = nv.path.get_ident() {
+            ident.to_string()
+          } else {
+            continue;
+          };
 
-            options = Some(quote! { #func_call });
-          } else if nameval.path.is_ident("name") {
-            proto_name = Some(extract_string_lit(&nameval.value).unwrap());
-          } else if nameval.path.is_ident("full_name") {
-            full_name = Some(extract_string_lit(&nameval.value).unwrap());
-          } else if nameval.path.is_ident("reserved_names") {
-            reserved_names = ReservedNames::Expr(nameval.value);
-          } else if nameval.path.is_ident("file") {
-            file = Some(extract_string_lit(&nameval.value)?);
-          } else if nameval.path.is_ident("package") {
-            package = Some(extract_string_lit(&nameval.value)?);
-          }
+          match ident.as_str() {
+            "map_with" => {
+              let expr = parse_path_or_closure(nv.value)?;
+
+              map_with = Some(expr);
+            }
+            "options" => {
+              let func_call = nv.value;
+
+              options = Some(quote! { #func_call });
+            }
+            "name" => {
+              proto_name = Some(extract_string_lit(&nv.value).unwrap());
+            }
+            "full_name" => {
+              full_name = Some(extract_string_lit(&nv.value).unwrap());
+            }
+            "reserved_names" => {
+              reserved_names = ReservedNames::Expr(nv.value);
+            }
+            "file" => {
+              file = Some(extract_string_lit(&nv.value)?);
+            }
+            "package" => {
+              package = Some(extract_string_lit(&nv.value)?);
+            }
+            _ => {}
+          };
         }
         Meta::Path(path) => {
           if path.is_ident("direct") {
@@ -102,5 +123,6 @@ pub fn process_derive_message_attrs(
     nested_messages,
     nested_enums,
     direct,
+    map_with,
   })
 }
