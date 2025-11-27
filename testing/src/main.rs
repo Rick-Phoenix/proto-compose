@@ -40,11 +40,11 @@ mod inner {
     C,
   }
 
-  #[proto_oneof]
-  #[proto(required)]
+  // #[proto_oneof]
+  // #[proto(required)]
   #[derive(Clone)]
   enum PseudoOneof {
-    #[proto(tag = 12, validate = |v| v)]
+    // #[proto(tag = 12, validate = |v| v)]
     A(String),
     B(i32),
   }
@@ -54,8 +54,9 @@ mod inner {
   #[proto(nested_enums(PseudoEnum))]
   #[derive(Clone, Debug, Default)]
   pub struct Abc {
-    // #[proto(type_(GenericMessage))]
-    // boxed: Option<Box<AbcProto>>,
+    #[proto(message)]
+    boxed: Option<Box<Abc>>,
+
     #[proto(tag = 35, validate = string_validator())]
     name: Option<String>,
 
@@ -65,28 +66,29 @@ mod inner {
     #[proto(validate = |v| v.min_pairs(0).keys(|k| k.min_len(25)).values(|v| v.lt(25)))]
     map: HashMap<String, i32>,
 
-    // #[proto(type_(ProtoMap<String, GenericProtoEnum>), validate = |v| v.values(|val| val.defined_only()))]
-    // enum_map: HashMap<String, PseudoEnum>,
-    #[proto(oneof)]
-    oneof: Option<PseudoOneof>,
-
+    #[proto(map(string, enum_), validate = |v| v.values(|val| val.defined_only()))]
+    enum_map: HashMap<String, PseudoEnum>,
+    // #[proto(oneof)]
+    // oneof: Option<PseudoOneof>,
     #[proto(type_(GenericProtoEnum), enum_, validate = |v| v.defined_only())]
     enum_field: PseudoEnum,
+
+    #[proto(message(NestedProto))]
+    nested: Option<Nested>,
   }
 
   #[proto_message]
-  #[derive(Clone)]
+  #[derive(Clone, Debug)]
   pub struct Nested {
     name: String,
   }
 
   #[proto_message]
-  #[derive(Clone)]
+  #[derive(Clone, Debug)]
   pub struct Nested2 {
     name: String,
-
-    #[proto(type_(GenericMessage), message, validate = |v| v.ignore_always())]
-    nested1: Option<Nested>,
+    // #[proto(type_(GenericMessage), message, validate = |v| v.ignore_always())]
+    // nested1: Option<Nested>,
   }
 }
 

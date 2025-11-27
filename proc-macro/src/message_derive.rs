@@ -81,7 +81,6 @@ pub(crate) fn process_message_derive(item: &mut ItemStruct) -> Result<TokenStrea
       kind,
       oneof_tags,
       proto_type: dst_proto_type,
-      map_with_enum_value,
     } = field_attrs;
 
     let src_field_type = TypeInfo::from_type(&src_field.ty, custom_type.clone())?;
@@ -133,64 +132,22 @@ pub(crate) fn process_message_derive(item: &mut ItemStruct) -> Result<TokenStrea
       continue;
     }
 
-    let proto_type = match kind {
-      ProtoFieldType::Enum => {
-        let inner_path = src_field_type.rust_type.inner_path();
+    let mut proto_type = match kind {
+      ProtoFieldType::Enum(path) => {
+        // Handle the errors here and just say it can't be used for a map
+        let enum_path = path.unwrap_or_else(|| src_field_type.rust_type.inner_path().clone());
 
-        let output_type: Type = match &src_field_type.rust_type {
-          RustType::Option(_) => parse_quote! { Option<i32> },
-          RustType::Vec(_) => parse_quote! { Vec<i32> },
-          RustType::Normal(_) => parse_quote! { i32 },
-          _ => {
-            panic!("Unsupported kinds for enums")
-          }
-        };
-
-        dst_field.ty = output_type;
-        ProtoType::Enum(inner_path.clone())
+        ProtoType::Enum(enum_path)
       }
-      ProtoFieldType::Message => {
-        let inner_path = src_field_type.rust_type.inner_path();
-        let last_segment = inner_path.segments.last().unwrap();
+      ProtoFieldType::Message(path) => {
+        let msg_path = path.unwrap_or_else(|| src_field_type.rust_type.inner_path().clone());
 
-        let new_last_segment = format_ident!("{}Proto", last_segment.ident);
-
-        let output_type: Type = match &src_field_type.rust_type {
-          RustType::Option(_) => parse_quote! { Option<#new_last_segment> },
-          RustType::Vec(_) => parse_quote! { Vec<#new_last_segment> },
-          RustType::Normal(_) => parse_quote! { #new_last_segment },
-          RustType::Boxed(_) => parse_quote! { Option<Box<#new_last_segment>> },
-          _ => {
-            panic!("Unsupported kinds for messages")
-          }
-        };
-
-        dst_field.ty = output_type;
-        ProtoType::Message
+        ProtoType::Message(msg_path)
       }
-      ProtoFieldType::Map => {
-        let RustType::Map((k, v)) = &src_field_type.rust_type else {
-          return Err(spanned_error!(&src_field.ty, "Unrecognized map type"));
-        };
-
-        let value_type = if map_with_enum_value {
-          quote! { i32 }
-        } else {
-          v.to_token_stream()
-        };
-
-        let output_type: Type = parse_quote!(HashMap<#k, #value_type>);
-
-        dst_field.ty = output_type;
-
-        let keys_ident = k.require_ident()?.to_string();
-        let keys = ProtoMapKeys::from_str(&keys_ident).unwrap();
-
-        let values_ident = v.require_ident()?.to_string();
-        let values = ProtoMapValues::from_str(&values_ident).unwrap();
-
-        ProtoType::Map(Box::new(ProtoMap { keys, values }))
+      ProtoFieldType::Map(proto_map) => {
+        ProtoType::Map(set_map_proto_type(proto_map, &src_field_type.rust_type)?)
       }
+      // No manually set type, let's try to infer it
       _ => match &src_field_type.rust_type {
         RustType::Option(path) => ProtoType::from_primitive(path)?,
         RustType::Boxed(path) => ProtoType::from_primitive(path)?,
@@ -198,50 +155,36 @@ pub(crate) fn process_message_derive(item: &mut ItemStruct) -> Result<TokenStrea
         RustType::Normal(path) => ProtoType::from_primitive(path)?,
         RustType::Map((k, v)) => {
           let keys = ProtoMapKeys::from_path(k)?;
-          let values = ProtoMapValues::from_path(v)?;
+          let values = ProtoMapValues::from_path(v).map_err(|_| spanned_error!(v, format!("Unrecognized proto map value type {}. If you meant to use an enum or a message, use the attribute", v.to_token_stream())))?;
 
-          ProtoType::Map(Box::new(ProtoMap { keys, values }))
+          let proto_map = ProtoMap { keys, values };
+
+          ProtoType::Map(set_map_proto_type(proto_map, &src_field_type.rust_type)?)
         }
       },
     };
 
-    let proto_type = if let Some(custom_type) = &custom_type {
-      let path_wrapper = PathWrapper::new(Cow::Borrowed(custom_type));
+    let mut proto_output_type_inner = proto_type.output_proto_type();
 
-      let last_segment = path_wrapper.last_segment();
+    if let ProtoType::Message(path) = &proto_type {
+      let segments = &mut path.clone().segments;
+      let last_seg = segments.last_mut().unwrap();
 
-      let last_segment_str = last_segment.ident().to_string();
+      last_seg.ident = format_ident!("{}Proto", last_seg.ident);
 
-      match last_segment_str.as_str() {
-        "GenericProtoEnum" => {
-          let path = src_field_type
-            .as_inner_option_path()
-            .unwrap_or(src_field_type.full_type.as_ref());
+      proto_output_type_inner = quote! { #path };
+    }
 
-          ProtoType::Enum(path.clone())
-        }
-        "GenericMessage" => ProtoType::Message,
-        _ => {
-          let custom_type_info = TypeInfo::from_path(custom_type, Some(custom_type.clone()))?;
-
-          ProtoType::from_rust_type(&custom_type_info)?
-        }
-      }
-    } else if let RustType::Map((k, v)) = &src_field_type.rust_type {
-      let keys_str = k.require_ident()?.to_string();
-      let values_str = v.require_ident()?.to_string();
-
-      let keys = ProtoMapKeys::from_str(&keys_str).unwrap();
-      let values = if values_str == "GenericProtoEnum" {
-        ProtoMapValues::Enum(v.clone())
-      } else {
-        ProtoMapValues::from_str(&values_str).map_err(|e| spanned_error!(&src_field.ty, e))?
-      };
-
-      ProtoType::Map(Box::new(ProtoMap { keys, values }))
-    } else {
-      ProtoType::from_rust_type(&src_field_type)?
+    // Get output type
+    let proto_output_type_outer: Type = match &src_field_type.rust_type {
+      RustType::Option(_) => parse_quote! { Option<#proto_output_type_inner> },
+      RustType::Boxed(_) => parse_quote! { Option<Box<#proto_output_type_inner>> },
+      RustType::Map(_) => parse_quote!( #proto_output_type_inner ),
+      RustType::Vec(_) => parse_quote! { Vec<#proto_output_type_inner> },
+      RustType::Normal(_) => parse_quote!( #proto_output_type_inner ),
     };
+
+    dst_field.ty = proto_output_type_outer;
 
     let prost_attr = ProstAttrs::from_type_info(&src_field_type.rust_type, proto_type.clone(), tag);
 
@@ -330,4 +273,31 @@ pub(crate) fn process_message_derive(item: &mut ItemStruct) -> Result<TokenStrea
   output_tokens.extend(shadow_struct.into_token_stream());
 
   Ok(output_tokens)
+}
+
+pub fn set_map_proto_type(
+  mut proto_map: ProtoMap,
+  rust_type: &RustType,
+) -> Result<ProtoMap, Error> {
+  let proto_values = &mut proto_map.values;
+
+  if let ProtoMapValues::Message(path) = proto_values {
+    if path.is_none() {
+      let RustType::Map((_, v)) = &rust_type else {
+        return Err(spanned_error!(path, "Could not infer the path to the message value, please set it manually"));
+      };
+
+      *path = Some(v.clone());
+    }
+  } else if let ProtoMapValues::Enum(path) = proto_values {
+    if path.is_none() {
+      let RustType::Map((_, v)) = &rust_type else {
+        return Err(spanned_error!(path, "Could not infer the path to the enum value, please set it manually"));
+      };
+
+      *path = Some(v.clone());
+    }
+  }
+
+  Ok(proto_map)
 }

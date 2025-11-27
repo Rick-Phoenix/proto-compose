@@ -52,46 +52,8 @@ pub(crate) fn process_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, 
       panic!("Enum can only have one unnamed field")
     };
 
-    let proto_type = if let Some(custom_type) = &custom_type {
-      let path_wrapper = PathWrapper::new(Cow::Borrowed(custom_type));
-
-      let last_segment = path_wrapper.last_segment();
-
-      let last_segment_str = last_segment.ident().to_string();
-
-      match last_segment_str.as_str() {
-        "ProtoMap" => {
-          let (k, v) = last_segment.first_two_arguments().unwrap();
-
-          let keys_str = k.require_ident()?.to_string();
-          let values_str = v.require_ident()?.to_string();
-
-          let keys = ProtoMapKeys::from_str(&keys_str).unwrap();
-          let values = if values_str == "ProtoEnum" {
-            if let RustType::Map((_, values)) = &variant_type.rust_type {
-              ProtoMapValues::Enum(values.clone())
-            } else {
-              panic!("Using a map but no value type was detected");
-            }
-          } else {
-            ProtoMapValues::from_str(&values_str)
-              .map_err(|e| spanned_error!(&variant_type.full_type, e))?
-          };
-
-          ProtoType::Map(Box::new(ProtoMap { keys, values }))
-        }
-        "ProtoEnum" => {
-          let path = variant_type
-            .as_inner_option_path()
-            .unwrap_or(variant_type.full_type.as_ref());
-
-          ProtoType::Enum(path.clone())
-        }
-        _ => ProtoType::from_rust_type(&variant_type)?,
-      }
-    } else {
-      ProtoType::from_rust_type(&variant_type)?
-    };
+    // TODO
+    let proto_type = ProtoType::String;
 
     let prost_attr_tokens =
       ProstAttrs::from_type_info(&variant_type.rust_type, proto_type.clone(), tag);

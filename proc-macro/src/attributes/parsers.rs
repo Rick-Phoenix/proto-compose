@@ -20,12 +20,28 @@ impl From<ProtoMapKeys> for ProtoType {
   }
 }
 
+impl ProtoMapKeys {
+  pub fn validator_target_type(&self) -> TokenStream2 {
+    match self {
+      ProtoMapKeys::String => quote! { String },
+      ProtoMapKeys::Int32 => quote! { i32 },
+    }
+  }
+
+  pub fn output_proto_type(&self) -> TokenStream2 {
+    match self {
+      ProtoMapKeys::String => quote! { String },
+      ProtoMapKeys::Int32 => quote! { i32 },
+    }
+  }
+}
+
 impl FromStr for ProtoMapKeys {
   type Err = String;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     let output = match s {
-      "String" => Self::String,
+      "String" | "string" => Self::String,
       "i32" => Self::Int32,
       _ => return Err(format!("Unrecognized map key {s}")),
     };
@@ -58,8 +74,28 @@ impl ProtoMapKeys {
 pub enum ProtoMapValues {
   String,
   Int32,
-  Enum(Path),
-  Message,
+  Enum(Option<Path>),
+  Message(Option<Path>),
+}
+
+impl ProtoMapValues {
+  pub fn validator_target_type(&self) -> TokenStream2 {
+    match self {
+      ProtoMapValues::String => quote! { String },
+      ProtoMapValues::Int32 => quote! { i32 },
+      ProtoMapValues::Enum(_path) => quote! { GenericProtoEnum },
+      ProtoMapValues::Message(_path) => quote! { GenericMessage },
+    }
+  }
+
+  pub fn output_proto_type(&self) -> TokenStream2 {
+    match self {
+      ProtoMapValues::String => quote! { String },
+      ProtoMapValues::Int32 => quote! { i32 },
+      ProtoMapValues::Enum(_) => quote! { i32 },
+      ProtoMapValues::Message(path) => quote! { #path },
+    }
+  }
 }
 
 impl ProtoMapValues {
@@ -100,7 +136,9 @@ impl FromStr for ProtoMapValues {
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     let output = match s {
       "String" => Self::String,
-      "i32" => Self::Int32,
+      "i32" | "int32" => Self::Int32,
+      "message" => Self::Message(None),
+      "enum_" => Self::Enum(None),
       _ => return Err(format!("Unrecognized map value type {s}")),
     };
 
@@ -114,7 +152,7 @@ impl Display for ProtoMapValues {
       ProtoMapValues::String => write!(f, "string"),
       ProtoMapValues::Int32 => write!(f, "int32"),
       ProtoMapValues::Enum(path) => write!(f, "enumeration({})", path.to_token_stream()),
-      ProtoMapValues::Message => write!(f, "message"),
+      ProtoMapValues::Message(_) => write!(f, "message"),
     }
   }
 }
@@ -125,36 +163,62 @@ pub struct ProtoMap {
   pub values: ProtoMapValues,
 }
 
-impl ToTokens for ProtoMap {
-  fn to_tokens(&self, tokens: &mut TokenStream2) {
+impl ProtoMap {
+  pub fn validator_target_type(&self) -> TokenStream2 {
+    let keys = self.keys.validator_target_type();
+    let values = self.values.validator_target_type();
+
+    quote! { ProtoMap<#keys, #values> }
+  }
+
+  pub fn output_proto_type(&self) -> TokenStream2 {
+    let keys = self.keys.output_proto_type();
+    let values = self.values.output_proto_type();
+
+    quote! { HashMap<#keys, #values> }
+  }
+
+  pub fn as_prost_attr_type(&self) -> TokenStream2 {
     let map_str = format!("{}, {}", self.keys, self.values);
 
-    let output = quote! { map = #map_str };
-
-    tokens.extend(output);
+    quote! { map = #map_str }
   }
 }
 
-// impl Parse for ProtoMap {
-//   fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-//     let idents = Punctuated::<Ident, Token![,]>::parse_terminated(input)?;
-//
-//     let keys_ident = idents.first().ok_or(input.error("Expected two idents"))?.to_string();
-//     let values_ident = idents.last().ok_or(input.error("Expected two idents"))?.to_string();
-//
-//     let keys = ProtoMapKeys::from_str(&keys_ident).map_err(|e| input.error(e))?;
-//
-//     match values_ident.as_str() {
-//       ""
-//     }
-//     let values = ProtoMapValues::from_str(&values_ident.to_string()).map_err(|e| input.error(e))?;
-//
-//     Ok(Self {
-//       keys,
-//       values,
-//     })
-//   }
-// }
+impl Parse for ProtoMap {
+  fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    let metas = Punctuated::<Meta, Token![,]>::parse_terminated(input)?;
+
+    if metas.len() != 2 {
+      return Err(input.error("Expected a list of two items"));
+    }
+
+    let keys_path = metas.first().unwrap().require_path_only()?;
+    let keys = ProtoMapKeys::from_path(keys_path)?;
+
+    let values = match metas.last().unwrap() {
+      Meta::Path(path) => ProtoMapValues::from_path(path)?,
+      Meta::List(list) => {
+        let list_ident = ident_string!(list.path);
+
+        match list_ident.as_str() {
+          "message" => {
+            let path = list.parse_args::<Path>()?;
+            ProtoMapValues::Message(Some(path))
+          }
+          "enum_" => {
+            let path = list.parse_args::<Path>()?;
+            ProtoMapValues::Enum(Some(path))
+          }
+          _ => return Err(input.error("Unrecognized value list")),
+        }
+      }
+      _ => return Err(input.error("Expected the values to be a list or path")),
+    };
+
+    Ok(Self { keys, values })
+  }
+}
 
 pub struct NumList {
   pub list: Vec<i32>,

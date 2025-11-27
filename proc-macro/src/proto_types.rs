@@ -8,9 +8,9 @@ pub enum ProtoType {
   Bool,
   Bytes,
   Enum(Path),
-  Message,
+  Message(Path),
   Int32,
-  Map(Box<ProtoMap>),
+  Map(ProtoMap),
   Sint32,
 }
 
@@ -27,7 +27,7 @@ impl ProtoType {
         return Err(spanned_error!(
           path,
           format!(
-            "Type {} does not correspond to a prost-supported primitive",
+            "Type {} does not correspond to a prost-supported primitive. Use the specific attributes if you meant to use an enum or message",
             path.to_token_stream()
           )
         ))
@@ -37,17 +37,34 @@ impl ProtoType {
     Ok(output)
   }
 
-  pub fn validator_expr(&self, validator: &ValidatorExpr) -> TokenStream2 {
-    let target_type = match self {
+  pub fn validator_target_type(&self) -> TokenStream2 {
+    match self {
       ProtoType::String => quote! { String },
       ProtoType::Bool => quote! { bool },
       ProtoType::Bytes => quote! { Vec<u8> },
       ProtoType::Enum(_) => quote! { GenericProtoEnum },
-      ProtoType::Message => quote! { GenericMessage },
+      ProtoType::Message(_) => quote! { GenericMessage },
       ProtoType::Int32 => quote! { i32 },
-      ProtoType::Map(_) => todo!(),
-      _ => todo!(),
-    };
+      ProtoType::Map(map) => map.validator_target_type(),
+      ProtoType::Sint32 => quote! { Sint32 },
+    }
+  }
+
+  pub fn output_proto_type(&self) -> TokenStream2 {
+    match self {
+      ProtoType::String => quote! { String },
+      ProtoType::Bool => quote! { bool },
+      ProtoType::Bytes => quote! { Vec<u8> },
+      ProtoType::Enum(_) => quote! { i32 },
+      ProtoType::Message(path) => quote! { #path },
+      ProtoType::Int32 => quote! { i32 },
+      ProtoType::Map(map) => map.output_proto_type(),
+      ProtoType::Sint32 => quote! { i32 },
+    }
+  }
+
+  pub fn validator_expr(&self, validator: &ValidatorExpr) -> TokenStream2 {
+    let target_type = self.validator_target_type();
 
     match validator {
       ValidatorExpr::Call(call) => {
@@ -60,51 +77,8 @@ impl ProtoType {
     }
   }
 
-  pub fn from_rust_type(type_info: &TypeInfo) -> Result<Self, Error> {
-    let path = match &type_info.rust_type {
-      RustType::Option(path) => path,
-      RustType::Boxed(path) => path,
-      RustType::Vec(path) => path,
-      RustType::Normal(path) => path,
-      RustType::Map((k, v)) => {
-        let keys_str = k.require_ident()?.to_string();
-        let values_str = v.require_ident()?.to_string();
-
-        let keys = ProtoMapKeys::from_str(&keys_str).unwrap();
-        let values = if values_str == "GenericProtoEnum" {
-          ProtoMapValues::Enum(v.clone())
-        } else {
-          ProtoMapValues::from_str(&values_str)
-            .map_err(|e| spanned_error!(&type_info.full_type, e))?
-        };
-
-        return Ok(ProtoType::Map(Box::new(ProtoMap { keys, values })));
-      }
-    };
-
-    let last_segment = PathSegmentWrapper::new(Cow::Borrowed(path.segments.last().unwrap()));
-    let type_ident = last_segment.ident().to_string();
-
-    let output = match type_ident.as_str() {
-      "String" => Self::String,
-      "bool" => Self::Bool,
-      "GenericMessage" => Self::Message,
-      "i32" => Self::Int32,
-      _ => {
-        return Err(spanned_error!(
-          path,
-          format!("Type {type_ident} not recognized")
-        ))
-      }
-    };
-
-    Ok(output)
-  }
-}
-
-impl ToTokens for ProtoType {
-  fn to_tokens(&self, tokens: &mut TokenStream2) {
-    let output = match self {
+  pub fn as_prost_attr_type(&self) -> TokenStream2 {
+    match self {
       ProtoType::String => quote! { string },
       ProtoType::Bool => quote! { bool },
       ProtoType::Bytes => quote! { bytes = "bytes" },
@@ -113,12 +87,10 @@ impl ToTokens for ProtoType {
 
         quote! { enumeration = #path_as_str }
       }
-      ProtoType::Message => quote! { message },
+      ProtoType::Message(_) => quote! { message },
       ProtoType::Int32 => quote! { int32 },
-      ProtoType::Map(map) => map.to_token_stream(),
+      ProtoType::Map(map) => map.as_prost_attr_type(),
       ProtoType::Sint32 => quote! { sint32 },
-    };
-
-    tokens.extend(output)
+    }
   }
 }

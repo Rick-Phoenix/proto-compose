@@ -5,10 +5,10 @@ use crate::*;
 
 #[derive(Default, Debug, Clone)]
 pub enum ProtoFieldType {
-  Message,
-  Enum,
+  Message(Option<Path>),
+  Enum(Option<Path>),
   Oneof,
-  Map,
+  Map(ProtoMap),
   Sint32,
   #[default]
   None,
@@ -16,11 +16,11 @@ pub enum ProtoFieldType {
 
 impl ProtoFieldType {
   pub fn is_message(&self) -> bool {
-    matches!(self, Self::Message)
+    matches!(self, Self::Message(_))
   }
 
   pub fn is_enum(&self) -> bool {
-    matches!(self, Self::Enum)
+    matches!(self, Self::Enum(_))
   }
 
   pub fn is_oneof(&self) -> bool {
@@ -41,7 +41,6 @@ pub struct FieldAttrs {
   pub custom_type: Option<Path>,
   pub oneof_tags: Vec<i32>,
   pub proto_type: Option<Path>,
-  pub map_with_enum_value: bool,
 }
 
 pub enum ValidatorExpr {
@@ -60,7 +59,6 @@ pub fn process_derive_field_attrs(
   let mut custom_type: Option<Path> = None;
   let mut kind = ProtoFieldType::default();
   let mut is_ignored = false;
-  let mut map_with_enum_value = false;
   let mut proto_type: Option<Path> = None;
   let mut oneof_tags: Vec<i32> = Vec::new();
 
@@ -69,7 +67,7 @@ pub fn process_derive_field_attrs(
       continue;
     }
 
-    let args = attr.parse_args::<PunctuatedParser<Meta>>().unwrap();
+    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
 
     for meta in args.inner {
       match meta {
@@ -93,26 +91,41 @@ pub fn process_derive_field_attrs(
           }
         }
         Meta::List(list) => {
-          if list.path.is_ident("options") {
-            let exprs = list.parse_args::<PunctuatedParser<Expr>>().unwrap().inner;
+          let ident = if let Some(ident) = list.path.get_ident() {
+            ident.to_string()
+          } else {
+            continue;
+          };
 
-            options = Some(quote! { vec! [ #exprs ] });
-          } else if list.path.is_ident("oneof_tags") {
-            let nums = list.parse_args::<NumList>()?.list;
+          match ident.as_str() {
+            "message" => {
+              let message_path = list.parse_args::<Path>()?;
 
-            oneof_tags = nums;
-          } else if list.path.is_ident("map") {
-            let types = list.parse_args::<PunctuatedParser<Path>>()?.inner;
+              kind = ProtoFieldType::Message(Some(message_path));
+            }
+            "enum_" => {
+              let enum_path = list.parse_args::<Path>()?;
 
-            let key_path = types.first().unwrap();
-            let value_path = types.last().unwrap();
+              kind = ProtoFieldType::Enum(Some(enum_path));
+            }
+            "options" => {
+              let exprs = list.parse_args::<PunctuatedParser<Expr>>().unwrap().inner;
 
-            kind = ProtoFieldType::Map;
-          } else if list.path.is_ident("type_") {
-            custom_type = Some(list.parse_args::<Path>()?);
-          } else if list.path.is_ident("proto_type") {
-            proto_type = Some(list.parse_args::<Path>()?);
-          }
+              options = Some(quote! { vec! [ #exprs ] });
+            }
+            "map" => {
+              let map_data = list.parse_args::<ProtoMap>()?;
+
+              kind = ProtoFieldType::Map(map_data);
+            }
+            "type_" => {
+              custom_type = Some(list.parse_args::<Path>()?);
+            }
+            "proto_type" => {
+              proto_type = Some(list.parse_args::<Path>()?);
+            }
+            _ => {}
+          };
         }
         Meta::Path(path) => {
           let ident = if let Some(ident) = path.get_ident() {
@@ -124,13 +137,10 @@ pub fn process_derive_field_attrs(
           match ident.as_str() {
             "ignore" => is_ignored = true,
             "oneof" => kind = ProtoFieldType::Oneof,
-            "enum_" => kind = ProtoFieldType::Enum,
-            "message" => kind = ProtoFieldType::Message,
+            "enum_" => kind = ProtoFieldType::Enum(None),
+            "message" => kind = ProtoFieldType::Message(None),
             "sint32" => kind = ProtoFieldType::Sint32,
-            "map_enum" => {
-              kind = ProtoFieldType::Map;
-              map_with_enum_value = true;
-            }
+
             _ => {}
           };
         }
@@ -156,7 +166,6 @@ pub fn process_derive_field_attrs(
       kind,
       oneof_tags,
       proto_type,
-      map_with_enum_value,
     }))
   } else {
     Ok(None)

@@ -21,7 +21,7 @@ pub fn process_module_field_attrs(
       continue;
     }
 
-    let args = attr.parse_args::<PunctuatedParser<Meta>>().unwrap();
+    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
 
     for meta in args.inner {
       match meta {

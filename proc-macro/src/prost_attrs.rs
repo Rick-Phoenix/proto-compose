@@ -27,14 +27,16 @@ impl ProstAttrs {
 impl ToTokens for ProstAttrs {
   fn to_tokens(&self, tokens: &mut TokenStream2) {
     let Self {
-      proto_type: field_type,
+      proto_type,
       cardinality,
       tag,
     } = self;
 
     let tag_as_str = tag.to_string();
 
-    let output = quote! { #[prost(#field_type, #cardinality tag = #tag_as_str)] };
+    let type_attr = proto_type.as_prost_attr_type();
+
+    let output = quote! { #[prost(#type_attr, #cardinality tag = #tag_as_str)] };
 
     tokens.extend(output);
   }
