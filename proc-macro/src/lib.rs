@@ -24,7 +24,8 @@ use type_extraction::*;
 
 use crate::{
   enum_derive::*, message_derive::*, module_processing::*, oneof_derive::*, path_utils::*,
-  prost_attrs::*, proto_types::*, rust_type::*, type_extraction::*,
+  process_field::*, prost_attrs::*, proto_types::*, rust_type::*, schema_impls::*,
+  type_extraction::*,
 };
 
 mod enum_derive;
@@ -32,9 +33,11 @@ mod message_derive;
 mod module_processing;
 mod oneof_derive;
 mod path_utils;
+mod process_field;
 mod prost_attrs;
 mod proto_types;
 mod rust_type;
+mod schema_impls;
 mod type_extraction;
 
 mod attributes;
