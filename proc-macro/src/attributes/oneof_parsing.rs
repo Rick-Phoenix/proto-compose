@@ -13,7 +13,6 @@ impl OneofVariant {
 }
 
 pub struct OneofData {
-  pub data: OneofAttrs,
   pub tokens: EnumRaw,
   pub variants: Vec<OneofVariant>,
   pub used_tags: Vec<i32>,
@@ -48,8 +47,6 @@ pub struct EnumRaw {
 }
 
 pub fn parse_oneof(item: ItemEnum) -> Result<OneofData, Error> {
-  let oneof_attrs = process_oneof_attrs(&item.ident, &item.attrs, true)?;
-
   let mut variants_data: Vec<OneofVariant> = Vec::new();
   let mut used_tags: Vec<i32> = Vec::new();
 
@@ -69,7 +66,6 @@ pub fn parse_oneof(item: ItemEnum) -> Result<OneofData, Error> {
   }
 
   Ok(OneofData {
-    data: oneof_attrs,
     tokens: EnumRaw {
       attrs: item.attrs,
       vis: item.vis,

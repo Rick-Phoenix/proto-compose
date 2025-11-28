@@ -9,11 +9,7 @@ pub struct OneofAttrs {
   pub into_proto: Option<PathOrClosure>,
 }
 
-pub fn process_oneof_attrs(
-  enum_name: &Ident,
-  attrs: &Vec<Attribute>,
-  is_in_module_macro: bool,
-) -> Result<OneofAttrs, Error> {
+pub fn process_oneof_attrs(enum_name: &Ident, attrs: &Vec<Attribute>) -> Result<OneofAttrs, Error> {
   let mut options: Option<TokenStream2> = None;
   let mut name: Option<String> = None;
   let mut required = false;

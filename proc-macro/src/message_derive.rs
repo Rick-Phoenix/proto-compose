@@ -1,34 +1,4 @@
-use quote::format_ident;
-
 use crate::*;
-
-fn create_shadow_struct(item: &ItemStruct) -> ItemStruct {
-  let item_fields = if let Fields::Named(fields) = &item.fields {
-    fields.named.iter().map(|f| Field {
-      attrs: vec![],
-      vis: f.vis.clone(),
-      mutability: syn::FieldMutability::None,
-      ident: f.ident.clone(),
-      colon_token: f.colon_token,
-      ty: f.ty.clone(),
-    })
-  } else {
-    unreachable!()
-  };
-
-  ItemStruct {
-    attrs: vec![],
-    vis: Visibility::Public(token::Pub::default()),
-    struct_token: token::Struct::default(),
-    ident: format_ident!("{}Proto", item.ident),
-    generics: item.generics.clone(),
-    fields: Fields::Named(syn::FieldsNamed {
-      brace_token: token::Brace::default(),
-      named: item_fields.collect(),
-    }),
-    semi_token: None,
-  }
-}
 
 pub(crate) fn process_message_derive_shadow(
   item: &mut ItemStruct,
@@ -59,9 +29,8 @@ pub(crate) fn process_message_derive_shadow(
 
     let field_attrs = process_derive_field_attrs(src_field_ident, &src_field.attrs)?;
 
-    let field_attrs_from_proto = field_attrs.from_proto.clone();
-    let field_attrs_into_proto = field_attrs.into_proto.clone();
-    let is_enum = field_attrs.kind.is_enum();
+    let field_from_proto = field_attrs.from_proto.clone();
+    let field_into_proto = field_attrs.into_proto.clone();
 
     let type_info = TypeInfo::from_type(&src_field.ty, field_attrs.kind.clone())?;
 
@@ -78,62 +47,30 @@ pub(crate) fn process_message_derive_shadow(
       proto_fields_data.push(field_tokens);
 
       if message_attrs.into_proto.is_none() {
-        let conversion_call = if let Some(expr) = field_attrs_into_proto {
-          match expr {
-            PathOrClosure::Path(path) => quote! { #path(value.#src_field_ident) },
-            PathOrClosure::Closure(closure) => {
-              quote! {
-                prelude::apply(value.#src_field_ident, #closure)
-              }
-            }
-          }
-        } else if let ProtoType::Oneof { default: true, .. } = &type_info.proto_type {
-          quote! { Some(value.#src_field_ident.into()) }
-        } else {
-          let call = type_info.into_proto();
+        let field_into_proto = field_into_proto_expression(FieldConversion {
+          custom_expression: &field_attrs.into_proto,
+          kind: FieldConversionKind::StructField {
+            ident: src_field_ident,
+          },
+          type_info: &type_info,
+          is_ignored: field_attrs.is_ignored,
+        })?;
 
-          quote! { value.#src_field_ident.#call }
-        };
-
-        into_proto.extend(quote! {
-          #src_field_ident: #conversion_call,
-        });
+        into_proto.extend(field_into_proto);
       }
     }
 
     if message_attrs.from_proto.is_none() {
-      let conversion_call = if field_attrs.is_ignored {
-        if let Some(expr) = field_attrs_from_proto {
-          match expr {
-            PathOrClosure::Path(path) => quote! { #path() },
-            PathOrClosure::Closure(closure) => {
-              return Err(spanned_error!(
-                closure,
-                "Cannot use a closure for ignored fields"
-              ))
-            }
-          }
-        } else {
-          quote! { Default::default() }
-        }
-      } else if let Some(expr) = field_attrs_from_proto {
-        match expr {
-          PathOrClosure::Path(path) => quote! { #path(value.#src_field_ident) },
-          PathOrClosure::Closure(closure) => {
-            quote! {
-              prelude::apply(value.#src_field_ident, #closure)
-            }
-          }
-        }
-      } else {
-        let call = type_info.from_proto();
+      let from_proto_expr = field_from_proto_expression(FieldConversion {
+        custom_expression: &field_attrs.from_proto,
+        kind: FieldConversionKind::StructField {
+          ident: src_field_ident,
+        },
+        type_info: &type_info,
+        is_ignored: field_attrs.is_ignored,
+      })?;
 
-        quote! { value.#src_field_ident.#call }
-      };
-
-      from_proto.extend(quote! {
-        #src_field_ident: #conversion_call,
-      });
+      from_proto.extend(from_proto_expr);
     }
   }
 
@@ -163,7 +100,7 @@ pub(crate) fn process_message_derive_shadow(
     }
   });
 
-  let from_proto = if let Some(expr) = &message_attrs.from_proto {
+  let from_proto_body = if let Some(expr) = &message_attrs.from_proto {
     match expr {
       PathOrClosure::Path(path) => quote! { #path(value) },
       PathOrClosure::Closure(closure) => quote! {
@@ -182,7 +119,7 @@ pub(crate) fn process_message_derive_shadow(
     impl From<#shadow_struct_ident> for #orig_struct_name {
       #[allow(clippy::redundant_closure)]
       fn from(value: #shadow_struct_ident) -> Self {
-        #from_proto
+        #from_proto_body
       }
     }
 
@@ -199,7 +136,7 @@ pub(crate) fn process_message_derive_shadow(
 
   output_tokens.extend(from_proto_impl);
 
-  let into_proto = if let Some(expr) = &message_attrs.into_proto {
+  let into_proto_body = if let Some(expr) = &message_attrs.into_proto {
     match expr {
       PathOrClosure::Path(path) => quote! { #path(value) },
       PathOrClosure::Closure(closure) => quote! {
@@ -218,7 +155,7 @@ pub(crate) fn process_message_derive_shadow(
     impl From<#orig_struct_name> for #shadow_struct_ident {
       #[allow(clippy::redundant_closure)]
       fn from(value: #orig_struct_name) -> Self {
-        #into_proto
+        #into_proto_body
       }
     }
   };

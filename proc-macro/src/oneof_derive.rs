@@ -1,122 +1,5 @@
 use crate::*;
 
-fn create_shadow_enum(item: &ItemEnum) -> ItemEnum {
-  let variants = item.variants.iter().map(|variant| Variant {
-    attrs: vec![],
-    ident: variant.ident.clone(),
-    discriminant: variant.discriminant.clone(),
-    fields: variant.fields.clone(),
-  });
-
-  ItemEnum {
-    attrs: vec![],
-    vis: Visibility::Public(token::Pub::default()),
-    enum_token: token::Enum::default(),
-    ident: format_ident!("{}Proto", item.ident),
-    generics: item.generics.clone(),
-    brace_token: token::Brace::default(),
-    variants: variants.collect(),
-  }
-}
-
-pub fn process_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
-  let oneof_attrs = process_oneof_attrs(&item.ident, &item.attrs, false)?;
-
-  if oneof_attrs.direct {
-    process_oneof_derive_direct(item, oneof_attrs)
-  } else {
-    process_oneof_derive_shadow(item, oneof_attrs)
-  }
-}
-
-pub(crate) fn process_oneof_derive_direct(
-  item: &mut ItemEnum,
-  oneof_attrs: OneofAttrs,
-) -> Result<TokenStream2, Error> {
-  let ItemEnum {
-    attrs,
-    ident: enum_name,
-    variants,
-    ..
-  } = item;
-
-  let OneofAttrs {
-    options,
-    name: proto_name,
-    required,
-    ..
-  } = oneof_attrs;
-
-  let prost_derive: Attribute = parse_quote!(#[derive(prost::Oneof, PartialEq, Clone)]);
-
-  attrs.push(prost_derive);
-
-  let mut variants_tokens: Vec<TokenStream2> = Vec::new();
-
-  for variant in variants {
-    let field_attrs = process_derive_field_attrs(&variant.ident, &variant.attrs)?;
-
-    if field_attrs.is_ignored {
-      return Err(spanned_error!(
-        &variant.ident,
-        "Oneof variants cannot be ignored in a direct impl"
-      ));
-    }
-
-    let variant_type = if let Fields::Unnamed(variant_fields) = &variant.fields {
-      if variant_fields.unnamed.len() != 1 {
-        panic!("Oneof variants must contain a single value");
-      }
-
-      variant_fields.unnamed.first().unwrap().ty.clone()
-    } else {
-      panic!("Enum can only have one unnamed field")
-    };
-
-    let type_info = TypeInfo::from_type(&variant_type, field_attrs.kind.clone())?;
-
-    if !matches!(type_info.rust_type, RustType::Normal(_)) {
-      return Err(spanned_error!(variant_type, "Unsupported enum variant. If you want to use a custom type, you must use the proxied variant"));
-    };
-
-    let variant_proto_tokens = process_field(
-      &mut FieldOrVariant::Variant(variant),
-      field_attrs,
-      &type_info,
-      OutputType::Keep,
-    )?;
-
-    variants_tokens.push(variant_proto_tokens);
-  }
-
-  let required_option_tokens = required.then(|| quote! { options.push(oneof_required()); });
-
-  let output_tokens = quote! {
-    impl ProtoOneof for #enum_name {
-      fn fields() -> Vec<ProtoField> {
-        vec![ #(#variants_tokens,)* ]
-      }
-    }
-
-    impl #enum_name {
-      #[track_caller]
-      pub fn to_oneof() -> Oneof {
-        let mut options: Vec<ProtoOption> = #options;
-
-        #required_option_tokens
-
-        Oneof {
-          name: #proto_name.into(),
-          fields: Self::fields(),
-          options,
-        }
-      }
-    }
-  };
-
-  Ok(output_tokens)
-}
-
 pub(crate) fn process_oneof_derive_shadow(
   item: &mut ItemEnum,
   oneof_attrs: OneofAttrs,
@@ -126,18 +9,10 @@ pub(crate) fn process_oneof_derive_shadow(
   let mut output_tokens = TokenStream2::new();
 
   let ItemEnum {
-    attrs,
     ident: enum_name,
     variants,
     ..
   } = item;
-
-  let OneofAttrs {
-    options,
-    name: proto_name,
-    required,
-    ..
-  } = oneof_attrs;
 
   let prost_derive: Attribute = parse_quote!(#[derive(prost::Oneof, PartialEq, Clone)]);
 
@@ -177,7 +52,7 @@ pub(crate) fn process_oneof_derive_shadow(
     } else {
       let variant_proto_tokens = process_field(
         &mut FieldOrVariant::Variant(dst_variant),
-        field_attrs,
+        field_attrs.clone(),
         &type_info,
         OutputType::Change,
       )?;
@@ -185,22 +60,32 @@ pub(crate) fn process_oneof_derive_shadow(
       variants_tokens.push(variant_proto_tokens);
 
       if oneof_attrs.into_proto.is_none() {
-        let call = type_info.into_proto();
+        let field_into_proto = field_into_proto_expression(FieldConversion {
+          custom_expression: &field_attrs.into_proto,
+          kind: FieldConversionKind::EnumVariant {
+            variant_ident: &src_variant.ident,
+            source_enum_ident: orig_enum_ident,
+            target_enum_ident: shadow_enum_ident,
+          },
+          type_info: &type_info,
+          is_ignored: field_attrs.is_ignored,
+        })?;
 
-        let into_proto_call = quote! {
-          #orig_enum_ident::#variant_ident(v) => #shadow_enum_ident::#variant_ident(v.#call),
-        };
-
-        into_proto.extend(into_proto_call);
+        into_proto.extend(field_into_proto);
       }
     }
 
     if oneof_attrs.from_proto.is_none() {
-      let from_proto_call = type_info.from_proto();
-
-      let from_proto_expr = quote! {
-        #shadow_enum_ident::#variant_ident(v) => #orig_enum_ident::#variant_ident(v.#from_proto_call),
-      };
+      let from_proto_expr = field_from_proto_expression(FieldConversion {
+        custom_expression: &field_attrs.from_proto,
+        kind: FieldConversionKind::EnumVariant {
+          variant_ident,
+          source_enum_ident: orig_enum_ident,
+          target_enum_ident: shadow_enum_ident,
+        },
+        type_info: &type_info,
+        is_ignored: field_attrs.is_ignored,
+      });
 
       from_proto.extend(from_proto_expr);
     }
@@ -212,30 +97,9 @@ pub(crate) fn process_oneof_derive_shadow(
     .filter(|var| !ignored_variants.contains(&var.ident))
     .collect();
 
-  let required_option_tokens = required.then(|| quote! { options.push(oneof_required()); });
+  let oneof_schema_impl = oneof_schema_impl(&oneof_attrs, orig_enum_ident, variants_tokens);
 
-  output_tokens.extend(quote! {
-    impl ProtoOneof for #enum_name {
-      fn fields() -> Vec<ProtoField> {
-        vec![ #(#variants_tokens,)* ]
-      }
-    }
-
-    impl #enum_name {
-      #[track_caller]
-      pub fn to_oneof() -> Oneof {
-        let mut options: Vec<ProtoOption> = #options;
-
-        #required_option_tokens
-
-        Oneof {
-          name: #proto_name.into(),
-          fields: Self::fields(),
-          options,
-        }
-      }
-    }
-  });
+  output_tokens.extend(oneof_schema_impl);
 
   let from_proto_body = if let Some(expr) = &oneof_attrs.from_proto {
     match expr {
@@ -314,4 +178,69 @@ pub(crate) fn process_oneof_derive_shadow(
   });
 
   Ok(output_tokens)
+}
+
+pub fn process_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
+  let oneof_attrs = process_oneof_attrs(&item.ident, &item.attrs)?;
+
+  if oneof_attrs.direct {
+    process_oneof_derive_direct(item, oneof_attrs)
+  } else {
+    process_oneof_derive_shadow(item, oneof_attrs)
+  }
+}
+
+pub(crate) fn process_oneof_derive_direct(
+  item: &mut ItemEnum,
+  oneof_attrs: OneofAttrs,
+) -> Result<TokenStream2, Error> {
+  let ItemEnum {
+    attrs, variants, ..
+  } = item;
+
+  let prost_derive: Attribute = parse_quote!(#[derive(prost::Oneof, PartialEq, Clone)]);
+
+  attrs.push(prost_derive);
+
+  let mut variants_tokens: Vec<TokenStream2> = Vec::new();
+
+  for variant in variants {
+    let field_attrs = process_derive_field_attrs(&variant.ident, &variant.attrs)?;
+
+    if field_attrs.is_ignored {
+      return Err(spanned_error!(
+        &variant.ident,
+        "Oneof variants cannot be ignored in a direct impl"
+      ));
+    }
+
+    let variant_type = if let Fields::Unnamed(variant_fields) = &variant.fields {
+      if variant_fields.unnamed.len() != 1 {
+        panic!("Oneof variants must contain a single value");
+      }
+
+      variant_fields.unnamed.first().unwrap().ty.clone()
+    } else {
+      panic!("Enum can only have one unnamed field")
+    };
+
+    let type_info = TypeInfo::from_type(&variant_type, field_attrs.kind.clone())?;
+
+    if !matches!(type_info.rust_type, RustType::Normal(_)) {
+      return Err(spanned_error!(variant_type, "Unsupported enum variant. If you want to use a custom type, you must use the proxied variant"));
+    };
+
+    let variant_proto_tokens = process_field(
+      &mut FieldOrVariant::Variant(variant),
+      field_attrs,
+      &type_info,
+      OutputType::Keep,
+    )?;
+
+    variants_tokens.push(variant_proto_tokens);
+  }
+
+  let oneof_schema_impl = oneof_schema_impl(&oneof_attrs, &item.ident, variants_tokens);
+
+  Ok(oneof_schema_impl)
 }
