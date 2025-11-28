@@ -5,16 +5,18 @@ pub struct OneofAttrs {
   pub options: ProtoOptions,
   pub name: String,
   pub required: bool,
+  pub direct: bool,
 }
 
 pub fn process_oneof_attrs(
   enum_name: &Ident,
   attrs: &Vec<Attribute>,
   is_in_module_macro: bool,
-) -> OneofAttrs {
+) -> Result<OneofAttrs, Error> {
   let mut options: Option<TokenStream2> = None;
   let mut name: Option<String> = None;
   let mut required = false;
+  let mut direct = false;
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -26,9 +28,17 @@ pub fn process_oneof_attrs(
     for arg in args.inner {
       match arg {
         Meta::Path(path) => {
-          if path.is_ident("required") {
-            required = true;
-          }
+          let ident = if let Some(ident) = path.get_ident() {
+            ident.to_string()
+          } else {
+            continue;
+          };
+
+          match ident.as_str() {
+            "required" => required = true,
+            "direct" => direct = true,
+            _ => {}
+          };
         }
         Meta::List(list) => {
           if !is_in_module_macro && list.path.is_ident("options") {
@@ -50,9 +60,10 @@ pub fn process_oneof_attrs(
     }
   }
 
-  OneofAttrs {
+  Ok(OneofAttrs {
     options: attributes::ProtoOptions(options),
     name: name.unwrap_or_else(|| ccase!(snake, enum_name.to_string())),
     required,
-  }
+    direct,
+  })
 }

@@ -7,7 +7,10 @@ use crate::*;
 pub enum ProtoFieldKind {
   Message(MessagePath),
   Enum(Option<Path>),
-  Oneof,
+  Oneof {
+    path: Option<Path>,
+    tags: Vec<i32>,
+  },
   Map(ProtoMap),
   Sint32,
   #[default]
@@ -51,7 +54,7 @@ impl ProtoFieldKind {
   }
 
   pub fn is_oneof(&self) -> bool {
-    matches!(self, Self::Oneof)
+    matches!(self, Self::Oneof { .. })
   }
 
   pub fn is_none(&self) -> bool {
@@ -66,7 +69,6 @@ pub struct FieldAttrs {
   pub options: ProtoOptions,
   pub name: String,
   pub kind: ProtoFieldKind,
-  pub oneof_tags: Vec<i32>,
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
   pub is_ignored: bool,
@@ -88,7 +90,6 @@ pub fn process_derive_field_attrs(
   let mut name: Option<String> = None;
   let mut kind = ProtoFieldKind::default();
   let mut is_ignored = false;
-  let mut oneof_tags: Vec<i32> = Vec::new();
   let mut from_proto: Option<PathOrClosure> = None;
   let mut into_proto: Option<PathOrClosure> = None;
 
@@ -151,7 +152,7 @@ pub fn process_derive_field_attrs(
             "oneof_tags" => {
               let tags = list.parse_args::<NumList>()?.list;
 
-              oneof_tags = tags;
+              kind = ProtoFieldKind::Oneof { path: None, tags };
             }
             "message" => {
               let message_path = list.parse_args::<Path>()?;
@@ -192,7 +193,12 @@ pub fn process_derive_field_attrs(
 
           match ident.as_str() {
             "ignore" => is_ignored = true,
-            "oneof" => kind = ProtoFieldKind::Oneof,
+            "oneof" => {
+              kind = ProtoFieldKind::Oneof {
+                path: None,
+                tags: vec![],
+              }
+            }
             "enum_" => kind = ProtoFieldKind::Enum(None),
             "message" => kind = ProtoFieldKind::Message(MessagePath::None),
             "sint32" => kind = ProtoFieldKind::Sint32,
@@ -219,7 +225,6 @@ pub fn process_derive_field_attrs(
     name: name.unwrap_or_else(|| ccase!(snake, original_name.to_string())),
     kind,
     from_proto,
-    oneof_tags,
     into_proto,
     is_ignored,
   })

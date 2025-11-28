@@ -46,9 +46,9 @@ mod inner {
     C,
   }
 
-  // #[proto_oneof]
   // #[proto(required)]
-  #[derive(Clone)]
+  #[proto_oneof]
+  #[proto(direct)]
   enum PseudoOneof {
     // #[proto(tag = 12, validate = |v| v)]
     A(String),
@@ -87,8 +87,9 @@ mod inner {
 
     #[proto(message(suffixed), from_proto = |v| v.map(Into::into))]
     nested: Option<Nested>,
-    // #[proto(oneof)]
-    // oneof: Option<PseudoOneof>,
+
+    #[proto(oneof)]
+    oneof: Option<PseudoOneof>,
   }
 
   fn from_proto(input: NestedProto) -> Nested {

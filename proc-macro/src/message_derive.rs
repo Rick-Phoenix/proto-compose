@@ -88,7 +88,7 @@ pub(crate) fn process_message_derive_shadow(
             }
           }
         } else {
-          let call = src_field_type.rust_type.conversion_call();
+          let call = src_field_type.rust_type.into_proto();
 
           quote! { value.#src_field_ident.#call }
         };
@@ -132,7 +132,7 @@ pub(crate) fn process_message_derive_shadow(
       .collect();
   }
 
-  let schema_impls = create_schema_impls(orig_struct_name, &message_attrs, proto_fields_data);
+  let schema_impls = message_schema_impls(orig_struct_name, &message_attrs, proto_fields_data);
 
   output_tokens.extend(schema_impls);
 
@@ -261,7 +261,7 @@ pub(crate) fn process_message_derive_direct(
     fields_data.push(field_tokens);
   }
 
-  let schema_impls = create_schema_impls(struct_name, &message_attrs, fields_data);
+  let schema_impls = message_schema_impls(struct_name, &message_attrs, fields_data);
 
   output_tokens.extend(schema_impls);
 

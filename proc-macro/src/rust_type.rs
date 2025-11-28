@@ -10,7 +10,15 @@ pub enum RustType {
 }
 
 impl RustType {
-  pub fn conversion_call(&self) -> TokenStream2 {
+  pub fn as_inner_option_path(&self) -> Option<&Path> {
+    if let RustType::Option(path) = self {
+      Some(path)
+    } else {
+      None
+    }
+  }
+
+  pub fn into_proto(&self) -> TokenStream2 {
     match self {
       RustType::Option(_) => quote! { map(Into::into) },
       RustType::Boxed(_) => quote! { map(|v| Box::new((*v).into())) },
@@ -34,6 +42,12 @@ impl RustType {
 }
 
 impl RustType {
+  pub fn from_type(ty: &Type) -> Result<Self, Error> {
+    let path = extract_type_path(ty)?;
+
+    Ok(Self::from_path(path))
+  }
+
   pub fn from_path(path: &Path) -> Self {
     let path_wrapper = PathWrapper::new(Cow::Borrowed(path));
 

@@ -17,16 +17,14 @@ pub fn process_field(
     options,
     name,
     kind,
-    oneof_tags,
     ..
   } = field_attrs;
 
-  if kind.is_oneof() {
-    let oneof_path = type_info.as_inner_option_path().ok_or(spanned_error!(
-      &field.ty,
-      "Oneofs must be wrapped in Option"
-    ))?;
-
+  if let ProtoType::Oneof {
+    tags: oneof_tags,
+    path: oneof_path,
+  } = &type_info.proto_type
+  {
     let oneof_path_str = oneof_path.to_token_stream().to_string();
     let mut oneof_tags_str = String::new();
 
@@ -43,6 +41,11 @@ pub fn process_field(
 
     field.attrs.push(oneof_attr);
 
+    if let OutputType::Change = output_type {
+      field.ty = parse_quote! { Option<#oneof_path> };
+    }
+
+    // Early return
     return Ok(quote! {
       MessageEntry::Oneof(#oneof_path::to_oneof())
     });

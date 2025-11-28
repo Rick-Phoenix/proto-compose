@@ -9,7 +9,7 @@ use itertools::Itertools;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 pub(crate) use proc_macro2::TokenStream as TokenStream2;
-use quote::{quote, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use syn::{
   parse::Parse,
   parse_macro_input, parse_quote,

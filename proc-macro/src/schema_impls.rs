@@ -1,6 +1,6 @@
 use crate::*;
 
-pub fn create_schema_impls(
+pub fn message_schema_impls(
   struct_name: &Ident,
   message_attrs: &MessageAttrs,
   fields_data: Vec<TokenStream2>,

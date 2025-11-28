@@ -14,6 +14,7 @@ pub enum ProtoType {
   Int32,
   Map(ProtoMap),
   Sint32,
+  Oneof { path: Path, tags: Vec<i32> },
 }
 
 impl ProtoType {
@@ -56,6 +57,7 @@ impl ProtoType {
       ProtoType::Int32 => quote! { i32 },
       ProtoType::Map(map) => map.validator_target_type(),
       ProtoType::Sint32 => quote! { Sint32 },
+      ProtoType::Oneof { .. } => quote! {},
     }
   }
 
@@ -69,6 +71,7 @@ impl ProtoType {
       ProtoType::Int32 => quote! { i32 },
       ProtoType::Map(map) => map.as_proto_type_trait_target(),
       ProtoType::Sint32 => quote! { i32 },
+      ProtoType::Oneof { .. } => quote! {},
     }
   }
 
@@ -82,6 +85,7 @@ impl ProtoType {
       ProtoType::Int32 => quote! { i32 },
       ProtoType::Map(map) => map.output_proto_type(),
       ProtoType::Sint32 => quote! { i32 },
+      ProtoType::Oneof { path, .. } => path.to_token_stream(),
     }
   }
 
@@ -99,6 +103,9 @@ impl ProtoType {
       ProtoType::Int32 => quote! { int32 },
       ProtoType::Map(map) => map.as_prost_attr_type(),
       ProtoType::Sint32 => quote! { sint32 },
+      ProtoType::Oneof { path, tags } => {
+        todo!()
+      }
     }
   }
 }
@@ -109,6 +116,25 @@ pub fn extract_proto_type(
   field_ty: &Type,
 ) -> Result<ProtoType, Error> {
   let output = match field_type {
+    ProtoFieldKind::Oneof { path, tags } => {
+      let oneof_path = if let Some(path) = path {
+        path
+      } else {
+        rust_type
+          .inner_path()
+          .ok_or(spanned_error!(
+            field_ty,
+            // SHould refine this for oneofs
+            "Failed to extract the inner type. Expected a type, or a type wrapped in Option or Vec"
+          ))?
+          .clone()
+      };
+
+      ProtoType::Oneof {
+        path: oneof_path,
+        tags,
+      }
+    }
     ProtoFieldKind::Enum(path) => {
       // Handle the errors here and just say it can't be used for a map
       let enum_path = if let Some(path) = path {

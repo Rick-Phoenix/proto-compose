@@ -48,7 +48,7 @@ pub struct EnumRaw {
 }
 
 pub fn parse_oneof(item: ItemEnum) -> Result<OneofData, Error> {
-  let oneof_attrs = process_oneof_attrs(&item.ident, &item.attrs, true);
+  let oneof_attrs = process_oneof_attrs(&item.ident, &item.attrs, true)?;
 
   let mut variants_data: Vec<OneofVariant> = Vec::new();
   let mut used_tags: Vec<i32> = Vec::new();
