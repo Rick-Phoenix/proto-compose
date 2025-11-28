@@ -69,7 +69,7 @@ pub(crate) fn process_message_derive_shadow(
       ignored_fields.push(src_field.ident.clone().unwrap());
     } else {
       let field_tokens = process_field(
-        dst_field,
+        &mut FieldOrVariant::Field(dst_field),
         field_attrs.clone(),
         &src_field_type,
         OutputType::Change,
@@ -256,7 +256,12 @@ pub(crate) fn process_message_derive_direct(
 
     let type_info = TypeInfo::from_type(&src_field.ty, field_attrs.kind.clone())?;
 
-    let field_tokens = process_field(src_field, field_attrs, &type_info, OutputType::Keep)?;
+    let field_tokens = process_field(
+      &mut FieldOrVariant::Field(src_field),
+      field_attrs,
+      &type_info,
+      OutputType::Keep,
+    )?;
 
     fields_data.push(field_tokens);
   }

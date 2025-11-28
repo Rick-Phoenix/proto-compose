@@ -5,8 +5,41 @@ pub enum OutputType {
   Change,
 }
 
+pub enum FieldOrVariant<'a> {
+  Field(&'a mut Field),
+  Variant(&'a mut Variant),
+}
+
+impl<'a> FieldOrVariant<'a> {
+  pub fn inject_attr(&mut self, attr: Attribute) {
+    match self {
+      FieldOrVariant::Field(field) => field.attrs.push(attr),
+      FieldOrVariant::Variant(variant) => variant.attrs.push(attr),
+    }
+  }
+
+  pub fn change_type(&mut self, ty: Type) {
+    let src_type = match self {
+      FieldOrVariant::Field(field) => &mut field.ty,
+      FieldOrVariant::Variant(variant) => {
+        if let Fields::Unnamed(variant_fields) = &mut variant.fields {
+          if variant_fields.unnamed.len() != 1 {
+            panic!("Oneof variants must contain a single value");
+          }
+
+          &mut variant_fields.unnamed.first_mut().unwrap().ty
+        } else {
+          panic!("Oneof variants can only have one unnamed field")
+        }
+      }
+    };
+
+    *src_type = ty;
+  }
+}
+
 pub fn process_field(
-  field: &mut Field,
+  field: &mut FieldOrVariant,
   field_attrs: FieldAttrs,
   type_info: &TypeInfo,
   output_type: OutputType,
@@ -16,7 +49,6 @@ pub fn process_field(
     validator,
     options,
     name,
-    kind,
     ..
   } = field_attrs;
 
@@ -39,10 +71,10 @@ pub fn process_field(
     let oneof_attr: Attribute =
       parse_quote!(#[prost(oneof = #oneof_path_str, tags = #oneof_tags_str)]);
 
-    field.attrs.push(oneof_attr);
+    field.inject_attr(oneof_attr);
 
     if let OutputType::Change = output_type {
-      field.ty = parse_quote! { Option<#oneof_path> };
+      field.change_type(parse_quote! { Option<#oneof_path> });
     }
 
     // Early return
@@ -65,14 +97,14 @@ pub fn process_field(
       RustType::Normal(_) => parse_quote!( #proto_output_type_inner ),
     };
 
-    field.ty = proto_output_type_outer;
+    field.change_type(proto_output_type_outer);
   }
 
   let prost_attr = ProstAttrs::from_type_info(&type_info.rust_type, proto_type.clone(), tag);
 
   let field_prost_attr: Attribute = parse_quote!(#prost_attr);
 
-  field.attrs.push(field_prost_attr);
+  field.inject_attr(field_prost_attr);
 
   // Use new validator but with cardinality info
   let validator_tokens = if let Some(validator) = validator {
@@ -83,15 +115,32 @@ pub fn process_field(
 
   let field_type_tokens = type_info.as_proto_type_trait_expr(&proto_type);
 
-  Ok(quote! {
-    MessageEntry::Field(
-      ProtoField {
-        name: #name.to_string(),
-        tag: #tag,
-        options: #options,
-        type_: #field_type_tokens,
-        validator: #validator_tokens,
+  let output = match field {
+    FieldOrVariant::Field(_) => {
+      quote! {
+        MessageEntry::Field(
+          ProtoField {
+            name: #name.to_string(),
+            tag: #tag,
+            options: #options,
+            type_: #field_type_tokens,
+            validator: #validator_tokens,
+          }
+        )
       }
-    )
-  })
+    }
+    FieldOrVariant::Variant(_) => {
+      quote! {
+        ProtoField {
+          name: #name.to_string(),
+          tag: #tag,
+          options: #options,
+          type_: #field_type_tokens,
+          validator: #validator_tokens,
+        }
+      }
+    }
+  };
+
+  Ok(output)
 }

@@ -56,14 +56,12 @@ pub(crate) fn process_oneof_derive_direct(
   for variant in variants {
     let field_attrs = process_derive_field_attrs(&variant.ident, &variant.attrs)?;
 
-    let FieldAttrs {
-      tag,
-      validator,
-      options,
-      name,
-      kind,
-      ..
-    } = field_attrs;
+    if field_attrs.is_ignored {
+      return Err(spanned_error!(
+        &variant.ident,
+        "Oneof variants cannot be ignored in a direct impl"
+      ));
+    }
 
     let variant_type = if let Fields::Unnamed(variant_fields) = &variant.fields {
       if variant_fields.unnamed.len() != 1 {
@@ -75,7 +73,106 @@ pub(crate) fn process_oneof_derive_direct(
       panic!("Enum can only have one unnamed field")
     };
 
+    let type_info = TypeInfo::from_type(&variant_type, field_attrs.kind.clone())?;
+
+    if !matches!(type_info.rust_type, RustType::Normal(_)) {
+      return Err(spanned_error!(variant_type, "Unsupported enum variant. If you want to use a custom type, you must use the proxied variant"));
+    };
+
+    let variant_proto_tokens = process_field(
+      &mut FieldOrVariant::Variant(variant),
+      field_attrs,
+      &type_info,
+      OutputType::Keep,
+    )?;
+
+    variants_tokens.push(variant_proto_tokens);
+  }
+
+  let required_option_tokens = required.then(|| quote! { options.push(oneof_required()); });
+
+  let output_tokens = quote! {
+    impl ProtoOneof for #enum_name {
+      fn fields() -> Vec<ProtoField> {
+        vec![ #(#variants_tokens,)* ]
+      }
+    }
+
+    impl #enum_name {
+      #[track_caller]
+      pub fn to_oneof() -> Oneof {
+        let mut options: Vec<ProtoOption> = #options;
+
+        #required_option_tokens
+
+        Oneof {
+          name: #proto_name.into(),
+          fields: Self::fields(),
+          options,
+        }
+      }
+    }
+  };
+
+  Ok(output_tokens)
+}
+
+pub(crate) fn process_oneof_derive_shadow(
+  item: &mut ItemEnum,
+  oneof_attrs: OneofAttrs,
+) -> Result<TokenStream2, Error> {
+  let mut shadow_enum = create_shadow_enum(item);
+
+  let ItemEnum {
+    attrs,
+    ident: enum_name,
+    variants,
+    ..
+  } = item;
+
+  let OneofAttrs {
+    options,
+    name: proto_name,
+    required,
+    ..
+  } = oneof_attrs;
+
+  let prost_derive: Attribute = parse_quote!(#[derive(prost::Oneof, PartialEq, Clone)]);
+
+  shadow_enum.attrs.push(prost_derive);
+
+  let mut variants_tokens: Vec<TokenStream2> = Vec::new();
+
+  let orig_enum_variants = variants.iter_mut();
+  let shadow_enum_variants = shadow_enum.variants.iter_mut();
+
+  for (src_variant, dst_variant) in orig_enum_variants.zip(shadow_enum_variants) {
+    let field_attrs = process_derive_field_attrs(&src_variant.ident, &src_variant.attrs)?;
+
+    let FieldAttrs {
+      tag,
+      validator,
+      options,
+      name,
+      kind,
+      ..
+    } = field_attrs;
+
+    let variant_type = if let Fields::Unnamed(variant_fields) = &src_variant.fields {
+      if variant_fields.unnamed.len() != 1 {
+        panic!("Oneof variants must contain a single value");
+      }
+
+      variant_fields.unnamed.first().unwrap().ty.clone()
+    } else {
+      panic!("Enum can only have one unnamed field")
+    };
+
     let type_info = TypeInfo::from_type(&variant_type, kind)?;
+
+    if !matches!(type_info.rust_type, RustType::Normal(_)) {
+      return Err(spanned_error!(variant_type, "Unsupported enum variant. If you want to use a custom type, you must use the proxied variant"));
+    };
 
     let proto_type = &type_info.proto_type;
 
@@ -84,7 +181,7 @@ pub(crate) fn process_oneof_derive_direct(
 
     let prost_attr: Attribute = parse_quote!(#prost_attr_tokens);
 
-    variant.attrs.push(prost_attr);
+    dst_variant.attrs.push(prost_attr);
 
     let validator_tokens = if let Some(validator) = validator {
       type_info.validator_tokens(&validator, &proto_type)
@@ -132,104 +229,3 @@ pub(crate) fn process_oneof_derive_direct(
 
   Ok(output_tokens)
 }
-
-// pub(crate) fn process_oneof_derive_shadow(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
-//   let ItemEnum {
-//     attrs,
-//     ident: enum_name,
-//     variants,
-//     ..
-//   } = item;
-//
-//   let OneofAttrs {
-//     options,
-//     name: proto_name,
-//     required,
-//   } = process_oneof_attrs(enum_name, attrs, false);
-//
-//   let prost_derive: Attribute = parse_quote!(#[derive(prost::Oneof)]);
-//
-//   attrs.push(prost_derive);
-//
-//   let mut variants_tokens: Vec<TokenStream2> = Vec::new();
-//
-//   for variant in variants {
-//     let field_attrs = process_derive_field_attrs(&variant.ident, &variant.attrs)?;
-//
-//     let FieldAttrs {
-//       tag,
-//       validator,
-//       options,
-//       name,
-//       kind,
-//       ..
-//     } = field_attrs;
-//
-//     let variant_type = if let Fields::Unnamed(variant_fields) = &variant.fields {
-//       if variant_fields.unnamed.len() != 1 {
-//         panic!("Oneof variants must contain a single value");
-//       }
-//
-//       let type_ = &variant_fields.unnamed.first().unwrap().ty;
-//
-//       TypeInfo::from_type(type_, kind)?
-//     } else {
-//       panic!("Enum can only have one unnamed field")
-//     };
-//
-//     // TODO
-//     let proto_type = ProtoType::String;
-//
-//     let prost_attr_tokens =
-//       ProstAttrs::from_type_info(&variant_type.rust_type, proto_type.clone(), tag);
-//
-//     let prost_attr: Attribute = parse_quote!(#prost_attr_tokens);
-//
-//     variant.attrs.push(prost_attr);
-//
-//     let validator_tokens = if let Some(validator) = validator {
-//       variant_type.validator_tokens(&validator, &proto_type)
-//     } else {
-//       quote! { None }
-//     };
-//
-//     let full_type_path = quote! {};
-//
-//     variants_tokens.push(quote! {
-//       ProtoField {
-//         name: #name.to_string(),
-//         options: #options,
-//         type_: <#full_type_path as AsProtoType>::proto_type(),
-//         validator: #validator_tokens,
-//         tag: #tag,
-//       }
-//     });
-//   }
-//
-//   let required_option_tokens = required.then(|| quote! { options.push(oneof_required()); });
-//
-//   let output_tokens = quote! {
-//     impl ProtoOneof for #enum_name {
-//       fn fields() -> Vec<ProtoField> {
-//         vec![ #(#variants_tokens,)* ]
-//       }
-//     }
-//
-//     impl #enum_name {
-//       #[track_caller]
-//       pub fn to_oneof() -> Oneof {
-//         let mut options: Vec<ProtoOption> = #options;
-//
-//         #required_option_tokens
-//
-//         Oneof {
-//           name: #proto_name.into(),
-//           fields: Self::fields(),
-//           options,
-//         }
-//       }
-//     }
-//   };
-//
-//   Ok(output_tokens)
-// }
