@@ -1,10 +1,13 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, fmt::Display};
+
+use syn::spanned::Spanned;
 
 use crate::*;
 
 #[derive(Clone)]
 pub struct TypeInfo {
   pub rust_type: RustType,
+  pub span: Span,
 }
 
 impl TypeInfo {
@@ -60,6 +63,12 @@ impl TypeInfo {
     let path = extract_type_path(ty)?;
     let rust_type = RustType::from_path(path);
 
-    Ok(Self { rust_type })
+    let span = ty.span();
+
+    Ok(Self { rust_type, span })
+  }
+
+  pub fn error(&self, error: impl Display) -> Error {
+    syn::Error::new(self.span, error)
   }
 }

@@ -64,6 +64,7 @@ pub(crate) fn process_message_derive_shadow(
 
     let field_attrs_from_proto = field_attrs.from_proto.clone();
     let field_attrs_into_proto = field_attrs.into_proto.clone();
+    let is_enum = field_attrs.kind.is_enum();
 
     let src_field_type = TypeInfo::from_type(&src_field.ty)?;
 

@@ -99,7 +99,6 @@ mod inner {
 
   #[proto_message]
   #[proto(from_proto = from_proto)]
-  #[proto(into_proto = |v| into_proto(v))]
   #[derive(Clone, Debug)]
   pub struct Nested {
     name: String,

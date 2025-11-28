@@ -4,7 +4,7 @@ use syn::ExprCall;
 use crate::*;
 
 #[derive(Default, Debug, Clone)]
-pub enum ProtoFieldType {
+pub enum ProtoFieldKind {
   Message(MessagePath),
   Enum(Option<Path>),
   Oneof,
@@ -41,7 +41,7 @@ impl ToTokens for MessagePath {
   }
 }
 
-impl ProtoFieldType {
+impl ProtoFieldKind {
   pub fn is_message(&self) -> bool {
     matches!(self, Self::Message(_))
   }
@@ -64,7 +64,7 @@ pub struct FieldAttrs {
   pub validator: Option<ValidatorExpr>,
   pub options: ProtoOptions,
   pub name: String,
-  pub kind: ProtoFieldType,
+  pub kind: ProtoFieldKind,
   pub oneof_tags: Vec<i32>,
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
@@ -83,7 +83,7 @@ pub fn process_derive_field_attrs(
   let mut tag: Option<i32> = None;
   let mut options: Option<TokenStream2> = None;
   let mut name: Option<String> = None;
-  let mut kind = ProtoFieldType::default();
+  let mut kind = ProtoFieldKind::default();
   let mut is_ignored = false;
   let mut oneof_tags: Vec<i32> = Vec::new();
   let mut from_proto: Option<PathOrClosure> = None;
@@ -159,12 +159,12 @@ pub fn process_derive_field_attrs(
                 MessagePath::Path(message_path)
               };
 
-              kind = ProtoFieldType::Message(path_type);
+              kind = ProtoFieldKind::Message(path_type);
             }
             "enum_" => {
               let enum_path = list.parse_args::<Path>()?;
 
-              kind = ProtoFieldType::Enum(Some(enum_path));
+              kind = ProtoFieldKind::Enum(Some(enum_path));
             }
             "options" => {
               let exprs = list.parse_args::<PunctuatedParser<Expr>>().unwrap().inner;
@@ -174,7 +174,7 @@ pub fn process_derive_field_attrs(
             "map" => {
               let map_data = list.parse_args::<ProtoMap>()?;
 
-              kind = ProtoFieldType::Map(map_data);
+              kind = ProtoFieldKind::Map(map_data);
             }
 
             _ => {}
@@ -189,10 +189,10 @@ pub fn process_derive_field_attrs(
 
           match ident.as_str() {
             "ignore" => is_ignored = true,
-            "oneof" => kind = ProtoFieldType::Oneof,
-            "enum_" => kind = ProtoFieldType::Enum(None),
-            "message" => kind = ProtoFieldType::Message(MessagePath::None),
-            "sint32" => kind = ProtoFieldType::Sint32,
+            "oneof" => kind = ProtoFieldKind::Oneof,
+            "enum_" => kind = ProtoFieldKind::Enum(None),
+            "message" => kind = ProtoFieldKind::Message(MessagePath::None),
+            "sint32" => kind = ProtoFieldKind::Sint32,
 
             _ => {}
           };

@@ -49,7 +49,7 @@ pub fn process_field(
   }
 
   let proto_type = match kind {
-    ProtoFieldType::Enum(path) => {
+    ProtoFieldKind::Enum(path) => {
       // Handle the errors here and just say it can't be used for a map
       let enum_path = if let Some(path) = path {
         path
@@ -66,7 +66,7 @@ pub fn process_field(
 
       ProtoType::Enum(enum_path)
     }
-    ProtoFieldType::Message(path) => {
+    ProtoFieldKind::Message(path) => {
       let msg_path = if let MessagePath::Path(path) = path {
         path
       } else {
@@ -88,7 +88,7 @@ pub fn process_field(
 
       ProtoType::Message(msg_path)
     }
-    ProtoFieldType::Map(proto_map) => {
+    ProtoFieldKind::Map(proto_map) => {
       ProtoType::Map(set_map_proto_type(proto_map, &type_info.rust_type)?)
     }
     // No manually set type, let's try to infer it as a primitive

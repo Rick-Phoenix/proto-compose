@@ -202,6 +202,14 @@ pub struct ProtoMap {
 }
 
 impl ProtoMap {
+  pub fn has_message_values(&self) -> bool {
+    matches!(self.values, ProtoMapValues::Message(_))
+  }
+
+  pub fn has_enum_values(&self) -> bool {
+    matches!(self.values, ProtoMapValues::Enum(_))
+  }
+
   pub fn validator_target_type(&self) -> TokenStream2 {
     let keys = self.keys.validator_target_type();
     let values = self.values.validator_target_type();
