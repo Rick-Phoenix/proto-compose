@@ -16,9 +16,9 @@ use syn::{
   punctuated::Punctuated,
   token,
   token::{Brace, Struct},
-  Attribute, Data, DeriveInput, Error, Expr, ExprClosure, Field, Fields, GenericArgument, Generics,
-  Ident, Item, ItemEnum, ItemFn, ItemMod, ItemStruct, Lit, LitStr, Meta, Path, PathArguments,
-  PathSegment, RangeLimits, Token, Type, Variant, Visibility,
+  Attribute, Data, DeriveInput, Error, Expr, ExprCall, ExprClosure, Field, Fields, GenericArgument,
+  Generics, Ident, Item, ItemEnum, ItemFn, ItemMod, ItemStruct, Lit, LitStr, Meta, Path,
+  PathArguments, PathSegment, RangeLimits, Token, Type, Variant, Visibility,
 };
 use type_extraction::*;
 

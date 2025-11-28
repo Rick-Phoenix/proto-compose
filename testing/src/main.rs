@@ -75,7 +75,7 @@ mod inner {
     #[proto(tag = 35, validate = string_validator())]
     name: Option<String>,
 
-    #[proto(ignore, validate = repeated_validator())]
+    #[proto(ignore, from_proto = Default::default)]
     num: Vec<i32>,
 
     #[proto(validate = |v| v.min_pairs(0).keys(|k| k.min_len(25)).values(|v| v.lt(25)))]

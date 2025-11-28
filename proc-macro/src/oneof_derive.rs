@@ -184,14 +184,18 @@ pub(crate) fn process_oneof_derive_shadow(
 
       variants_tokens.push(variant_proto_tokens);
 
-      let call = type_info.into_proto();
+      if oneof_attrs.into_proto.is_none() {
+        let call = type_info.into_proto();
 
-      let into_proto_call = quote! {
-        #orig_enum_ident::#variant_ident(v) => #shadow_enum_ident::#variant_ident(v.#call),
-      };
+        let into_proto_call = quote! {
+          #orig_enum_ident::#variant_ident(v) => #shadow_enum_ident::#variant_ident(v.#call),
+        };
 
-      into_proto.extend(into_proto_call);
+        into_proto.extend(into_proto_call);
+      }
+    }
 
+    if oneof_attrs.from_proto.is_none() {
       let from_proto_call = type_info.from_proto();
 
       let from_proto_expr = quote! {
@@ -233,12 +237,25 @@ pub(crate) fn process_oneof_derive_shadow(
     }
   });
 
+  let from_proto_body = if let Some(expr) = &oneof_attrs.from_proto {
+    match expr {
+      PathOrClosure::Path(path) => quote! { #path(value) },
+      PathOrClosure::Closure(closure) => quote! {
+        prelude::apply(value, #closure)
+      },
+    }
+  } else {
+    quote! {
+      match value {
+        #from_proto
+      }
+    }
+  };
+
   let from_proto_impl = quote! {
     impl From<#shadow_enum_ident> for #orig_enum_ident {
       fn from(value: #shadow_enum_ident) -> Self {
-        match value {
-          #from_proto
-        }
+        #from_proto_body
       }
     }
 
@@ -253,12 +270,25 @@ pub(crate) fn process_oneof_derive_shadow(
     }
   };
 
+  let into_proto_body = if let Some(expr) = &oneof_attrs.into_proto {
+    match expr {
+      PathOrClosure::Path(path) => quote! { #path(value) },
+      PathOrClosure::Closure(closure) => quote! {
+        prelude::apply(value, #closure)
+      },
+    }
+  } else {
+    quote! {
+      match value {
+        #into_proto
+      }
+    }
+  };
+
   let into_proto_impl = quote! {
     impl From<#orig_enum_ident> for #shadow_enum_ident {
       fn from(value: #orig_enum_ident) -> Self {
-        match value {
-          #into_proto
-        }
+        #into_proto_body
       }
     }
   };

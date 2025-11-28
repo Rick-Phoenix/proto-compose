@@ -102,7 +102,21 @@ pub(crate) fn process_message_derive_shadow(
     }
 
     if message_attrs.from_proto.is_none() {
-      let conversion_call = if let Some(expr) = field_attrs_from_proto {
+      let conversion_call = if field_attrs.is_ignored {
+        if let Some(expr) = field_attrs_from_proto {
+          match expr {
+            PathOrClosure::Path(path) => quote! { #path() },
+            PathOrClosure::Closure(closure) => {
+              return Err(spanned_error!(
+                closure,
+                "Cannot use a closure for ignored fields"
+              ))
+            }
+          }
+        } else {
+          quote! { Default::default() }
+        }
+      } else if let Some(expr) = field_attrs_from_proto {
         match expr {
           PathOrClosure::Path(path) => quote! { #path(value.#src_field_ident) },
           PathOrClosure::Closure(closure) => {
@@ -111,8 +125,6 @@ pub(crate) fn process_message_derive_shadow(
             }
           }
         }
-      } else if field_attrs.is_ignored {
-        quote! { Default::default() }
       } else {
         let call = type_info.from_proto();
 
