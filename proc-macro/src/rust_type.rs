@@ -31,6 +31,10 @@ impl RustType {
 
     Some(output)
   }
+
+  pub fn is_boxed_oneof_variant(&self) -> bool {
+    matches!(self, Self::BoxedOneofVariant(..))
+  }
 }
 
 impl RustType {
@@ -51,7 +55,7 @@ impl RustType {
       "Box" => {
         let inner = PathWrapper::new(Cow::Borrowed(last_segment.first_argument().unwrap()));
 
-        Self::Normal(inner.inner.into_owned())
+        Self::BoxedOneofVariant(inner.inner.into_owned())
       }
       "Option" => {
         let inner = PathWrapper::new(Cow::Borrowed(last_segment.first_argument().unwrap()));

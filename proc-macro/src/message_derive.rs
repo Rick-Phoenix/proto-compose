@@ -45,6 +45,7 @@ pub(crate) fn process_message_derive_shadow(
           kind: FieldConversionKind::StructField {
             ident: src_field_ident,
           },
+          is_boxed: false,
           type_info: &type_info,
           is_ignored: field_attrs.is_ignored,
         })?;
@@ -59,6 +60,7 @@ pub(crate) fn process_message_derive_shadow(
         kind: FieldConversionKind::StructField {
           ident: src_field_ident,
         },
+        is_boxed: false,
         type_info: &type_info,
         is_ignored: field_attrs.is_ignored,
       })?;

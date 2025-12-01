@@ -5,6 +5,7 @@ pub struct FieldConversion<'a> {
   pub kind: FieldConversionKind<'a>,
   pub type_info: &'a TypeInfo,
   pub is_ignored: bool,
+  pub is_boxed: bool,
 }
 
 pub enum FieldConversionKind<'a> {
@@ -23,10 +24,11 @@ pub fn field_into_proto_expression(info: FieldConversion) -> Result<TokenStream2
     custom_expression,
     type_info,
     kind,
+    is_boxed,
     ..
-  } = &info;
+  } = info;
 
-  let base_ident = match kind {
+  let mut base_ident = match kind {
     FieldConversionKind::EnumVariant { .. } => {
       quote! { v }
     }
@@ -47,9 +49,7 @@ pub fn field_into_proto_expression(info: FieldConversion) -> Result<TokenStream2
   } else if let ProtoType::Oneof { default: true, .. } = &type_info.proto_type {
     quote! { Some(#base_ident.into()) }
   } else {
-    let call = type_info.into_proto();
-
-    quote! { #base_ident.#call }
+    type_info.into_proto(base_ident)
   };
 
   let conversion = match kind {
@@ -74,9 +74,10 @@ pub fn field_from_proto_expression(info: FieldConversion) -> Result<TokenStream2
     type_info,
     kind,
     is_ignored,
-  } = &info;
+    is_boxed,
+  } = info;
 
-  let base_ident = match kind {
+  let mut base_ident = match kind {
     FieldConversionKind::EnumVariant { .. } => {
       quote! { v }
     }
@@ -85,7 +86,7 @@ pub fn field_from_proto_expression(info: FieldConversion) -> Result<TokenStream2
     }
   };
 
-  let conversion_expr = if *is_ignored {
+  let conversion_expr = if is_ignored {
     if let Some(expr) = custom_expression {
       match expr {
         PathOrClosure::Path(path) => quote! { #path() },
@@ -109,9 +110,7 @@ pub fn field_from_proto_expression(info: FieldConversion) -> Result<TokenStream2
       }
     }
   } else {
-    let call = type_info.from_proto();
-
-    quote! { #base_ident.#call }
+    type_info.from_proto(base_ident)
   };
 
   let conversion = match kind {

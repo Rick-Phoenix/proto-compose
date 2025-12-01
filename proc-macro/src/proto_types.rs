@@ -10,7 +10,10 @@ pub enum ProtoType {
   Bool,
   Bytes,
   Enum(Path),
-  Message(Path),
+  Message {
+    path: Path,
+    boxed: bool,
+  },
   Int32,
   Map(ProtoMap),
   Sint32,
@@ -58,7 +61,7 @@ impl ProtoType {
       ProtoType::Bool => quote! { bool },
       ProtoType::Bytes => quote! { Vec<u8> },
       ProtoType::Enum(_) => quote! { GenericProtoEnum },
-      ProtoType::Message(_) => quote! { GenericMessage },
+      ProtoType::Message { .. } => quote! { GenericMessage },
       ProtoType::Int32 => quote! { i32 },
       ProtoType::Map(map) => map.validator_target_type(),
       ProtoType::Sint32 => quote! { Sint32 },
@@ -72,7 +75,7 @@ impl ProtoType {
       ProtoType::Bool => quote! { bool },
       ProtoType::Bytes => quote! { Vec<u8> },
       ProtoType::Enum(path) => quote! { #path },
-      ProtoType::Message(path) => quote! { #path },
+      ProtoType::Message { path, .. } => quote! { #path },
       ProtoType::Int32 => quote! { i32 },
       ProtoType::Map(map) => map.as_proto_type_trait_target(),
       ProtoType::Sint32 => quote! { i32 },
@@ -86,7 +89,7 @@ impl ProtoType {
       ProtoType::Bool => quote! { bool },
       ProtoType::Bytes => quote! { Vec<u8> },
       ProtoType::Enum(_) => quote! { i32 },
-      ProtoType::Message(path) => path.to_token_stream(),
+      ProtoType::Message { path, .. } => path.to_token_stream(),
       ProtoType::Int32 => quote! { i32 },
       ProtoType::Map(map) => map.output_proto_type(),
       ProtoType::Sint32 => quote! { i32 },
@@ -104,7 +107,7 @@ impl ProtoType {
 
         quote! { enumeration = #path_as_str }
       }
-      ProtoType::Message(_) => quote! { message },
+      ProtoType::Message { .. } => quote! { message },
       ProtoType::Int32 => quote! { int32 },
       ProtoType::Map(map) => map.as_prost_attr_type(),
       ProtoType::Sint32 => quote! { sint32 },
@@ -189,7 +192,10 @@ pub fn extract_proto_type(
         }
       };
 
-      ProtoType::Message(msg_path)
+      ProtoType::Message {
+        path: msg_path,
+        boxed,
+      }
     }
     ProtoFieldKind::Map(proto_map) => ProtoType::Map(set_map_proto_type(proto_map, rust_type)?),
     // No manually set type, let's try to infer it as a primitive

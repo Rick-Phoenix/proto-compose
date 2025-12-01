@@ -52,6 +52,8 @@ mod inner {
   enum PseudoOneof {
     A(String),
     B(i32),
+    #[proto(message(suffixed, boxed))]
+    C(Box<Abc>),
   }
 
   impl Default for PseudoOneofProto {

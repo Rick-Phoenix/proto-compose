@@ -12,7 +12,7 @@ pub struct TypeInfo {
 }
 
 impl TypeInfo {
-  pub fn into_proto(&self) -> TokenStream2 {
+  pub fn into_proto(&self, base_ident: TokenStream2) -> TokenStream2 {
     if let ProtoType::Oneof {
       default: true,
       path,
@@ -21,23 +21,23 @@ impl TypeInfo {
     } = &self.proto_type
     {
       if *is_proxied {
-        return quote! { into().into() };
+        return quote! { #base_ident.into().into() };
       } else {
-        return quote! { unwrap_or_default() };
+        return quote! { #base_ident.unwrap_or_default() };
       }
     }
 
     match &self.rust_type {
-      RustType::Option(_) => quote! { map(Into::into) },
-      RustType::BoxedMsg(_) => quote! { map(|v| Box::new((*v).into())) },
-      RustType::Map(_) => quote! { into_iter().map(|(k, v)| (k, v.into())).collect() },
-      RustType::Vec(_) => quote! { into_iter().map(Into::into).collect() },
-      RustType::Normal(_) => quote! { into() },
-      RustType::BoxedOneofVariant(_) => quote! { into() },
+      RustType::Option(_) => quote! { #base_ident.map(Into::into) },
+      RustType::BoxedMsg(_) => quote! { #base_ident.map(|v| Box::new((*v).into())) },
+      RustType::Map(_) => quote! { #base_ident.into_iter().map(|(k, v)| (k, v.into())).collect() },
+      RustType::Vec(_) => quote! { #base_ident.into_iter().map(Into::into).collect() },
+      RustType::Normal(_) => quote! { #base_ident.into() },
+      RustType::BoxedOneofVariant(_) => quote! { Box::new((*#base_ident).into()) },
     }
   }
 
-  pub fn from_proto(&self) -> TokenStream2 {
+  pub fn from_proto(&self, base_ident: TokenStream2) -> TokenStream2 {
     let conversion_call = self.proto_type.default_from_proto();
 
     if let ProtoType::Oneof {
@@ -48,15 +48,15 @@ impl TypeInfo {
     } = &self.proto_type
     {
       if *is_proxied {
-        return quote! { unwrap_or_default().into() };
+        return quote! { #base_ident.unwrap_or_default().into() };
       } else {
-        return quote! { unwrap_or_default() };
+        return quote! { #base_ident.unwrap_or_default() };
       }
     }
 
     match &self.rust_type {
-      RustType::Option(_) => quote! { map(|v| v.#conversion_call) },
-      RustType::BoxedMsg(_) => quote! { map(|v| Box::new((*v).into())) },
+      RustType::Option(_) => quote! { #base_ident.map(|v| v.#conversion_call) },
+      RustType::BoxedMsg(_) => quote! { #base_ident.map(|v| Box::new((*v).into())) },
       RustType::Map(_) => {
         let value_conversion = if let ProtoType::Map(map) = &self.proto_type && map.has_enum_values() {
             quote! { try_into().unwrap_or_default() }
@@ -64,11 +64,11 @@ impl TypeInfo {
             quote! { into() }
           };
 
-        quote! { into_iter().map(|(k, v)| (k, v.#value_conversion)).collect() }
+        quote! { #base_ident.into_iter().map(|(k, v)| (k, v.#value_conversion)).collect() }
       }
-      RustType::Vec(_) => quote! { into_iter().map(|v| v.#conversion_call).collect() },
-      RustType::Normal(_) => conversion_call,
-      RustType::BoxedOneofVariant(_) => conversion_call,
+      RustType::Vec(_) => quote! { #base_ident.into_iter().map(|v| v.#conversion_call).collect() },
+      RustType::Normal(_) => quote! { #base_ident.#conversion_call },
+      RustType::BoxedOneofVariant(_) => quote! { Box::new((*#base_ident).into()) },
     }
   }
 

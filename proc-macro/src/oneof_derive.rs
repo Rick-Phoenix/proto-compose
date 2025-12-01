@@ -56,6 +56,7 @@ pub(crate) fn process_oneof_derive_shadow(
             source_enum_ident: orig_enum_ident,
             target_enum_ident: shadow_enum_ident,
           },
+          is_boxed: type_info.rust_type.is_boxed_oneof_variant(),
           type_info: &type_info,
           is_ignored: field_attrs.is_ignored,
         })?;
@@ -72,6 +73,7 @@ pub(crate) fn process_oneof_derive_shadow(
           source_enum_ident: orig_enum_ident,
           target_enum_ident: shadow_enum_ident,
         },
+        is_boxed: type_info.rust_type.is_boxed_oneof_variant(),
         type_info: &type_info,
         is_ignored: field_attrs.is_ignored,
       });
