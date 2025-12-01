@@ -20,6 +20,8 @@ pub(crate) fn process_oneof_derive_shadow(
   let mut into_proto_body = TokenStream2::new();
 
   for (src_variant, dst_variant) in orig_enum_variants.zip(shadow_enum_variants) {
+    let variant_ident = &src_variant.ident;
+
     let field_attrs = process_derive_field_attrs(&src_variant.ident, &src_variant.attrs)?;
 
     let variant_type = if let Fields::Unnamed(variant_fields) = &src_variant.fields {
@@ -32,9 +34,7 @@ pub(crate) fn process_oneof_derive_shadow(
       panic!("Enum can only have one unnamed field")
     };
 
-    let type_info = TypeInfo::from_type(&variant_type, field_attrs.kind.clone())?;
-
-    let variant_ident = &src_variant.ident;
+    let type_info = TypeInfo::from_type(&variant_type, field_attrs.kind.clone(), orig_enum_ident)?;
 
     if field_attrs.is_ignored {
       ignored_variants.push(src_variant.ident.clone());
@@ -154,6 +154,8 @@ pub(crate) fn process_oneof_derive_direct(
   let mut variants_tokens: Vec<TokenStream2> = Vec::new();
 
   for variant in variants {
+    let variant_ident = &variant.ident;
+
     let field_attrs = process_derive_field_attrs(&variant.ident, &variant.attrs)?;
 
     if field_attrs.is_ignored {
@@ -173,7 +175,7 @@ pub(crate) fn process_oneof_derive_direct(
       panic!("Enum can only have one unnamed field")
     };
 
-    let type_info = TypeInfo::from_type(&variant_type, field_attrs.kind.clone())?;
+    let type_info = TypeInfo::from_type(&variant_type, field_attrs.kind.clone(), &item.ident)?;
 
     if !matches!(type_info.rust_type, RustType::Normal(_)) {
       return Err(spanned_error!(variant_type, "Unsupported enum variant. If you want to use a custom type, you must use the proxied variant"));

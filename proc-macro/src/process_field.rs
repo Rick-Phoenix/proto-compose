@@ -96,10 +96,11 @@ pub fn process_field(
     // Get output type
     let proto_output_type_outer: Type = match &type_info.rust_type {
       RustType::Option(_) => parse_quote! { Option<#proto_output_type_inner> },
-      RustType::Boxed(_) => parse_quote! { Option<Box<#proto_output_type_inner>> },
+      RustType::BoxedMsg(_) => parse_quote! { Option<Box<#proto_output_type_inner>> },
       RustType::Map(_) => parse_quote!( #proto_output_type_inner ),
       RustType::Vec(_) => parse_quote! { Vec<#proto_output_type_inner> },
       RustType::Normal(_) => parse_quote!( #proto_output_type_inner ),
+      RustType::BoxedOneofVariant(path) => parse_quote! { Box<#proto_output_type_inner> },
     };
 
     field.change_type(proto_output_type_outer);

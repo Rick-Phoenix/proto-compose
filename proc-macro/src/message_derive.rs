@@ -6,7 +6,7 @@ pub(crate) fn process_message_derive_shadow(
 ) -> Result<TokenStream2, Error> {
   let mut shadow_struct = create_shadow_struct(item);
 
-  let orig_struct_name = &item.ident;
+  let orig_struct_ident = &item.ident;
   let shadow_struct_ident = &shadow_struct.ident;
 
   let mut output_tokens = TokenStream2::new();
@@ -24,7 +24,8 @@ pub(crate) fn process_message_derive_shadow(
 
     let field_attrs = process_derive_field_attrs(src_field_ident, &src_field.attrs)?;
 
-    let type_info = TypeInfo::from_type(&src_field.ty, field_attrs.kind.clone())?;
+    let type_info =
+      TypeInfo::from_type(&src_field.ty, field_attrs.kind.clone(), orig_struct_ident)?;
 
     if field_attrs.is_ignored {
       ignored_fields.push(src_field.ident.clone().unwrap());
@@ -75,10 +76,10 @@ pub(crate) fn process_message_derive_shadow(
       .collect();
   }
 
-  let schema_impls = message_schema_impls(orig_struct_name, &message_attrs, fields_tokens);
+  let schema_impls = message_schema_impls(orig_struct_ident, &message_attrs, fields_tokens);
 
   let into_proto_impl = into_proto_impl(ItemConversion {
-    source_ident: orig_struct_name,
+    source_ident: orig_struct_ident,
     target_ident: shadow_struct_ident,
     kind: ItemConversionKind::Struct,
     custom_expression: &message_attrs.into_proto,
@@ -86,7 +87,7 @@ pub(crate) fn process_message_derive_shadow(
   });
 
   let from_proto_impl = from_proto_impl(ItemConversion {
-    source_ident: orig_struct_name,
+    source_ident: orig_struct_ident,
     target_ident: shadow_struct_ident,
     kind: ItemConversionKind::Struct,
     custom_expression: &message_attrs.from_proto,
@@ -104,7 +105,7 @@ pub(crate) fn process_message_derive_shadow(
 
     impl AsProtoType for #shadow_struct_ident {
       fn proto_type() -> ProtoType {
-        <#orig_struct_name as AsProtoType>::proto_type()
+        <#orig_struct_ident as AsProtoType>::proto_type()
       }
     }
   });
@@ -144,7 +145,7 @@ pub(crate) fn process_message_derive_direct(
       ));
     }
 
-    let type_info = TypeInfo::from_type(&src_field.ty, field_attrs.kind.clone())?;
+    let type_info = TypeInfo::from_type(&src_field.ty, field_attrs.kind.clone(), &item.ident)?;
 
     let field_tokens = process_field(
       &mut FieldOrVariant::Field(src_field),

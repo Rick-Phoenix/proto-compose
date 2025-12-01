@@ -10,7 +10,7 @@ impl ProstAttrs {
   pub fn from_type_info(rust_type: &RustType, proto_type: ProtoType, tag: i32) -> Self {
     let cardinality = match rust_type {
       RustType::Option(_) => ProstCardinality::Optional,
-      RustType::Boxed(_) => ProstCardinality::Boxed,
+      RustType::BoxedMsg(_) => ProstCardinality::Boxed,
       RustType::Vec(_) => ProstCardinality::Repeated,
 
       _ => ProstCardinality::Single,

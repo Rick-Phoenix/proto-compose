@@ -112,7 +112,7 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
     let mut oneof_ident: Option<Ident> = None;
 
     if is_oneof {
-      let type_ident = extract_oneof_ident(&field.ty)?;
+      let type_ident = extract_oneof_ident(&field.ty, &ident)?;
 
       oneofs.push(type_ident.clone());
       oneof_ident = Some(type_ident);

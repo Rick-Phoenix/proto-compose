@@ -5,7 +5,7 @@ use crate::*;
 
 #[derive(Default, Debug, Clone)]
 pub enum ProtoFieldKind {
-  Message(ItemPath),
+  Message(MessageInfo),
   Enum(Option<Path>),
   Oneof(OneofInfo),
   Map(ProtoMap),
@@ -161,15 +161,9 @@ pub fn process_derive_field_attrs(
               kind = ProtoFieldKind::Oneof(info);
             }
             "message" => {
-              let message_path = list.parse_args::<Path>()?;
+              let message_info = list.parse_args::<MessageInfo>()?;
 
-              let path_type = if message_path.is_ident("suffixed") {
-                ItemPath::Suffixed
-              } else {
-                ItemPath::Path(message_path)
-              };
-
-              kind = ProtoFieldKind::Message(path_type);
+              kind = ProtoFieldKind::Message(message_info);
             }
             "enum_" => {
               let enum_path = list.parse_args::<Path>()?;
@@ -197,7 +191,7 @@ pub fn process_derive_field_attrs(
             "ignore" => is_ignored = true,
             "oneof" => kind = ProtoFieldKind::Oneof(OneofInfo::default()),
             "enum_" => kind = ProtoFieldKind::Enum(None),
-            "message" => kind = ProtoFieldKind::Message(ItemPath::None),
+            "message" => kind = ProtoFieldKind::Message(MessageInfo::default()),
             "sint32" => kind = ProtoFieldKind::Sint32,
 
             _ => {}

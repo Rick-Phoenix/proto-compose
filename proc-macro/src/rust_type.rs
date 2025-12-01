@@ -3,7 +3,8 @@ use crate::*;
 #[derive(Clone)]
 pub enum RustType {
   Option(Path),
-  Boxed(Path),
+  BoxedMsg(Path),
+  BoxedOneofVariant(Path),
   Map((Path, Path)),
   Vec(Path),
   Normal(Path),
@@ -21,10 +22,11 @@ impl RustType {
   pub fn inner_path(&self) -> Option<&Path> {
     let output = match self {
       RustType::Option(path) => path,
-      RustType::Boxed(path) => path,
+      RustType::BoxedMsg(path) => path,
       RustType::Map(_) => return None,
       RustType::Vec(path) => path,
       RustType::Normal(path) => path,
+      RustType::BoxedOneofVariant(path) => path,
     };
 
     Some(output)
@@ -32,13 +34,13 @@ impl RustType {
 }
 
 impl RustType {
-  pub fn from_type(ty: &Type) -> Result<Self, Error> {
+  pub fn from_type(ty: &Type, item_ident: &Ident) -> Result<Self, Error> {
     let path = extract_type_path(ty)?;
 
-    Ok(Self::from_path(path))
+    Ok(Self::from_path(path, item_ident))
   }
 
-  pub fn from_path(path: &Path) -> Self {
+  pub fn from_path(path: &Path, item_ident: &Ident) -> Self {
     let path_wrapper = PathWrapper::new(Cow::Borrowed(path));
 
     let last_segment = path_wrapper.last_segment();
@@ -46,6 +48,11 @@ impl RustType {
     let type_ident = last_segment.ident().to_string();
 
     match type_ident.as_str() {
+      "Box" => {
+        let inner = PathWrapper::new(Cow::Borrowed(last_segment.first_argument().unwrap()));
+
+        Self::Normal(inner.inner.into_owned())
+      }
       "Option" => {
         let inner = PathWrapper::new(Cow::Borrowed(last_segment.first_argument().unwrap()));
 
@@ -58,7 +65,11 @@ impl RustType {
 
           let box_inner = last_segment.first_argument().unwrap();
 
-          Self::Boxed(box_inner.clone())
+          if let Some(boxed_item_ident) = box_inner.get_ident() && boxed_item_ident == item_ident {
+            Self::BoxedMsg(box_inner.clone())
+          } else {
+            Self::Option(inner.inner.into_owned())
+          }
         } else {
           Self::Option(inner.inner.into_owned())
         }

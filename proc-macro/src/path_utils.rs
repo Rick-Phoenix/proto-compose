@@ -93,8 +93,8 @@ pub fn extract_type_path_mut(ty: &mut Type) -> Result<&mut Path, Error> {
   }
 }
 
-pub fn extract_oneof_ident(ty: &Type) -> Result<Ident, Error> {
-  let rust_type = RustType::from_type(ty)?;
+pub fn extract_oneof_ident(ty: &Type, item_ident: &Ident) -> Result<Ident, Error> {
+  let rust_type = RustType::from_type(ty, item_ident)?;
 
   rust_type
     .inner_path()

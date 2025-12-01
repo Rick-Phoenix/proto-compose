@@ -170,7 +170,7 @@ pub fn extract_proto_type(
 
       ProtoType::Enum(enum_path)
     }
-    ProtoFieldKind::Message(path) => {
+    ProtoFieldKind::Message(MessageInfo { path, boxed }) => {
       let msg_path = if let ItemPath::Path(path) = path {
         path
       } else {
@@ -196,9 +196,10 @@ pub fn extract_proto_type(
     // maybe use the larger error for any of these
     _ => match rust_type {
       RustType::Option(path) => ProtoType::from_primitive(path)?,
-      RustType::Boxed(path) => ProtoType::from_primitive(path)?,
+      RustType::BoxedMsg(path) => ProtoType::from_primitive(path)?,
       RustType::Vec(path) => ProtoType::from_primitive(path)?,
       RustType::Normal(path) => ProtoType::from_primitive(path)?,
+      RustType::BoxedOneofVariant(path) => ProtoType::from_primitive(path)?,
       RustType::Map((k, v)) => {
         let keys = ProtoMapKeys::from_path(k)?;
         let values = ProtoMapValues::from_path(v).map_err(|_| spanned_error!(v, format!("Unrecognized proto map value type {}. If you meant to use an enum or a message, use the attribute", v.to_token_stream())))?;

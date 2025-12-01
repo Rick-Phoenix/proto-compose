@@ -29,10 +29,11 @@ impl TypeInfo {
 
     match &self.rust_type {
       RustType::Option(_) => quote! { map(Into::into) },
-      RustType::Boxed(_) => quote! { map(|v| Box::new((*v).into())) },
+      RustType::BoxedMsg(_) => quote! { map(|v| Box::new((*v).into())) },
       RustType::Map(_) => quote! { into_iter().map(|(k, v)| (k, v.into())).collect() },
       RustType::Vec(_) => quote! { into_iter().map(Into::into).collect() },
       RustType::Normal(_) => quote! { into() },
+      RustType::BoxedOneofVariant(_) => quote! { into() },
     }
   }
 
@@ -55,7 +56,7 @@ impl TypeInfo {
 
     match &self.rust_type {
       RustType::Option(_) => quote! { map(|v| v.#conversion_call) },
-      RustType::Boxed(_) => quote! { map(|v| Box::new((*v).into())) },
+      RustType::BoxedMsg(_) => quote! { map(|v| Box::new((*v).into())) },
       RustType::Map(_) => {
         let value_conversion = if let ProtoType::Map(map) = &self.proto_type && map.has_enum_values() {
             quote! { try_into().unwrap_or_default() }
@@ -67,6 +68,7 @@ impl TypeInfo {
       }
       RustType::Vec(_) => quote! { into_iter().map(|v| v.#conversion_call).collect() },
       RustType::Normal(_) => conversion_call,
+      RustType::BoxedOneofVariant(_) => conversion_call,
     }
   }
 
@@ -97,10 +99,11 @@ impl TypeInfo {
 
     let target_type = match &self.rust_type {
       RustType::Option(_) => quote! { Option<#base_target_type> },
-      RustType::Boxed(_) => quote! { Option<#base_target_type> },
+      RustType::BoxedMsg(_) => quote! { Option<#base_target_type> },
       RustType::Map(_) => base_target_type,
       RustType::Vec(_) => quote! { Vec<#base_target_type> },
       RustType::Normal(_) => base_target_type,
+      RustType::BoxedOneofVariant(_) => base_target_type,
     };
 
     quote! { <#target_type as AsProtoType>::proto_type() }
@@ -118,9 +121,13 @@ impl TypeInfo {
     }
   }
 
-  pub fn from_type(ty: &Type, field_kind: ProtoFieldKind) -> Result<Self, Error> {
+  pub fn from_type(
+    ty: &Type,
+    field_kind: ProtoFieldKind,
+    item_ident: &Ident,
+  ) -> Result<Self, Error> {
     let path = extract_type_path(ty)?;
-    let rust_type = RustType::from_path(path);
+    let rust_type = RustType::from_path(path, item_ident);
 
     let proto_type = extract_proto_type(&rust_type, field_kind, ty)?;
 
