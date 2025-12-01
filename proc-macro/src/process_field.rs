@@ -106,7 +106,7 @@ pub fn process_field(
     field.change_type(proto_output_type_outer);
   }
 
-  let prost_attr = ProstAttrs::from_type_info(&type_info.rust_type, proto_type.clone(), tag);
+  let prost_attr = ProstAttrs::from_type_info(&type_info, tag);
 
   let field_prost_attr: Attribute = parse_quote!(#prost_attr);
 

@@ -1,14 +1,14 @@
 use crate::*;
 
-pub struct ProstAttrs {
-  pub proto_type: ProtoType,
+pub struct ProstAttrs<'a> {
+  pub proto_type: &'a ProtoType,
   pub cardinality: ProstCardinality,
   pub tag: i32,
 }
 
-impl ProstAttrs {
-  pub fn from_type_info(rust_type: &RustType, proto_type: ProtoType, tag: i32) -> Self {
-    let cardinality = match rust_type {
+impl<'a> ProstAttrs<'a> {
+  pub fn from_type_info(type_info: &'a TypeInfo, tag: i32) -> Self {
+    let cardinality = match &type_info.rust_type {
       RustType::Option(_) => ProstCardinality::Optional,
       RustType::BoxedMsg(_) => ProstCardinality::Boxed,
       RustType::Vec(_) => ProstCardinality::Repeated,
@@ -17,14 +17,14 @@ impl ProstAttrs {
     };
 
     Self {
-      proto_type,
+      proto_type: &type_info.proto_type,
       cardinality,
       tag,
     }
   }
 }
 
-impl ToTokens for ProstAttrs {
+impl<'a> ToTokens for ProstAttrs<'a> {
   fn to_tokens(&self, tokens: &mut TokenStream2) {
     let Self {
       proto_type,

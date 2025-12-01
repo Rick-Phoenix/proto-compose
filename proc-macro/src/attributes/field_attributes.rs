@@ -4,17 +4,6 @@ use syn::ExprCall;
 use crate::*;
 
 #[derive(Default, Debug, Clone)]
-pub enum ProtoFieldKind {
-  Message(MessageInfo),
-  Enum(Option<Path>),
-  Oneof(OneofInfo),
-  Map(ProtoMap),
-  Sint32,
-  #[default]
-  None,
-}
-
-#[derive(Default, Debug, Clone)]
 pub enum ItemPath {
   Path(Path),
   Suffixed,
@@ -38,24 +27,6 @@ impl ToTokens for ItemPath {
       Self::Path(path) => tokens.extend(path.to_token_stream()),
       _ => {}
     };
-  }
-}
-
-impl ProtoFieldKind {
-  pub fn is_message(&self) -> bool {
-    matches!(self, Self::Message(_))
-  }
-
-  pub fn is_enum(&self) -> bool {
-    matches!(self, Self::Enum(_))
-  }
-
-  pub fn is_oneof(&self) -> bool {
-    matches!(self, Self::Oneof { .. })
-  }
-
-  pub fn is_none(&self) -> bool {
-    matches!(self, Self::None)
   }
 }
 
@@ -160,6 +131,11 @@ pub fn process_derive_field_attrs(
 
               kind = ProtoFieldKind::Oneof(info);
             }
+            "options" => {
+              let exprs = list.parse_args::<PunctuatedParser<Expr>>().unwrap().inner;
+
+              options = Some(quote! { vec! [ #exprs ] });
+            }
             "message" => {
               let message_info = list.parse_args::<MessageInfo>()?;
 
@@ -170,18 +146,18 @@ pub fn process_derive_field_attrs(
 
               kind = ProtoFieldKind::Enum(Some(enum_path));
             }
-            "options" => {
-              let exprs = list.parse_args::<PunctuatedParser<Expr>>().unwrap().inner;
 
-              options = Some(quote! { vec! [ #exprs ] });
-            }
             "map" => {
               let map_data = list.parse_args::<ProtoMap>()?;
 
               kind = ProtoFieldKind::Map(map_data);
             }
 
-            _ => {}
+            _ => {
+              if let Some(parsed_kind) = ProtoFieldKind::from_meta_list(&ident, list)? {
+                kind = parsed_kind;
+              }
+            }
           };
         }
         Meta::Path(path) => {
@@ -189,12 +165,12 @@ pub fn process_derive_field_attrs(
 
           match ident.as_str() {
             "ignore" => is_ignored = true,
-            "oneof" => kind = ProtoFieldKind::Oneof(OneofInfo::default()),
-            "enum_" => kind = ProtoFieldKind::Enum(None),
-            "message" => kind = ProtoFieldKind::Message(MessageInfo::default()),
-            "sint32" => kind = ProtoFieldKind::Sint32,
 
-            _ => {}
+            _ => {
+              if let Some(parsed_kind) = ProtoFieldKind::from_str(&ident) {
+                kind = parsed_kind;
+              }
+            }
           };
         }
       };

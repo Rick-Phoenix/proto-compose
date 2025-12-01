@@ -38,7 +38,7 @@ impl ProtoType {
         return Err(spanned_error!(
           path,
           format!(
-            "Type {} does not correspond to a prost-supported primitive. Use the specific attributes if you meant to use an enum or message",
+            "Type {} does not correspond to a prost-supported primitive. Please set the protobuf type manually",
             path.to_token_stream()
           )
         ))
@@ -48,10 +48,22 @@ impl ProtoType {
     Ok(output)
   }
 
-  pub fn default_from_proto(&self) -> TokenStream2 {
+  pub fn default_from_proto(&self, base_ident: &TokenStream2) -> TokenStream2 {
     match self {
-      ProtoType::Enum(_) => quote! { try_into().unwrap_or_default() },
-      _ => quote! { into() },
+      ProtoType::Enum(_) => quote! { #base_ident.try_into().unwrap_or_default() },
+      ProtoType::Message { boxed: true, .. } => quote! { Box::new((*#base_ident).into()) },
+      ProtoType::Oneof {
+        default: true,
+        is_proxied,
+        ..
+      } => {
+        if *is_proxied {
+          quote! { #base_ident.unwrap_or_default().into() }
+        } else {
+          quote! { #base_ident.unwrap_or_default() }
+        }
+      }
+      _ => quote! { #base_ident.into() },
     }
   }
 
