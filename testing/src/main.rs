@@ -97,16 +97,7 @@ mod inner {
     oneof: PseudoOneof,
   }
 
-  fn from_proto(input: NestedProto) -> Nested {
-    Nested { name: input.name }
-  }
-
-  fn into_proto(input: Nested) -> NestedProto {
-    NestedProto { name: input.name }
-  }
-
   #[proto_message]
-  #[proto(from_proto = from_proto)]
   #[derive(Clone, Debug)]
   pub struct Nested {
     name: String,

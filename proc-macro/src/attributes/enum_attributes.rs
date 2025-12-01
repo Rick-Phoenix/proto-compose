@@ -8,6 +8,7 @@ pub struct EnumAttrs {
   pub file: String,
   pub package: String,
   pub full_name: String,
+  pub no_prefix: bool,
 }
 
 pub fn process_derive_enum_attrs(
@@ -21,6 +22,7 @@ pub fn process_derive_enum_attrs(
   let mut full_name: Option<String> = None;
   let mut file: Option<String> = None;
   let mut package: Option<String> = None;
+  let mut no_prefix = false;
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -63,7 +65,14 @@ pub fn process_derive_enum_attrs(
             file = Some(extract_string_lit(&nameval.value).unwrap());
           }
         }
-        Meta::Path(_) => {}
+        Meta::Path(path) => {
+          let ident = get_ident_or_continue!(path);
+
+          match ident.as_str() {
+            "no_prefix" => no_prefix = true,
+            _ => {}
+          };
+        }
       }
     }
   }
@@ -81,5 +90,6 @@ pub fn process_derive_enum_attrs(
     file,
     package,
     full_name,
+    no_prefix,
   })
 }

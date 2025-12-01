@@ -97,8 +97,8 @@ pub(crate) fn process_oneof_derive_shadow(
   });
 
   let from_proto_impl = from_proto_impl(ItemConversion {
-    source_ident: shadow_enum_ident,
-    target_ident: orig_enum_ident,
+    source_ident: orig_enum_ident,
+    target_ident: shadow_enum_ident,
     kind: ItemConversionKind::Enum,
     custom_expression: &oneof_attrs.from_proto,
     conversion_tokens: from_proto_body,

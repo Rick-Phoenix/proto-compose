@@ -204,21 +204,37 @@ pub fn into_proto_impl(info: ItemConversion) -> TokenStream2 {
 }
 
 pub fn from_proto_impl(info: ItemConversion) -> TokenStream2 {
-  let from_proto_impl = create_from_impl(&info);
-
   let ItemConversion {
     source_ident,
     target_ident,
-    ..
+    kind,
+    custom_expression,
+    conversion_tokens,
   } = info;
 
-  quote! {
-    #from_proto_impl
-
+  // We use the original source and target for the helper
+  let from_proto_helper = quote! {
     impl #source_ident {
       pub fn from_proto(value: #target_ident) -> Self {
         value.into()
       }
     }
+  };
+
+  // And we switch them to create the From impl from _Proto to the original item
+  let switched = ItemConversion {
+    source_ident: target_ident,
+    target_ident: source_ident,
+    kind,
+    custom_expression,
+    conversion_tokens,
+  };
+
+  let from_proto_impl = create_from_impl(&switched);
+
+  quote! {
+    #from_proto_impl
+
+    #from_proto_helper
   }
 }

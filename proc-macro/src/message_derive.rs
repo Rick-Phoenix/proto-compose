@@ -86,8 +86,8 @@ pub(crate) fn process_message_derive_shadow(
   });
 
   let from_proto_impl = from_proto_impl(ItemConversion {
-    source_ident: shadow_struct_ident,
-    target_ident: orig_struct_name,
+    source_ident: orig_struct_name,
+    target_ident: shadow_struct_ident,
     kind: ItemConversionKind::Struct,
     custom_expression: &message_attrs.from_proto,
     conversion_tokens: from_proto_body,

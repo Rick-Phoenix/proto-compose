@@ -19,14 +19,16 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
     file,
     package,
     full_name,
+    no_prefix,
   } = process_derive_enum_attrs(enum_name, attrs).unwrap();
 
   let reserved_numbers_tokens = reserved_numbers.to_token_stream();
 
   let mut variants_tokens: Vec<TokenStream2> = Vec::new();
+  let mut from_str_tokens = TokenStream2::new();
+  let mut as_str_tokens = TokenStream2::new();
 
   let mut used_tags: Vec<i32> = Vec::new();
-
   for variant in variants.iter() {
     if let Some((_, expr)) = &variant.discriminant {
       let num = extract_i32(expr)?;
@@ -43,8 +45,18 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
       panic!("Must be a unit variant");
     }
 
+    let variant_ident = &variant.ident;
+
     let EnumVariantAttrs { options, name } =
-      process_derive_enum_variants_attrs(&proto_name, &variant.ident, &variant.attrs)?;
+      process_derive_enum_variants_attrs(&proto_name, variant_ident, &variant.attrs, no_prefix)?;
+
+    from_str_tokens.extend(quote! {
+      #name => Some(Self::#variant_ident),
+    });
+
+    as_str_tokens.extend(quote! {
+      Self::#variant_ident => #name,
+    });
 
     let tag = if let Some((_, expr)) = &variant.discriminant {
       let tag = extract_i32(expr)?;
@@ -95,6 +107,23 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
     }
 
     impl #enum_name {
+      pub fn from_int_or_default(int: i32) -> Self {
+        int.try_into().unwrap_or_default()
+      }
+
+      pub fn as_proto_name(&self) -> &'static str {
+        match self {
+          #as_str_tokens
+        }
+      }
+
+      pub fn from_proto_name(name: &str) -> Option<Self> {
+        match name {
+          #from_str_tokens
+          _ => None
+        }
+      }
+
       #[track_caller]
       pub fn to_enum() -> ProtoEnum {
         ProtoEnum {

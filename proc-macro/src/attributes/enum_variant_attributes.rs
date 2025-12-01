@@ -9,6 +9,7 @@ pub fn process_derive_enum_variants_attrs(
   enum_name: &str,
   rust_variant_name: &Ident,
   attrs: &Vec<Attribute>,
+  no_prefix: bool,
 ) -> Result<EnumVariantAttrs, Error> {
   let mut options: Option<TokenStream2> = None;
   let mut name: Option<String> = None;
@@ -43,11 +44,18 @@ pub fn process_derive_enum_variants_attrs(
     }
   }
 
-  let name = format!(
-    "{}_{}",
-    ccase!(constant, enum_name),
-    name.unwrap_or_else(|| ccase!(constant, rust_variant_name.to_string()))
-  );
+  let name = if let Some(name) = name {
+    name
+  } else {
+    let plain_name = ccase!(constant, rust_variant_name.to_string());
+
+    if no_prefix {
+      plain_name
+    } else {
+      let prefix = ccase!(constant, enum_name);
+      format!("{}_{}", prefix, plain_name)
+    }
+  };
 
   Ok(EnumVariantAttrs {
     options: attributes::ProtoOptions(options),
