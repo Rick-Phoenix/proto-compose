@@ -112,7 +112,21 @@ impl ProtoField {
   }
 
   pub fn as_proto_type_trait_expr(&self) -> TokenStream2 {
-    let target_type = self.output_proto_type();
+    let target_type = match self {
+      ProtoField::Map(proto_map) => proto_map.as_proto_type_trait_target(),
+      ProtoField::Oneof { .. } => quote! {},
+      ProtoField::Repeated(proto_type) => {
+        let inner = proto_type.as_proto_type_trait_target();
+
+        quote! { Vec<#inner> }
+      }
+      ProtoField::Optional(proto_type) => {
+        let inner = proto_type.as_proto_type_trait_target();
+
+        quote! { Option<#inner> }
+      }
+      ProtoField::Single(proto_type) => proto_type.as_proto_type_trait_target(),
+    };
 
     quote! { <#target_type as AsProtoType>::proto_type() }
   }

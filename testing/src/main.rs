@@ -109,6 +109,9 @@ mod inner {
 
     #[proto(oneof(default, proxied))]
     oneof: PseudoOneof,
+
+    #[proto(sint32)]
+    sint32: i32,
   }
 
   #[proto_message]

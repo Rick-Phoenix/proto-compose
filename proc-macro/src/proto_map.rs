@@ -31,6 +31,13 @@ impl ProtoMapKeys {
       ProtoMapKeys::Int32 => quote! { i32 },
     }
   }
+
+  pub fn as_proto_type_trait_target(&self) -> TokenStream2 {
+    match self {
+      ProtoMapKeys::String => quote! { String },
+      ProtoMapKeys::Int32 => quote! { i32 },
+    }
+  }
 }
 
 impl FromStr for ProtoMapKeys {
@@ -83,6 +90,13 @@ pub struct ProtoMap {
 }
 
 impl ProtoMap {
+  pub fn as_proto_type_trait_target(&self) -> TokenStream2 {
+    let keys = self.keys.as_proto_type_trait_target();
+    let values = self.values.as_proto_type_trait_target();
+
+    quote! { HashMap<#keys, #values> }
+  }
+
   pub fn validator_target_type(&self) -> TokenStream2 {
     let keys = self.keys.validator_target_type();
     let values = self.values.validator_target_type();
