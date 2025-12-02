@@ -1,7 +1,7 @@
 use crate::*;
 
 pub struct OneofAttrs {
-  pub options: ProtoOptions,
+  pub options: Vec<Expr>,
   pub name: String,
   pub required: bool,
   pub direct: bool,
@@ -11,7 +11,7 @@ pub struct OneofAttrs {
 }
 
 pub fn process_oneof_attrs(enum_name: &Ident, attrs: &Vec<Attribute>) -> Result<OneofAttrs, Error> {
-  let mut options: Option<TokenStream2> = None;
+  let mut options: Vec<Expr> = Vec::new();
   let mut name: Option<String> = None;
   let mut required = false;
   let mut direct = false;
@@ -24,7 +24,7 @@ pub fn process_oneof_attrs(enum_name: &Ident, attrs: &Vec<Attribute>) -> Result<
       continue;
     }
 
-    let args = attr.parse_args::<PunctuatedParser<Meta>>().unwrap();
+    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
 
     for arg in args.inner {
       match arg {
@@ -46,9 +46,9 @@ pub fn process_oneof_attrs(enum_name: &Ident, attrs: &Vec<Attribute>) -> Result<
 
           match ident.as_str() {
             "options" => {
-              let exprs = list.parse_args::<PunctuatedParser<Expr>>().unwrap().inner;
+              let exprs = list.parse_args::<PunctuatedParser<Expr>>()?.inner;
 
-              options = Some(quote! { vec! [ #exprs ] });
+              options = exprs.into_iter().collect();
             }
             "derive" => shadow_derives = Some(list),
             _ => {}
@@ -68,12 +68,7 @@ pub fn process_oneof_attrs(enum_name: &Ident, attrs: &Vec<Attribute>) -> Result<
 
               into_proto = Some(expr);
             }
-            "options" => {
-              let func_call = nv.value;
-
-              options = Some(quote! { #func_call });
-            }
-            "name" => name = Some(extract_string_lit(&nv.value).unwrap()),
+            "name" => name = Some(extract_string_lit(&nv.value)?),
             _ => {}
           };
         }
@@ -82,7 +77,7 @@ pub fn process_oneof_attrs(enum_name: &Ident, attrs: &Vec<Attribute>) -> Result<
   }
 
   Ok(OneofAttrs {
-    options: attributes::ProtoOptions(options),
+    options,
     name: name.unwrap_or_else(|| ccase!(snake, enum_name.to_string())),
     required,
     direct,

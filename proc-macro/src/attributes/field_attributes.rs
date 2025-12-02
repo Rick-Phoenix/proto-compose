@@ -52,7 +52,7 @@ impl ToTokens for ItemPath {
 pub struct FieldAttrs {
   pub tag: i32,
   pub validator: Option<ValidatorExpr>,
-  pub options: ProtoOptions,
+  pub options: Vec<Expr>,
   pub name: String,
   pub proto_field: ProtoField,
   pub from_proto: Option<PathOrClosure>,
@@ -78,7 +78,7 @@ pub fn process_derive_field_attrs(
 ) -> Result<FieldAttrData, Error> {
   let mut validator: Option<ValidatorExpr> = None;
   let mut tag: Option<i32> = None;
-  let mut options: Option<TokenStream2> = None;
+  let mut options: Vec<Expr> = Vec::new();
   let mut name: Option<String> = None;
   let mut proto_field: Option<ProtoField> = None;
   let mut is_ignored = false;
@@ -120,11 +120,6 @@ pub fn process_derive_field_attrs(
             "tag" => {
               tag = Some(extract_i32(&nv.value)?);
             }
-            "options" => {
-              let func_call = nv.value;
-
-              options = Some(quote! { #func_call });
-            }
             "name" => {
               name = Some(extract_string_lit(&nv.value)?);
             }
@@ -138,7 +133,7 @@ pub fn process_derive_field_attrs(
             "options" => {
               let exprs = list.parse_args::<PunctuatedParser<Expr>>()?.inner;
 
-              options = Some(quote! { vec! [ #exprs ] });
+              options = exprs.into_iter().collect();
             }
 
             "oneof" => {
@@ -304,7 +299,7 @@ pub fn process_derive_field_attrs(
   Ok(FieldAttrData::Normal(Box::new(FieldAttrs {
     validator,
     tag,
-    options: attributes::ProtoOptions(options),
+    options,
     name: name.unwrap_or_else(|| ccase!(snake, original_name.to_string())),
     proto_field,
     from_proto,

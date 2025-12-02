@@ -1,4 +1,3 @@
-use itertools::Either;
 use syn::LitInt;
 
 use crate::*;
@@ -46,24 +45,9 @@ impl Parse for NumList {
   }
 }
 
-pub fn get_proto_args(attr: &Attribute) -> Result<impl Iterator<Item = Meta>, Error> {
-  if attr.path().is_ident("proto") {
-    Ok(Either::Left(
-      attr
-        .parse_args::<PunctuatedParser<Meta>>()?
-        .inner
-        .into_iter(),
-    ))
-  } else {
-    Ok(Either::Right(std::iter::empty::<Meta>()))
-  }
-}
-
 pub struct PunctuatedParser<T: Parse> {
   pub inner: Punctuated<T, Token![,]>,
 }
-
-pub type Punctuated2<T> = Punctuated<T, Token![,]>;
 
 impl<T: Parse> Parse for PunctuatedParser<T> {
   fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
@@ -78,19 +62,6 @@ pub fn extract_i32(expr: &Expr) -> Result<i32, Error> {
     Ok(value.base10_parse()?)
   } else {
     Err(spanned_error!(expr, "Expected an integer literal"))
-  }
-}
-
-#[derive(Default, Debug, Clone)]
-pub(crate) struct ProtoOptions(pub Option<TokenStream2>);
-
-impl ToTokens for ProtoOptions {
-  fn to_tokens(&self, tokens: &mut TokenStream2) {
-    tokens.extend(if let Some(opts) = &self.0 {
-      quote! { #opts }
-    } else {
-      quote! { vec![] }
-    });
   }
 }
 
@@ -113,13 +84,5 @@ pub fn extract_string_lit(expr: &Expr) -> Result<String, Error> {
     Ok(value.value())
   } else {
     Err(spanned_error!(expr, "Expected a string literal"))
-  }
-}
-
-pub fn extract_path(expr: Expr) -> Result<Path, Error> {
-  if let Expr::Path(path) = expr {
-    Ok(path.path)
-  } else {
-    Err(spanned_error!(expr, "Expected a path"))
   }
 }

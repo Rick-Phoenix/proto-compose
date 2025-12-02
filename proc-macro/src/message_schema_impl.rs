@@ -60,7 +60,7 @@ pub fn message_schema_impls(
           file: #file.into(),
           reserved_names: #reserved_names,
           reserved_numbers: vec![ #reserved_numbers ],
-          options: #options,
+          options: vec![ #(#options),* ],
           messages: vec![ #nested_messages_tokens ],
           enums: vec![ #nested_enums_tokens ],
           entries: vec![ #(#fields_data,)* ],

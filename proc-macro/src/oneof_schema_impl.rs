@@ -24,7 +24,7 @@ pub fn oneof_schema_impl(
     impl #enum_ident {
       #[track_caller]
       pub fn to_oneof() -> Oneof {
-        let mut options: Vec<ProtoOption> = #options;
+        let mut options: Vec<ProtoOption> = vec![ #(#options),* ];
 
         #required_option_tokens
 

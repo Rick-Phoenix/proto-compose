@@ -81,7 +81,7 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
     };
 
     variants_tokens.push(quote! {
-      EnumVariant { name: #name.to_string(), options: #options, tag: #tag, }
+      EnumVariant { name: #name.to_string(), options: vec![ #(#options),* ], tag: #tag, }
     });
   }
 
@@ -134,7 +134,7 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
           variants: vec! [ #(#variants_tokens,)* ],
           reserved_names: #reserved_names,
           reserved_numbers: vec![ #reserved_numbers_tokens ],
-          options: #options,
+          options: vec![ #(#options),* ],
         }
       }
     }

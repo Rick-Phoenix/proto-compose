@@ -97,7 +97,7 @@ pub fn process_field(
           ProtoField {
             name: #name.to_string(),
             tag: #tag,
-            options: #options,
+            options: vec![ #(#options),* ],
             type_: #field_type_tokens,
             validator: #validator_tokens,
           }
@@ -109,7 +109,7 @@ pub fn process_field(
         ProtoField {
           name: #name.to_string(),
           tag: #tag,
-          options: #options,
+          options: vec![ #(#options),* ],
           type_: #field_type_tokens,
           validator: #validator_tokens,
         }

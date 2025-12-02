@@ -3,7 +3,7 @@ use crate::*;
 pub struct MessageAttrs {
   pub reserved_names: ReservedNames,
   pub reserved_numbers: ReservedNumbers,
-  pub options: ProtoOptions,
+  pub options: Vec<Expr>,
   pub name: String,
   pub full_name: String,
   pub file: String,
@@ -22,7 +22,7 @@ pub fn process_derive_message_attrs(
 ) -> Result<MessageAttrs, Error> {
   let mut reserved_names = ReservedNames::default();
   let mut reserved_numbers = ReservedNumbers::default();
-  let mut options: Option<TokenStream2> = None;
+  let mut options: Vec<Expr> = Vec::new();
   let mut proto_name: Option<String> = None;
   let mut full_name: Option<String> = None;
   let mut file: Option<String> = None;
@@ -39,7 +39,7 @@ pub fn process_derive_message_attrs(
       continue;
     }
 
-    let args = attr.parse_args::<PunctuatedParser<Meta>>().unwrap();
+    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
 
     for arg in args.inner {
       match arg {
@@ -48,19 +48,19 @@ pub fn process_derive_message_attrs(
 
           match ident.as_str() {
             "reserved_names" => {
-              let names = list.parse_args::<StringList>().unwrap();
+              let names = list.parse_args::<StringList>()?;
 
               reserved_names = ReservedNames::List(names.list);
             }
             "reserved_numbers" => {
-              let numbers = list.parse_args::<ReservedNumbers>().unwrap();
+              let numbers = list.parse_args::<ReservedNumbers>()?;
 
               reserved_numbers = numbers;
             }
             "options" => {
-              let exprs = list.parse_args::<PunctuatedParser<Expr>>().unwrap().inner;
+              let exprs = list.parse_args::<PunctuatedParser<Expr>>()?.inner;
 
-              options = Some(quote! { vec! [ #exprs ] });
+              options = exprs.into_iter().collect();
             }
             "nested_messages" => {
               let idents = list.parse_args::<PunctuatedParser<Ident>>()?.inner;
@@ -77,11 +77,7 @@ pub fn process_derive_message_attrs(
           };
         }
         Meta::NameValue(nv) => {
-          let ident = if let Some(ident) = nv.path.get_ident() {
-            ident.to_string()
-          } else {
-            continue;
-          };
+          let ident = get_ident_or_continue!(nv.path);
 
           match ident.as_str() {
             "from_proto" => {
@@ -94,16 +90,11 @@ pub fn process_derive_message_attrs(
 
               into_proto = Some(expr);
             }
-            "options" => {
-              let func_call = nv.value;
-
-              options = Some(quote! { #func_call });
-            }
             "name" => {
-              proto_name = Some(extract_string_lit(&nv.value).unwrap());
+              proto_name = Some(extract_string_lit(&nv.value)?);
             }
             "full_name" => {
-              full_name = Some(extract_string_lit(&nv.value).unwrap());
+              full_name = Some(extract_string_lit(&nv.value)?);
             }
             "reserved_names" => {
               reserved_names = ReservedNames::Expr(nv.value);
@@ -134,7 +125,7 @@ pub fn process_derive_message_attrs(
   Ok(MessageAttrs {
     reserved_names,
     reserved_numbers,
-    options: attributes::ProtoOptions(options),
+    options,
     full_name: full_name.unwrap_or_else(|| name.clone()),
     name,
     file,
