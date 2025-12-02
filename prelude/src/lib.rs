@@ -6,7 +6,6 @@ mod items;
 mod oneof;
 pub mod validators;
 use std::{
-  cmp::Ordering,
   collections::{BTreeSet, HashSet},
   ops::Range,
   sync::Arc,
@@ -17,7 +16,6 @@ mod message;
 mod optional;
 mod proto_enum;
 mod proto_type;
-mod tag_allocator;
 
 use bon::Builder;
 pub use field::*;
@@ -27,7 +25,6 @@ pub use message::*;
 pub use oneof::*;
 pub use proto_enum::*;
 pub use proto_type::*;
-pub use tag_allocator::*;
 
 #[doc(hidden)]
 pub fn apply<I, O, F>(input: I, f: F) -> O

@@ -1,9 +1,7 @@
 use crate::*;
 
-pub trait ProtoEnumTrait {}
-
 #[derive(Debug, Default, Clone)]
-pub struct ProtoEnum {
+pub struct Enum {
   pub name: Arc<str>,
   pub full_name: &'static str,
   pub package: Arc<str>,

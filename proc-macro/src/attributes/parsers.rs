@@ -63,6 +63,8 @@ pub struct PunctuatedParser<T: Parse> {
   pub inner: Punctuated<T, Token![,]>,
 }
 
+pub type Punctuated2<T> = Punctuated<T, Token![,]>;
+
 impl<T: Parse> Parse for PunctuatedParser<T> {
   fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
     let inner = Punctuated::parse_terminated(input)?;

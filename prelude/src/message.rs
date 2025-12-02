@@ -1,7 +1,5 @@
 use crate::*;
 
-pub trait ProtoMessage {}
-
 #[derive(Debug, Default, Clone)]
 pub struct Message {
   pub name: &'static str,
@@ -10,7 +8,7 @@ pub struct Message {
   pub file: Arc<str>,
   pub entries: Vec<MessageEntry>,
   pub messages: Vec<Message>,
-  pub enums: Vec<ProtoEnum>,
+  pub enums: Vec<Enum>,
   pub options: Vec<ProtoOption>,
   pub reserved_names: Vec<&'static str>,
   pub reserved_numbers: Vec<Range<i32>>,
@@ -36,7 +34,7 @@ impl Message {
     }
   }
 
-  pub fn add_enums<I: IntoIterator<Item = ProtoEnum>>(&mut self, enums: I) {
+  pub fn add_enums<I: IntoIterator<Item = Enum>>(&mut self, enums: I) {
     self.enums = enums.into_iter().collect();
   }
 }

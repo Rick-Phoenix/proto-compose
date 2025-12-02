@@ -17,8 +17,6 @@ impl<S: State> ValidatorBuilderFor<GenericProtoEnum> for EnumValidatorBuilder<S>
 
 impl_ignore!(EnumValidatorBuilder);
 
-impl<T, S: State> ValidatorBuilderFor<T> for EnumValidatorBuilder<S> where T: ProtoEnumTrait {}
-
 #[derive(Clone, Debug, Builder)]
 pub struct EnumValidator {
   /// Only the values in this list will be considered valid for this field.

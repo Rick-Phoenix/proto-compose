@@ -42,7 +42,7 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
 
   for (i, variant) in variants.iter_mut().enumerate() {
     if !variant.fields.is_empty() {
-      panic!("Must be a unit variant");
+      bail!(variant, "Protobuf enums can only have unit variants");
     }
 
     let variant_ident = &variant.ident;
@@ -62,10 +62,10 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
       let tag = extract_i32(expr)?;
 
       if i == 0 && tag != 0 {
-        return Err(spanned_error!(
+        bail!(
           expr,
           "The first variant of a protobuf enum must have have a tag of 0"
-        ));
+        );
       }
 
       tag
@@ -84,8 +84,6 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
   }
 
   let output_tokens = quote! {
-    impl ProtoEnumTrait for #enum_name {}
-
     impl ProtoValidator<#enum_name> for ValidatorMap {
       type Builder = EnumValidatorBuilder;
 
@@ -125,8 +123,8 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
       }
 
       #[track_caller]
-      pub fn to_enum() -> ProtoEnum {
-        ProtoEnum {
+      pub fn to_enum() -> Enum {
+        Enum {
           name: #proto_name.into(),
           full_name: #full_name,
           package: #package.into(),

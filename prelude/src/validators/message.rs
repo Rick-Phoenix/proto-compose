@@ -15,8 +15,6 @@ impl ProtoValidator<GenericMessage> for ValidatorMap {
   }
 }
 
-impl<S: State, T> ValidatorBuilderFor<T> for MessageValidatorBuilder<S> where T: ProtoMessage {}
-
 impl<S: State> MessageValidatorBuilder<S>
 where
   S::Ignore: IsUnset,

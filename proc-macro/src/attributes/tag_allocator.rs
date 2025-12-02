@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-
 use crate::*;
 
 pub struct TagAllocator<'a> {
@@ -23,20 +21,6 @@ impl<'a> TagAllocator<'a> {
     }
   }
 
-  pub fn tag_is_unavailable(&self, number: &i32) -> bool {
-    let result = self.unavailable.binary_search_by(|range| {
-      if range.contains(number) {
-        Ordering::Equal
-      } else if *number < range.start {
-        Ordering::Greater
-      } else {
-        Ordering::Less
-      }
-    });
-
-    result.is_ok()
-  }
-
   #[track_caller]
   pub fn next_tag(&mut self) -> i32 {
     loop {
@@ -49,20 +33,12 @@ impl<'a> TagAllocator<'a> {
         }
 
       if self.reserved_to_max {
-        panic!("Protobuf tag limit exceeded! No available tags left.");
+        panic!("Protobuf tag limit exceeded! Check if you have set the reserved numbers range to infinity");
       }
 
       let tag = self.next_tag;
       self.next_tag += 1;
       return tag;
     }
-  }
-
-  #[track_caller]
-  pub fn get_or_next(&mut self, manual_tag: Option<i32>) -> i32 {
-    if let Some(tag) = manual_tag {
-      return tag;
-    }
-    self.next_tag()
   }
 }

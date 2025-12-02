@@ -6,7 +6,7 @@ pub struct ProtoFile {
   pub package: Arc<str>,
   pub imports: BTreeSet<Arc<str>>,
   pub messages: Vec<Message>,
-  pub enums: Vec<ProtoEnum>,
+  pub enums: Vec<Enum>,
   // pub services: Vec<ServiceData>,
 }
 
@@ -31,7 +31,7 @@ impl ProtoFile {
     }
   }
 
-  pub fn add_enums<I: IntoIterator<Item = ProtoEnum>>(&mut self, enums: I) {
+  pub fn add_enums<I: IntoIterator<Item = Enum>>(&mut self, enums: I) {
     for enum_ in enums.into_iter() {
       self.enums.push(enum_);
     }

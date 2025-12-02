@@ -30,8 +30,6 @@ pub fn message_schema_impls(
   }
 
   quote! {
-    impl ProtoMessage for #struct_name {}
-
     impl ProtoValidator<#struct_name> for ValidatorMap {
       type Builder = MessageValidatorBuilder;
 

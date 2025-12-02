@@ -52,7 +52,6 @@ mod inner {
     C,
   }
 
-  // #[proto(required)]
   #[proto_oneof]
   #[derive(Clone, Debug)]
   enum PseudoOneof {

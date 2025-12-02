@@ -104,7 +104,7 @@ pub fn process_derive_field_attrs(
               validator = match nv.value {
                 Expr::Closure(closure) => Some(ValidatorExpr::Closure(closure)),
                 Expr::Call(call) => Some(ValidatorExpr::Call(call)),
-                _ => panic!("Invalid validator"),
+                _ => bail!(nv.value, "Expected a closure or a function call"),
               };
             }
             "from_proto" => {
@@ -118,7 +118,7 @@ pub fn process_derive_field_attrs(
               into_proto = Some(value);
             }
             "tag" => {
-              tag = Some(extract_i32(&nv.value).unwrap());
+              tag = Some(extract_i32(&nv.value)?);
             }
             "options" => {
               let func_call = nv.value;
@@ -126,7 +126,7 @@ pub fn process_derive_field_attrs(
               options = Some(quote! { #func_call });
             }
             "name" => {
-              name = Some(extract_string_lit(&nv.value).unwrap());
+              name = Some(extract_string_lit(&nv.value)?);
             }
             _ => {}
           };
@@ -136,7 +136,7 @@ pub fn process_derive_field_attrs(
 
           match ident.as_str() {
             "options" => {
-              let exprs = list.parse_args::<PunctuatedParser<Expr>>().unwrap().inner;
+              let exprs = list.parse_args::<PunctuatedParser<Expr>>()?.inner;
 
               options = Some(quote! { vec! [ #exprs ] });
             }
@@ -147,28 +147,32 @@ pub fn process_derive_field_attrs(
 
             "repeated" => {
               let args = list.parse_args::<Meta>()?;
+              let span = args.span();
 
               let fallback = if let RustType::Vec(path) = rust_type {
-                path
+                Some(path)
               } else {
-                panic!("This field was marked as repeated but it is not using Vec. Please set the output type manually");
+                None
               };
 
-              let inner = ProtoType::from_meta(args, Some(fallback))?.unwrap();
+              let inner =
+                ProtoType::from_meta(args, fallback)?.ok_or(error!(span, "Missing inner type"))?;
 
               proto_field = Some(ProtoField::Repeated(inner));
             }
 
             "optional" => {
               let args = list.parse_args::<Meta>()?;
+              let span = args.span();
 
               let fallback = if let RustType::Option(path) = rust_type {
-                path
+                Some(path)
               } else {
-                panic!("Could not parse the option type");
+                None
               };
 
-              let inner = ProtoType::from_meta(args, Some(fallback))?.unwrap();
+              let inner =
+                ProtoType::from_meta(args, fallback)?.ok_or(error!(span, "Missing inner type"))?;
 
               proto_field = Some(ProtoField::Optional(inner));
             }
@@ -195,12 +199,10 @@ pub fn process_derive_field_attrs(
 
           match ident.as_str() {
             "ignore" => is_ignored = true,
-
             "oneof" => {}
 
             _ => {
               let fallback = rust_type.inner_path();
-
               let span = path.span();
 
               if let Some(parsed_kind) = ProtoType::from_ident(&ident, span, fallback)? {
@@ -217,6 +219,7 @@ pub fn process_derive_field_attrs(
     let mut oneof_path = ItemPath::None;
     let mut oneof_tags: Vec<i32> = Vec::new();
     let mut use_default = false;
+    let mut attr_span: Option<Span> = None;
 
     let fallback = rust_type.inner_path();
 
@@ -226,6 +229,10 @@ pub fn process_derive_field_attrs(
         tags,
         default,
       } = attr.parse_args::<OneofInfo>()?;
+
+      if attr_span.is_none() {
+        attr_span = Some(attr.span());
+      }
 
       if !path.is_none() {
         oneof_path = path;
@@ -241,8 +248,8 @@ pub fn process_derive_field_attrs(
     }
 
     let oneof_path = oneof_path.get_path_or_fallback(fallback).ok_or(error!(
-      Span::call_site(),
-      "Failed to infer the path to the oneof"
+      attr_span.unwrap(),
+      "Failed to infer the path to the oneof. Please set it manually"
     ))?;
 
     proto_field = Some(ProtoField::Oneof {
