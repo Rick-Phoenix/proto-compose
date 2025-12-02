@@ -32,10 +32,6 @@ impl RustType {
     Some(output)
   }
 
-  pub fn is_boxed_oneof_variant(&self) -> bool {
-    matches!(self, Self::Boxed(..))
-  }
-
   pub fn as_map(&self) -> Option<&(Path, Path)> {
     if let Self::Map(v) = self {
       Some(v)
@@ -49,7 +45,7 @@ impl RustType {
   /// [`Option`]: RustType::Option
   #[must_use]
   pub fn is_option(&self) -> bool {
-    matches!(self, Self::Option(..))
+    matches!(self, Self::Option(..) | Self::OptionBoxed(..))
   }
 }
 

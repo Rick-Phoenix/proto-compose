@@ -24,16 +24,12 @@ impl TypeInfo {
     }
   }
 
-  pub fn into_proto(&self, base_ident: TokenStream2, is_oneof_variant: bool) -> TokenStream2 {
-    self
-      .proto_field
-      .default_into_proto(&base_ident, is_oneof_variant)
+  pub fn into_proto(&self, base_ident: TokenStream2) -> TokenStream2 {
+    self.proto_field.default_into_proto(&base_ident)
   }
 
-  pub fn from_proto(&self, base_ident: TokenStream2, is_oneof_variant: bool) -> TokenStream2 {
-    self
-      .proto_field
-      .default_from_proto(&base_ident, is_oneof_variant)
+  pub fn from_proto(&self, base_ident: TokenStream2) -> TokenStream2 {
+    self.proto_field.default_from_proto(&base_ident)
   }
 
   pub fn validator_tokens(&self, validator: &ValidatorExpr) -> TokenStream2 {

@@ -37,16 +37,9 @@ impl ProtoField {
     }
   }
 
-  pub fn default_into_proto(
-    &self,
-    base_ident: &TokenStream2,
-    is_oneof_variant: bool,
-  ) -> TokenStream2 {
+  pub fn default_into_proto(&self, base_ident: &TokenStream2) -> TokenStream2 {
     match self {
-      Self::Oneof {
-        default,
-        ..
-      } => {
+      Self::Oneof { default, .. } => {
         if *default {
           quote! { Some(#base_ident.into()) }
         } else {
@@ -59,32 +52,23 @@ impl ProtoField {
       ProtoField::Repeated(_) => {
         quote! { #base_ident.into_iter().map(Into::into).collect() }
       }
-      ProtoField::Optional(_) => {
-        quote! { #base_ident.map(|v| v.into()) }
-      }
-      ProtoField::Single(proto_type) => {
-        if let ProtoType::Message {  .. } = proto_type && !is_oneof_variant  {
+      ProtoField::Optional(inner) => {
+        let conversion = if inner.is_message() {
           let base_ident2 = quote! { v };
-          let inner = proto_type.default_into_proto(&base_ident2);
-
-          quote! { #base_ident.map(|v| #inner) }
+          inner.default_into_proto(&base_ident2)
         } else {
-          proto_type.default_into_proto(base_ident)
-        }
-      },
+          quote! { v.into() }
+        };
+
+        quote! { #base_ident.map(|v| #conversion) }
+      }
+      ProtoField::Single(proto_type) => proto_type.default_into_proto(base_ident),
     }
   }
 
-  pub fn default_from_proto(
-    &self,
-    base_ident: &TokenStream2,
-    is_oneof_variant: bool,
-  ) -> TokenStream2 {
+  pub fn default_from_proto(&self, base_ident: &TokenStream2) -> TokenStream2 {
     match self {
-      Self::Oneof {
-        default,
-        ..
-      } => {
+      Self::Oneof { default, .. } => {
         if *default {
           quote! { #base_ident.unwrap_or_default().into() }
         } else {
@@ -109,16 +93,7 @@ impl ProtoField {
 
         quote! { #base_ident.map(|v| #inner) }
       }
-      ProtoField::Single(proto_type) => {
-        if let ProtoType::Message { .. } = proto_type && !is_oneof_variant {
-          let base_ident2 = quote! { v };
-          let inner = proto_type.default_from_proto(&base_ident2);
-
-          quote! { #base_ident.map(|v| #inner) }
-        } else {
-          proto_type.default_from_proto(base_ident)
-        }
-      },
+      ProtoField::Single(proto_type) => proto_type.default_from_proto(base_ident),
     }
   }
 

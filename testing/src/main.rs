@@ -101,8 +101,11 @@ mod inner {
     #[proto(enum_)]
     optional_enum: Option<PseudoEnum>,
 
-    #[proto(message(proxied), from_proto = |v| v.map(Into::into))]
+    #[proto(message(proxied))]
     nested: Option<Nested>,
+
+    #[proto(repeated(message(proxied)))]
+    repeated_message: Vec<Nested>,
 
     #[proto(oneof(default, proxied))]
     oneof: PseudoOneof,

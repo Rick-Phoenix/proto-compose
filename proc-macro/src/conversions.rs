@@ -51,9 +51,7 @@ pub fn field_into_proto_expression(info: IntoProto) -> Result<TokenStream2, Erro
   } else if let ProtoField::Oneof { default: true, .. } = &type_info.proto_field {
     quote! { Some(#base_ident.into()) }
   } else {
-    let is_oneof = matches!(kind, FieldConversionKind::EnumVariant { .. });
-
-    type_info.into_proto(base_ident, is_oneof)
+    type_info.into_proto(base_ident)
   };
 
   let conversion = match kind {
@@ -99,9 +97,7 @@ pub fn field_from_proto_expression(info: FromProto) -> Result<TokenStream2, Erro
         }
       }
     } else {
-      let is_oneof = matches!(kind, FieldConversionKind::EnumVariant { .. });
-
-      type_info.from_proto(base_ident, is_oneof)
+      type_info.from_proto(base_ident)
     }
   } else {
     // Field is ignored

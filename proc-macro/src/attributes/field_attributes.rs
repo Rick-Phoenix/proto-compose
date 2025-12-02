@@ -160,6 +160,20 @@ pub fn process_derive_field_attrs(
               proto_field = Some(ProtoField::Repeated(inner));
             }
 
+            "optional" => {
+              let args = list.parse_args::<Meta>()?;
+
+              let fallback = if let RustType::Option(path) = rust_type {
+                path
+              } else {
+                panic!("Could not parse the option type");
+              };
+
+              let inner = ProtoType::from_meta(args, Some(fallback))?.unwrap();
+
+              proto_field = Some(ProtoField::Optional(inner));
+            }
+
             "map" => {
               let parser = |input: ParseStream| parse_map_with_context(input, rust_type);
 
