@@ -56,16 +56,41 @@ impl ToTokens for ItemPath {
   }
 }
 
+// We probably should have an enum for this so that ignored fields don't hold the same state/info
 #[derive(Clone)]
 pub struct FieldAttrs {
   pub tag: i32,
   pub validator: Option<ValidatorExpr>,
   pub options: ProtoOptions,
   pub name: String,
-  pub proto_field: Option<ProtoField>,
+  pub proto_field: ProtoField,
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
-  pub is_ignored: bool,
+}
+
+#[derive(Clone)]
+pub enum FieldAttrData {
+  Ignored { from_proto: Option<PathOrClosure> },
+  Normal(FieldAttrs),
+}
+
+impl FieldAttrData {
+  pub fn from_proto_expr(&self) -> &Option<PathOrClosure> {
+    match self {
+      FieldAttrData::Ignored { from_proto } => from_proto,
+      FieldAttrData::Normal(field_attrs) => &field_attrs.from_proto,
+    }
+  }
+}
+
+impl FieldAttrData {
+  /// Returns `true` if the field data is [`Ignored`].
+  ///
+  /// [`Ignored`]: FieldData::Ignored
+  #[must_use]
+  pub fn is_ignored(&self) -> bool {
+    matches!(self, Self::Ignored { .. })
+  }
 }
 
 #[derive(Clone)]
@@ -78,7 +103,7 @@ pub fn process_derive_field_attrs(
   original_name: &Ident,
   rust_type: &RustType,
   attrs: &Vec<Attribute>,
-) -> Result<FieldAttrs, Error> {
+) -> Result<FieldAttrData, Error> {
   let mut validator: Option<ValidatorExpr> = None;
   let mut tag: Option<i32> = None;
   let mut options: Option<TokenStream2> = None;
@@ -215,7 +240,7 @@ pub fn process_derive_field_attrs(
   }
 
   if !oneof_attrs.is_empty() {
-    let mut oneof_path: Option<Path> = None;
+    let mut oneof_path = ItemPath::None;
     let mut oneof_tags: Vec<i32> = Vec::new();
     let mut use_default = false;
     let mut is_proxied = false;
@@ -233,8 +258,8 @@ pub fn process_derive_field_attrs(
         is_proxied = true;
       }
 
-      if let Some(path) = path.get_path_or_fallback(fallback) {
-        oneof_path = Some(path);
+      if !path.is_none() {
+        oneof_path = path;
       }
 
       if !tags.is_empty() {
@@ -246,26 +271,57 @@ pub fn process_derive_field_attrs(
       }
     }
 
+    let oneof_path = oneof_path.get_path_or_fallback(fallback).ok_or(error!(
+      Span::call_site(),
+      "Failed to infer the path to the oneof"
+    ))?;
+
     proto_field = Some(ProtoField::Oneof {
-      path: oneof_path.ok_or(error!(
-        Span::call_site(),
-        "Failed to infer the path to the oneof"
-      ))?,
+      path: oneof_path,
       tags: oneof_tags,
       default: use_default,
       is_proxied,
     })
   }
 
+  if is_ignored {
+    // We could place a default here for this kind of from_proto expression rather than later
+    return Ok(FieldAttrData::Ignored { from_proto });
+  }
+
+  let mut proto_field = if let Some(field) = proto_field {
+    field
+  } else {
+    let inner_type = rust_type.inner_path();
+
+    let inferred_type = match rust_type {
+      RustType::Map((k, v)) => {
+        let keys = ProtoMapKeys::from_path(k)?;
+        let values = ProtoType::from_primitive(v)?;
+
+        let proto_map = ProtoMap { keys, values };
+
+        ProtoField::Map(proto_map)
+      }
+      RustType::Option(path) => ProtoField::Optional(ProtoType::from_primitive(path)?),
+      RustType::OptionBoxed(path) => ProtoField::Optional(ProtoType::from_primitive(path)?),
+      RustType::Boxed(path) => ProtoField::Single(ProtoType::from_primitive(path)?),
+      RustType::Vec(path) => ProtoField::Repeated(ProtoType::from_primitive(path)?),
+      RustType::Normal(path) => ProtoField::Single(ProtoType::from_primitive(path)?),
+    };
+
+    inferred_type
+  };
+
   let tag = if let Some(tag) = tag {
     tag
-  } else if is_ignored || proto_field.as_ref().is_some_and(|f| f.is_oneof()) {
+  } else if proto_field.is_oneof() {
     0
   } else {
     return Err(spanned_error!(original_name, "Field tag is missing"));
   };
 
-  Ok(FieldAttrs {
+  Ok(FieldAttrData::Normal(FieldAttrs {
     validator,
     tag,
     options: attributes::ProtoOptions(options),
@@ -273,6 +329,5 @@ pub fn process_derive_field_attrs(
     proto_field,
     from_proto,
     into_proto,
-    is_ignored,
-  })
+  }))
 }

@@ -13,14 +13,14 @@ use proc_macro2::Span;
 pub(crate) use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
-  parse::Parse,
+  parse::{Parse, ParseStream},
   parse_macro_input, parse_quote,
   punctuated::Punctuated,
   token,
   token::{Brace, Struct},
   Attribute, Data, DeriveInput, Error, Expr, ExprCall, ExprClosure, Field, Fields, GenericArgument,
-  Generics, Ident, Item, ItemEnum, ItemFn, ItemMod, ItemStruct, Lit, LitStr, Meta, MetaList,
-  ParseStream, Path, PathArguments, PathSegment, RangeLimits, Token, Type, Variant, Visibility,
+  Generics, Ident, Item, ItemEnum, ItemFn, ItemMod, ItemStruct, Lit, LitStr, Meta, MetaList, Path,
+  PathArguments, PathSegment, RangeLimits, Token, Type, Variant, Visibility,
 };
 use type_extraction::*;
 

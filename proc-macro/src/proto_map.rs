@@ -71,128 +71,11 @@ impl ProtoMapKeys {
   }
 }
 
-#[derive(Debug, Clone)]
-pub enum ProtoMapValues {
-  String,
-  Int32,
-  Enum(Option<Path>),
-  Message(ItemPath),
-}
-
-impl ProtoMapValues {
-  pub fn with_path(self, fallback: Option<&Path>) -> Result<ProtoType, Error> {
-    let output = match self {
-      ProtoMapValues::String => ProtoType::String,
-      ProtoMapValues::Int32 => ProtoType::Int32,
-      ProtoMapValues::Enum(path) => {
-        let path = if let Some(path) = path {
-          path
-        } else {
-          fallback
-            .ok_or(error!(Span::call_site(), "Failed to get path"))?
-            .clone()
-        };
-
-        ProtoType::Enum(path)
-      }
-      ProtoMapValues::Message(item_path) => {
-        let path = item_path
-          .get_path_or_fallback(fallback)
-          .expect("Failed to get message path");
-
-        ProtoType::Message {
-          path,
-          is_boxed: false,
-        }
-      }
-    };
-
-    Ok(output)
-  }
-
-  pub fn validator_target_type(&self) -> TokenStream2 {
-    match self {
-      ProtoMapValues::String => quote! { String },
-      ProtoMapValues::Int32 => quote! { i32 },
-      ProtoMapValues::Enum(_) => quote! { GenericProtoEnum },
-      ProtoMapValues::Message(_) => quote! { GenericMessage },
-    }
-  }
-
-  pub fn output_proto_type(&self) -> TokenStream2 {
-    match self {
-      ProtoMapValues::String => quote! { String },
-      ProtoMapValues::Int32 => quote! { i32 },
-      ProtoMapValues::Enum(_) => quote! { i32 },
-      ProtoMapValues::Message(path) => path.to_token_stream(),
-    }
-  }
-
-  pub fn as_proto_type_trait_target(&self) -> TokenStream2 {
-    match self {
-      ProtoMapValues::String => quote! { String },
-      ProtoMapValues::Int32 => quote! { i32 },
-      ProtoMapValues::Enum(path) => quote! { #path },
-      ProtoMapValues::Message(path) => quote! { #path },
-    }
-  }
-}
-
-impl ProtoMapValues {
-  pub fn from_path(path: &Path) -> Result<Self, Error> {
-    let ident = path.get_ident().ok_or(spanned_error!(
-      path,
-      format!(
-        "Type {} is not a supported map value primitive",
-        path.to_token_stream()
-      )
-    ))?;
-    let ident_as_str = ident.to_string();
-
-    Self::from_str(&ident_as_str).map_err(|_| {
-      spanned_error!(
-        path,
-        format!(
-          "Type {} is not a supported map value primitive",
-          ident_as_str
-        )
-      )
-    })
-  }
-}
-
 impl Display for ProtoMapKeys {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
       ProtoMapKeys::String => write!(f, "string"),
       ProtoMapKeys::Int32 => write!(f, "int32"),
-    }
-  }
-}
-
-impl FromStr for ProtoMapValues {
-  type Err = String;
-
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    let output = match s {
-      "String" => Self::String,
-      "i32" | "int32" => Self::Int32,
-      "message" => Self::Message(ItemPath::None),
-      "enum_" => Self::Enum(None),
-      _ => return Err(format!("Unrecognized map value type {s}")),
-    };
-
-    Ok(output)
-  }
-}
-
-impl Display for ProtoMapValues {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      ProtoMapValues::String => write!(f, "string"),
-      ProtoMapValues::Int32 => write!(f, "int32"),
-      ProtoMapValues::Enum(path) => write!(f, "enumeration({})", path.to_token_stream()),
-      ProtoMapValues::Message(_) => write!(f, "message"),
     }
   }
 }
@@ -219,7 +102,9 @@ impl ProtoMap {
   }
 
   pub fn as_prost_attr_type(&self) -> TokenStream2 {
-    quote! {}
+    let map_attr = format!("{}, {}", self.keys, self.values.as_prost_map_value());
+
+    quote! { map = #map_attr }
   }
 
   pub fn as_proto_type_trait_target(&self) -> TokenStream2 {

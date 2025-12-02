@@ -12,6 +12,18 @@ pub struct TypeInfo {
 }
 
 impl TypeInfo {
+  pub fn as_prost_attr(&self, tag: i32) -> TokenStream2 {
+    let type_attr = self.proto_field.as_prost_attr_type();
+
+    if self.proto_field.is_oneof() {
+      quote! { #[prost(#type_attr)] }
+    } else {
+      let tag_as_str = tag.to_string();
+
+      quote! { #[prost(#type_attr, tag = #tag_as_str)] }
+    }
+  }
+
   pub fn into_proto(&self, base_ident: TokenStream2) -> TokenStream2 {
     if let ProtoField::Oneof {
       default: true,
@@ -29,45 +41,24 @@ impl TypeInfo {
 
     match &self.rust_type {
       RustType::Option(_) => quote! { #base_ident.map(Into::into) },
-      RustType::BoxedMsg(_) => quote! { #base_ident.map(|v| Box::new((*v).into())) },
+      RustType::OptionBoxed(_) => quote! { #base_ident.map(|v| Box::new((*v).into())) },
       RustType::Map(_) => quote! { #base_ident.into_iter().map(|(k, v)| (k, v.into())).collect() },
       RustType::Vec(_) => quote! { #base_ident.into_iter().map(Into::into).collect() },
       RustType::Normal(_) => quote! { #base_ident.into() },
-      RustType::BoxedOneofVariant(_) => quote! { Box::new((*#base_ident).into()) },
+      RustType::Boxed(_) => quote! { Box::new((*#base_ident).into()) },
     }
   }
 
-  pub fn from_proto(&self, base_ident: TokenStream2) -> TokenStream2 {
-    let conversion_call = match &self.rust_type {
-      RustType::Normal(_) | RustType::BoxedOneofVariant(_) => {
-        self.proto_field.default_from_proto(&base_ident)
-      }
-      _ => {
-        let inner_base_ident = quote! { v };
-
-        self.proto_field.default_from_proto(&inner_base_ident)
-      }
-    };
-
+  pub fn from_proto(&self, base_ident: TokenStream2, is_oneof: bool) -> TokenStream2 {
     match &self.rust_type {
-      RustType::Option(_) => quote! { #base_ident.map(|v| #conversion_call) },
-      RustType::BoxedMsg(_) => quote! { #base_ident.map(|v| Box::new((*v).into())) },
-      RustType::Map(_) => {
-        let value_conversion = if let ProtoField::Map(map) = &self.proto_field && let ProtoType::Enum(_) = &map.values {
-          quote! { try_into().unwrap_or_default() }
-        } else {
-          quote! { into() }
-        };
+      RustType::OptionBoxed(_) => quote! { #base_ident.map(|v| Box::new((*v).into())) },
 
-        quote! { #base_ident.into_iter().map(|(k, v)| (k, v.#value_conversion)).collect() }
-      }
-      RustType::Vec(_) => quote! { #base_ident.into_iter().map(|v| #conversion_call).collect() },
-      _ => conversion_call,
+      _ => self.proto_field.default_from_proto(&base_ident, is_oneof),
     }
   }
 
   pub fn validator_tokens(&self, validator: &ValidatorExpr) -> TokenStream2 {
-    let target_type = self.proto_field.output_proto_type();
+    let target_type = self.proto_field.validator_target_type();
 
     match validator {
       ValidatorExpr::Call(call) => {
@@ -85,11 +76,11 @@ impl TypeInfo {
 
     let target_type = match &self.rust_type {
       RustType::Option(_) => quote! { Option<#base_target_type> },
-      RustType::BoxedMsg(_) => quote! { Option<#base_target_type> },
+      RustType::OptionBoxed(_) => quote! { Option<#base_target_type> },
       RustType::Map(_) => base_target_type,
       RustType::Vec(_) => quote! { Vec<#base_target_type> },
       RustType::Normal(_) => base_target_type,
-      RustType::BoxedOneofVariant(_) => base_target_type,
+      RustType::Boxed(_) => base_target_type,
     };
 
     quote! { <#target_type as AsProtoType>::proto_type() }

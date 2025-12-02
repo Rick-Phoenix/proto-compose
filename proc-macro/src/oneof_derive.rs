@@ -22,8 +22,6 @@ pub(crate) fn process_oneof_derive_shadow(
   for (src_variant, dst_variant) in orig_enum_variants.zip(shadow_enum_variants) {
     let variant_ident = &src_variant.ident;
 
-    let field_attrs = process_derive_field_attrs(&src_variant.ident, &src_variant.attrs)?;
-
     let variant_type = if let Fields::Unnamed(variant_fields) = &src_variant.fields {
       if variant_fields.unnamed.len() != 1 {
         panic!("Oneof variants must contain a single value");
@@ -34,52 +32,66 @@ pub(crate) fn process_oneof_derive_shadow(
       panic!("Enum can only have one unnamed field")
     };
 
-    let type_info = TypeInfo::from_type(
-      &variant_type,
-      field_attrs.proto_field.clone(),
-      orig_enum_ident,
-    )?;
+    let rust_type = RustType::from_type(&variant_type, orig_enum_ident)?;
 
-    if field_attrs.is_ignored {
-      ignored_variants.push(src_variant.ident.clone());
-    } else {
-      let variant_proto_tokens = process_field(
-        &mut FieldOrVariant::Variant(dst_variant),
-        field_attrs.clone(),
-        &type_info,
-        OutputType::Change,
-      )?;
+    let field_data =
+      process_derive_field_attrs(&src_variant.ident, &rust_type, &src_variant.attrs)?;
 
-      variants_tokens.push(variant_proto_tokens);
+    let field_attrs = match field_data {
+      FieldAttrData::Ignored { from_proto } => {
+        ignored_variants.push(src_variant.ident.clone());
 
-      if oneof_attrs.into_proto.is_none() {
-        let field_into_proto = field_into_proto_expression(FieldConversion {
-          custom_expression: &field_attrs.into_proto,
+        let from_proto_expr = field_from_proto_expression(FromProto {
+          custom_expression: &from_proto,
           kind: FieldConversionKind::EnumVariant {
-            variant_ident: &src_variant.ident,
+            variant_ident,
             source_enum_ident: orig_enum_ident,
             target_enum_ident: shadow_enum_ident,
           },
-          is_boxed: type_info.rust_type.is_boxed_oneof_variant(),
-          type_info: &type_info,
-          is_ignored: field_attrs.is_ignored,
-        })?;
+          type_info: None,
+        });
 
-        into_proto_body.extend(field_into_proto);
+        from_proto_body.extend(from_proto_expr);
+
+        continue;
       }
+      FieldAttrData::Normal(field_attrs) => field_attrs,
+    };
+
+    let type_info = TypeInfo::from_type(rust_type, field_attrs.proto_field.clone(), &variant_type)?;
+
+    let variant_proto_tokens = process_field(
+      &mut FieldOrVariant::Variant(dst_variant),
+      field_attrs.clone(),
+      &type_info,
+      OutputType::Change,
+    )?;
+
+    variants_tokens.push(variant_proto_tokens);
+
+    if oneof_attrs.into_proto.is_none() {
+      let field_into_proto = field_into_proto_expression(IntoProto {
+        custom_expression: &field_attrs.into_proto,
+        kind: FieldConversionKind::EnumVariant {
+          variant_ident: &src_variant.ident,
+          source_enum_ident: orig_enum_ident,
+          target_enum_ident: shadow_enum_ident,
+        },
+        type_info: &type_info,
+      })?;
+
+      into_proto_body.extend(field_into_proto);
     }
 
     if oneof_attrs.from_proto.is_none() {
-      let from_proto_expr = field_from_proto_expression(FieldConversion {
+      let from_proto_expr = field_from_proto_expression(FromProto {
         custom_expression: &field_attrs.from_proto,
         kind: FieldConversionKind::EnumVariant {
           variant_ident,
           source_enum_ident: orig_enum_ident,
           target_enum_ident: shadow_enum_ident,
         },
-        is_boxed: type_info.rust_type.is_boxed_oneof_variant(),
-        type_info: &type_info,
-        is_ignored: field_attrs.is_ignored,
+        type_info: Some(&type_info),
       });
 
       from_proto_body.extend(from_proto_expr);
@@ -162,15 +174,6 @@ pub(crate) fn process_oneof_derive_direct(
   for variant in variants {
     let variant_ident = &variant.ident;
 
-    let field_attrs = process_derive_field_attrs(&variant.ident, &variant.attrs)?;
-
-    if field_attrs.is_ignored {
-      return Err(spanned_error!(
-        &variant.ident,
-        "Oneof variants cannot be ignored in a direct impl"
-      ));
-    }
-
     let variant_type = if let Fields::Unnamed(variant_fields) = &variant.fields {
       if variant_fields.unnamed.len() != 1 {
         panic!("Oneof variants must contain a single value");
@@ -181,11 +184,32 @@ pub(crate) fn process_oneof_derive_direct(
       panic!("Enum can only have one unnamed field")
     };
 
-    let type_info =
-      TypeInfo::from_type(&variant_type, field_attrs.proto_field.clone(), &item.ident)?;
+    let rust_type = RustType::from_type(&variant_type, &item.ident)?;
 
-    if !matches!(type_info.rust_type, RustType::Normal(_)) {
-      return Err(spanned_error!(variant_type, "Unsupported enum variant. If you want to use a custom type, you must use the proxied variant"));
+    let field_data = process_derive_field_attrs(&variant.ident, &rust_type, &variant.attrs)?;
+
+    let field_attrs = match field_data {
+      FieldAttrData::Ignored { .. } => {
+        return Err(spanned_error!(
+          &variant.ident,
+          "Oneof variants cannot be ignored in a direct impl"
+        ))
+      }
+      FieldAttrData::Normal(field_attrs) => field_attrs,
+    };
+
+    let type_info = TypeInfo::from_type(rust_type, field_attrs.proto_field.clone(), &variant_type)?;
+
+    match &type_info.rust_type {
+      RustType::Boxed(_) => {
+        if !matches!(type_info.proto_field, ProtoField::Single(ProtoType::Message { is_boxed: true, .. })) {
+          return Err(spanned_error!(variant_type, "Box can only be used for messages in a native oneof"))
+        }
+      },
+
+      RustType::Normal(_) => todo!(),
+
+      _ => return Err(spanned_error!(variant_type, "Unsupported enum variant. If you want to use a custom type, you must use the proxied variant"))
     };
 
     let variant_proto_tokens = process_field(

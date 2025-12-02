@@ -3,8 +3,8 @@ use crate::*;
 #[derive(Clone)]
 pub enum RustType {
   Option(Path),
-  BoxedMsg(Path),
-  BoxedOneofVariant(Path),
+  OptionBoxed(Path),
+  Boxed(Path),
   Map((Path, Path)),
   Vec(Path),
   Normal(Path),
@@ -22,18 +22,18 @@ impl RustType {
   pub fn inner_path(&self) -> Option<&Path> {
     let output = match self {
       RustType::Option(path) => path,
-      RustType::BoxedMsg(path) => path,
+      RustType::OptionBoxed(path) => path,
       RustType::Map(_) => return None,
       RustType::Vec(path) => path,
       RustType::Normal(path) => path,
-      RustType::BoxedOneofVariant(path) => path,
+      RustType::Boxed(path) => path,
     };
 
     Some(output)
   }
 
   pub fn is_boxed_oneof_variant(&self) -> bool {
-    matches!(self, Self::BoxedOneofVariant(..))
+    matches!(self, Self::Boxed(..))
   }
 
   pub fn as_map(&self) -> Option<&(Path, Path)> {
@@ -63,7 +63,7 @@ impl RustType {
       "Box" => {
         let inner = PathWrapper::new(Cow::Borrowed(last_segment.first_argument().unwrap()));
 
-        Self::BoxedOneofVariant(inner.inner.into_owned())
+        Self::Boxed(inner.inner.into_owned())
       }
       "Option" => {
         let inner = PathWrapper::new(Cow::Borrowed(last_segment.first_argument().unwrap()));
@@ -78,7 +78,7 @@ impl RustType {
           let box_inner = last_segment.first_argument().unwrap();
 
           if let Some(boxed_item_ident) = box_inner.get_ident() && boxed_item_ident == item_ident {
-            Self::BoxedMsg(box_inner.clone())
+            Self::OptionBoxed(box_inner.clone())
           } else {
             Self::Option(inner.inner.into_owned())
           }

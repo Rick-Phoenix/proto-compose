@@ -52,59 +52,29 @@ pub fn process_field(
     ..
   } = field_attrs;
 
+  if let OutputType::Change = output_type {
+    let is_oneof = matches!(field, FieldOrVariant::Variant(_));
+
+    let proto_output_type_inner = type_info.proto_field.output_proto_type(is_oneof);
+
+    let proto_output_type_outer: Type = parse_quote! { #proto_output_type_inner };
+
+    field.change_type(proto_output_type_outer);
+  }
+
+  let prost_attr = type_info.as_prost_attr(tag);
+  let field_prost_attr: Attribute = parse_quote!(#prost_attr);
+  field.inject_attr(field_prost_attr);
+
   if let ProtoField::Oneof {
-    tags: oneof_tags,
-    path: oneof_path,
-    ..
+    path: oneof_path, ..
   } = &type_info.proto_field
   {
-    let oneof_path_str = oneof_path.to_token_stream().to_string();
-    let mut oneof_tags_str = String::new();
-
-    for (i, tag) in oneof_tags.iter().enumerate() {
-      oneof_tags_str.push_str(&tag.to_string());
-
-      if i != oneof_tags.len() - 1 {
-        oneof_tags_str.push_str(", ");
-      }
-    }
-
-    if oneof_tags.is_empty() {
-      return Err(type_info.error("Oneof tags are empty"));
-    }
-
-    let oneof_attr: Attribute =
-      parse_quote!(#[prost(oneof = #oneof_path_str, tags = #oneof_tags_str)]);
-
-    field.inject_attr(oneof_attr);
-
-    if let OutputType::Change = output_type {
-      field.change_type(parse_quote! { Option<#oneof_path> });
-    }
-
     // Early return
     return Ok(quote! {
       MessageEntry::Oneof(#oneof_path::to_oneof())
     });
   }
-
-  if let OutputType::Change = output_type {
-    let proto_output_type_inner = type_info.proto_field.output_proto_type();
-
-    // Get output type
-    let proto_output_type_outer: Type = match &type_info.rust_type {
-      RustType::BoxedMsg(_) => parse_quote! { Option<#proto_output_type_inner> },
-      _ => parse_quote! { #proto_output_type_inner },
-    };
-
-    field.change_type(proto_output_type_outer);
-  }
-
-  let prost_attr = ProstAttrs::from_type_info(&type_info, tag);
-
-  let field_prost_attr: Attribute = parse_quote!(#prost_attr);
-
-  field.inject_attr(field_prost_attr);
 
   let validator_tokens = if let Some(validator) = validator {
     type_info.validator_tokens(&validator)

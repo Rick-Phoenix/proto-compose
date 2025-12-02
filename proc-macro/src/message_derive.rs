@@ -22,53 +22,64 @@ pub(crate) fn process_message_derive_shadow(
   for (src_field, dst_field) in orig_struct_fields.zip(shadow_struct_fields) {
     let src_field_ident = src_field.ident.as_ref().expect("Expected named field");
 
-    let field_attrs = process_derive_field_attrs(src_field_ident, &src_field.attrs)?;
+    let rust_type = RustType::from_type(&src_field.ty, orig_struct_ident)?;
 
-    let type_info = TypeInfo::from_type(
-      &src_field.ty,
-      field_attrs.proto_field.clone(),
-      orig_struct_ident,
-    )?;
+    let field_data = process_derive_field_attrs(src_field_ident, &rust_type, &src_field.attrs)?;
 
-    if field_attrs.is_ignored {
-      ignored_fields.push(src_field.ident.clone().unwrap());
-    } else {
-      let field_tokens = process_field(
-        &mut FieldOrVariant::Field(dst_field),
-        field_attrs.clone(),
-        &type_info,
-        OutputType::Change,
-      )?;
+    let field_attrs = match field_data {
+      FieldAttrData::Ignored { from_proto } => {
+        ignored_fields.push(src_field.ident.clone().unwrap());
 
-      fields_tokens.push(field_tokens);
+        if message_attrs.from_proto.is_none() {
+          let from_proto_expr = field_from_proto_expression(FromProto {
+            custom_expression: &from_proto,
+            kind: FieldConversionKind::StructField {
+              ident: src_field_ident,
+            },
+            type_info: None,
+          })?;
 
-      if message_attrs.into_proto.is_none() {
-        let field_into_proto = field_into_proto_expression(FieldConversion {
-          custom_expression: &field_attrs.into_proto,
-          kind: FieldConversionKind::StructField {
-            ident: src_field_ident,
-          },
-          is_boxed: false,
-          type_info: &type_info,
-          is_ignored: field_attrs.is_ignored,
-        })?;
+          from_proto_body.extend(from_proto_expr);
+        }
 
-        into_proto_body.extend(field_into_proto);
+        continue;
       }
-    }
+      FieldAttrData::Normal(field_attrs) => field_attrs,
+    };
+
+    let type_info = TypeInfo::from_type(rust_type, field_attrs.proto_field.clone(), &src_field.ty)?;
 
     if message_attrs.from_proto.is_none() {
-      let from_proto_expr = field_from_proto_expression(FieldConversion {
-        custom_expression: &field_attrs.from_proto,
+      let from_proto_expr = field_from_proto_expression(FromProto {
+        custom_expression: &field_attrs.into_proto,
         kind: FieldConversionKind::StructField {
           ident: src_field_ident,
         },
-        is_boxed: false,
-        type_info: &type_info,
-        is_ignored: field_attrs.is_ignored,
+        type_info: Some(&type_info),
       })?;
 
       from_proto_body.extend(from_proto_expr);
+    }
+
+    let field_tokens = process_field(
+      &mut FieldOrVariant::Field(dst_field),
+      field_attrs.clone(),
+      &type_info,
+      OutputType::Change,
+    )?;
+
+    fields_tokens.push(field_tokens);
+
+    if message_attrs.into_proto.is_none() {
+      let field_into_proto = field_into_proto_expression(IntoProto {
+        custom_expression: &field_attrs.into_proto,
+        kind: FieldConversionKind::StructField {
+          ident: src_field_ident,
+        },
+        type_info: &type_info,
+      })?;
+
+      into_proto_body.extend(field_into_proto);
     }
   }
 
@@ -141,17 +152,50 @@ pub(crate) fn process_message_derive_direct(
   for src_field in item.fields.iter_mut() {
     let src_field_ident = src_field.ident.as_ref().expect("Expected named field");
 
-    let field_attrs = process_derive_field_attrs(src_field_ident, &src_field.attrs)?;
+    let rust_type = RustType::from_type(&src_field.ty, &item.ident)?;
 
-    if field_attrs.is_ignored {
-      return Err(spanned_error!(
-        src_field,
-        "Fields cannot be ignored in a direct impl"
-      ));
-    }
+    let field_data = process_derive_field_attrs(src_field_ident, &rust_type, &src_field.attrs)?;
 
-    let type_info =
-      TypeInfo::from_type(&src_field.ty, field_attrs.proto_field.clone(), &item.ident)?;
+    let field_attrs = match field_data {
+      FieldAttrData::Ignored { .. } => {
+        return Err(spanned_error!(
+          src_field,
+          "Fields cannot be ignored in a direct impl"
+        ))
+      }
+      FieldAttrData::Normal(attrs) => attrs,
+    };
+
+    let type_info = TypeInfo::from_type(rust_type, field_attrs.proto_field.clone(), &src_field.ty)?;
+
+    match &type_info.rust_type {
+      RustType::Boxed(path) => {
+        return Err(spanned_error!(
+          path,
+          "Boxed messages must be optional in a direct impl"
+        ))
+      }
+      RustType::OptionBoxed(path) => {
+        if !matches!(
+          type_info.proto_field,
+          ProtoField::Single(ProtoType::Message { is_boxed: true, .. })
+        ) {
+          return Err(spanned_error!(path, "Must be a boxed message"));
+        }
+      }
+      RustType::Normal(path) => {
+        if matches!(
+          type_info.proto_field,
+          ProtoField::Single(ProtoType::Message { .. })
+        ) {
+          return Err(spanned_error!(
+            path,
+            "Messages must be wrapped in Option in direct impls"
+          ));
+        }
+      }
+      _ => {}
+    };
 
     let field_tokens = process_field(
       &mut FieldOrVariant::Field(src_field),

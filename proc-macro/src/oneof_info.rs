@@ -7,6 +7,20 @@ pub struct OneofInfo {
   pub default: bool,
 }
 
+pub fn tags_to_str(tags: &[i32]) -> String {
+  let mut tags_str = String::new();
+
+  for (i, tag) in tags.iter().enumerate() {
+    tags_str.push_str(&tag.to_string());
+
+    if i != tags.len() - 1 {
+      tags_str.push_str(", ");
+    }
+  }
+
+  tags_str
+}
+
 #[allow(clippy::single_match)]
 impl Parse for OneofInfo {
   fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {

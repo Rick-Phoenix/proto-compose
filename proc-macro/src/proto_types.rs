@@ -146,6 +146,22 @@ impl ProtoType {
     }
   }
 
+  pub fn as_prost_map_value(&self) -> Cow<'static, str> {
+    match self {
+      ProtoType::String => "string".into(),
+      ProtoType::Bool => "bool".into(),
+      ProtoType::Bytes => "bytes".into(),
+      ProtoType::Enum(path) => {
+        let path_as_str = path.to_token_stream().to_string();
+
+        format!("enumeration({})", path_as_str).into()
+      }
+      ProtoType::Message { .. } => "message".into(),
+      ProtoType::Int32 => "int32".into(),
+      ProtoType::Sint32 => "sint32".into(),
+    }
+  }
+
   pub fn as_proto_type_trait_target(&self) -> TokenStream2 {
     match self {
       ProtoType::String => quote! { String },
@@ -186,9 +202,23 @@ impl ProtoType {
 
         quote! { enumeration = #path_as_str }
       }
-      ProtoType::Message { .. } => quote! { message },
+      ProtoType::Message { is_boxed, .. } => {
+        if *is_boxed {
+          quote! { message, boxed }
+        } else {
+          quote! { message }
+        }
+      }
       ProtoType::Int32 => quote! { int32 },
       ProtoType::Sint32 => quote! { sint32 },
     }
+  }
+
+  /// Returns `true` if the proto type is [`Message`].
+  ///
+  /// [`Message`]: ProtoType::Message
+  #[must_use]
+  pub fn is_message(&self) -> bool {
+    matches!(self, Self::Message { .. })
   }
 }

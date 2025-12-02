@@ -71,7 +71,7 @@ mod inner {
   #[proto(nested_enums(PseudoEnum))]
   #[derive(Clone, Debug)]
   pub struct Abc {
-    #[proto(message(AbcProto))]
+    #[proto(message(AbcProto, boxed))]
     boxed: Option<Box<Abc>>,
 
     #[proto(tag = 35, validate = string_validator())]
