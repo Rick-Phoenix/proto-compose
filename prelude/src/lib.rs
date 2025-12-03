@@ -16,6 +16,7 @@ mod message;
 mod optional;
 mod proto_enum;
 mod proto_type;
+mod well_known_types;
 
 use bon::Builder;
 pub use field::*;

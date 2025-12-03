@@ -711,6 +711,7 @@ dependencies = [
  "prelude",
  "proc-macro-impls",
  "prost",
+ "proto-types",
 ]
 
 [[package]]

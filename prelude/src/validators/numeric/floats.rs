@@ -98,8 +98,8 @@ where
   }
 }
 
-impl_proto_type!(f32, float);
-impl_proto_type!(f64, double);
+impl_proto_type!(f32, "float");
+impl_proto_type!(f64, "double");
 
 pub trait FloatWrapper: AsProtoType {
   type RustType: PartialOrd + PartialEq + Copy + Into<OptionValue> + Debug + Display;

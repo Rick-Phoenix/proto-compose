@@ -4,6 +4,7 @@ use timestamp_validator_builder::{IsUnset, SetIgnore, State};
 
 use super::*;
 
+impl_validator!(TimestampValidator, Timestamp);
 impl_into_option!(TimestampValidator);
 
 #[derive(Clone, Debug, Builder)]

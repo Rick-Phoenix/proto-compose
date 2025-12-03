@@ -15,6 +15,8 @@ pub enum ProtoType {
   },
   Int32,
   Sint32,
+  Duration,
+  Timestamp,
 }
 
 impl ProtoType {
@@ -88,6 +90,8 @@ impl ProtoType {
           is_boxed: false,
         }
       }
+      "duration" => Self::Duration,
+      "timestamp" => Self::Timestamp,
       "enum_" => {
         let path = fallback
           .ok_or(error!(
@@ -113,6 +117,8 @@ impl ProtoType {
       ProtoType::Message { path, .. } => quote! { #path },
       ProtoType::Int32 => quote! { i32 },
       ProtoType::Sint32 => quote! { Sint32 },
+      ProtoType::Duration => quote! { proto_types::Duration },
+      ProtoType::Timestamp => quote! { proto_types::Timestamp },
     }
   }
 
@@ -166,6 +172,8 @@ impl ProtoType {
       ProtoType::Message { .. } => quote! { GenericMessage },
       ProtoType::Int32 => quote! { i32 },
       ProtoType::Sint32 => quote! { Sint32 },
+      ProtoType::Duration => quote! { proto_types::Duration },
+      ProtoType::Timestamp => quote! { proto_types::Timestamp },
     }
   }
 
@@ -179,7 +187,7 @@ impl ProtoType {
 
         format!("enumeration({})", path_as_str).into()
       }
-      ProtoType::Message { .. } => "message".into(),
+      ProtoType::Message { .. } | ProtoType::Duration | ProtoType::Timestamp => "message".into(),
       ProtoType::Int32 => "int32".into(),
       ProtoType::Sint32 => "sint32".into(),
     }
@@ -200,6 +208,8 @@ impl ProtoType {
       }
       ProtoType::Int32 => quote! { i32 },
       ProtoType::Sint32 => quote! { i32 },
+      ProtoType::Duration => quote! { proto_types::Duration },
+      ProtoType::Timestamp => quote! { proto_types::Timestamp },
     }
   }
 
@@ -222,6 +232,7 @@ impl ProtoType {
       }
       ProtoType::Int32 => quote! { int32 },
       ProtoType::Sint32 => quote! { sint32 },
+      ProtoType::Duration | ProtoType::Timestamp => quote! { message },
     }
   }
 

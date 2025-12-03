@@ -10,6 +10,7 @@ use prelude::{
   ProtoFile,
 };
 use proc_macro_impls::{Enum, Message, Oneof};
+use proto_types::Duration;
 
 fn string_validator() -> StringValidatorBuilder {
   StringValidator::builder()
@@ -94,6 +95,9 @@ mod inner {
   #[derive(Clone, Debug, Default)]
   #[proto(validate = message_rules())]
   pub struct Abc {
+    #[proto(duration, validate = |v| v.lt(Duration { seconds: 2000, nanos: 0 }))]
+    duration: Option<Duration>,
+
     #[proto(message(AbcProto, boxed))]
     boxed: Option<Box<Abc>>,
 

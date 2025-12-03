@@ -4,7 +4,7 @@ use string_validator_builder::{IsUnset, SetIn, SetNotIn, SetWellKnown, State};
 
 use super::*;
 
-impl_proto_type!(String, String);
+impl_proto_type!(String, "string");
 
 impl_into_option!(StringValidator);
 impl_validator!(StringValidator, String);

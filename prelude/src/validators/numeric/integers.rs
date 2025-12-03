@@ -106,11 +106,11 @@ macro_rules! impl_int_wrapper {
       type RustType = $rust_type;
 
       fn type_name() -> Arc<str> {
-        $proto_type.clone()
+        $crate::paste!([< $proto_type:upper >]).clone()
       }
     }
 
-    impl_proto_type!($rust_type, $proto_type);
+    impl_proto_type!($rust_type, stringify!($proto_type));
     impl_int_validator!($rust_type);
   };
 
@@ -125,7 +125,7 @@ macro_rules! impl_int_wrapper {
       }
     }
 
-    impl_proto_type!($proto_type, $proto_type);
+    impl_proto_type!($proto_type, stringify!($proto_type));
     impl_int_validator!($proto_type);
   };
 }
