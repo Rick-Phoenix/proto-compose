@@ -137,7 +137,7 @@ pub fn proto_module(attrs: TokenStream, input: TokenStream) -> TokenStream {
   let module_attrs = parse_macro_input!(attrs as ModuleAttrs);
 
   match process_module_items(module_attrs, module) {
-    Ok(processed_module) => quote! { #processed_module }.into(),
+    Ok(processed_module) => processed_module.into_token_stream().into(),
     Err(e) => e.to_compile_error().into(),
   }
 }

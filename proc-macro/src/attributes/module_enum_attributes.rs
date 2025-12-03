@@ -15,15 +15,20 @@ pub fn process_module_enum_attrs(
       continue;
     }
 
-    let args = attr.parse_args::<PunctuatedParser<Meta>>().unwrap();
+    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
 
     for arg in args.inner {
       match arg {
         Meta::List(_) => {}
-        Meta::NameValue(nameval) => {
-          if nameval.path.is_ident("name") {
-            proto_name = Some(extract_string_lit(&nameval.value).unwrap());
-          }
+        Meta::NameValue(nv) => {
+          let ident = get_ident_or_continue!(nv.path);
+
+          match ident.as_str() {
+            "name" => {
+              proto_name = Some(extract_string_lit(&nv.value)?);
+            }
+            _ => {}
+          };
         }
         Meta::Path(_) => {}
       }

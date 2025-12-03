@@ -6,69 +6,75 @@ fn register_full_name(
   msg: &Ident,
   relational_map: &HashMap<Ident, Ident>,
   messages_map: &mut HashMap<Ident, MessageData>,
-) {
-  let is_registered = messages_map
-    .get(msg)
-    .expect("could not find message")
-    .full_name
-    .get()
-    .is_some();
+) -> Result<(), Error> {
+  let target = messages_map.get(msg).ok_or(spanned_error!(
+    msg,
+    format!("Could not find the data for the message `{msg}`")
+  ))?;
 
-  if !is_registered {
-    let short_name = messages_map
-      .get(msg)
-      .expect("could not find message")
-      .name
-      .clone();
+  let has_full_name = target.full_name.get().is_some();
+
+  if !has_full_name {
+    let short_name = target.name.clone();
 
     if let Some(parent) = relational_map.get(msg) {
-      let parent_name = get_full_name(parent, relational_map, messages_map);
+      let parent_name = get_full_name(parent, relational_map, messages_map)?;
 
       let full_name = format!("{parent_name}.{short_name}");
 
       let _ = messages_map
         .get_mut(msg)
-        .expect("could not find message")
+        .ok_or(spanned_error!(
+          msg,
+          format!("Could not find the data for the message `{msg}`")
+        ))?
         .full_name
         .set(full_name);
     }
   }
+
+  Ok(())
 }
 
 fn get_full_name(
   msg: &Ident,
   relational_map: &HashMap<Ident, Ident>,
   messages_map: &mut HashMap<Ident, MessageData>,
-) -> String {
-  let mut is_full = false;
+) -> Result<String, Error> {
+  let mut found_full_name = false;
 
   let name = {
-    let msg_data = messages_map.get(msg).expect("could not find message");
+    let msg_data = messages_map.get(msg).ok_or(spanned_error!(
+      msg,
+      format!("Could not find the data for the message `{msg}`")
+    ))?;
+
     if let Some(full_name) = msg_data.full_name.get() {
-      is_full = true;
+      found_full_name = true;
       full_name.clone()
     } else {
       msg_data.name.clone()
     }
   };
 
-  if is_full {
-    name
+  if found_full_name {
+    Ok(name)
   } else {
     match relational_map.get(msg) {
-      None => name,
+      None => Ok(name),
       Some(parent) => {
-        let parent_name = get_full_name(parent, relational_map, messages_map);
+        let parent_name = get_full_name(parent, relational_map, messages_map)?;
 
         let full_name = format!("{parent_name}.{name}");
 
         let _ = messages_map
           .get_mut(msg)
+          // Safe now since we know we have it
           .unwrap()
           .full_name
           .set(full_name.clone());
 
-        full_name
+        Ok(full_name)
       }
     }
   }
@@ -118,12 +124,12 @@ pub fn process_module_items(
 
         let message_data = parse_message(s)?;
 
-        for nested_msg in &message_data.nested_messages {
-          messages_relational_map.insert(item_ident.clone(), nested_msg.clone());
+        for nested_msg_ident in &message_data.nested_messages {
+          messages_relational_map.insert(item_ident.clone(), nested_msg_ident.clone());
         }
 
-        for nested_enum in &message_data.nested_enums {
-          enums_relational_map.insert(item_ident.clone(), nested_enum.clone());
+        for nested_enum_ident in &message_data.nested_enums {
+          enums_relational_map.insert(item_ident.clone(), nested_enum_ident.clone());
         }
 
         mod_items.push(ModuleItem::Message(item_ident.clone()));
@@ -153,8 +159,8 @@ pub fn process_module_items(
   let mut top_level_enums = TokenStream2::new();
   let mut top_level_messages = TokenStream2::new();
 
-  for msg in messages_relational_map.keys() {
-    register_full_name(msg, &messages_relational_map, &mut messages);
+  for nested_msg_ident in messages_relational_map.keys() {
+    register_full_name(nested_msg_ident, &messages_relational_map, &mut messages)?;
   }
 
   for (ident, msg) in messages.iter_mut() {
@@ -169,13 +175,15 @@ pub fn process_module_items(
 
   for (ident, enum_) in enums.iter_mut() {
     if let Some(parent) = enums_relational_map.get(ident) {
-      let parent = messages.get(parent).expect("Message not found");
+      let parent = messages.get(parent).ok_or(spanned_error!(
+        parent,
+        format!("Failed to find the data for the message `{parent}`")
+      ))?;
 
       let parent_message_name = parent.full_name.get().unwrap_or(&parent.name);
       let enum_proto_name = &enum_.name;
 
       let full_name = format!("{parent_message_name}.{enum_proto_name}");
-
       let full_name_attr: Attribute = parse_quote!(#[proto(full_name = #full_name)]);
 
       enum_.tokens.attrs.push(full_name_attr);
@@ -191,13 +199,33 @@ pub fn process_module_items(
   for item in mod_items {
     processed_items.push(match item {
       ModuleItem::Raw(item) => *item,
-      ModuleItem::Oneof(ident) => {
-        Item::Enum(oneofs.remove(&ident).expect("Oneof not found").into())
-      }
-      ModuleItem::Message(ident) => {
-        Item::Struct(messages.remove(&ident).expect("Message not found").into())
-      }
-      ModuleItem::Enum(ident) => Item::Enum(enums.remove(&ident).expect("Enum not found").into()),
+      ModuleItem::Oneof(ident) => Item::Enum(
+        oneofs
+          .remove(&ident)
+          .ok_or(spanned_error!(
+            &ident,
+            format!("Failed to find the data for the oneof `{ident}`")
+          ))?
+          .into(),
+      ),
+      ModuleItem::Message(ident) => Item::Struct(
+        messages
+          .remove(&ident)
+          .ok_or(spanned_error!(
+            &ident,
+            format!("Failed to find the data for the message `{ident}`")
+          ))?
+          .into(),
+      ),
+      ModuleItem::Enum(ident) => Item::Enum(
+        enums
+          .remove(&ident)
+          .ok_or(spanned_error!(
+            &ident,
+            format!("Failed to find the data for the enum `{ident}`")
+          ))?
+          .into(),
+      ),
     });
   }
 
@@ -280,7 +308,7 @@ impl ItemKind {
         "proto_message" => {
           if !is_struct {
             return Err(spanned_error!(
-              item,
+              attr,
               "proto_message can only be used on a struct"
             ));
           }
@@ -290,7 +318,7 @@ impl ItemKind {
         "proto_enum" => {
           if is_struct {
             return Err(spanned_error!(
-              item,
+              attr,
               "proto_enum can only be used on an enum"
             ));
           }
@@ -299,7 +327,7 @@ impl ItemKind {
         "proto_oneof" => {
           if is_struct {
             return Err(spanned_error!(
-              item,
+              attr,
               "proto_oneof can only be used on an enum"
             ));
           }

@@ -23,35 +23,49 @@ pub fn process_module_message_attrs(
       continue;
     }
 
-    let args = attr.parse_args::<PunctuatedParser<Meta>>().unwrap();
+    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
 
     for arg in args.inner {
       match arg {
         Meta::List(list) => {
-          if list.path.is_ident("reserved_names") {
-            let names = list.parse_args::<StringList>().unwrap();
+          let ident = get_ident_or_continue!(list.path);
 
-            reserved_names = ReservedNames::List(names.list);
-          } else if list.path.is_ident("reserved_numbers") {
-            let numbers = list.parse_args::<ReservedNumbers>().unwrap();
+          match ident.as_str() {
+            "reserved_names" => {
+              let names = list.parse_args::<StringList>()?;
 
-            reserved_numbers = numbers;
-          } else if list.path.is_ident("nested_messages") {
-            let idents = list.parse_args::<PunctuatedParser<Ident>>()?.inner;
+              reserved_names = ReservedNames::List(names.list);
+            }
+            "reserved_numbers" => {
+              let numbers = list.parse_args::<ReservedNumbers>()?;
 
-            nested_messages.extend(idents);
-          } else if list.path.is_ident("nested_enums") {
-            let idents = list.parse_args::<PunctuatedParser<Ident>>()?.inner;
+              reserved_numbers = numbers;
+            }
+            "nested_messages" => {
+              let idents = list.parse_args::<PunctuatedParser<Ident>>()?.inner;
 
-            nested_enums.extend(idents);
-          }
+              nested_messages.extend(idents);
+            }
+            "nested_enums" => {
+              let idents = list.parse_args::<PunctuatedParser<Ident>>()?.inner;
+
+              nested_enums.extend(idents);
+            }
+            _ => {}
+          };
         }
-        Meta::NameValue(nameval) => {
-          if nameval.path.is_ident("name") {
-            proto_name = Some(extract_string_lit(&nameval.value).unwrap());
-          } else if nameval.path.is_ident("reserved_names") {
-            reserved_names = ReservedNames::Expr(nameval.value);
-          }
+        Meta::NameValue(nv) => {
+          let ident = get_ident_or_continue!(nv.path);
+
+          match ident.as_str() {
+            "name" => {
+              proto_name = Some(extract_string_lit(&nv.value)?);
+            }
+            "reserved_names" => {
+              reserved_names = ReservedNames::Expr(nv.value);
+            }
+            _ => {}
+          };
         }
         Meta::Path(_) => {}
       }

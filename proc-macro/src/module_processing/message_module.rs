@@ -15,8 +15,11 @@ pub(crate) fn process_message_from_module(
     ..
   } = msg;
 
-  for oneof in oneofs {
-    let oneof_data = oneofs_map.get_mut(oneof).expect("Failed to find oneof");
+  for oneof in oneofs.iter() {
+    let oneof_data = oneofs_map.get_mut(oneof).ok_or(spanned_error!(
+      oneof,
+      format!("Failed to find the data for the oneof `{oneof}`")
+    ))?;
 
     for tag in &oneof_data.used_tags {
       used_tags.push(*tag);
@@ -33,35 +36,30 @@ pub(crate) fn process_message_from_module(
     }
 
     if let Some(ident) = &field.oneof_ident {
-      let oneof = oneofs_map.get_mut(ident).expect("Failed to find oneof");
+      let oneof = oneofs_map.get_mut(ident).ok_or(spanned_error!(
+        ident,
+        format!("Failed to find the data for the oneof `{ident}`")
+      ))?;
 
       for variant in &mut oneof.variants {
+        if variant.is_ignored {
+          continue;
+        }
+
         if variant.tag.is_none() {
           let tag = tag_allocator.next_tag();
 
           variant.tag = Some(tag);
-
           oneof.used_tags.push(tag);
 
           let variant_attr: Attribute = parse_quote!(#[proto(tag = #tag)]);
-
           variant.inject_attr(variant_attr);
-        }
-      }
-
-      let mut oneof_tags = String::new();
-      for (i, tag) in oneof.used_tags.iter().enumerate() {
-        oneof_tags.push_str(&tag.to_string());
-
-        if i != oneof.used_tags.len() - 1 {
-          oneof_tags.push_str(", ");
         }
       }
 
       let oneof_tags = &oneof.used_tags;
 
       let oneof_attr: Attribute = parse_quote!(#[proto(oneof(tags(#(#oneof_tags),*)))]);
-
       field.inject_attr(oneof_attr);
 
       continue;
@@ -73,7 +71,6 @@ pub(crate) fn process_message_from_module(
       field.tag = Some(tag);
 
       let field_attr: Attribute = parse_quote!(#[proto(tag = #tag)]);
-
       field.inject_attr(field_attr);
     }
   }

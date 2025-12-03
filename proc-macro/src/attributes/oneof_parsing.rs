@@ -4,6 +4,7 @@ pub struct OneofVariant {
   pub tokens: Variant,
   pub tag: Option<i32>,
   pub name: String,
+  pub is_ignored: bool,
 }
 
 impl OneofVariant {
@@ -51,8 +52,12 @@ pub fn parse_oneof(item: ItemEnum) -> Result<OneofData, Error> {
   let mut used_tags: Vec<i32> = Vec::new();
 
   for variant in item.variants {
-    let ModuleFieldAttrs { tag, name, .. } =
-      process_module_field_attrs(&variant.ident, &variant.attrs)?;
+    let ModuleFieldAttrs {
+      tag,
+      name,
+      is_ignored,
+      ..
+    } = process_module_field_attrs(&variant.ident, &variant.attrs)?;
 
     if let Some(tag) = tag {
       used_tags.push(tag);
@@ -62,6 +67,7 @@ pub fn parse_oneof(item: ItemEnum) -> Result<OneofData, Error> {
       tokens: variant,
       tag,
       name,
+      is_ignored,
     });
   }
 

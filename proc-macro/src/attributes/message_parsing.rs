@@ -82,7 +82,7 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
   let fields = if let Fields::Named(fields) = fields {
     fields.named
   } else {
-    return Err(spanned_error!(ident, "Must be a struct with named fields"));
+    return Err(spanned_error!(ident, "Expected a struct with named fields"));
   };
 
   let ModuleMessageAttrs {
@@ -98,24 +98,44 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
   let mut fields_data: Vec<FieldData> = Vec::new();
 
   for field in fields {
+    let mut oneof_ident: Option<Ident> = None;
+
+    let field_ident = field
+      .ident
+      .as_ref()
+      .ok_or(spanned_error!(&field, "Expected a named field"))?;
+
     let ModuleFieldAttrs {
       tag,
       name,
-      is_oneof,
       is_ignored,
-    } = process_module_field_attrs(field.ident.as_ref().unwrap(), &field.attrs)?;
+      oneof_info,
+    } = process_module_field_attrs(field_ident, &field.attrs)?;
 
     if let Some(tag) = tag {
       used_tags.push(tag);
     }
 
-    let mut oneof_ident: Option<Ident> = None;
+    if let Some(info) = oneof_info {
+      let mut oneof_path = match info.path {
+        ItemPath::Path(path) => path,
+        _ => {
+          let rust_type = RustType::from_type(&field.ty, field_ident)?;
 
-    if is_oneof {
-      let type_ident = extract_oneof_ident(&field.ty, &ident)?;
+          rust_type
+            .inner_path()
+            .ok_or(spanned_error!(
+              &field,
+              "Could not infer the path to the oneof. Please set it manually"
+            ))?
+            .clone()
+        }
+      };
 
-      oneofs.push(type_ident.clone());
-      oneof_ident = Some(type_ident);
+      let found_oneof_ident = oneof_path.segments.pop().unwrap().into_value().ident;
+
+      oneof_ident = Some(found_oneof_ident.clone());
+      oneofs.push(found_oneof_ident);
     }
 
     fields_data.push(FieldData {
