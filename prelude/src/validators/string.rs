@@ -145,7 +145,7 @@ impl From<StringValidator> for ProtoOption {
   }
 }
 
-/// All of the variants for protovalidate's well known string rules
+#[doc(hidden)]
 #[derive(Clone, Debug, Copy)]
 pub enum WellKnownStrings {
   Email,

@@ -51,6 +51,7 @@ impl_map!(ProtoMap);
 impl_map!(HashMap);
 
 #[derive(Clone, Debug, Builder)]
+#[builder(derive(Clone))]
 pub struct MapValidator<K = (), V = ()> {
   #[builder(default)]
   _key_type: PhantomData<K>,

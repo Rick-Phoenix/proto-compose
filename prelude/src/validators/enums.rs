@@ -10,6 +10,7 @@ impl_ignore!(EnumValidatorBuilder);
 impl_into_option!(EnumValidator);
 
 #[derive(Clone, Debug, Builder)]
+#[builder(derive(Clone))]
 pub struct EnumValidator {
   /// Specifies that only the values in this list will be considered valid for this field.
   #[builder(into)]

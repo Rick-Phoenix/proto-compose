@@ -8,8 +8,8 @@ pub struct GenericMessage;
 impl_validator!(MessageValidator, GenericMessage);
 impl_into_option!(MessageValidator);
 
-/// Used by the [`msg_field`](crate::msg_field) macro to define validation rules.
 #[derive(Debug, Clone, Builder)]
+#[builder(derive(Clone))]
 pub struct MessageValidator {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   #[builder(into)]

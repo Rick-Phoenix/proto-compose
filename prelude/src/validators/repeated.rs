@@ -86,6 +86,7 @@ where
 
 #[derive(Clone, Debug, Builder)]
 #[builder(state_mod(vis = "pub"))]
+#[builder(derive(Clone))]
 pub struct RepeatedValidator<T: AsProtoType> {
   #[builder(default)]
   _inner_type: PhantomData<T>,

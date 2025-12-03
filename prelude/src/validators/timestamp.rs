@@ -4,8 +4,8 @@ use timestamp_validator_builder::{IsUnset, SetIgnore, State};
 
 use super::*;
 
-/// Used by the [`timestamp`](crate::timestamp) macro to define validation rules.
 #[derive(Clone, Debug, Builder)]
+#[builder(derive(Clone))]
 pub struct TimestampValidator {
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<Timestamp>,
