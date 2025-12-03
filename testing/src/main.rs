@@ -77,10 +77,22 @@ mod inner {
     map.into_iter().map(|(k, v)| (k, v.into())).collect()
   }
 
+  fn message_rules() -> Vec<CelRule> {
+    vec![
+      CelRule::builder()
+        .id("abc")
+        .message("abc")
+        .expression("abc")
+        .build(),
+      cel_rule!(id = "abc", msg = "abc", expr = "abc"),
+    ]
+  }
+
   #[proto_message]
   #[proto(reserved_numbers(1, 2, 3..9))]
   #[proto(nested_enums(PseudoEnum))]
   #[derive(Clone, Debug, Default)]
+  #[proto(validate = message_rules())]
   pub struct Abc {
     #[proto(message(AbcProto, boxed))]
     boxed: Option<Box<Abc>>,
@@ -97,7 +109,7 @@ mod inner {
     #[proto(map(string, enum_), validate = |v| v.values(|val| val.defined_only()))]
     enum_map: HashMap<String, PseudoEnum>,
 
-    #[proto(map(string, message(proxied)), validate = |v| v.values(|val| val.ignore_always()))]
+    #[proto(map(string, message(proxied)), validate = |v| v.values(|val| val.ignore_always().cel(message_rules())))]
     message_map: HashMap<String, Nested>,
 
     #[proto(enum_, validate = enum_validator())]

@@ -18,6 +18,33 @@ pub enum FieldAttrData {
 }
 
 #[derive(Clone)]
+pub enum PathOrCall {
+  Path(Path),
+  Call(ExprCall),
+}
+
+pub fn parse_path_or_call(expr: Expr) -> Result<PathOrCall, Error> {
+  let output = match expr {
+    Expr::Path(expr_path) => PathOrCall::Path(expr_path.path),
+    Expr::Call(call) => PathOrCall::Call(call),
+    _ => return Err(spanned_error!(expr, "Expected a path or a call")),
+  };
+
+  Ok(output)
+}
+
+impl ToTokens for PathOrCall {
+  fn to_tokens(&self, tokens: &mut TokenStream2) {
+    let output = match self {
+      PathOrCall::Path(path) => quote! { #path() },
+      PathOrCall::Call(expr_call) => quote! { #expr_call },
+    };
+
+    tokens.extend(output);
+  }
+}
+
+#[derive(Clone)]
 pub enum ValidatorExpr {
   Closure(ExprClosure),
   Call(ExprCall),

@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{validators::CelRule, *};
 
 #[derive(Debug, Default, Clone)]
 pub struct Message {
@@ -12,6 +12,7 @@ pub struct Message {
   pub options: Vec<ProtoOption>,
   pub reserved_names: Vec<&'static str>,
   pub reserved_numbers: Vec<Range<i32>>,
+  pub cel_rules: Vec<CelRule>,
 }
 
 #[derive(Debug, Clone)]

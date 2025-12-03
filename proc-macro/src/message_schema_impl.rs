@@ -15,6 +15,7 @@ pub fn message_schema_impls(
     package,
     nested_messages,
     nested_enums,
+    validator,
     ..
   } = message_attrs;
 
@@ -28,6 +29,12 @@ pub fn message_schema_impls(
   for ident in nested_enums {
     nested_enums_tokens.extend(quote! { #ident::to_enum(), });
   }
+
+  let validator_tokens = if let Some(validator) = validator {
+    quote! { #validator }
+  } else {
+    quote! { vec![] }
+  };
 
   quote! {
     impl ProtoValidator<#struct_name> for ValidatorMap {
@@ -64,6 +71,7 @@ pub fn message_schema_impls(
           messages: vec![ #nested_messages_tokens ],
           enums: vec![ #nested_enums_tokens ],
           entries: vec![ #(#fields_data,)* ],
+          cel_rules: #validator_tokens,
         };
 
         new_msg
