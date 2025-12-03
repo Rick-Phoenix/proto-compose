@@ -22,10 +22,6 @@ pub fn process_module_items(
     return Ok(module);
   };
 
-  let ModuleAttrs { file, package } = module_attrs;
-
-  let package_attr: Attribute = parse_quote! { #[proto(file = #file, package = #package)] };
-
   let mut mod_items: Vec<ModuleItem> = Vec::new();
 
   let mut oneofs: HashMap<Ident, OneofData> = HashMap::new();
@@ -95,7 +91,7 @@ pub fn process_module_items(
       top_level_messages.extend(quote! { #ident::to_message(), });
     }
 
-    process_message_from_module(msg, &mut oneofs, &package_attr)?;
+    process_message_from_module(msg, &mut oneofs, &module_attrs)?;
   }
 
   for (ident, enum_) in enums.iter_mut() {
@@ -116,7 +112,7 @@ pub fn process_module_items(
       top_level_enums.extend(quote! { #ident::to_enum(), });
     };
 
-    enum_.tokens.attrs.push(package_attr.clone());
+    enum_.tokens.attrs.push(module_attrs.as_attribute());
   }
 
   let mut processed_items: Vec<Item> = Vec::new();
@@ -154,7 +150,16 @@ pub fn process_module_items(
     });
   }
 
+  let ModuleAttrs {
+    file,
+    package,
+    schema_feature,
+  } = module_attrs;
+
+  let feature_tokens = schema_feature.map(|feat| quote! { #[cfg(feature = #feat)] });
+
   let aggregator_fn: ItemFn = parse_quote! {
+    #feature_tokens
     pub fn proto_file() -> ProtoFile {
       let mut file = ProtoFile {
         name: #file.into(),

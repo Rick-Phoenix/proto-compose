@@ -52,9 +52,9 @@ impl_map!(HashMap);
 #[derive(Clone, Debug, Builder)]
 #[builder(derive(Clone))]
 pub struct MapValidator<K = (), V = ()> {
-  #[builder(default)]
+  #[builder(default, setters(vis = ""))]
   _key_type: PhantomData<K>,
-  #[builder(default)]
+  #[builder(default, setters(vis = ""))]
   _value_type: PhantomData<V>,
 
   /// The validation rules to apply to the keys of this map field.

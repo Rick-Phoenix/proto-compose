@@ -3,7 +3,7 @@ use crate::*;
 pub fn process_message_from_module(
   msg: &mut MessageData,
   oneofs_map: &mut HashMap<Ident, OneofData>,
-  package_attribute: &Attribute,
+  module_attrs: &ModuleAttrs,
 ) -> Result<(), Error> {
   let MessageData {
     fields,
@@ -64,6 +64,11 @@ pub fn process_message_from_module(
       let oneof_attr: Attribute = parse_quote!(#[proto(oneof(tags(#(#oneof_tags),*)))]);
       field.inject_attr(oneof_attr);
 
+      if let Some(feature) = &module_attrs.schema_feature {
+        let feature_attr: Attribute = parse_quote! { #[proto(schema_feature = #feature)] };
+        oneof.tokens.attrs.push(feature_attr);
+      }
+
       continue;
     }
 
@@ -85,7 +90,7 @@ pub fn process_message_from_module(
     msg.inject_attr(full_name_attr);
   }
 
-  msg.inject_attr(package_attribute.clone());
+  msg.inject_attr(module_attrs.as_attribute());
 
   Ok(())
 }

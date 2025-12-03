@@ -15,6 +15,7 @@ pub struct MessageAttrs {
   pub into_proto: Option<PathOrClosure>,
   pub shadow_derives: Option<MetaList>,
   pub validator: Option<Expr>,
+  pub schema_feature: Option<String>,
 }
 
 pub fn process_derive_message_attrs(
@@ -35,6 +36,7 @@ pub fn process_derive_message_attrs(
   let mut into_proto: Option<PathOrClosure> = None;
   let mut shadow_derives: Option<MetaList> = None;
   let mut validator: Option<Expr> = None;
+  let mut schema_feature: Option<String> = None;
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -77,6 +79,9 @@ pub fn process_derive_message_attrs(
           let ident = get_ident_or_continue!(nv.path);
 
           match ident.as_str() {
+            "schema_feature" => {
+              schema_feature = Some(extract_string_lit(&nv.value)?);
+            }
             "options" => {
               options = Some(nv.value);
             }
@@ -140,5 +145,6 @@ pub fn process_derive_message_attrs(
     into_proto,
     shadow_derives,
     validator,
+    schema_feature,
   })
 }

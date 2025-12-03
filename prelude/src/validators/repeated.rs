@@ -84,7 +84,7 @@ where
 #[builder(state_mod(vis = "pub"))]
 #[builder(derive(Clone))]
 pub struct RepeatedValidator<T: AsProtoType> {
-  #[builder(default)]
+  #[builder(default, setters(vis = ""))]
   _inner_type: PhantomData<T>,
 
   /// Specifies the rules that will be applied to the individual items of this repeated field.

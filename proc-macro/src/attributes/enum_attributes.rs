@@ -9,6 +9,7 @@ pub struct EnumAttrs {
   pub package: String,
   pub full_name: String,
   pub no_prefix: bool,
+  pub schema_feature: Option<String>,
 }
 
 pub fn process_derive_enum_attrs(
@@ -23,6 +24,7 @@ pub fn process_derive_enum_attrs(
   let mut file: Option<String> = None;
   let mut package: Option<String> = None;
   let mut no_prefix = false;
+  let mut schema_feature: Option<String> = None;
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -55,6 +57,9 @@ pub fn process_derive_enum_attrs(
           let ident = get_ident_or_continue!(nv.path);
 
           match ident.as_str() {
+            "schema_feature" => {
+              schema_feature = Some(extract_string_lit(&nv.value)?);
+            }
             "options" => {
               options = Some(nv.value);
             }
@@ -103,5 +108,6 @@ pub fn process_derive_enum_attrs(
     package,
     full_name,
     no_prefix,
+    schema_feature,
   })
 }

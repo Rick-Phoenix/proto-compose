@@ -22,6 +22,7 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
     package,
     full_name,
     no_prefix,
+    schema_feature,
   } = process_derive_enum_attrs(enum_name, attrs).unwrap();
 
   let reserved_numbers_tokens = reserved_numbers.to_token_stream();
@@ -94,8 +95,10 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
   }
 
   let options_tokens = tokens_or_default!(options, quote! { vec![] });
+  let schema_feature_tokens = schema_feature.map(|feat| quote! { #[cfg(feature = #feat)] });
 
   let output_tokens = quote! {
+    #schema_feature_tokens
     impl AsProtoType for #enum_name {
       fn proto_type() -> ProtoType {
         ProtoType::Single(TypeInfo {
@@ -112,7 +115,10 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
       pub fn from_int_or_default(int: i32) -> Self {
         int.try_into().unwrap_or_default()
       }
+    }
 
+    #schema_feature_tokens
+    impl #enum_name {
       pub fn as_proto_name(&self) -> &'static str {
         match self {
           #as_str_tokens
