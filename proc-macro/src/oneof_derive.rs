@@ -140,14 +140,14 @@ pub(crate) fn process_oneof_derive_shadow(
     #from_proto_impl
     #into_proto_impl
 
-    impl ProtoOneof for #shadow_enum_ident {
-      fn fields() -> Vec<ProtoField> {
+    impl ::prelude::ProtoOneof for #shadow_enum_ident {
+      fn fields() -> Vec<::prelude::ProtoField> {
         #orig_enum_ident::fields()
       }
     }
 
     impl #shadow_enum_ident {
-      pub fn to_oneof() -> Oneof {
+      pub fn to_oneof() -> ::prelude::Oneof {
         #orig_enum_ident::to_oneof()
       }
     }

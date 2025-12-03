@@ -128,7 +128,7 @@ impl ProtoField {
       ProtoField::Single(proto_type) => proto_type.as_proto_type_trait_target(),
     };
 
-    quote! { <#target_type as AsProtoType>::proto_type() }
+    quote! { <#target_type as ::prelude::AsProtoType>::proto_type() }
   }
 
   pub fn output_proto_type(&self) -> TokenStream2 {

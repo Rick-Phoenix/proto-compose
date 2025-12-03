@@ -115,16 +115,16 @@ pub(crate) fn process_message_derive_shadow(
   output_tokens.extend(quote! {
     #schema_impls
 
-    #[derive(prost::Message, Clone, PartialEq)]
+    #[derive(::prost::Message, Clone, PartialEq)]
     #shadow_struct_derives
     #shadow_struct
 
     #from_proto_impl
     #into_proto_impl
 
-    impl AsProtoType for #shadow_struct_ident {
-      fn proto_type() -> ProtoType {
-        <#orig_struct_ident as AsProtoType>::proto_type()
+    impl ::prelude::AsProtoType for #shadow_struct_ident {
+      fn proto_type() -> ::prelude::ProtoType {
+        <#orig_struct_ident as ::prelude::AsProtoType>::proto_type()
       }
     }
   });

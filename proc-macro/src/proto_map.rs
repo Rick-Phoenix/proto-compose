@@ -24,7 +24,7 @@ impl ProtoMapKeys {
     match self {
       ProtoMapKeys::String => quote! { String },
       ProtoMapKeys::Int32 => quote! { i32 },
-      ProtoMapKeys::Sint32 => quote! { Sint32 },
+      ProtoMapKeys::Sint32 => quote! { ::prelude::Sint32 },
     }
   }
 
@@ -39,7 +39,7 @@ impl ProtoMapKeys {
     match self {
       ProtoMapKeys::String => quote! { String },
       ProtoMapKeys::Int32 => quote! { i32 },
-      ProtoMapKeys::Sint32 => quote! { Sint32 },
+      ProtoMapKeys::Sint32 => quote! { ::prelude::Sint32 },
     }
   }
 }
@@ -84,21 +84,21 @@ impl ProtoMap {
     let keys = self.keys.as_proto_type_trait_target();
     let values = self.values.as_proto_type_trait_target();
 
-    quote! { HashMap<#keys, #values> }
+    quote! { std::collections::HashMap<#keys, #values> }
   }
 
   pub fn validator_target_type(&self) -> TokenStream2 {
     let keys = self.keys.validator_target_type();
     let values = self.values.validator_target_type();
 
-    quote! { ProtoMap<#keys, #values> }
+    quote! { ::prelude::ProtoMap<#keys, #values> }
   }
 
   pub fn output_proto_type(&self) -> TokenStream2 {
     let keys = self.keys.output_proto_type();
     let values = self.values.output_proto_type();
 
-    quote! { HashMap<#keys, #values> }
+    quote! { std::collections::HashMap<#keys, #values> }
   }
 
   pub fn as_prost_attr_type(&self) -> TokenStream2 {

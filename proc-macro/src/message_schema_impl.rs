@@ -44,11 +44,11 @@ pub fn message_schema_impls(
 
   quote! {
     #schema_feature_tokens
-    impl AsProtoType for #struct_name {
-      fn proto_type() -> ProtoType {
-        ProtoType::Single(TypeInfo {
+    impl ::prelude::AsProtoType for #struct_name {
+      fn proto_type() -> ::prelude::ProtoType {
+        ::prelude::ProtoType::Single(::prelude::TypeInfo {
           name: #full_name,
-          path: Some(ProtoPath {
+          path: Some(::prelude::ProtoPath {
             file: #file,
             package: #package
           })
@@ -58,8 +58,8 @@ pub fn message_schema_impls(
 
     #schema_feature_tokens
     impl #struct_name {
-      pub fn to_message() -> Message {
-        let mut new_msg = Message {
+      pub fn to_message() -> ::prelude::Message {
+        let mut new_msg = ::prelude::Message {
           name: #proto_name,
           full_name: #full_name,
           package: #package,

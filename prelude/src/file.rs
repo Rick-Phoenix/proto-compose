@@ -2,8 +2,8 @@ use crate::*;
 
 #[derive(Default)]
 pub struct ProtoFile {
-  pub name: Arc<str>,
-  pub package: Arc<str>,
+  pub name: &'static str,
+  pub package: &'static str,
   pub imports: Vec<Arc<str>>,
   pub messages: Vec<Message>,
   pub enums: Vec<Enum>,
@@ -11,10 +11,10 @@ pub struct ProtoFile {
 }
 
 impl ProtoFile {
-  pub fn new(name: &str, package: &str) -> Self {
+  pub fn new(name: &'static str, package: &'static str) -> Self {
     Self {
-      name: name.into(),
-      package: package.into(),
+      name,
+      package,
       ..Default::default()
     }
   }

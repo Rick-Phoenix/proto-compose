@@ -160,10 +160,10 @@ pub fn process_module_items(
 
   let aggregator_fn: ItemFn = parse_quote! {
     #feature_tokens
-    pub fn proto_file() -> ProtoFile {
-      let mut file = ProtoFile {
-        name: #file.into(),
-        package: #package.into(),
+    pub fn proto_file() -> ::prelude::ProtoFile {
+      let mut file = ::prelude::ProtoFile {
+        name: #file,
+        package: #package,
         ..Default::default()
       };
 

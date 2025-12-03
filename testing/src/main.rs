@@ -3,8 +3,8 @@
 use std::collections::HashMap;
 
 use prelude::{
-  EnumValidator, GenericProtoEnum, IntValidator, ProtoFile, RepeatedValidator,
-  RepeatedValidatorBuilder, Sint32, StringValidator, StringValidatorBuilder, ValidatorBuilderFor,
+  EnumValidator, GenericProtoEnum, IntValidator, RepeatedValidator, RepeatedValidatorBuilder,
+  Sint32, StringValidator, StringValidatorBuilder, ValidatorBuilderFor,
 };
 use proc_macro_impls::{Enum, Message, Oneof};
 use proto_types::{Duration, Timestamp};
@@ -33,7 +33,7 @@ fn numeric_validator() -> impl ValidatorBuilderFor<Sint32> {
 
 #[proc_macro_impls::proto_module(file = "abc.proto", package = "myapp.v1")]
 mod inner {
-  use prelude::*;
+  use prelude::{cel_rule, CelRule};
   use proc_macro_impls::{proto_enum, proto_message, proto_oneof};
 
   use super::*;
@@ -160,7 +160,7 @@ mod inner {
 use inner::*;
 
 fn main() {
-  let mut file = ProtoFile::new("abc.proto", "myapp.v1");
+  let mut file = prelude::ProtoFile::new("abc.proto", "myapp.v1");
 
   let mut msg = Abc::to_message();
 

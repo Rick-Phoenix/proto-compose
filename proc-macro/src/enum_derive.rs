@@ -90,7 +90,7 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
     let options_tokens = tokens_or_default!(options, quote! { vec![] });
 
     variants_tokens.push(quote! {
-      EnumVariant { name: #name, options: #options_tokens, tag: #tag, }
+      ::prelude::EnumVariant { name: #name, options: #options_tokens, tag: #tag, }
     });
   }
 
@@ -99,11 +99,11 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
 
   let output_tokens = quote! {
     #schema_feature_tokens
-    impl AsProtoType for #enum_name {
-      fn proto_type() -> ProtoType {
-        ProtoType::Single(TypeInfo {
+    impl ::prelude::AsProtoType for #enum_name {
+      fn proto_type() -> ::prelude::ProtoType {
+        ::prelude::ProtoType::Single(::prelude::TypeInfo {
           name: #full_name,
-          path: Some(ProtoPath {
+          path: Some(::prelude::ProtoPath {
             file: #file,
             package: #package
           })
@@ -132,8 +132,8 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
         }
       }
 
-      pub fn to_enum() -> Enum {
-        Enum {
+      pub fn to_enum() -> ::prelude::Enum {
+        ::prelude::Enum {
           name: #proto_name,
           full_name: #full_name,
           package: #package,

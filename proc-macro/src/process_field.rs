@@ -78,7 +78,7 @@ pub fn process_field(
   {
     // Early return
     return Ok(quote! {
-      MessageEntry::Oneof(#oneof_path::to_oneof())
+      ::prelude::MessageEntry::Oneof(#oneof_path::to_oneof())
     });
   }
 
@@ -94,8 +94,8 @@ pub fn process_field(
   let output = match field {
     FieldOrVariant::Field(_) => {
       quote! {
-        MessageEntry::Field(
-          ProtoField {
+        ::prelude::MessageEntry::Field(
+          ::prelude::ProtoField {
             name: #name.to_string(),
             tag: #tag,
             options: #options_tokens,
@@ -107,7 +107,7 @@ pub fn process_field(
     }
     FieldOrVariant::Variant(_) => {
       quote! {
-        ProtoField {
+        ::prelude::ProtoField {
           name: #name.to_string(),
           tag: #tag,
           options: #options_tokens,

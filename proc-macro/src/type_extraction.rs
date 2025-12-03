@@ -32,11 +32,11 @@ impl TypeInfo {
 
     match validator {
       ValidatorExpr::Call(call) => {
-        quote! { Some(<ValidatorMap as ProtoValidator<#target_type>>::from_builder(#call)) }
+        quote! { Some(<::prelude::ValidatorMap as ::prelude::ProtoValidator<#target_type>>::from_builder(#call)) }
       }
 
       ValidatorExpr::Closure(closure) => {
-        quote! { Some(<ValidatorMap as ProtoValidator<#target_type>>::build_rules(#closure)) }
+        quote! { Some(<::prelude::ValidatorMap as ::prelude::ProtoValidator<#target_type>>::build_rules(#closure)) }
       }
     }
   }
