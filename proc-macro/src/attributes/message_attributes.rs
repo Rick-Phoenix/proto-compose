@@ -3,7 +3,7 @@ use crate::*;
 pub struct MessageAttrs {
   pub reserved_names: ReservedNames,
   pub reserved_numbers: ReservedNumbers,
-  pub options: Vec<Expr>,
+  pub options: Option<Expr>,
   pub name: String,
   pub full_name: String,
   pub file: String,
@@ -14,7 +14,7 @@ pub struct MessageAttrs {
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
   pub shadow_derives: Option<MetaList>,
-  pub validator: Option<PathOrCall>,
+  pub validator: Option<Expr>,
 }
 
 pub fn process_derive_message_attrs(
@@ -23,7 +23,7 @@ pub fn process_derive_message_attrs(
 ) -> Result<MessageAttrs, Error> {
   let mut reserved_names = ReservedNames::default();
   let mut reserved_numbers = ReservedNumbers::default();
-  let mut options: Vec<Expr> = Vec::new();
+  let mut options: Option<Expr> = None;
   let mut proto_name: Option<String> = None;
   let mut full_name: Option<String> = None;
   let mut file: Option<String> = None;
@@ -34,7 +34,7 @@ pub fn process_derive_message_attrs(
   let mut from_proto: Option<PathOrClosure> = None;
   let mut into_proto: Option<PathOrClosure> = None;
   let mut shadow_derives: Option<MetaList> = None;
-  let mut validator: Option<PathOrCall> = None;
+  let mut validator: Option<Expr> = None;
 
   for attr in attrs {
     if !attr.path().is_ident("proto") {
@@ -59,11 +59,6 @@ pub fn process_derive_message_attrs(
 
               reserved_numbers = numbers;
             }
-            "options" => {
-              let exprs = list.parse_args::<PunctuatedParser<Expr>>()?.inner;
-
-              options = exprs.into_iter().collect();
-            }
             "nested_messages" => {
               let idents = list.parse_args::<PunctuatedParser<Ident>>()?.inner;
 
@@ -82,8 +77,11 @@ pub fn process_derive_message_attrs(
           let ident = get_ident_or_continue!(nv.path);
 
           match ident.as_str() {
+            "options" => {
+              options = Some(nv.value);
+            }
             "validate" => {
-              validator = Some(parse_path_or_call(nv.value)?);
+              validator = Some(nv.value);
             }
             "from_proto" => {
               let expr = parse_path_or_closure(nv.value)?;

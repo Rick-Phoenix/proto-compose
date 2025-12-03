@@ -4,7 +4,7 @@ use crate::*;
 pub struct FieldAttrs {
   pub tag: i32,
   pub validator: Option<ValidatorExpr>,
-  pub options: Vec<Expr>,
+  pub options: Option<Expr>,
   pub name: String,
   pub proto_field: ProtoField,
   pub from_proto: Option<PathOrClosure>,
@@ -15,33 +15,6 @@ pub struct FieldAttrs {
 pub enum FieldAttrData {
   Ignored { from_proto: Option<PathOrClosure> },
   Normal(Box<FieldAttrs>),
-}
-
-#[derive(Clone)]
-pub enum PathOrCall {
-  Path(Path),
-  Call(ExprCall),
-}
-
-pub fn parse_path_or_call(expr: Expr) -> Result<PathOrCall, Error> {
-  let output = match expr {
-    Expr::Path(expr_path) => PathOrCall::Path(expr_path.path),
-    Expr::Call(call) => PathOrCall::Call(call),
-    _ => return Err(spanned_error!(expr, "Expected a path or a call")),
-  };
-
-  Ok(output)
-}
-
-impl ToTokens for PathOrCall {
-  fn to_tokens(&self, tokens: &mut TokenStream2) {
-    let output = match self {
-      PathOrCall::Path(path) => quote! { #path() },
-      PathOrCall::Call(expr_call) => quote! { #expr_call },
-    };
-
-    tokens.extend(output);
-  }
 }
 
 #[derive(Clone)]
@@ -57,7 +30,7 @@ pub fn process_derive_field_attrs(
 ) -> Result<FieldAttrData, Error> {
   let mut validator: Option<ValidatorExpr> = None;
   let mut tag: Option<i32> = None;
-  let mut options: Vec<Expr> = Vec::new();
+  let mut options: Option<Expr> = None;
   let mut name: Option<String> = None;
   let mut proto_field: Option<ProtoField> = None;
   let mut is_ignored = false;
@@ -79,6 +52,10 @@ pub fn process_derive_field_attrs(
           let ident = get_ident_or_continue!(nv.path);
 
           match ident.as_str() {
+            "options" => {
+              options = Some(nv.value);
+            }
+
             "validate" => {
               validator = match nv.value {
                 Expr::Closure(closure) => Some(ValidatorExpr::Closure(closure)),
@@ -109,12 +86,6 @@ pub fn process_derive_field_attrs(
           let ident = get_ident_or_continue!(list.path);
 
           match ident.as_str() {
-            "options" => {
-              let exprs = list.parse_args::<PunctuatedParser<Expr>>()?.inner;
-
-              options = exprs.into_iter().collect();
-            }
-
             "oneof" => {
               oneof_attrs.push(list);
             }

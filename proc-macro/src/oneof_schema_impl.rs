@@ -12,6 +12,7 @@ pub fn oneof_schema_impl(
     ..
   } = oneof_attrs;
 
+  let options_tokens = tokens_or_default!(options, quote! { vec![] });
   let required_option_tokens = required.then(|| quote! { options.push(oneof_required()); });
 
   quote! {
@@ -23,7 +24,7 @@ pub fn oneof_schema_impl(
 
     impl #enum_ident {
       pub fn to_oneof() -> Oneof {
-        let mut options: Vec<ProtoOption> = vec![ #(#options),* ];
+        let mut options: Vec<ProtoOption> = #options_tokens;
 
         #required_option_tokens
 

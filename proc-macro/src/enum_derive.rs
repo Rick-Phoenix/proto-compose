@@ -86,10 +86,14 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
       next_tag
     };
 
+    let options_tokens = tokens_or_default!(options, quote! { vec![] });
+
     variants_tokens.push(quote! {
-      EnumVariant { name: #name, options: vec![ #(#options),* ], tag: #tag, }
+      EnumVariant { name: #name, options: #options_tokens, tag: #tag, }
     });
   }
+
+  let options_tokens = tokens_or_default!(options, quote! { vec![] });
 
   let output_tokens = quote! {
     impl AsProtoType for #enum_name {
@@ -131,7 +135,7 @@ pub(crate) fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, E
           variants: vec! [ #(#variants_tokens,)* ],
           reserved_names: #reserved_names,
           reserved_numbers: vec![ #reserved_numbers_tokens ],
-          options: vec![ #(#options),* ],
+          options: #options_tokens,
         }
       }
     }

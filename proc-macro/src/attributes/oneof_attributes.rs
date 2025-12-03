@@ -1,7 +1,7 @@
 use crate::*;
 
 pub struct OneofAttrs {
-  pub options: Vec<Expr>,
+  pub options: Option<Expr>,
   pub name: String,
   pub required: bool,
   pub direct: bool,
@@ -14,7 +14,7 @@ pub fn process_oneof_attrs(
   enum_ident: &Ident,
   attrs: &Vec<Attribute>,
 ) -> Result<OneofAttrs, Error> {
-  let mut options: Vec<Expr> = Vec::new();
+  let mut options: Option<Expr> = None;
   let mut name: Option<String> = None;
   let mut required = false;
   let mut direct = false;
@@ -48,11 +48,6 @@ pub fn process_oneof_attrs(
           let ident = get_ident_or_continue!(list.path);
 
           match ident.as_str() {
-            "options" => {
-              let exprs = list.parse_args::<PunctuatedParser<Expr>>()?.inner;
-
-              options = exprs.into_iter().collect();
-            }
             "derive" => shadow_derives = Some(list),
             _ => {}
           };
@@ -61,6 +56,9 @@ pub fn process_oneof_attrs(
           let ident = get_ident_or_continue!(nv.path);
 
           match ident.as_str() {
+            "options" => {
+              options = Some(nv.value);
+            }
             "from_proto" => {
               let expr = parse_path_or_closure(nv.value)?;
 

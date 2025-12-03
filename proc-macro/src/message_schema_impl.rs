@@ -30,11 +30,13 @@ pub fn message_schema_impls(
     nested_enums_tokens.extend(quote! { #ident::to_enum(), });
   }
 
-  let validator_tokens = if let Some(validator) = validator {
-    quote! { #validator }
+  let validator_tokens = if let Some(call) = validator {
+    quote! { #call }
   } else {
     quote! { vec![] }
   };
+
+  let options_tokens = tokens_or_default!(options, quote! { vec![] });
 
   quote! {
     impl AsProtoType for #struct_name {
@@ -58,7 +60,7 @@ pub fn message_schema_impls(
           file: #file,
           reserved_names: #reserved_names,
           reserved_numbers: vec![ #reserved_numbers ],
-          options: vec![ #(#options),* ],
+          options: #options_tokens,
           messages: vec![ #nested_messages_tokens ],
           enums: vec![ #nested_enums_tokens ],
           entries: vec![ #(#fields_data,)* ],

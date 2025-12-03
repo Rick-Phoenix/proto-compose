@@ -1,3 +1,11 @@
+macro_rules! tokens_or_default {
+  ($tokens:expr, $default:expr) => {
+    $tokens
+      .as_ref()
+      .map_or_else(|| $default, |val| val.to_token_stream())
+  };
+}
+
 macro_rules! bail {
   ($($tokens:tt)*) => {
     return Err(spanned_error!($($tokens)*))

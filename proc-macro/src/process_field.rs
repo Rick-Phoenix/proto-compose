@@ -89,6 +89,7 @@ pub fn process_field(
   };
 
   let field_type_tokens = type_info.proto_field.as_proto_type_trait_expr();
+  let options_tokens = tokens_or_default!(options, quote! { vec![] });
 
   let output = match field {
     FieldOrVariant::Field(_) => {
@@ -97,7 +98,7 @@ pub fn process_field(
           ProtoField {
             name: #name.to_string(),
             tag: #tag,
-            options: vec![ #(#options),* ],
+            options: #options_tokens,
             type_: #field_type_tokens,
             validator: #validator_tokens,
           }
@@ -109,7 +110,7 @@ pub fn process_field(
         ProtoField {
           name: #name.to_string(),
           tag: #tag,
-          options: vec![ #(#options),* ],
+          options: #options_tokens,
           type_: #field_type_tokens,
           validator: #validator_tokens,
         }

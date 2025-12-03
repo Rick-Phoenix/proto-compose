@@ -3,7 +3,7 @@ use crate::*;
 pub struct EnumAttrs {
   pub reserved_names: ReservedNames,
   pub reserved_numbers: ReservedNumbers,
-  pub options: Vec<Expr>,
+  pub options: Option<Expr>,
   pub name: String,
   pub file: String,
   pub package: String,
@@ -17,7 +17,7 @@ pub fn process_derive_enum_attrs(
 ) -> Result<EnumAttrs, Error> {
   let mut reserved_names = ReservedNames::default();
   let mut reserved_numbers = ReservedNumbers::default();
-  let mut options: Vec<Expr> = Vec::new();
+  let mut options: Option<Expr> = None;
   let mut proto_name: Option<String> = None;
   let mut full_name: Option<String> = None;
   let mut file: Option<String> = None;
@@ -47,11 +47,7 @@ pub fn process_derive_enum_attrs(
 
               reserved_numbers = numbers;
             }
-            "options" => {
-              let exprs = list.parse_args::<PunctuatedParser<Expr>>()?.inner;
 
-              options = exprs.into_iter().collect();
-            }
             _ => {}
           };
         }
@@ -59,6 +55,9 @@ pub fn process_derive_enum_attrs(
           let ident = get_ident_or_continue!(nv.path);
 
           match ident.as_str() {
+            "options" => {
+              options = Some(nv.value);
+            }
             "name" => {
               proto_name = Some(extract_string_lit(&nv.value)?);
             }

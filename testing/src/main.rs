@@ -88,7 +88,7 @@ mod inner {
   #[proto(nested_enums(PseudoEnum))]
   #[proto(nested_messages(Nested))]
   #[derive(Clone, Debug, Default)]
-  #[proto(validate = message_rules())]
+  #[proto(validate = vec![ cel_rule!(id = "abc", msg = "abc", expr = "abc") ])]
   pub struct Abc {
     #[proto(timestamp, validate = |v| v.lt_now())]
     timestamp: Option<Timestamp>,
