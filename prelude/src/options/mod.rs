@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use askama::Template;
 use proto_types::{Duration, Timestamp};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -8,8 +9,23 @@ pub struct ProtoOption {
   pub value: OptionValue,
 }
 
+impl ProtoOption {
+  pub(crate) fn render_as_field_option(&self) -> String {
+    let Self { name, value } = self;
+
+    format!("{name} = {value}")
+  }
+
+  pub(crate) fn render(&self) -> String {
+    let Self { name, value } = self;
+
+    format!("option {name} = {value};")
+  }
+}
+
 /// An enum representing values for protobuf options.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Template)]
+#[template(path = "option_value.proto.j2")]
 pub enum OptionValue {
   Bool(bool),
   Int(i64),
@@ -24,6 +40,15 @@ pub enum OptionValue {
 }
 
 impl OptionValue {
+  pub(crate) fn is_short(&self) -> bool {
+    match self {
+      Self::List(list) => list.len() <= 5 && list.iter().all(OptionValue::is_short),
+      Self::String(str) => str.chars().count() <= 5,
+      Self::Duration(_) | Self::Timestamp(_) | Self::Message(_) => false,
+      _ => true,
+    }
+  }
+
   /// Creates a new message option value.
   pub fn new_message<S, V, I>(items: I) -> Self
   where

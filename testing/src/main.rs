@@ -168,6 +168,6 @@ fn main() {
 
   // let nested2 = Nested2::to_message();
 
-  println!("{msg:#?}");
+  println!("{msg}");
   // let nested_enum = Bcd::to_nested_enum(nested);
 }

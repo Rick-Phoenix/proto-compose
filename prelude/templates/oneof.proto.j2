@@ -1,0 +1,9 @@
+oneof {{+ self.name +}} {
+  {% for option in self.options +%}
+    {{ option.render() }}
+  {% endfor %}
+
+  {%~ for field in self.fields ~%}
+  {{+ field.render("") ~}}
+  {% endfor +%}
+}

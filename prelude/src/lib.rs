@@ -1,6 +1,7 @@
 #[macro_use]
 mod macros;
 
+use askama::Template;
 pub use paste::paste;
 mod oneof;
 mod options;

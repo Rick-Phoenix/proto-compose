@@ -13,3 +13,4 @@ regex = "1"
 proto-types = { workspace = true }
 paste = "1"
 bytes = "1"
+askama = { workspace = true }

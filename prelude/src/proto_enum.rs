@@ -1,6 +1,7 @@
 use crate::*;
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Template)]
+#[template(path = "enum.proto.j2")]
 pub struct Enum {
   pub name: &'static str,
   pub full_name: &'static str,

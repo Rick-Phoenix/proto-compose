@@ -1,6 +1,7 @@
 use crate::{validators::CelRule, *};
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Template)]
+#[template(path = "message.proto.j2")]
 pub struct Message {
   pub name: &'static str,
   pub full_name: &'static str,
@@ -15,7 +16,8 @@ pub struct Message {
   pub cel_rules: Vec<CelRule>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Template)]
+#[template(path = "message_entry.proto.j2")]
 pub enum MessageEntry {
   Field(ProtoField),
   Oneof(Oneof),

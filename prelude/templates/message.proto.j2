@@ -1,0 +1,31 @@
+message {{+ self.name +}} {
+{% if !reserved_names.is_empty() ~%}
+  {{+ "reserved" +}} {%+ for name in reserved_names %}"{{ name }}"{% if !loop.last +%}, {%+ endif %}{% endfor %};
+{% endif %}
+{% if !reserved_numbers.is_empty() ~%}
+  {{+ "reserved" +}} {%+ for range in reserved_numbers %}{{ range.start +}} to {{+ range.end }}{% if !loop.last %}, {%+ endif %}{% endfor %};
+{%~ endif %}
+{%~ filter indent(2) %}
+{% for option in self.options +%}
+  {{ option.render() }}
+{% endfor +%}
+{% endfilter %}
+
+{% for enum_ in enums %}
+{%+ filter indent(2) ~%}
+{{+ enum_.render()? +}}
+{%~ endfilter %}
+{%~ endfor %}
+
+{% for nested_msg in messages %}
+{%+ filter indent(2) ~%}
+{{+ nested_msg.render()? +}}
+{%+ endfilter %}
+{% endfor %}
+
+{% for entry in self.entries %}
+{%~ filter indent(2) ~%}
+{{+ entry ~}}
+{% endfilter %}
+{% endfor +%}
+}
