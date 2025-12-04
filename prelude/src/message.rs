@@ -16,14 +16,54 @@ pub struct Message {
   pub cel_rules: Vec<CelRule>,
 }
 
-#[derive(Debug, Clone, PartialEq, Template)]
-#[template(path = "message_entry.proto.j2")]
+#[derive(Debug, Clone, PartialEq)]
 pub enum MessageEntry {
   Field(ProtoField),
   Oneof(Oneof),
 }
 
+impl MessageEntry {
+  pub(crate) fn render(&self, current_package: &'static str) -> String {
+    match self {
+      MessageEntry::Field(proto_field) => proto_field.render(current_package),
+      MessageEntry::Oneof(oneof) => oneof.render(current_package),
+    }
+  }
+}
+
 impl Message {
+  pub(crate) fn render_reserved_names(&self) -> Option<String> {
+    render_reserved_names(&self.reserved_names)
+  }
+
+  pub(crate) fn render_reserved_numbers(&self) -> Option<String> {
+    render_reserved_numbers(&self.reserved_numbers)
+  }
+
+  pub(crate) fn render_options(&self) -> Option<String> {
+    if self.cel_rules.is_empty() && self.options.is_empty() {
+      return None;
+    }
+
+    let cel_rules_options: Vec<ProtoOption> = self
+      .cel_rules
+      .iter()
+      .cloned()
+      .map(|rule| rule.into())
+      .collect();
+
+    let options = self.options.iter().chain(cel_rules_options.iter());
+
+    let mut options_str = String::new();
+
+    for option in options {
+      render_option(option, &mut options_str, OptionKind::NormalOption);
+      options_str.push('\n');
+    }
+
+    Some(options_str)
+  }
+
   pub(crate) fn register_imports(&self, imports: &mut FileImports) {
     for entry in &self.entries {
       match entry {

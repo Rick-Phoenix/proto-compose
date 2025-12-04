@@ -19,3 +19,54 @@ pub struct EnumVariant {
   pub tag: i32,
   pub options: Vec<ProtoOption>,
 }
+
+impl EnumVariant {
+  pub(crate) fn render(&self) -> String {
+    let Self { tag, name, options } = self;
+
+    let mut variant_str = format!("{} = {}", name, tag);
+
+    if !options.is_empty() {
+      variant_str.push_str(" [\n");
+
+      for (i, option) in options.iter().enumerate() {
+        render_option(option, &mut variant_str, OptionKind::FieldOption);
+
+        if i != options.len() - 1 {
+          variant_str.push_str(",\n");
+        }
+      }
+
+      variant_str.push_str("\n]");
+    }
+
+    variant_str.push(';');
+
+    variant_str
+  }
+}
+
+impl Enum {
+  pub(crate) fn render_reserved_names(&self) -> Option<String> {
+    render_reserved_names(&self.reserved_names)
+  }
+
+  pub(crate) fn render_reserved_numbers(&self) -> Option<String> {
+    render_reserved_numbers(&self.reserved_numbers)
+  }
+
+  pub(crate) fn render_options(&self) -> Option<String> {
+    if self.options.is_empty() {
+      return None;
+    }
+
+    let mut options_str = String::new();
+
+    for option in &self.options {
+      render_option(option, &mut options_str, OptionKind::NormalOption);
+      options_str.push('\n');
+    }
+
+    Some(options_str)
+  }
+}

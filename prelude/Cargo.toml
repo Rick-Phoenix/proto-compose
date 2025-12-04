@@ -14,3 +14,4 @@ proto-types = { workspace = true }
 paste = "1"
 bytes = "1"
 askama = { workspace = true }
+unindent = "0.2.4"

@@ -1,6 +1,0 @@
-{% match self %}
-  {% when Self::Oneof(oneof) %}
-    {{ oneof }}
-  {% when Self::Field(field) %}
-    {{ field.render("") }}
-{% endmatch %}

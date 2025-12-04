@@ -14,7 +14,7 @@
 {
 {% for (name, item) in val ~%}
   {{+ name +}}: {{+ item.render()? | indent(2) +}}{% if !loop.last +%}, {%+ endif %}
-{% endfor +%} 
+{% endfor ~%} 
 }
 {% when Self::Bool with (val) %}
   {{ val }}

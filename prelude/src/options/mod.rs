@@ -1,6 +1,9 @@
+mod common_options;
+
 use std::sync::Arc;
 
 use askama::Template;
+pub use common_options::*;
 use proto_types::{Duration, Timestamp};
 
 #[derive(Clone, Debug, PartialEq)]

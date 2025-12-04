@@ -11,41 +11,40 @@ pub struct ProtoField {
 
 impl ProtoField {
   pub(crate) fn render(&self, current_package: &'static str) -> String {
-    let mut field = format!(
-      "{} {} = {}",
-      self.type_.render(current_package),
-      self.name,
-      self.tag
-    );
+    let Self {
+      tag,
+      type_,
+      name,
+      options,
+      validator,
+    } = self;
 
-    let mut options = self.options.clone();
+    let mut field_str = format!("{} {} = {}", type_.render(current_package), name, tag);
 
-    if let Some(validator) = &self.validator {
-      options.push(validator.clone());
-    }
+    let options_iter = options.iter().chain(validator.iter()).enumerate();
+    let options_len = if validator.is_some() {
+      options.len() + 1
+    } else {
+      options.len()
+    };
 
-    if !options.is_empty() {
-      field.push_str(" [\n");
+    if options_len != 0 {
+      field_str.push_str(" [\n");
 
-      for (i, option) in options.iter().enumerate() {
-        for line in option.render_as_field_option().lines() {
-          field.push_str("  ");
-          field.push_str(line);
+      for (i, option) in options_iter {
+        render_option(option, &mut field_str, OptionKind::FieldOption);
 
-          field.push('\n');
-        }
-
-        if i != options.len() - 1 {
-          field.push_str(",\n");
+        if i != options_len - 1 {
+          field_str.push_str(",\n");
         }
       }
 
-      field.push_str("\n]");
+      field_str.push_str("\n]");
     }
 
-    field.push(';');
+    field_str.push(';');
 
-    field
+    field_str
   }
 
   pub(crate) fn register_type_import_path(&self, imports: &mut FileImports) {

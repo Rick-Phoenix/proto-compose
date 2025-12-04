@@ -30,6 +30,15 @@ where
   }
 }
 
+impl From<CelRule> for ProtoOption {
+  fn from(value: CelRule) -> Self {
+    Self {
+      name: CEL.clone(),
+      value: value.into(),
+    }
+  }
+}
+
 impl From<CelRule> for OptionValue {
   fn from(value: CelRule) -> Self {
     OptionValue::Message(

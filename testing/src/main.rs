@@ -33,13 +33,15 @@ fn numeric_validator() -> impl ValidatorBuilderFor<Sint32> {
 
 #[proc_macro_impls::proto_module(file = "abc.proto", package = "myapp.v1")]
 mod inner {
-  use prelude::{cel_rule, CelRule};
+  use prelude::{cel_rule, CelRule, DEPRECATED};
   use proc_macro_impls::{proto_enum, proto_message, proto_oneof};
 
   use super::*;
 
   #[proto_enum]
   #[proto(reserved_numbers(1, 2, 10..))]
+  #[proto(reserved_names("abc", "bcd"))]
+  #[proto(options = vec![ DEPRECATED.into() ])]
   #[derive(Clone, Debug)]
   enum PseudoEnum {
     AbcDeg,
@@ -48,6 +50,7 @@ mod inner {
   }
 
   #[proto_oneof]
+  #[proto(required)]
   #[derive(Clone, Debug)]
   enum PseudoOneof {
     A(String),
@@ -85,9 +88,11 @@ mod inner {
 
   #[proto_message]
   #[proto(reserved_numbers(1, 2, 3..9))]
+  #[proto(reserved_names("abc", "bcd"))]
   #[proto(nested_enums(PseudoEnum))]
   #[proto(nested_messages(Nested))]
   #[derive(Clone, Debug, Default)]
+  #[proto(options = vec![ DEPRECATED.into() ])]
   #[proto(validate = vec![ cel_rule!(id = "abc", msg = "abc", expr = "abc") ])]
   pub struct Abc {
     #[proto(timestamp, validate = |v| v.lt_now())]

@@ -1,15 +1,15 @@
 message {{+ self.name +}} {
-{% if !reserved_names.is_empty() ~%}
-  {{+ "reserved" +}} {%+ for name in reserved_names %}"{{ name }}"{% if !loop.last +%}, {%+ endif %}{% endfor %};
+{% if let Some(names) = self.render_reserved_names() +%}
+  {{+ names }}
 {% endif %}
-{% if !reserved_numbers.is_empty() ~%}
-  {{+ "reserved" +}} {%+ for range in reserved_numbers %}{{ range.start +}} to {{+ range.end }}{% if !loop.last %}, {%+ endif %}{% endfor %};
-{%~ endif %}
-{%~ filter indent(2) %}
-{% for option in self.options +%}
-  {{ option.render() }}
-{% endfor +%}
-{% endfilter %}
+
+{% if let Some(numbers) = self.render_reserved_numbers() +%}
+  {{+ numbers }}
+{% endif %}
+
+{% if let Some(options) = self.render_options() +%}
+{{~ options }}
+{% endif +%}
 
 {% for enum_ in enums %}
 {%+ filter indent(2) ~%}
@@ -25,7 +25,7 @@ message {{+ self.name +}} {
 
 {% for entry in self.entries %}
 {%~ filter indent(2) ~%}
-{{+ entry ~}}
+{{+ entry.render(self.package) ~}}
 {% endfilter %}
 {% endfor +%}
 }

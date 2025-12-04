@@ -6,13 +6,14 @@ pub use paste::paste;
 mod oneof;
 mod options;
 mod validators;
-use std::{collections::HashSet, ops::Range, sync::Arc};
+use std::{collections::HashSet, ops::Range};
 mod field;
 mod file;
 mod message;
 mod optional;
 mod proto_enum;
 mod proto_type;
+mod rendering_utils;
 mod well_known_types;
 
 use bon::Builder;
@@ -23,6 +24,7 @@ pub use oneof::*;
 pub use options::*;
 pub use proto_enum::*;
 pub use proto_type::*;
+use rendering_utils::*;
 pub use validators::*;
 
 #[doc(hidden)]
