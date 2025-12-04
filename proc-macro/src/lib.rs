@@ -30,7 +30,8 @@ use syn::{
 use crate::{
   conversions::*, enum_derive::*, item_cloners::*, message_derive::*, message_schema_impl::*,
   module_processing::*, oneof_derive::*, oneof_info::*, oneof_schema_impl::*, path_utils::*,
-  process_field::*, proto_field::*, proto_map::*, proto_types::*, rust_type::*, type_extraction::*,
+  process_field::*, proto_field::*, proto_map::*, proto_types::*, rust_type::*, service_derive::*,
+  type_extraction::*,
 };
 
 mod conversions;
@@ -48,6 +49,7 @@ mod proto_field;
 mod proto_map;
 mod proto_types;
 mod rust_type;
+mod service_derive;
 mod type_extraction;
 
 mod attributes;
@@ -81,6 +83,29 @@ pub fn proto_message(_args: TokenStream, input: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(Message, attributes(proto))]
 pub fn message_derive(_input: TokenStream) -> TokenStream {
+  TokenStream::new()
+}
+
+#[proc_macro_attribute]
+pub fn proto_service(_args: TokenStream, input: TokenStream) -> TokenStream {
+  let mut item = parse_macro_input!(input as ItemEnum);
+
+  let extra_tokens = match process_service_derive(&mut item) {
+    Ok(output) => output,
+    Err(e) => return e.to_compile_error().into(),
+  };
+
+  quote! {
+    #[derive(Service)]
+    #item
+
+    #extra_tokens
+  }
+  .into()
+}
+
+#[proc_macro_derive(Service, attributes(proto))]
+pub fn service_derive(_input: TokenStream) -> TokenStream {
   TokenStream::new()
 }
 

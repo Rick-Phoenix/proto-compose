@@ -58,6 +58,16 @@ pub fn message_schema_impls(
 
     #schema_feature_tokens
     impl #struct_name {
+      pub fn path() -> ::prelude::TypeInfo {
+        ::prelude::TypeInfo {
+          name: #full_name,
+          path: Some(::prelude::ProtoPath {
+            file: #file,
+            package: #package
+          })
+        }
+      }
+
       pub fn to_message() -> ::prelude::Message {
         let mut new_msg = ::prelude::Message {
           name: #proto_name,

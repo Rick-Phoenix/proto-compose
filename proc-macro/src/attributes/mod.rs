@@ -15,6 +15,7 @@ mod oneof_parsing;
 mod parsers;
 mod reserved_names;
 mod reserved_numbers;
+mod service_attributes;
 mod tag_allocator;
 
 pub use enum_attributes::*;
@@ -34,6 +35,7 @@ pub use oneof_parsing::*;
 pub use parsers::*;
 pub use reserved_names::*;
 pub use reserved_numbers::*;
+pub use service_attributes::*;
 pub use tag_allocator::*;
 
 use crate::*;

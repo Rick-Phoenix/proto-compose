@@ -34,14 +34,21 @@ fn numeric_validator() -> impl ValidatorBuilderFor<Sint32> {
 #[proc_macro_impls::proto_module(file = "abc.proto", package = "myapp.v1")]
 mod inner {
   use prelude::{cel_rule, CelRule, DEPRECATED};
-  use proc_macro_impls::{proto_enum, proto_message, proto_oneof};
+  use proc_macro_impls::{proto_enum, proto_message, proto_oneof, proto_service, Service};
 
   use super::*;
 
+  #[proto_service]
+  #[proto(options = vec![ DEPRECATED.into() ])]
+  enum FrodoService {
+    #[proto(options = vec![ DEPRECATED.into() ])]
+    GetRing { request: Abc, response: Nested },
+  }
+
   #[proto_enum]
   #[proto(reserved_numbers(1, 2, 10..))]
-  // #[proto(reserved_names("abc", "bcd"))]
-  // #[proto(options = vec![ DEPRECATED.into() ])]
+  #[proto(reserved_names("abc", "bcd"))]
+  #[proto(options = vec![ DEPRECATED.into() ])]
   #[derive(Clone, Debug)]
   enum PseudoEnum {
     AbcDeg,
@@ -173,6 +180,6 @@ fn main() {
 
   // let nested2 = Nested2::to_message();
 
-  println!("{msg}");
+  println!("{file2}");
   // let nested_enum = Bcd::to_nested_enum(nested);
 }

@@ -27,6 +27,7 @@ pub fn process_module_items(
   let mut oneofs: HashMap<Ident, OneofData> = HashMap::new();
   let mut messages: HashMap<Ident, MessageData> = HashMap::new();
   let mut enums: HashMap<Ident, EnumData> = HashMap::new();
+  let mut services: Vec<Ident> = Vec::new();
 
   let mut messages_relational_map: HashMap<Ident, Ident> = HashMap::new();
   let mut enums_relational_map: HashMap<Ident, Ident> = HashMap::new();
@@ -56,7 +57,7 @@ pub fn process_module_items(
         mod_items.push(ModuleItem::Message(item_ident.clone()));
         messages.insert(item_ident, message_data);
       }
-      Item::Enum(e) => {
+      Item::Enum(mut e) => {
         let item_ident = e.ident.clone();
 
         match item_kind {
@@ -67,6 +68,14 @@ pub fn process_module_items(
           ItemKind::Enum => {
             mod_items.push(ModuleItem::Enum(item_ident.clone()));
             enums.insert(item_ident, parse_enum(e)?);
+          }
+          ItemKind::Service => {
+            let package = &module_attrs.package;
+
+            e.attrs.push(parse_quote!(#[proto(package = #package)]));
+
+            mod_items.push(ModuleItem::Raw(Item::Enum(e).into()));
+            services.push(item_ident);
           }
           _ => unreachable!(),
         };
@@ -165,6 +174,7 @@ pub fn process_module_items(
       let mut file = ::prelude::ProtoFile {
         name: #file,
         package: #package,
+        services: vec![ #(#services::as_service()),* ],
         ..Default::default()
       };
 
@@ -265,6 +275,7 @@ pub enum ItemKind {
   Message,
   Enum,
   Oneof,
+  Service,
 }
 
 impl ItemKind {
@@ -316,6 +327,16 @@ impl ItemKind {
           }
 
           return Ok(Some(Self::Oneof));
+        }
+        "proto_service" => {
+          if is_struct {
+            return Err(spanned_error!(
+              attr,
+              "proto_service can only be used on an enum"
+            ));
+          }
+
+          return Ok(Some(Self::Service));
         }
         _ => {}
       };

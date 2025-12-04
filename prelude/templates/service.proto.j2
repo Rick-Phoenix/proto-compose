@@ -3,11 +3,13 @@ service {{+ self.name +}} {
 {{~ options }}
 {% endif +%}
 
-{%~ for handler in self.handlers ~%}
+{% for handler in self.handlers %}
+{% filter indent(2) ~%}
 rpc {{+ handler.name +}} ({{ handler.request.render_name(self.package) }}) returns ({{ handler.response.render_name(self.package) }})
 {%- if let Some(options) = handler.render_options() +%} { 
 {{+ options }}
 }
 {% endif %};
-{%~ endfor ~%}
+{% endfilter %}
+{% endfor ~%}
 }
