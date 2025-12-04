@@ -98,8 +98,8 @@ pub fn process_module_items(
     };
   }
 
-  let mut top_level_enums = TokenStream2::new();
-  let mut top_level_messages = TokenStream2::new();
+  let mut top_level_enums: Vec<Ident> = Vec::new();
+  let mut top_level_messages: Vec<Ident> = Vec::new();
 
   for nested_msg_ident in messages_relational_map.keys() {
     register_full_name(nested_msg_ident, &messages_relational_map, &mut messages)?;
@@ -109,7 +109,7 @@ pub fn process_module_items(
     let is_top_level = !messages_relational_map.contains_key(ident);
 
     if is_top_level {
-      top_level_messages.extend(quote! { #ident::to_message(), });
+      top_level_messages.push(ident.clone());
     }
 
     process_message_from_module(msg, &mut oneofs, &module_attrs)?;
@@ -130,7 +130,7 @@ pub fn process_module_items(
 
       enum_.tokens.attrs.push(full_name_attr);
     } else {
-      top_level_enums.extend(quote! { #ident::to_enum(), });
+      top_level_enums.push(ident.clone());
     };
 
     enum_.tokens.attrs.push(module_attrs.as_attribute());
@@ -185,9 +185,14 @@ pub fn process_module_items(
     pub fn proto_file() -> ::prelude::ProtoFile {
       let mut file = ::prelude::ProtoFile::new(#file, #package);
 
-      file.add_extensions([ #(#extensions::as_proto_extension()),* ]);
-      file.add_messages([ #top_level_messages ]);
-      file.add_enums([ #top_level_enums ]);
+      let extensions = vec![ #(#extensions::as_proto_extension()),* ];
+
+      if !extensions.is_empty() {
+        file.add_extensions(extensions);
+      }
+
+      file.add_messages([ #(#top_level_messages::to_message()),* ]);
+      file.add_enums([ #(#top_level_enums::to_enum()),* ]);
 
       file
     }
