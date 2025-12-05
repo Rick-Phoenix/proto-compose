@@ -16,7 +16,6 @@ pub fn message_schema_impls(
     nested_messages,
     nested_enums,
     validator,
-    schema_feature,
     ..
   } = message_attrs;
 
@@ -38,12 +37,8 @@ pub fn message_schema_impls(
   };
 
   let options_tokens = tokens_or_default!(options, quote! { vec![] });
-  let schema_feature_tokens = schema_feature
-    .as_ref()
-    .map(|feat| quote! { #[cfg(feature = #feat)] });
 
   quote! {
-    #schema_feature_tokens
     impl ::prelude::AsProtoType for #struct_name {
       fn proto_type() -> ::prelude::ProtoType {
         ::prelude::ProtoType::Message(
@@ -52,7 +47,6 @@ pub fn message_schema_impls(
       }
     }
 
-    #schema_feature_tokens
     impl ::prelude::ProtoMessage for #struct_name {
       fn proto_path() -> ::prelude::ProtoPath {
         ::prelude::ProtoPath {
@@ -67,7 +61,6 @@ pub fn message_schema_impls(
       }
     }
 
-    #schema_feature_tokens
     impl #struct_name {
       pub fn proto_schema() -> ::prelude::Message {
         let mut new_msg = ::prelude::Message {

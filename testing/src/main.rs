@@ -53,19 +53,19 @@ mod inner {
     name: String,
   }
 
-  #[proto_service]
-  #[proto(options = vec![ random_option() ])]
-  enum FrodoService {
-    #[proto(options = vec![ random_option() ])]
-    GetRing {
-      request: Abc,
-      response: Nested,
-    },
-    DestroyRing {
-      request: Abc,
-      response: Nested,
-    },
-  }
+  // #[proto_service]
+  // #[proto(options = vec![ random_option() ])]
+  // enum FrodoService {
+  //   #[proto(options = vec![ random_option() ])]
+  //   GetRing {
+  //     request: Abc,
+  //     response: Nested,
+  //   },
+  //   DestroyRing {
+  //     request: Abc,
+  //     response: Nested,
+  //   },
+  // }
 
   #[proto_enum]
   #[proto(reserved_numbers(1, 2, 10..))]

@@ -40,7 +40,6 @@ pub fn process_enum_derive_prost(
     package,
     full_name,
     no_prefix,
-    schema_feature,
     ..
   } = enum_attrs;
 
@@ -114,7 +113,6 @@ pub fn process_enum_derive_prost(
   }
 
   let options_tokens = tokens_or_default!(options, quote! { vec![] });
-  let schema_feature_tokens = schema_feature.map(|feat| quote! { #[cfg(feature = #feat)] });
 
   let output_tokens = quote! {
     impl #enum_name {
@@ -123,7 +121,6 @@ pub fn process_enum_derive_prost(
       }
     }
 
-    #schema_feature_tokens
     impl ::prelude::AsProtoType for #enum_name {
       fn proto_type() -> ::prelude::ProtoType {
         ::prelude::ProtoType::Enum(
@@ -132,7 +129,6 @@ pub fn process_enum_derive_prost(
       }
     }
 
-    #schema_feature_tokens
     impl ::prelude::ProtoEnum for #enum_name {
       fn proto_path() -> ::prelude::ProtoPath {
         ::prelude::ProtoPath {
@@ -147,7 +143,6 @@ pub fn process_enum_derive_prost(
       }
     }
 
-    #schema_feature_tokens
     impl #enum_name {
       pub fn as_proto_name(&self) -> &'static str {
         match self {

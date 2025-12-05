@@ -15,7 +15,6 @@ pub struct MessageAttrs {
   pub into_proto: Option<PathOrClosure>,
   pub shadow_derives: Option<MetaList>,
   pub validator: Option<Expr>,
-  pub schema_feature: Option<String>,
   pub backend: Backend,
 }
 
@@ -37,7 +36,6 @@ pub fn process_derive_message_attrs(
   let mut into_proto: Option<PathOrClosure> = None;
   let mut shadow_derives: Option<MetaList> = None;
   let mut validator: Option<Expr> = None;
-  let mut schema_feature: Option<String> = None;
   let mut backend = Backend::default();
 
   for attr in attrs {
@@ -83,9 +81,6 @@ pub fn process_derive_message_attrs(
           match ident.as_str() {
             "backend" => {
               backend = Backend::from_expr(&nv.value)?;
-            }
-            "schema_feature" => {
-              schema_feature = Some(extract_string_lit(&nv.value)?);
             }
             "options" => {
               options = Some(nv.value);
@@ -153,7 +148,6 @@ pub fn process_derive_message_attrs(
     into_proto,
     shadow_derives,
     validator,
-    schema_feature,
     backend,
   })
 }

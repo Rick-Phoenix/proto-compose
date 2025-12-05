@@ -9,26 +9,20 @@ pub fn oneof_schema_impl(
     options,
     name: proto_name,
     required,
-    schema_feature,
     ..
   } = oneof_attrs;
 
   let options_tokens = tokens_or_default!(options, quote! { vec![] });
   let required_option_tokens =
     required.then(|| quote! { options.push(::prelude::oneof_required()); });
-  let schema_feature_tokens = schema_feature
-    .as_ref()
-    .map(|feat| quote! { #[cfg(feature = #feat)] });
 
   quote! {
-    #schema_feature_tokens
     impl ::prelude::ProtoOneof for #enum_ident {
       fn proto_schema() -> ::prelude::Oneof {
         Self::proto_schema()
       }
     }
 
-    #schema_feature_tokens
     impl #enum_ident {
       pub fn proto_schema() -> ::prelude::Oneof {
         let mut options: Vec<::prelude::ProtoOption> = #options_tokens;

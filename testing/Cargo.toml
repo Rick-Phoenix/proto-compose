@@ -12,3 +12,7 @@ proc-macro-impls = { path = "../proc-macro/" }
 prelude = { path = "../prelude" }
 proto-types = { workspace = true }
 prost = "0.14.1"
+
+[features]
+abc = []
+default = ["abc"]

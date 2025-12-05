@@ -171,17 +171,9 @@ pub fn process_module_items(
     });
   }
 
-  let ModuleAttrs {
-    file,
-    package,
-    schema_feature,
-    ..
-  } = module_attrs;
-
-  let feature_tokens = schema_feature.map(|feat| quote! { #[cfg(feature = #feat)] });
+  let ModuleAttrs { file, package, .. } = module_attrs;
 
   let aggregator_fn: ItemFn = parse_quote! {
-    #feature_tokens
     pub fn proto_file() -> ::prelude::ProtoFile {
       let mut file = ::prelude::ProtoFile::new(#file, #package);
 

@@ -3,7 +3,6 @@ use crate::*;
 pub struct ModuleAttrs {
   pub file: String,
   pub package: String,
-  pub schema_feature: Option<String>,
   pub backend: Backend,
 }
 
@@ -46,15 +45,10 @@ impl ToTokens for Backend {
 impl ModuleAttrs {
   pub fn as_attribute(&self) -> Attribute {
     let Self {
-      schema_feature,
       package,
       file,
       backend,
     } = self;
-
-    let schema_feature_tokens = schema_feature
-      .as_ref()
-      .map(|feature| quote! { , schema_feature = #feature });
 
     let backend_tokens = if *backend != Backend::default() {
       Some(quote! { , backend = #backend })
@@ -62,7 +56,7 @@ impl ModuleAttrs {
       None
     };
 
-    parse_quote! { #[proto(file = #file, package = #package #schema_feature_tokens #backend_tokens)] }
+    parse_quote! { #[proto(file = #file, package = #package #backend_tokens)] }
   }
 }
 
@@ -70,7 +64,6 @@ impl Parse for ModuleAttrs {
   fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
     let mut file: Option<String> = None;
     let mut package: Option<String> = None;
-    let mut schema_feature: Option<String> = None;
     let mut backend: Option<Backend> = None;
 
     let args = Punctuated::<MetaNameValue, Token![,]>::parse_terminated(input)?;
@@ -88,9 +81,7 @@ impl Parse for ModuleAttrs {
         "package" => {
           package = Some(extract_string_lit(&arg.value)?);
         }
-        "schema_feature" => {
-          schema_feature = Some(extract_string_lit(&arg.value)?);
-        }
+
         _ => bail!(arg.path, format!("Unknown attribute `{ident}`")),
       };
     }
@@ -101,7 +92,6 @@ impl Parse for ModuleAttrs {
     Ok(ModuleAttrs {
       file,
       package,
-      schema_feature,
       backend: backend.unwrap_or_default(),
     })
   }

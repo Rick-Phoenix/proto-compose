@@ -9,7 +9,6 @@ pub struct EnumAttrs {
   pub package: String,
   pub full_name: String,
   pub no_prefix: bool,
-  pub schema_feature: Option<String>,
   pub backend: Backend,
 }
 
@@ -25,7 +24,6 @@ pub fn process_derive_enum_attrs(
   let mut file: Option<String> = None;
   let mut package: Option<String> = None;
   let mut no_prefix = false;
-  let mut schema_feature: Option<String> = None;
   let mut backend = Backend::default();
 
   for attr in attrs {
@@ -61,9 +59,6 @@ pub fn process_derive_enum_attrs(
           match ident.as_str() {
             "backend" => {
               backend = Backend::from_expr(&nv.value)?;
-            }
-            "schema_feature" => {
-              schema_feature = Some(extract_string_lit(&nv.value)?);
             }
             "options" => {
               options = Some(nv.value);
@@ -113,7 +108,6 @@ pub fn process_derive_enum_attrs(
     package,
     full_name,
     no_prefix,
-    schema_feature,
     backend,
   })
 }
