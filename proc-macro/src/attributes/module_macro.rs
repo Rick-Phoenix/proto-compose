@@ -193,6 +193,7 @@ pub fn process_module_items(
 
       file.add_messages([ #(#top_level_messages::to_message()),* ]);
       file.add_enums([ #(#top_level_enums::to_enum()),* ]);
+      file.add_services([ #(#services::as_service()),* ]);
 
       file
     }

@@ -106,6 +106,12 @@ impl ProtoFile {
     }
   }
 
+  pub fn add_services<I: IntoIterator<Item = Service>>(&mut self, services: I) {
+    for service in services.into_iter() {
+      self.services.push(service);
+    }
+  }
+
   pub fn add_extensions<I: IntoIterator<Item = Extension>>(&mut self, extensions: I) {
     self.imports.set.insert("google/protobuf/descriptor.proto");
 

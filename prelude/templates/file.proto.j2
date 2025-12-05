@@ -2,11 +2,11 @@
 
 package {{+ package }};
 
-{% set sorted_imports = self.imports.as_sorted_vec() %}
+{% set sorted_imports = self.imports.as_sorted_vec() ~%}
 
-{%~ for import in sorted_imports %}
+{%~ for import in sorted_imports ~%}
 import "{{ import }}";
-{%~ endfor %}
+{% endfor %}
 
 {% if let Some(options) = self.render_options() +%}
 {{~ options }}
