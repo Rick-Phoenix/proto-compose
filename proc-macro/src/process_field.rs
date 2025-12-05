@@ -1,10 +1,5 @@
 use crate::*;
 
-pub enum OutputType {
-  Keep,
-  Change,
-}
-
 pub enum FieldOrVariant<'a> {
   Field(&'a mut Field),
   Variant(&'a mut Variant),
@@ -50,7 +45,6 @@ pub fn process_field(
   field: &mut FieldOrVariant,
   field_attrs: FieldAttrs,
   type_info: &TypeInfo,
-  output_type: OutputType,
 ) -> Result<TokenStream2, Error> {
   let FieldAttrs {
     tag,
@@ -60,13 +54,10 @@ pub fn process_field(
     ..
   } = field_attrs;
 
-  if let OutputType::Change = output_type {
-    let proto_output_type = type_info.proto_field.output_proto_type();
+  let proto_output_type = type_info.proto_field.output_proto_type();
+  let proto_output_type_outer: Type = parse_quote! { #proto_output_type };
 
-    let proto_output_type_outer: Type = parse_quote! { #proto_output_type };
-
-    field.change_type(proto_output_type_outer)?;
-  }
+  field.change_type(proto_output_type_outer)?;
 
   let prost_attr = type_info.as_prost_attr(tag);
   let field_prost_attr: Attribute = parse_quote!(#prost_attr);

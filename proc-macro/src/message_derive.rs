@@ -88,7 +88,6 @@ pub fn process_message_derive_shadow(
       &mut FieldOrVariant::Field(dst_field),
       field_attrs.clone(),
       &type_info,
-      OutputType::Change,
     )?;
 
     fields_tokens.push(field_tokens);
@@ -220,7 +219,6 @@ pub fn process_message_derive_direct(
       &mut FieldOrVariant::Field(src_field),
       field_attrs,
       &type_info,
-      OutputType::Keep,
     )?;
 
     fields_data.push(field_tokens);

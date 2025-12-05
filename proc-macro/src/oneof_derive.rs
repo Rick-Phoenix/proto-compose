@@ -90,7 +90,6 @@ pub(crate) fn process_oneof_derive_shadow(
       &mut FieldOrVariant::Variant(dst_variant),
       field_attrs.clone(),
       &type_info,
-      OutputType::Change,
     )?;
 
     variants_tokens.push(variant_proto_tokens);
@@ -230,7 +229,6 @@ pub(crate) fn process_oneof_derive_direct(
       &mut FieldOrVariant::Variant(variant),
       field_attrs,
       &type_info,
-      OutputType::Keep,
     )?;
 
     variants_tokens.push(variant_proto_tokens);

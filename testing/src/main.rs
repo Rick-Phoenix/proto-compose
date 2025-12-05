@@ -53,19 +53,19 @@ mod inner {
     name: String,
   }
 
-  // #[proto_service]
-  // #[proto(options = vec![ random_option() ])]
-  // enum FrodoService {
-  //   #[proto(options = vec![ random_option() ])]
-  //   GetRing {
-  //     request: Abc,
-  //     response: Nested,
-  //   },
-  //   DestroyRing {
-  //     request: Abc,
-  //     response: Nested,
-  //   },
-  // }
+  #[proto_service]
+  #[proto(options = vec![ random_option() ])]
+  enum FrodoService {
+    #[proto(options = vec![ random_option() ])]
+    GetRing {
+      request: Abc,
+      response: Nested,
+    },
+    DestroyRing {
+      request: Abc,
+      response: Nested,
+    },
+  }
 
   #[proto_enum]
   #[proto(reserved_numbers(1, 2, 10..))]
@@ -82,9 +82,11 @@ mod inner {
   #[proto(required)]
   #[derive(Clone, Debug)]
   enum PseudoOneof {
+    #[proto(tag = 200)]
     A(String),
+    #[proto(tag = 201)]
     B(i32),
-    #[proto(message(proxied, boxed))]
+    #[proto(tag = 202, message(proxied, boxed))]
     C(Box<Abc>),
   }
 
@@ -188,6 +190,9 @@ mod inner {
     name: String,
 
     num: i32,
+
+    #[proto(oneof(proxied))]
+    reused_oneof: Option<PseudoOneof>,
   }
 }
 

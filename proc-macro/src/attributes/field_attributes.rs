@@ -165,6 +165,10 @@ pub fn process_derive_field_attrs(
     }
   }
 
+  if is_ignored {
+    return Ok(FieldAttrData::Ignored { from_proto });
+  }
+
   if !oneof_attrs.is_empty() {
     let mut oneof_path = ItemPath::None;
     let mut oneof_tags: Vec<i32> = Vec::new();
@@ -207,10 +211,6 @@ pub fn process_derive_field_attrs(
       tags: oneof_tags,
       default: use_default,
     })
-  }
-
-  if is_ignored {
-    return Ok(FieldAttrData::Ignored { from_proto });
   }
 
   let proto_field = if let Some(mut field) = proto_field {
