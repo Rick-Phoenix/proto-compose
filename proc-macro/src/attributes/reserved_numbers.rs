@@ -91,9 +91,22 @@ impl Parse for ReservedNumbers {
         };
 
         let end = if let Some(end_expr) = &range_expr.end {
-          extract_i32(end_expr)?
+          match &**end_expr {
+            Expr::Lit(lit)  => {
+              if let Lit::Int(int) = &lit.lit && let Ok(num) =
+                int.base10_parse() {
+                num
+              } else {
+                bail!(end_expr, "Expected a number or `MAX`")
+              }
+            },
+            Expr::Path(path) if path.path.is_ident("MAX") => {
+              PROTOBUF_MAX_TAG + 1
+            }
+            _ => bail!(end_expr, "Expected a number or `MAX`")
+          }
         } else {
-          PROTOBUF_MAX_TAG + 1
+          return Err(input.error("Reserved ranges cannot be open. Use MAX to reserve up to the maximum protobuf range"));
         };
 
         let final_end = if let RangeLimits::HalfOpen(_) = &range_expr.limits {
