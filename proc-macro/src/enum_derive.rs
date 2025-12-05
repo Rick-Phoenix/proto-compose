@@ -72,7 +72,7 @@ pub fn process_enum_derive_prost(
       process_derive_enum_variants_attrs(&proto_name, variant_ident, &variant.attrs, no_prefix)?;
 
     if reserved_names.contains(&name) {
-      bail!(&variant, format!("Variant name `{name}` is reserved"));
+      bail!(&variant, format!("Name `{name}` is reserved"));
     }
 
     from_str_tokens.extend(quote! {
@@ -94,7 +94,7 @@ pub fn process_enum_derive_prost(
       }
 
       if reserved_numbers.contains(tag) {
-        bail!(&variant, format!("Tag {tag} is a reserved number"));
+        bail!(&variant, format!("Tag {tag} is reserved"));
       }
 
       tag

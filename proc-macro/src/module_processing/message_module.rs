@@ -22,13 +22,6 @@ pub fn process_message_from_module(
     ))?;
 
     for tag in &oneof_data.used_tags {
-      if reserved_numbers.contains(*tag) {
-        bail!(
-          oneof,
-          format!("Tag {tag} being used by oneof {oneof} is a reserved number for message {name}")
-        );
-      }
-
       used_tags.push(*tag);
     }
   }
@@ -57,13 +50,20 @@ pub fn process_message_from_module(
           bail!(
             &variant.tokens,
             format!(
-              "Name `{}` used by oneof `{ident}` is a reserved name for message `{name}`",
+              "Name `{}` is a reserved name for message `{name}`",
               variant.name
             )
           )
         }
 
-        if variant.tag.is_none() {
+        if let Some(tag) = variant.tag {
+          if reserved_numbers.contains(tag) {
+            bail!(
+              &field.tokens,
+              format!("Tag {tag} used by oneof {ident} is a reserved number")
+            );
+          }
+        } else {
           let tag = tag_allocator
             .next_tag()
             .map_err(|e| spanned_error!(&variant.tokens, e))?;

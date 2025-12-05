@@ -74,7 +74,7 @@ mod inner {
   #[derive(Clone, Debug)]
   enum PseudoEnum {
     AbcDeg,
-    B,
+    B = 2,
     C,
   }
 
