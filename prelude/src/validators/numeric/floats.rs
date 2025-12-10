@@ -124,6 +124,7 @@ impl FloatWrapper for f64 {
 }
 
 impl<S: State> ValidatorBuilderFor<f32> for FloatValidatorBuilder<f32, S> {
+  type Target = f32;
   type Validator = FloatValidator<f32>;
 
   fn build_validator(self) -> Self::Validator {
@@ -132,6 +133,7 @@ impl<S: State> ValidatorBuilderFor<f32> for FloatValidatorBuilder<f32, S> {
 }
 
 impl<S: State> ValidatorBuilderFor<f64> for FloatValidatorBuilder<f64, S> {
+  type Target = f64;
   type Validator = FloatValidator<f64>;
 
   fn build_validator(self) -> Self::Validator {
@@ -139,23 +141,20 @@ impl<S: State> ValidatorBuilderFor<f64> for FloatValidatorBuilder<f64, S> {
   }
 }
 
-impl Validator for FloatValidator<f32> {
-  type Target = f32;
-
-  fn validate(&self, val: &Self::Target) -> Result<(), bool> {
+impl Validator<f32> for FloatValidator<f32> {
+  fn validate(&self, _val: &f32) -> Result<(), bool> {
     Ok(())
   }
 }
 
-impl Validator for FloatValidator<f64> {
-  type Target = f64;
-
-  fn validate(&self, val: &Self::Target) -> Result<(), bool> {
+impl Validator<f64> for FloatValidator<f64> {
+  fn validate(&self, _val: &f64) -> Result<(), bool> {
     Ok(())
   }
 }
 
 impl ProtoValidator<f32> for f32 {
+  type Target = f32;
   type Validator = FloatValidator<f32>;
   type Builder = FloatValidatorBuilder<f32>;
 
@@ -165,6 +164,7 @@ impl ProtoValidator<f32> for f32 {
 }
 
 impl ProtoValidator<f64> for f64 {
+  type Target = f64;
   type Validator = FloatValidator<f64>;
   type Builder = FloatValidatorBuilder<f64>;
 

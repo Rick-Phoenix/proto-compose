@@ -5,20 +5,20 @@ use std::{fmt::Debug, hash::Hash, sync::Arc};
 use common_strings::*;
 use proto_types::protovalidate::Ignore;
 
-pub trait Validator: Into<ProtoOption> {
-  type Target;
-
-  fn validate(&self, val: &Self::Target) -> Result<(), bool>;
+pub trait Validator<T>: Into<ProtoOption> {
+  fn validate(&self, val: &T) -> Result<(), bool>;
 }
 
 pub trait ValidatorBuilderFor<T>: Into<ProtoOption> {
-  type Validator: Validator;
+  type Target;
+  type Validator: Validator<Self::Target>;
 
   fn build_validator(self) -> Self::Validator;
 }
 
 pub trait ProtoValidator<T> {
-  type Validator: Validator;
+  type Target;
+  type Validator: Validator<Self::Target>;
   type Builder: ValidatorBuilderFor<T, Validator = Self::Validator>;
 
   fn builder() -> Self::Builder;

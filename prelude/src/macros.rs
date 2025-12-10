@@ -41,6 +41,7 @@ macro_rules! impl_validator {
   ($validator:ident, $rust_type:ty) => {
     $crate::paste! {
       impl ProtoValidator<$rust_type> for $rust_type {
+        type Target = $rust_type;
         type Validator = $validator;
         type Builder = [< $validator Builder >];
 
@@ -49,15 +50,14 @@ macro_rules! impl_validator {
         }
       }
 
-      impl Validator for $validator {
-        type Target = $rust_type;
-
-        fn validate(&self, _target: &Self::Target) -> Result<(), bool> {
+      impl Validator<$rust_type> for $validator {
+        fn validate(&self, _target: &$rust_type) -> Result<(), bool> {
           Ok(())
         }
       }
 
       impl<S: State> ValidatorBuilderFor<$rust_type> for [< $validator Builder >]<S> {
+        type Target = $rust_type;
         type Validator = $validator;
 
         fn build_validator(self) -> $validator {

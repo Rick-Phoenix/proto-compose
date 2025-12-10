@@ -95,7 +95,6 @@ pub fn process_message_derive_shadow(
     fields_tokens.push(field_tokens);
 
     if let Some(validator) = &field_attrs.validator && matches!(type_info.proto_field, ProtoField::Single(ProtoType::String)| ProtoField::Map(_)) {
-      let target_type = type_info.proto_field.validator_target_type();
 
       let field_validator = type_info.validator_tokens(validator);
 

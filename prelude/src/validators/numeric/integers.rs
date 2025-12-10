@@ -5,24 +5,20 @@ use int_validator_builder::{IsComplete, IsUnset, SetIgnore, State};
 
 use super::*;
 
-impl<Num> Validator for IntValidator<Num>
+impl<Num> Validator<Num::RustType> for IntValidator<Num>
 where
   Num: IntWrapper,
 {
-  type Target = Num::RustType;
-
-  fn validate(&self, _val: &Self::Target) -> Result<(), bool> {
+  fn validate(&self, _val: &Num::RustType) -> Result<(), bool> {
     Ok(())
   }
 }
 
-impl<Num, S: State> Validator for IntValidatorBuilder<Num, S>
+impl<Num, S: State> Validator<Num::RustType> for IntValidatorBuilder<Num, S>
 where
   Num: IntWrapper,
 {
-  type Target = Num::RustType;
-
-  fn validate(&self, _val: &Self::Target) -> Result<(), bool> {
+  fn validate(&self, _val: &Num::RustType) -> Result<(), bool> {
     Ok(())
   }
 }
@@ -133,43 +129,45 @@ macro_rules! impl_int_wrapper {
     }
 
     impl_proto_type!($rust_type, stringify!($proto_type));
-    impl_int_validator!($rust_type);
+    impl_int_validator!($rust_type, $rust_type);
   };
 
-  ($rust_type:ty, $proto_type:ident) => {
-    pub struct $proto_type;
+  ($rust_type:ty, $wrapper:ident) => {
+    pub struct $wrapper;
 
-    impl IntWrapper for $proto_type {
+    impl IntWrapper for $wrapper {
       type RustType = $rust_type;
 
       fn type_name() -> Arc<str> {
-        $crate::paste!([< $proto_type:upper >]).clone()
+        $crate::paste!([< $wrapper:upper >]).clone()
       }
     }
 
     $crate::paste!(
-      impl_proto_type!($proto_type, stringify!([< $proto_type:lower >]));
-      impl_int_validator!($proto_type);
+      impl_proto_type!($wrapper, stringify!([< $wrapper:lower >]));
+      impl_int_validator!($wrapper, $rust_type);
     );
   };
 }
 
 macro_rules! impl_int_validator {
-  ($rust_type:ty) => {
+  ($wrapper:ty, $rust_type:ty) => {
     $crate::paste! {
-      impl ProtoValidator<$rust_type> for $rust_type {
-        type Validator = IntValidator<$rust_type>;
-        type Builder = IntValidatorBuilder<$rust_type>;
+      impl ProtoValidator<$wrapper> for $wrapper {
+        type Target = $rust_type;
+        type Validator = IntValidator<$wrapper>;
+        type Builder = IntValidatorBuilder<$wrapper>;
 
-        fn builder() -> IntValidatorBuilder<$rust_type> {
+        fn builder() -> IntValidatorBuilder<$wrapper> {
           IntValidator::builder()
         }
       }
 
-      impl<S: State> ValidatorBuilderFor<$rust_type>
-      for IntValidatorBuilder<$rust_type, S>
+      impl<S: State> ValidatorBuilderFor<$wrapper>
+      for IntValidatorBuilder<$wrapper, S>
       {
-        type Validator = IntValidator<$rust_type>;
+        type Target = $rust_type;
+        type Validator = IntValidator<$wrapper>;
 
         fn build_validator(self) -> Self::Validator {
           self.build()

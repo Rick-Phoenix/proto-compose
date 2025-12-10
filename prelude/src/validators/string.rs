@@ -84,6 +84,12 @@ pub struct StringValidator {
   pub ignore: Option<Ignore>,
 }
 
+impl StringValidator {
+  pub fn validate(&self, _val: &str) -> Result<(), bool> {
+    Ok(())
+  }
+}
+
 impl From<StringValidator> for ProtoOption {
   fn from(validator: StringValidator) -> ProtoOption {
     let mut rules: OptionValueList = Vec::new();

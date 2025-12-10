@@ -38,6 +38,12 @@ pub struct TimestampValidator {
   pub ignore: Option<Ignore>,
 }
 
+impl TimestampValidator {
+  pub fn validate(&self, val: &Timestamp) -> Result<(), bool> {
+    Ok(())
+  }
+}
+
 impl<S: State> TimestampValidatorBuilder<S>
 where
   S::Ignore: IsUnset,

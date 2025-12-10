@@ -6,12 +6,6 @@ use repeated_validator_builder::{
 
 use super::{builder_internals::*, *};
 
-macro_rules! impl_repeated {
-  ($name:ident) => {
-    impl_repeated_validator!($name);
-  };
-}
-
 impl<T: AsProtoField> AsProtoField for Vec<T> {
   fn as_proto_field() -> ProtoFieldInfo {
     let inner_type = T::as_proto_field();
@@ -29,6 +23,7 @@ impl<T> ProtoValidator<Vec<T>> for Vec<T>
 where
   T: AsProtoType + ProtoValidator<T>,
 {
+  type Target = Vec<T::Target>;
   type Validator = RepeatedValidator<T, T::Validator>;
   type Builder = RepeatedValidatorBuilder<T, T::Validator>;
 
@@ -41,8 +36,9 @@ impl<T, IV, S> ValidatorBuilderFor<Vec<T>> for RepeatedValidatorBuilder<T, IV, S
 where
   S: State,
   T: AsProtoType + ProtoValidator<T, Validator = IV>,
-  IV: Validator,
+  IV: Validator<T::Target>,
 {
+  type Target = Vec<T::Target>;
   type Validator = RepeatedValidator<T, IV>;
 
   fn build_validator(self) -> Self::Validator {
@@ -54,7 +50,7 @@ where
 pub struct RepeatedValidator<T, IV = <T as ProtoValidator<T>>::Validator>
 where
   T: AsProtoType + ProtoValidator<T>,
-  IV: Validator,
+  IV: Validator<T::Target>,
 {
   _inner_type: PhantomData<T>,
 
@@ -71,23 +67,25 @@ where
   pub ignore: Option<Ignore>,
 }
 
-impl<T, IV> Validator for RepeatedValidator<T, IV>
+impl<T, IV> Validator<Vec<T::Target>> for RepeatedValidator<T, IV>
 where
   T: AsProtoType + ProtoValidator<T>,
-  IV: Validator,
+  IV: Validator<T::Target>,
 {
-  type Target = Vec<T>;
-
-  fn validate(&self, val: &Self::Target) -> Result<(), bool> {
-    Ok(())
+  fn validate(&self, val: &Vec<T::Target>) -> Result<(), bool> {
+    self.validate(val)
   }
 }
 
 impl<T, IV> RepeatedValidator<T, IV>
 where
   T: AsProtoType + ProtoValidator<T>,
-  IV: Validator,
+  IV: Validator<T::Target>,
 {
+  pub fn validate(&self, _val: &Vec<T::Target>) -> Result<(), bool> {
+    Ok(())
+  }
+
   pub fn builder() -> RepeatedValidatorBuilder<T, IV> {
     RepeatedValidatorBuilder {
       _state: PhantomData,
@@ -106,7 +104,7 @@ where
 pub struct RepeatedValidatorBuilder<T, IV = <T as ProtoValidator<T>>::Validator, S: State = Empty>
 where
   T: AsProtoType + ProtoValidator<T>,
-  IV: Validator,
+  IV: Validator<T::Target>,
 {
   _state: PhantomData<S>,
   _inner_type: PhantomData<T>,
@@ -128,7 +126,7 @@ where
 impl<T, IV, S: State> RepeatedValidatorBuilder<T, IV, S>
 where
   T: AsProtoType + ProtoValidator<T, Validator = IV>,
-  IV: Validator,
+  IV: Validator<T::Target>,
 {
   pub fn build(self) -> RepeatedValidator<T, IV> {
     let Self {
@@ -260,7 +258,7 @@ where
 impl<T, IV, S: State> From<RepeatedValidatorBuilder<T, IV, S>> for ProtoOption
 where
   T: AsProtoType + ProtoValidator<T, Validator = IV>,
-  IV: Validator,
+  IV: Validator<T::Target>,
 {
   fn from(value: RepeatedValidatorBuilder<T, IV, S>) -> Self {
     value.build().into()
@@ -270,7 +268,7 @@ where
 impl<T, IV> From<RepeatedValidator<T, IV>> for ProtoOption
 where
   T: AsProtoType + ProtoValidator<T>,
-  IV: Validator,
+  IV: Validator<T::Target>,
 {
   fn from(validator: RepeatedValidator<T, IV>) -> ProtoOption {
     let mut rules: OptionValueList = Vec::new();

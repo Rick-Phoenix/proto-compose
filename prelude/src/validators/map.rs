@@ -37,6 +37,7 @@ macro_rules! impl_map_validator {
       K: ProtoValidator<K>,
       V: ProtoValidator<V>,
     {
+      type Target = HashMap<K::Target, V::Target>;
       type Validator = MapValidator<K, V, K::Validator, V::Validator>;
       type Builder = MapValidatorBuilder<K, V, K::Validator, V::Validator>;
 
@@ -50,9 +51,10 @@ macro_rules! impl_map_validator {
     where
       K: ProtoValidator<K, Validator = KV>,
       V: ProtoValidator<V, Validator = VV>,
-      KV: Validator,
-      VV: Validator,
+      KV: Validator<K::Target>,
+      VV: Validator<V::Target>,
     {
+      type Target = HashMap<K::Target, V::Target>;
       type Validator = MapValidator<K, V, KV, VV>;
 
       fn build_validator(self) -> Self::Validator {
@@ -74,8 +76,8 @@ pub struct MapValidator<
 > where
   K: ProtoValidator<K, Validator = KV>,
   V: ProtoValidator<V, Validator = VV>,
-  KV: Validator,
-  VV: Validator,
+  KV: Validator<K::Target>,
+  VV: Validator<V::Target>,
 {
   /// The validation rules to apply to the keys of this map field.
   pub keys: Option<KV>,
@@ -96,16 +98,26 @@ pub struct MapValidator<
   pub ignore: Option<Ignore>,
 }
 
-impl<K, V, KV, VV> Validator for MapValidator<K, V, KV, VV>
+impl<K, V, KV, VV> Validator<HashMap<K::Target, V::Target>> for MapValidator<K, V, KV, VV>
 where
   K: ProtoValidator<K, Validator = KV>,
   V: ProtoValidator<V, Validator = VV>,
-  KV: Validator,
-  VV: Validator,
+  KV: Validator<K::Target>,
+  VV: Validator<V::Target>,
 {
-  type Target = HashMap<KV::Target, VV::Target>;
+  fn validate(&self, val: &HashMap<K::Target, V::Target>) -> Result<(), bool> {
+    self.validate(val)
+  }
+}
 
-  fn validate(&self, val: &Self::Target) -> Result<(), bool> {
+impl<K, V, KV, VV> MapValidator<K, V, KV, VV>
+where
+  K: ProtoValidator<K, Validator = KV>,
+  V: ProtoValidator<V, Validator = VV>,
+  KV: Validator<K::Target>,
+  VV: Validator<V::Target>,
+{
+  pub fn validate(&self, val: &HashMap<K::Target, V::Target>) -> Result<(), bool> {
     for (k, v) in val {
       if let Some(keys) = &self.keys {
         keys.validate(k);
@@ -114,15 +126,7 @@ where
 
     Ok(())
   }
-}
 
-impl<K, V, KV, VV> MapValidator<K, V, KV, VV>
-where
-  K: ProtoValidator<K, Validator = KV>,
-  V: ProtoValidator<V, Validator = VV>,
-  KV: Validator,
-  VV: Validator,
-{
   pub fn builder() -> MapValidatorBuilder<K, V, KV, VV> {
     MapValidatorBuilder {
       _state: PhantomData,
@@ -148,8 +152,8 @@ pub struct MapValidatorBuilder<
 > where
   K: ProtoValidator<K, Validator = KV>,
   V: ProtoValidator<V, Validator = VV>,
-  KV: Validator,
-  VV: Validator,
+  KV: Validator<K::Target>,
+  VV: Validator<V::Target>,
 {
   pub keys: Option<KV>,
 
@@ -168,8 +172,8 @@ impl<S: State, K, V, KV, VV> MapValidatorBuilder<K, V, KV, VV, S>
 where
   K: ProtoValidator<K, Validator = KV>,
   V: ProtoValidator<V, Validator = VV>,
-  KV: Validator,
-  VV: Validator,
+  KV: Validator<K::Target>,
+  VV: Validator<V::Target>,
 {
   pub fn build(self) -> MapValidator<K, V, KV, VV> {
     let Self {
@@ -317,8 +321,8 @@ impl<K, V, KV, VV, S: State> From<MapValidatorBuilder<K, V, KV, VV, S>> for Prot
 where
   K: ProtoValidator<K, Validator = KV>,
   V: ProtoValidator<V, Validator = VV>,
-  KV: Validator,
-  VV: Validator,
+  KV: Validator<K::Target>,
+  VV: Validator<V::Target>,
 {
   fn from(value: MapValidatorBuilder<K, V, KV, VV, S>) -> Self {
     value.build().into()
@@ -329,8 +333,8 @@ impl<K, V, KV, VV> From<MapValidator<K, V, KV, VV>> for ProtoOption
 where
   K: ProtoValidator<K, Validator = KV>,
   V: ProtoValidator<V, Validator = VV>,
-  KV: Validator,
-  VV: Validator,
+  KV: Validator<K::Target>,
+  VV: Validator<V::Target>,
 {
   fn from(validator: MapValidator<K, V, KV, VV>) -> Self {
     let mut rules: OptionValueList = Vec::new();
