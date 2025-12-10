@@ -73,8 +73,8 @@ pub fn process_field(
     });
   }
 
-  let validator_tokens = if let Some(validator) = validator {
-    type_info.validator_tokens(&validator)
+  let validator_schema_tokens = if let Some(validator) = validator {
+    type_info.validator_schema_tokens(&validator)
   } else {
     quote! { None }
   };
@@ -91,7 +91,7 @@ pub fn process_field(
             tag: #tag,
             options: #options_tokens,
             type_: #field_type_tokens,
-            validator: #validator_tokens,
+            validator: #validator_schema_tokens,
           }
         )
       }
@@ -103,7 +103,7 @@ pub fn process_field(
           tag: #tag,
           options: #options_tokens,
           type_: #field_type_tokens,
-          validator: #validator_tokens,
+          validator: #validator_schema_tokens,
         }
       }
     }

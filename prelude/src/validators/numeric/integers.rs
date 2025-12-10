@@ -5,6 +5,28 @@ use int_validator_builder::{IsComplete, IsUnset, SetIgnore, State};
 
 use super::*;
 
+impl<Num> Validator for IntValidator<Num>
+where
+  Num: IntWrapper,
+{
+  type Target = Num::RustType;
+
+  fn validate(&self, _val: &Self::Target) -> Result<(), bool> {
+    Ok(())
+  }
+}
+
+impl<Num, S: State> Validator for IntValidatorBuilder<Num, S>
+where
+  Num: IntWrapper,
+{
+  type Target = Num::RustType;
+
+  fn validate(&self, _val: &Self::Target) -> Result<(), bool> {
+    Ok(())
+  }
+}
+
 #[derive(Clone, Debug, Builder)]
 pub struct IntValidator<Num>
 where
@@ -135,7 +157,8 @@ macro_rules! impl_int_wrapper {
 macro_rules! impl_int_validator {
   ($rust_type:ty) => {
     $crate::paste! {
-      impl ProtoValidator<$rust_type> for ValidatorMap {
+      impl ProtoValidator<$rust_type> for $rust_type {
+        type Validator = IntValidator<$rust_type>;
         type Builder = IntValidatorBuilder<$rust_type>;
 
         fn builder() -> IntValidatorBuilder<$rust_type> {
@@ -146,6 +169,11 @@ macro_rules! impl_int_validator {
       impl<S: State> ValidatorBuilderFor<$rust_type>
       for IntValidatorBuilder<$rust_type, S>
       {
+        type Validator = IntValidator<$rust_type>;
+
+        fn build_validator(self) -> Self::Validator {
+          self.build()
+        }
       }
     }
   };

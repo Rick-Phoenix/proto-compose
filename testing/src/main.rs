@@ -40,7 +40,7 @@ fn random_option() -> ProtoOption {
 
 #[proc_macro_impls::proto_module(file = "abc.proto", package = "myapp.v1")]
 mod inner {
-  use prelude::{cel_rule, CelRule, DEPRECATED};
+  use prelude::{cel_rule, CelRule, Validator, DEPRECATED};
   use proc_macro_impls::{
     proto_enum, proto_extension, proto_message, proto_oneof, proto_service, Extension, Service,
   };
@@ -136,7 +136,7 @@ mod inner {
     boxed: Option<Box<Abc>>,
 
     #[proto(tag = 35, validate = string_validator())]
-    name: Option<String>,
+    name: String,
 
     #[proto(ignore, from_proto = Default::default)]
     num: Vec<i32>,
@@ -144,12 +144,11 @@ mod inner {
     #[proto(validate = |v| v.min_pairs(0).keys(|k| k.min_len(25)).values(|v| v.lt(25)))]
     map: HashMap<String, i32>,
 
-    #[proto(map(string, enum_), validate = |v| v.values(|val| val.defined_only()))]
-    enum_map: HashMap<String, PseudoEnum>,
-
-    #[proto(map(string, message(proxied)), validate = |v| v.values(|val| val.ignore_always().cel(message_rules())))]
-    message_map: HashMap<String, Nested>,
-
+    // #[proto(map(string, enum_), validate = |v| v.values(|val| val.defined_only()))]
+    // enum_map: HashMap<String, PseudoEnum>,
+    //
+    // #[proto(map(string, message(proxied)), validate = |v| v.values(|val| val.ignore_always().cel(message_rules())))]
+    // message_map: HashMap<String, Nested>,
     #[proto(enum_, validate = enum_validator())]
     enum_field: PseudoEnum,
 

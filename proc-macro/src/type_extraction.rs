@@ -27,16 +27,28 @@ impl TypeInfo {
     self.proto_field.default_from_proto(&base_ident)
   }
 
-  pub fn validator_tokens(&self, validator: &ValidatorExpr) -> TokenStream2 {
+  pub fn validator_schema_tokens(&self, validator: &ValidatorExpr) -> TokenStream2 {
     let target_type = self.proto_field.validator_target_type();
 
     match validator {
       ValidatorExpr::Call(call) => {
-        quote! { Some(<::prelude::ValidatorMap as ::prelude::ProtoValidator<#target_type>>::from_builder(#call)) }
+        quote! { Some(<#target_type as ::prelude::ProtoValidator<#target_type>>::from_builder(#call)) }
       }
 
       ValidatorExpr::Closure(closure) => {
-        quote! { Some(<::prelude::ValidatorMap as ::prelude::ProtoValidator<#target_type>>::build_rules(#closure)) }
+        quote! { Some(<#target_type as ::prelude::ProtoValidator<#target_type>>::build_rules(#closure)) }
+      }
+    }
+  }
+
+  pub fn validator_tokens(&self, validator: &ValidatorExpr) -> TokenStream2 {
+    let target_type = self.proto_field.validator_target_type();
+
+    match validator {
+      ValidatorExpr::Call(call) => quote! { #call.build_validator() },
+
+      ValidatorExpr::Closure(closure) => {
+        quote! { <#target_type as ::prelude::ProtoValidator<#target_type>>::validator_from_closure(#closure) }
       }
     }
   }

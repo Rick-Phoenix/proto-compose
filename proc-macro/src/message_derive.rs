@@ -39,6 +39,8 @@ pub fn process_message_derive_shadow(
   let mut from_proto_body = TokenStream2::new();
   let mut into_proto_body = TokenStream2::new();
 
+  let mut validator_tokens = TokenStream2::new();
+
   for (src_field, dst_field) in orig_struct_fields.zip(shadow_struct_fields) {
     let src_field_ident = src_field
       .ident
@@ -92,6 +94,18 @@ pub fn process_message_derive_shadow(
 
     fields_tokens.push(field_tokens);
 
+    if let Some(validator) = &field_attrs.validator && matches!(type_info.proto_field, ProtoField::Single(ProtoType::String)| ProtoField::Map(_)) {
+      let target_type = type_info.proto_field.validator_target_type();
+
+      let field_validator = type_info.validator_tokens(validator);
+
+      validator_tokens.extend(
+        quote! {
+          #field_validator.validate(&self.#src_field_ident);
+        }
+      );
+    }
+
     if message_attrs.into_proto.is_none() {
       let field_into_proto = field_into_proto_expression(IntoProto {
         custom_expression: &field_attrs.into_proto,
@@ -143,6 +157,12 @@ pub fn process_message_derive_shadow(
 
     #from_proto_impl
     #into_proto_impl
+
+    impl #orig_struct_ident {
+      pub fn validate(&self) {
+        #validator_tokens
+      }
+    }
 
     impl ::prelude::AsProtoType for #shadow_struct_ident {
       fn proto_type() -> ::prelude::ProtoType {

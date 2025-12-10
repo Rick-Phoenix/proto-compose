@@ -5,7 +5,6 @@ use regex::Regex;
 
 use super::*;
 
-impl_validator!(BytesValidator, Vec<u8>);
 impl_validator!(BytesValidator, Bytes);
 impl_into_option!(BytesValidator);
 impl_ignore!(BytesValidatorBuilder);

@@ -5,10 +5,21 @@ use std::{fmt::Debug, hash::Hash, sync::Arc};
 use common_strings::*;
 use proto_types::protovalidate::Ignore;
 
-pub trait ValidatorBuilderFor<T>: Into<ProtoOption> {}
+pub trait Validator: Into<ProtoOption> {
+  type Target;
+
+  fn validate(&self, val: &Self::Target) -> Result<(), bool>;
+}
+
+pub trait ValidatorBuilderFor<T>: Into<ProtoOption> {
+  type Validator: Validator;
+
+  fn build_validator(self) -> Self::Validator;
+}
 
 pub trait ProtoValidator<T> {
-  type Builder;
+  type Validator: Validator;
+  type Builder: ValidatorBuilderFor<T, Validator = Self::Validator>;
 
   fn builder() -> Self::Builder;
 
@@ -17,6 +28,16 @@ pub trait ProtoValidator<T> {
     B: ValidatorBuilderFor<T>,
   {
     builder.into()
+  }
+
+  fn validator_from_closure<F, FinalBuilder>(config_fn: F) -> Self::Validator
+  where
+    F: FnOnce(Self::Builder) -> FinalBuilder,
+    FinalBuilder: ValidatorBuilderFor<T, Validator = Self::Validator>,
+  {
+    let initial_builder = Self::builder();
+
+    config_fn(initial_builder).build_validator()
   }
 
   fn builder_from_closure<F, FinalBuilder>(config_fn: F) -> FinalBuilder
@@ -41,8 +62,6 @@ pub trait ProtoValidator<T> {
     final_builder.into()
   }
 }
-
-pub struct ValidatorMap;
 
 type OptionValueList = Vec<(Arc<str>, OptionValue)>;
 
