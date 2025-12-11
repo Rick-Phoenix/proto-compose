@@ -3,12 +3,18 @@ mod common_strings;
 use std::{fmt::Debug, hash::Hash, sync::Arc};
 
 use common_strings::*;
-use proto_types::protovalidate::Ignore;
+use proto_types::{field_descriptor_proto::Type, protovalidate::*};
 
 pub trait Validator<T>: Into<ProtoOption> {
   type Target;
 
-  fn validate(&self, val: Option<&Self::Target>) -> Result<(), bool>;
+  fn validate(
+    &self,
+    _field_context: &FieldContext,
+    _val: Option<&Self::Target>,
+  ) -> Result<(), Vec<Violation>> {
+    Ok(())
+  }
 }
 
 pub trait ValidatorBuilderFor<T>: Into<ProtoOption> {
@@ -154,6 +160,7 @@ mod bytes;
 mod cel;
 mod duration;
 mod enums;
+pub mod field_context;
 mod map;
 mod message;
 mod numeric;
@@ -169,6 +176,7 @@ pub use bytes::*;
 pub use cel::*;
 pub use duration::*;
 pub use enums::*;
+pub use field_context::*;
 pub use map::*;
 pub use message::*;
 pub use numeric::*;

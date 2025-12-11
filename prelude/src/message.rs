@@ -5,6 +5,19 @@ pub trait ProtoMessage {
   fn proto_schema() -> Message;
 }
 
+impl<T> ProtoMessage for Box<T>
+where
+  T: ProtoMessage,
+{
+  fn proto_path() -> ProtoPath {
+    T::proto_path()
+  }
+
+  fn proto_schema() -> Message {
+    T::proto_schema()
+  }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Template)]
 #[template(path = "message.proto.j2")]
 pub struct Message {

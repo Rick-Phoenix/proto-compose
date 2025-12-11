@@ -145,18 +145,10 @@ impl<S: State> ValidatorBuilderFor<f64> for FloatValidatorBuilder<f64, S> {
 
 impl Validator<f32> for FloatValidator<f32> {
   type Target = f32;
-
-  fn validate(&self, _val: Option<&f32>) -> Result<(), bool> {
-    Ok(())
-  }
 }
 
 impl Validator<f64> for FloatValidator<f64> {
   type Target = f64;
-
-  fn validate(&self, _val: Option<&f64>) -> Result<(), bool> {
-    Ok(())
-  }
 }
 
 impl ProtoValidator<f32> for f32 {

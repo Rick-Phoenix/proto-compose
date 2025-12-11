@@ -95,7 +95,24 @@ pub fn process_message_derive_shadow(
     fields_tokens.push(field_tokens);
 
     if let Some(validator) = &field_attrs.validator {
-      let field_validator = type_info.validator_tokens(src_field_ident, validator);
+      let field_tag = field_attrs.tag as u32;
+      let field_name = &field_attrs.name;
+      let field_type = type_info.proto_field.proto_kind_tokens();
+
+      let field_context_tokens = quote! {
+        ::prelude::FieldContext {
+          name: #field_name,
+          tag: #field_tag,
+          field_type: #field_type,
+          key_type: None,
+          value_type: None,
+          kind: Default::default(),
+          parent_elements: &[]
+        }
+      };
+
+      let field_validator =
+        type_info.validator_tokens(src_field_ident, field_context_tokens, validator);
 
       validator_tokens.extend(field_validator);
     }
@@ -140,7 +157,9 @@ pub fn process_message_derive_shadow(
     conversion_tokens: from_proto_body,
   });
 
-  let shadow_struct_derives = message_attrs.shadow_derives.map(|list| quote! { #[#list] });
+  let shadow_struct_derives = message_attrs
+    .shadow_derives
+    .map(|list| quote! { #[#list] });
 
   output_tokens.extend(quote! {
     #schema_impls
@@ -153,8 +172,18 @@ pub fn process_message_derive_shadow(
     #into_proto_impl
 
     impl #shadow_struct_ident {
-      pub fn validate(&self) {
+      pub fn validate(&self) -> Result<(), Vec<::proto_types::protovalidate::Violation>> {
+        use ::prelude::{ProtoValidator, Validator, ValidationResult};
+
+        let mut violations = Vec::new();
+
         #validator_tokens
+
+        if violations.is_empty() {
+          Ok(())
+        } else {
+          Err(violations)
+        }
       }
     }
 

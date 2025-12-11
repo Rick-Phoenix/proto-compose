@@ -19,10 +19,6 @@ where
   Num: IntWrapper,
 {
   type Target = Num::RustType;
-
-  fn validate(&self, _val: Option<&Num::RustType>) -> Result<(), bool> {
-    Ok(())
-  }
 }
 
 impl<Num, S: State> Validator<Num> for IntValidatorBuilder<Num, S>
@@ -30,10 +26,6 @@ where
   Num: IntWrapper,
 {
   type Target = Num::RustType;
-
-  fn validate(&self, _val: Option<&Num::RustType>) -> Result<(), bool> {
-    Ok(())
-  }
 }
 
 #[derive(Clone, Debug, Builder)]

@@ -9,6 +9,10 @@ impl_validator!(BytesValidator, Bytes);
 impl_into_option!(BytesValidator);
 impl_ignore!(BytesValidatorBuilder);
 
+impl Validator<Bytes> for BytesValidator {
+  type Target = Bytes;
+}
+
 macro_rules! insert_bytes_option {
   ($validator:ident, $values:ident, $field:ident) => {
     $validator.$field.map(|v| {

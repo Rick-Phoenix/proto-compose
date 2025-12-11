@@ -7,6 +7,10 @@ use super::*;
 impl_validator!(AnyValidator, Any);
 impl_into_option!(AnyValidator);
 
+impl Validator<Any> for AnyValidator {
+  type Target = Any;
+}
+
 #[derive(Clone, Debug, Builder)]
 #[builder(derive(Clone))]
 pub struct AnyValidator {

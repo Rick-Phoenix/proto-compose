@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use proto_types::protovalidate::field_path_element::Subscript;
 use repeated_validator_builder::{
   SetCel, SetIgnore, SetItems, SetMaxItems, SetMinItems, SetUnique, State,
 };
@@ -71,8 +72,40 @@ where
 {
   type Target = Vec<T::Target>;
 
-  fn validate(&self, val: Option<&Vec<T::Target>>) -> Result<(), bool> {
-    self.validate(val)
+  fn validate(
+    &self,
+    field_context: &FieldContext,
+    val: Option<&Vec<T::Target>>,
+  ) -> Result<(), Vec<Violation>> {
+    let mut violations_agg: Vec<Violation> = Vec::new();
+    let violations = &mut violations_agg;
+
+    if let Some(val) = val {
+      let items_validator = self
+        .items
+        .as_ref()
+        .filter(|_| !val.is_empty())
+        .map(|v| {
+          let mut ctx = field_context.clone();
+          ctx.kind = FieldKind::RepeatedItem;
+
+          (v, ctx)
+        });
+
+      for (i, value) in val.iter().enumerate() {
+        if let Some((validator, ctx)) = &items_validator {
+          validator
+            .validate(ctx, Some(value))
+            .push_violations_with_subscript(violations, &Subscript::Index(i as u64));
+        }
+      }
+    }
+
+    if violations_agg.is_empty() {
+      Ok(())
+    } else {
+      Err(violations_agg)
+    }
   }
 }
 
@@ -80,10 +113,6 @@ impl<T> RepeatedValidator<T>
 where
   T: AsProtoType + ProtoValidator<T>,
 {
-  pub fn validate(&self, _val: Option<&Vec<T::Target>>) -> Result<(), bool> {
-    Ok(())
-  }
-
   pub fn builder() -> RepeatedValidatorBuilder<T> {
     RepeatedValidatorBuilder {
       _state: PhantomData,

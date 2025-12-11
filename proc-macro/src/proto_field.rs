@@ -14,6 +14,20 @@ pub enum ProtoField {
 }
 
 impl ProtoField {
+  pub fn proto_kind_tokens(&self) -> TokenStream2 {
+    match self {
+      ProtoField::Map(_) => quote! { ::proto_types::field_descriptor_proto::Type::Message },
+      ProtoField::Repeated(inner) => inner.field_type_tokens(),
+      ProtoField::Optional(inner) => inner.field_type_tokens(),
+      ProtoField::Single(inner) => inner.field_type_tokens(),
+      ProtoField::Oneof {
+        path,
+        tags,
+        default,
+      } => todo!(),
+    }
+  }
+
   pub fn as_prost_attr_type(&self) -> TokenStream2 {
     match self {
       Self::Map(map) => map.as_prost_attr_type(),

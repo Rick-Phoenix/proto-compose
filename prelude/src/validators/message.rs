@@ -15,9 +15,15 @@ impl<T: ProtoMessage, S: State> ValidatorBuilderFor<T> for MessageValidatorBuild
 impl<T: ProtoMessage> Validator<T> for MessageValidator {
   type Target = T;
 
-  fn validate(&self, _val: Option<&T>) -> Result<(), bool> {
-    Ok(())
-  }
+  // fn validate(&self, val: Option<&T>) -> Result<(), bool> {
+  //   if let Some(msg) = val {
+  //     todo!()
+  //   } else if self.required {
+  //     println!("Message is required");
+  //   }
+  //
+  //   Ok(())
+  // }
 }
 
 impl_into_option!(MessageValidator);

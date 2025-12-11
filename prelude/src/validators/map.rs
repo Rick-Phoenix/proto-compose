@@ -3,8 +3,12 @@ use std::{collections::HashMap, marker::PhantomData};
 use map_validator_builder::{
   SetCel, SetIgnore, SetKeys, SetMaxPairs, SetMinPairs, SetValues, State,
 };
+use proto_types::protovalidate::{
+  field_path_element::Subscript, violations_data::map_violations::*,
+};
 
 use super::*;
+use crate::field_context::Violations;
 
 pub struct ProtoMap<K, V>(PhantomData<K>, PhantomData<V>);
 
@@ -24,10 +28,45 @@ impl<K: AsProtoField, V: AsProtoField> AsProtoField for ProtoMap<K, V> {
   }
 }
 
+pub trait IntoSubscript {
+  fn into_subscript(self) -> Subscript;
+}
+
+impl IntoSubscript for String {
+  fn into_subscript(self) -> Subscript {
+    Subscript::StringKey(self)
+  }
+}
+
+impl IntoSubscript for bool {
+  fn into_subscript(self) -> Subscript {
+    Subscript::BoolKey(self)
+  }
+}
+
+impl IntoSubscript for i64 {
+  fn into_subscript(self) -> Subscript {
+    Subscript::IntKey(self)
+  }
+}
+
+impl IntoSubscript for i32 {
+  fn into_subscript(self) -> Subscript {
+    Subscript::IntKey(self as i64)
+  }
+}
+
+impl IntoSubscript for u64 {
+  fn into_subscript(self) -> Subscript {
+    Subscript::UintKey(self)
+  }
+}
+
 impl<K, V> ProtoValidator<ProtoMap<K, V>> for ProtoMap<K, V>
 where
   K: ProtoValidator<K>,
   V: ProtoValidator<V>,
+  K::Target: Clone + IntoSubscript,
 {
   type Target = HashMap<K::Target, V::Target>;
 
@@ -43,6 +82,7 @@ impl<K, V, S: State> ValidatorBuilderFor<ProtoMap<K, V>> for MapValidatorBuilder
 where
   K: ProtoValidator<K>,
   V: ProtoValidator<V>,
+  K::Target: Clone + IntoSubscript,
 {
   type Target = HashMap<K::Target, V::Target>;
   type Validator = MapValidator<K, V>;
@@ -81,11 +121,75 @@ impl<K, V> Validator<ProtoMap<K, V>> for MapValidator<K, V>
 where
   K: ProtoValidator<K>,
   V: ProtoValidator<V>,
+  K::Target: Clone + IntoSubscript,
 {
   type Target = HashMap<K::Target, V::Target>;
 
-  fn validate(&self, val: Option<&HashMap<K::Target, V::Target>>) -> Result<(), bool> {
-    self.validate(val)
+  fn validate(
+    &self,
+    field_context: &FieldContext,
+    val: Option<&HashMap<K::Target, V::Target>>,
+  ) -> Result<(), Vec<Violation>> {
+    let mut violations_agg: Vec<Violation> = Vec::new();
+    let violations = &mut violations_agg;
+
+    if let Some(val) = val {
+      if let Some(min_pairs) = self.min_pairs && val.len() < min_pairs {
+        violations.add(
+          field_context,
+          &MAP_MIN_PAIRS_VIOLATION,
+          &format!("must contain at least {min_pairs} key-value pairs")
+        );
+      }
+
+      if let Some(max_pairs) = self.max_pairs && val.len() > max_pairs {
+        violations.add(
+          field_context,
+          &MAP_MAX_PAIRS_VIOLATION,
+          &format!("cannot contain more than {max_pairs} key-value pairs")
+        );
+      }
+
+      let key_validator = self
+        .keys
+        .as_ref()
+        .filter(|_| !val.is_empty())
+        .map(|v| {
+          let mut ctx = field_context.clone();
+          ctx.kind = FieldKind::MapKey;
+          (v, ctx)
+        });
+
+      let value_validator = self
+        .values
+        .as_ref()
+        .filter(|_| !val.is_empty())
+        .map(|v| {
+          let mut ctx = field_context.clone();
+          ctx.kind = FieldKind::MapValue;
+          (v, ctx)
+        });
+
+      for (k, v) in val {
+        if let Some((validator, ctx)) = &key_validator {
+          validator
+            .validate(ctx, Some(k))
+            .push_violations_with_subscript(violations, k);
+        }
+
+        if let Some((validator, ctx)) = &value_validator {
+          validator
+            .validate(ctx, Some(v))
+            .push_violations_with_subscript(violations, k);
+        }
+      }
+    }
+
+    if violations_agg.is_empty() {
+      Ok(())
+    } else {
+      Err(violations_agg)
+    }
   }
 }
 
@@ -94,26 +198,6 @@ where
   K: ProtoValidator<K>,
   V: ProtoValidator<V>,
 {
-  pub fn validate(&self, val: Option<&HashMap<K::Target, V::Target>>) -> Result<(), bool> {
-    if let Some(val) = val {
-      if let Some(min_pairs) = self.min_pairs && val.len() < min_pairs {
-        println!("Expected {min_pairs} pairs, found {}", val.len());
-      }
-
-      for (k, v) in val {
-        if let Some(keys) = &self.keys {
-          keys.validate(Some(k));
-        }
-
-        if let Some(values) = &self.values {
-          values.validate(Some(v));
-        }
-      }
-    }
-
-    Ok(())
-  }
-
   pub fn builder() -> MapValidatorBuilder<K, V> {
     MapValidatorBuilder {
       _state: PhantomData,

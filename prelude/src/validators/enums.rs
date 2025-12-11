@@ -15,15 +15,15 @@ impl<T: ProtoEnum, S: State> ValidatorBuilderFor<T> for EnumValidatorBuilder<T, 
 impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
   type Target = i32;
 
-  fn validate(&self, val: Option<&i32>) -> Result<(), bool> {
-    if let Some(val) = val {
-      if self.defined_only && T::try_from(*val).is_err() {
-        println!("Must be a defined value");
-      }
-    }
-
-    Ok(())
-  }
+  // fn validate(&self, val: Option<&i32>) -> Result<(), bool> {
+  //   if let Some(val) = val {
+  //     if self.defined_only && T::try_from(*val).is_err() {
+  //       println!("Must be a defined value");
+  //     }
+  //   }
+  //
+  //   Ok(())
+  // }
 }
 
 #[derive(Clone, Debug, Builder)]

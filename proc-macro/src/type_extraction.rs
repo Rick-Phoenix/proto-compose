@@ -41,7 +41,12 @@ impl TypeInfo {
     }
   }
 
-  pub fn validator_tokens(&self, field_ident: &Ident, validator: &ValidatorExpr) -> TokenStream2 {
+  pub fn validator_tokens(
+    &self,
+    field_ident: &Ident,
+    field_context_tokens: TokenStream2,
+    validator: &ValidatorExpr,
+  ) -> TokenStream2 {
     let target_type = self.proto_field.validator_target_type();
 
     let validation_expr = match validator {
@@ -62,7 +67,7 @@ impl TypeInfo {
     };
 
     quote! {
-      #validation_expr.validate(#argument);
+      #validation_expr.validate(&#field_context_tokens, #argument).push_violations(&mut violations);
     }
   }
 

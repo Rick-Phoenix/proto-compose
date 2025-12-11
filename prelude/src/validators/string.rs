@@ -10,6 +10,26 @@ impl_into_option!(StringValidator);
 impl_validator!(StringValidator, String);
 impl_ignore!(StringValidatorBuilder);
 
+impl Validator<String> for StringValidator {
+  type Target = String;
+
+  // fn validate(
+  //   &self,
+  //   field_context: &FieldContext,
+  //   val: Option<&Self::Target>,
+  // ) -> Result<(), Vec<Violation>> {
+  //   let mut violations: Vec<Violation> = Vec::new();
+  //
+  //   if let Some(val) = val {
+  //     todo!();
+  //   } else if self.required {
+  //     //
+  //   }
+  //
+  //   Ok(())
+  // }
+}
+
 impl<S: State> StringValidatorBuilder<S>
 where
   S::In: IsUnset,
@@ -43,17 +63,17 @@ where
 #[builder(on(Arc<str>, into))]
 pub struct StringValidator {
   /// Specifies that the given string field must be of this exact length.
-  pub len: Option<u64>,
+  pub len: Option<usize>,
   /// Specifies that the given string field must have a length that is equal to or higher than the given value.
-  pub min_len: Option<u64>,
+  pub min_len: Option<usize>,
   /// Specifies that the given string field must have a length that is equal to or lower than the given value.
-  pub max_len: Option<u64>,
+  pub max_len: Option<usize>,
   /// Specifies the exact byte length that this field's value must have in order to be considered valid.
-  pub len_bytes: Option<u64>,
+  pub len_bytes: Option<usize>,
   /// Specifies the minimum byte length for this field's value to be considered valid.
-  pub min_bytes: Option<u64>,
+  pub min_bytes: Option<usize>,
   /// Specifies the minimum byte length for this field's value to be considered valid.
-  pub max_bytes: Option<u64>,
+  pub max_bytes: Option<usize>,
   /// Specifies a regex pattern that this field's value should match in order to be considered valid.
   pub pattern: Option<Regex>,
   /// Specifies the prefix that this field's value should contain in order to be considered valid.

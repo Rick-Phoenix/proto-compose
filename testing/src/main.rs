@@ -40,7 +40,7 @@ fn random_option() -> ProtoOption {
 
 #[proc_macro_impls::proto_module(file = "abc.proto", package = "myapp.v1")]
 mod inner {
-  use prelude::{cel_rule, CelRule, Validator, DEPRECATED};
+  use prelude::{cel_rule, CelRule, FieldKind, Validator, DEPRECATED};
   use proc_macro_impls::{
     proto_enum, proto_extension, proto_message, proto_oneof, proto_service, Extension, Service,
   };
@@ -103,7 +103,10 @@ mod inner {
   }
 
   fn convert(map: HashMap<String, NestedProto>) -> HashMap<String, Nested> {
-    map.into_iter().map(|(k, v)| (k, v.into())).collect()
+    map
+      .into_iter()
+      .map(|(k, v)| (k, v.into()))
+      .collect()
   }
 
   fn message_rules() -> Vec<CelRule> {
@@ -115,6 +118,14 @@ mod inner {
         .build(),
       cel_rule!(id = "abc", msg = "abc", expr = "abc"),
     ]
+  }
+
+  fn random_cel_rule() -> CelRule {
+    cel_rule!(
+      id = "hobbits",
+      msg = "they're taking the hobbits to isengard!",
+      expr = "hobbits.location == isengard"
+    )
   }
 
   #[proto_message]
@@ -132,7 +143,7 @@ mod inner {
     #[proto(duration, validate = |v| v.lt(Duration { seconds: 2000, nanos: 0 }))]
     duration: Option<Duration>,
 
-    #[proto(message(AbcProto, boxed))]
+    #[proto(message(AbcProto, boxed), validate = |v| v.cel([ random_cel_rule() ]).required())]
     boxed: Option<Box<Abc>>,
 
     #[proto(tag = 35, validate = string_validator())]
@@ -209,5 +220,7 @@ fn main() {
 
   let msg2 = AbcProto::default();
 
-  msg2.validate();
+  let result = msg2.validate().unwrap_err();
+
+  println!("{result:#?}");
 }

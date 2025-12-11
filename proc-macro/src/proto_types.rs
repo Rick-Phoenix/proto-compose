@@ -20,6 +20,21 @@ pub enum ProtoType {
 }
 
 impl ProtoType {
+  pub fn field_type_tokens(&self) -> TokenStream2 {
+    let prefix = quote! { ::proto_types::field_descriptor_proto::Type };
+    match self {
+      ProtoType::String => quote! { #prefix::String },
+      ProtoType::Bool => quote! { #prefix::Bool },
+      ProtoType::Bytes => quote! { #prefix::Bytes },
+      ProtoType::Enum(_) => quote! { #prefix::Enum },
+      ProtoType::Message { .. } => quote! { #prefix::Message },
+      ProtoType::Int32 => quote! { #prefix::Int32 },
+      ProtoType::Sint32 => quote! { #prefix::Sint32 },
+      ProtoType::Duration => quote! { #prefix::Message },
+      ProtoType::Timestamp => quote! { #prefix::Message },
+    }
+  }
+
   pub fn from_meta(meta: Meta, fallback: Option<&Path>) -> Result<Option<Self>, Error> {
     let output = match meta {
       Meta::List(list) => {

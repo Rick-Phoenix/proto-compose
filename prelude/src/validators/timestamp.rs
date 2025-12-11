@@ -7,6 +7,10 @@ use super::*;
 impl_validator!(TimestampValidator, Timestamp);
 impl_into_option!(TimestampValidator);
 
+impl Validator<Timestamp> for TimestampValidator {
+  type Target = Timestamp;
+}
+
 #[derive(Clone, Debug, Builder)]
 #[builder(derive(Clone))]
 pub struct TimestampValidator {

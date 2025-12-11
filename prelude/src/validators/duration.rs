@@ -7,6 +7,10 @@ use super::*;
 impl_validator!(DurationValidator, Duration);
 impl_into_option!(DurationValidator);
 
+impl Validator<Duration> for DurationValidator {
+  type Target = Duration;
+}
+
 #[derive(Clone, Debug, Builder)]
 #[builder(derive(Clone))]
 pub struct DurationValidator {

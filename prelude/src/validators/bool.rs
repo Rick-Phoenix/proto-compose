@@ -6,6 +6,10 @@ use super::*;
 impl_validator!(BoolValidator, bool);
 impl_into_option!(BoolValidator);
 
+impl Validator<bool> for BoolValidator {
+  type Target = bool;
+}
+
 #[derive(Clone, Debug, Builder)]
 pub struct BoolValidator {
   /// Specifies that only this specific value will be considered valid for this field.

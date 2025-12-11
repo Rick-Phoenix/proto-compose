@@ -50,14 +50,6 @@ macro_rules! impl_validator {
         }
       }
 
-      impl Validator<$rust_type> for $validator {
-        type Target = $rust_type;
-
-        fn validate(&self, _target: Option<&$rust_type>) -> Result<(), bool> {
-          Ok(())
-        }
-      }
-
       impl<S: State> ValidatorBuilderFor<$rust_type> for [< $validator Builder >]<S> {
         type Target = $rust_type;
         type Validator = $validator;
