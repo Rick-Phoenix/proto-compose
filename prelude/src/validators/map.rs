@@ -125,6 +125,28 @@ where
 {
   type Target = HashMap<K::Target, V::Target>;
 
+  fn cel_rules(&self) -> Option<Arc<[CelRule]>> {
+    let keys_rules = self.keys.as_ref().and_then(|k| k.cel_rules());
+
+    let values_rules = self.values.as_ref().and_then(|v| v.cel_rules());
+
+    let map_rules = self.cel.clone();
+
+    if keys_rules.is_none() && values_rules.is_none() {
+      map_rules
+    } else {
+      let all_rules: Vec<CelRule> = map_rules
+        .iter()
+        .flat_map(|slice| slice.iter())
+        .chain(keys_rules.iter().flat_map(|s| s.iter()))
+        .chain(values_rules.iter().flat_map(|s| s.iter()))
+        .cloned()
+        .collect();
+
+      Some(all_rules.into())
+    }
+  }
+
   fn validate(
     &self,
     field_context: &FieldContext,

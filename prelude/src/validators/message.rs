@@ -1,19 +1,19 @@
 use bon::Builder;
-use message_validator_builder::{IsUnset, SetIgnore, State};
+use message_validator_builder::{IsComplete, IsUnset, SetIgnore, State};
 
 use super::*;
 use crate::field_context::Violations;
 
-impl<T: ProtoMessage, S: State> ValidatorBuilderFor<T> for MessageValidatorBuilder<S> {
+impl<T: ProtoMessage, S: State> ValidatorBuilderFor<T> for MessageValidatorBuilder<T, S> {
   type Target = T;
-  type Validator = MessageValidator;
+  type Validator = MessageValidator<T>;
 
   fn build_validator(self) -> Self::Validator {
     self.build()
   }
 }
 
-impl<T: ProtoMessage> Validator<T> for MessageValidator {
+impl<T: ProtoMessage> Validator<T> for MessageValidator<T> {
   type Target = T;
 
   fn validate(
@@ -41,11 +41,11 @@ impl<T: ProtoMessage> Validator<T> for MessageValidator {
   }
 }
 
-impl_into_option!(MessageValidator);
-
 #[derive(Debug, Clone, Builder)]
 #[builder(derive(Clone))]
-pub struct MessageValidator {
+pub struct MessageValidator<T: ProtoMessage> {
+  #[builder(default, setters(vis = ""))]
+  _message: PhantomData<T>,
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   #[builder(into)]
   pub cel: Option<Arc<[CelRule]>>,
@@ -56,18 +56,25 @@ pub struct MessageValidator {
   pub ignore: Option<Ignore>,
 }
 
-impl<S: State> MessageValidatorBuilder<S>
+impl<T: ProtoMessage, S: State> MessageValidatorBuilder<T, S>
 where
   S::Ignore: IsUnset,
 {
   /// Rules set for this field will always be ignored.
-  pub fn ignore_always(self) -> MessageValidatorBuilder<SetIgnore<S>> {
+  pub fn ignore_always(self) -> MessageValidatorBuilder<T, SetIgnore<S>> {
     self.ignore(Ignore::Always)
   }
 }
 
-impl From<MessageValidator> for ProtoOption {
-  fn from(validator: MessageValidator) -> Self {
+impl<T: ProtoMessage, S: IsComplete> From<MessageValidatorBuilder<T, S>> for ProtoOption {
+  fn from(value: MessageValidatorBuilder<T, S>) -> ProtoOption {
+    let validator = value.build();
+    validator.into()
+  }
+}
+
+impl<T: ProtoMessage> From<MessageValidator<T>> for ProtoOption {
+  fn from(validator: MessageValidator<T>) -> Self {
     let mut rules: OptionValueList = Vec::new();
 
     insert_cel_rules!(validator, rules);

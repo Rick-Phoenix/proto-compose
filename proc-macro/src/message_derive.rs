@@ -40,6 +40,7 @@ pub fn process_message_derive_shadow(
   let mut into_proto_body = TokenStream2::new();
 
   let mut validator_tokens = TokenStream2::new();
+  let mut cel_rules_collection: Vec<TokenStream2> = Vec::new();
 
   for (src_field, dst_field) in orig_struct_fields.zip(shadow_struct_fields) {
     let src_field_ident = src_field
@@ -115,6 +116,10 @@ pub fn process_message_derive_shadow(
         type_info.validator_tokens(src_field_ident, field_context_tokens, validator);
 
       validator_tokens.extend(field_validator);
+
+      let cel_rules = type_info.cel_rules_extractor(validator);
+
+      cel_rules_collection.push(cel_rules);
     }
 
     if message_attrs.into_proto.is_none() {
@@ -139,7 +144,12 @@ pub fn process_message_derive_shadow(
       .collect();
   }
 
-  let schema_impls = message_schema_impls(orig_struct_ident, &message_attrs, fields_tokens);
+  let schema_impls = message_schema_impls(
+    orig_struct_ident,
+    &message_attrs,
+    fields_tokens,
+    cel_rules_collection,
+  );
 
   let into_proto_impl = into_proto_impl(ItemConversion {
     source_ident: orig_struct_ident,
@@ -233,8 +243,8 @@ pub fn process_message_derive_shadow(
 
     impl ::prelude::ProtoValidator<#shadow_struct_ident> for #shadow_struct_ident {
       type Target = Self;
-      type Validator = ::prelude::MessageValidator;
-      type Builder = ::prelude::MessageValidatorBuilder;
+      type Validator = ::prelude::MessageValidator<Self>;
+      type Builder = ::prelude::MessageValidatorBuilder<Self>;
 
       fn builder() -> Self::Builder {
         ::prelude::MessageValidator::builder()
@@ -242,6 +252,9 @@ pub fn process_message_derive_shadow(
     }
 
     impl ::prelude::ProtoMessage for #shadow_struct_ident {
+      fn cel_rules() -> Vec<Arc<[CelRule]>> {
+        #orig_struct_ident::cel_rules()
+      }
       fn proto_path() -> ::prelude::ProtoPath {
         <#orig_struct_ident as ::prelude::ProtoMessage>::proto_path()
       }
@@ -264,8 +277,6 @@ pub fn process_message_derive_shadow(
         <#orig_struct_ident as ::prelude::AsProtoType>::proto_type()
       }
     }
-
-
   });
 
   Ok(output_tokens)
@@ -341,7 +352,7 @@ pub fn process_message_derive_direct(
     fields_data.push(field_tokens);
   }
 
-  let schema_impls = message_schema_impls(&item.ident, &message_attrs, fields_data);
+  let schema_impls = message_schema_impls(&item.ident, &message_attrs, fields_data, Vec::new());
 
   output_tokens.extend(schema_impls);
 
@@ -350,8 +361,8 @@ pub fn process_message_derive_direct(
   output_tokens.extend(quote! {
     impl ::prelude::ProtoValidator<#struct_ident> for #struct_ident {
       type Target = Self;
-      type Validator = ::prelude::MessageValidator;
-      type Builder = ::prelude::MessageValidatorBuilder;
+      type Validator = ::prelude::MessageValidator<Self>;
+      type Builder = ::prelude::MessageValidatorBuilder<Self>;
 
       fn builder() -> Self::Builder {
         ::prelude::MessageValidator::builder()

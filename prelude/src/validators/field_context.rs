@@ -128,11 +128,6 @@ impl FieldKind {
   }
 }
 
-pub struct ValidationContext {
-  pub parent_elements: Vec<FieldPathElement>,
-  pub violations: Vec<Violation>,
-}
-
 pub(crate) fn create_violation_core(
   custom_rule_id: Option<&str>,
   field_context: Option<&FieldContext>,
@@ -186,20 +181,6 @@ pub(crate) fn create_violation_core(
       elements: rule_elements,
     }),
   }
-}
-
-pub(crate) fn new_cel_violation(
-  rule: &CelRule,
-  field_context: Option<&FieldContext>,
-  parent_elements: &[FieldPathElement],
-) -> Violation {
-  create_violation_core(
-    Some(rule.id.as_ref()),
-    field_context,
-    parent_elements,
-    &CEL_VIOLATION,
-    rule.message.as_ref(),
-  )
 }
 
 pub(crate) fn new_violation(

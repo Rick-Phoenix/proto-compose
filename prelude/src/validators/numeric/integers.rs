@@ -22,6 +22,10 @@ where
 {
   type Target = Num::RustType;
 
+  fn cel_rules(&self) -> Option<Arc<[CelRule]>> {
+    self.cel.clone()
+  }
+
   fn validate(
     &self,
     field_context: &FieldContext,

@@ -8,6 +8,10 @@ use proto_types::{field_descriptor_proto::Type, protovalidate::*};
 pub trait Validator<T>: Into<ProtoOption> {
   type Target;
 
+  fn cel_rules(&self) -> Option<Arc<[CelRule]>> {
+    None
+  }
+
   fn validate(
     &self,
     _field_context: &FieldContext,

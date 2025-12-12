@@ -6,11 +6,17 @@ pub use paste::paste;
 mod oneof;
 mod options;
 mod validators;
-use std::{collections::HashSet, marker::PhantomData, ops::Range, sync::LazyLock};
+use std::{
+  collections::{HashMap, HashSet},
+  marker::PhantomData,
+  ops::Range,
+  sync::{Arc, LazyLock},
+};
 mod field;
 mod file;
 mod message;
 mod optional;
+mod package;
 mod proto_enum;
 mod proto_type;
 mod rendering_utils;
@@ -23,6 +29,7 @@ pub use file::*;
 pub use message::*;
 pub use oneof::*;
 pub use options::*;
+pub use package::*;
 pub use proto_enum::*;
 pub use proto_type::*;
 use rendering_utils::*;

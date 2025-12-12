@@ -72,6 +72,24 @@ where
 {
   type Target = Vec<T::Target>;
 
+  fn cel_rules(&self) -> Option<Arc<[CelRule]>> {
+    let items_rules = self.items.as_ref().and_then(|i| i.cel_rules());
+    let vec_rules = self.cel.clone();
+
+    if items_rules.is_none() {
+      vec_rules
+    } else {
+      let all_rules: Vec<CelRule> = vec_rules
+        .iter()
+        .flat_map(|r| r.iter())
+        .chain(items_rules.iter().flat_map(|r| r.iter()))
+        .cloned()
+        .collect();
+
+      Some(all_rules.into())
+    }
+  }
+
   fn validate(
     &self,
     field_context: &FieldContext,

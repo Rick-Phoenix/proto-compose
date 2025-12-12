@@ -41,6 +41,22 @@ impl TypeInfo {
     }
   }
 
+  pub fn cel_rules_extractor(&self, validator: &ValidatorExpr) -> TokenStream2 {
+    let target_type = self.proto_field.validator_target_type();
+
+    let validation_expr = match validator {
+      ValidatorExpr::Call(call) => quote! { #call.build_validator() },
+
+      ValidatorExpr::Closure(closure) => {
+        quote! { <#target_type as ::prelude::ProtoValidator<#target_type>>::validator_from_closure(#closure) }
+      }
+    };
+
+    quote! {
+      #validation_expr.cel_rules()
+    }
+  }
+
   pub fn validator_tokens(
     &self,
     field_ident: &Ident,
@@ -59,7 +75,7 @@ impl TypeInfo {
 
     let argument = match &self.rust_type {
       RustType::Option(_) => quote! { self.#field_ident.as_ref() },
-      RustType::OptionBoxed(_) => quote! { self.#field_ident.as_ref() },
+      RustType::OptionBoxed(_) => quote! { self.#field_ident.as_deref() },
       RustType::Boxed(_) => quote! { &(*self.#field_ident) },
       RustType::Map(_) => quote! { Some(&self.#field_ident) },
       RustType::Vec(_) => quote! {  Some(&self.#field_ident)  },

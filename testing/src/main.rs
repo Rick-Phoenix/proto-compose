@@ -40,6 +40,8 @@ fn random_option() -> ProtoOption {
 
 #[proc_macro_impls::proto_module(file = "abc.proto", package = "myapp.v1")]
 mod inner {
+  use std::sync::Arc;
+
   use prelude::{cel_rule, CelProgram, CelRule, FieldContext, FieldKind, Validator, DEPRECATED};
   use proc_macro_impls::{
     proto_enum, proto_extension, proto_message, proto_oneof, proto_service, Extension, Service,
@@ -180,7 +182,10 @@ mod inner {
     #[proto(sint32, validate = numeric_validator())]
     sint32: i32,
 
-    #[proto(repeated(sint32), validate = |v| v.items(|it| it.gt(0).cel([ cel_rule!(id = "num.more_than_20", msg = "must be greater than 20", expr = "this > 20") ])))]
+    #[proto(repeated(sint32), validate = |v| v.items(|it| it.gt(0).cel([
+      cel_rule!(id = "num.more_than_20", msg = "must be greater than 20", expr = "this > 20"),
+      cel_rule!(id = "num.more_than_20", msg = "must be greater than 20", expr = "this > 20"),
+    ])))]
     pub sint32_repeated: Vec<i32>,
 
     #[proto(map(sint32, sint32), validate = |v| v.keys(|k| k.gt(0)).values(|vals| vals.gt(0)))]

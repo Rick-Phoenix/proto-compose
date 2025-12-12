@@ -3,7 +3,8 @@ use crate::*;
 pub fn message_schema_impls(
   struct_name: &Ident,
   message_attrs: &MessageAttrs,
-  fields_data: Vec<TokenStream2>,
+  entries_tokens: Vec<TokenStream2>,
+  fields_cel_rules: Vec<TokenStream2>,
 ) -> TokenStream2 {
   let MessageAttrs {
     reserved_names,
@@ -15,7 +16,7 @@ pub fn message_schema_impls(
     package,
     nested_messages,
     nested_enums,
-    validator,
+    validator: cel_rules,
     ..
   } = message_attrs;
 
@@ -30,7 +31,7 @@ pub fn message_schema_impls(
     nested_enums_tokens.extend(quote! { #ident::proto_schema(), });
   }
 
-  let validator_tokens = if let Some(call) = validator {
+  let cel_rules = if let Some(call) = cel_rules {
     quote! { #call }
   } else {
     quote! { vec![] }
@@ -48,6 +49,24 @@ pub fn message_schema_impls(
     }
 
     impl ::prelude::ProtoMessage for #struct_name {
+      fn cel_rules() -> Vec<Arc<[CelRule]>> {
+        use ::prelude::{ProtoValidator, Validator, ValidationResult, field_context::Violations};
+
+        let mut rules_agg = Vec::new();
+
+        #(
+          rules_agg.extend(#fields_cel_rules);
+        )*
+
+        let top_level_rules = #cel_rules;
+
+        if !top_level_rules.is_empty() {
+          rules_agg.push(top_level_rules.into());
+        }
+
+        rules_agg
+      }
+
       fn proto_path() -> ::prelude::ProtoPath {
         ::prelude::ProtoPath {
           name: #full_name,
@@ -73,8 +92,8 @@ pub fn message_schema_impls(
           options: #options_tokens,
           messages: vec![ #nested_messages_tokens ],
           enums: vec![ #nested_enums_tokens ],
-          entries: vec![ #(#fields_data,)* ],
-          cel_rules: #validator_tokens,
+          entries: vec![ #(#entries_tokens,)* ],
+          cel_rules: #cel_rules,
         };
 
         new_msg
