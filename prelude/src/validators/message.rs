@@ -2,6 +2,7 @@ use bon::Builder;
 use message_validator_builder::{IsUnset, SetIgnore, State};
 
 use super::*;
+use crate::field_context::Violations;
 
 impl<T: ProtoMessage, S: State> ValidatorBuilderFor<T> for MessageValidatorBuilder<S> {
   type Target = T;
@@ -15,15 +16,45 @@ impl<T: ProtoMessage, S: State> ValidatorBuilderFor<T> for MessageValidatorBuild
 impl<T: ProtoMessage> Validator<T> for MessageValidator {
   type Target = T;
 
-  // fn validate(&self, val: Option<&T>) -> Result<(), bool> {
-  //   if let Some(msg) = val {
-  //     todo!()
-  //   } else if self.required {
-  //     println!("Message is required");
-  //   }
-  //
-  //   Ok(())
-  // }
+  fn validate(
+    &self,
+    field_context: &FieldContext,
+    parent_elements: &mut Vec<FieldPathElement>,
+    val: Option<&Self::Target>,
+  ) -> Result<(), Vec<Violation>> {
+    let mut violations_agg: Vec<Violation> = Vec::new();
+    let violations = &mut violations_agg;
+
+    if let Some(val) = val {
+      parent_elements.push(FieldPathElement {
+        field_number: Some(field_context.tag),
+        field_name: Some(field_context.name.to_string()),
+        field_type: Some(Type::Message as i32),
+        key_type: field_context.key_type.map(|t| t as i32),
+        value_type: field_context.value_type.map(|t| t as i32),
+        subscript: field_context.subscript.clone(),
+      });
+
+      val
+        .nested_validate(parent_elements)
+        .push_violations(violations);
+
+      parent_elements.pop();
+    } else {
+      violations.add(
+        field_context,
+        parent_elements,
+        &REQUIRED_VIOLATION,
+        "is required",
+      );
+    }
+
+    if violations.is_empty() {
+      Ok(())
+    } else {
+      Err(violations_agg)
+    }
+  }
 }
 
 impl_into_option!(MessageValidator);

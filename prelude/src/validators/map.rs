@@ -128,6 +128,7 @@ where
   fn validate(
     &self,
     field_context: &FieldContext,
+    parent_elements: &mut Vec<FieldPathElement>,
     val: Option<&HashMap<K::Target, V::Target>>,
   ) -> Result<(), Vec<Violation>> {
     let mut violations_agg: Vec<Violation> = Vec::new();
@@ -137,6 +138,7 @@ where
       if let Some(min_pairs) = self.min_pairs && val.len() < min_pairs {
         violations.add(
           field_context,
+          parent_elements,
           &MAP_MIN_PAIRS_VIOLATION,
           &format!("must contain at least {min_pairs} key-value pairs")
         );
@@ -145,42 +147,35 @@ where
       if let Some(max_pairs) = self.max_pairs && val.len() > max_pairs {
         violations.add(
           field_context,
+          parent_elements,
           &MAP_MAX_PAIRS_VIOLATION,
           &format!("cannot contain more than {max_pairs} key-value pairs")
         );
       }
 
-      let key_validator = self
-        .keys
-        .as_ref()
-        .filter(|_| !val.is_empty())
-        .map(|v| {
-          let mut ctx = field_context.clone();
-          ctx.kind = FieldKind::MapKey;
-          (v, ctx)
-        });
+      let key_validator = self.keys.as_ref().filter(|_| !val.is_empty());
 
-      let value_validator = self
-        .values
-        .as_ref()
-        .filter(|_| !val.is_empty())
-        .map(|v| {
-          let mut ctx = field_context.clone();
-          ctx.kind = FieldKind::MapValue;
-          (v, ctx)
-        });
+      let value_validator = self.values.as_ref().filter(|_| !val.is_empty());
 
       for (k, v) in val {
-        if let Some((validator, ctx)) = &key_validator {
+        if let Some(validator) = &key_validator {
+          let mut ctx = field_context.clone();
+          ctx.kind = FieldKind::MapKey;
+          ctx.subscript = Some(k.clone().into_subscript());
+
           validator
-            .validate(ctx, Some(k))
-            .push_violations_with_subscript(violations, k);
+            .validate(&ctx, parent_elements, Some(k))
+            .push_violations(violations);
         }
 
-        if let Some((validator, ctx)) = &value_validator {
+        if let Some(validator) = &value_validator {
+          let mut ctx = field_context.clone();
+          ctx.kind = FieldKind::MapValue;
+          ctx.subscript = Some(k.clone().into_subscript());
+
           validator
-            .validate(ctx, Some(v))
-            .push_violations_with_subscript(violations, k);
+            .validate(&ctx, parent_elements, Some(v))
+            .push_violations(violations);
         }
       }
     }

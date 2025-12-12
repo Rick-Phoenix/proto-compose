@@ -4,13 +4,16 @@ pub trait Violations {
   fn add(
     &mut self,
     field_context: &FieldContext,
+    parent_elements: &[FieldPathElement],
     violation_data: &ViolationData,
     error_message: &str,
   );
+
   fn add_with_custom_id(
     &mut self,
     rule_id: &str,
     field_context: &FieldContext,
+    parent_elements: &[FieldPathElement],
     violation_data: &ViolationData,
     error_message: &str,
   );
@@ -20,10 +23,16 @@ impl Violations for Vec<Violation> {
   fn add(
     &mut self,
     field_context: &FieldContext,
+    parent_elements: &[FieldPathElement],
     violation_data: &ViolationData,
     error_message: &str,
   ) {
-    let violation = new_violation(field_context, violation_data, error_message);
+    let violation = new_violation(
+      field_context,
+      parent_elements,
+      violation_data,
+      error_message,
+    );
     self.push(violation);
   }
 
@@ -31,44 +40,29 @@ impl Violations for Vec<Violation> {
     &mut self,
     rule_id: &str,
     field_context: &FieldContext,
+    parent_elements: &[FieldPathElement],
     violation_data: &ViolationData,
     error_message: &str,
   ) {
-    let violation =
-      new_violation_with_custom_id(rule_id, field_context, violation_data, error_message);
+    let violation = new_violation_with_custom_id(
+      rule_id,
+      field_context,
+      parent_elements,
+      violation_data,
+      error_message,
+    );
     self.push(violation);
   }
 }
 
 pub trait ValidationResult {
   fn push_violations(self, violations: &mut Vec<Violation>);
-
-  fn push_violations_with_subscript<S>(self, violations: &mut Vec<Violation>, subscript: &S)
-  where
-    S: Clone + IntoSubscript;
 }
 
 impl ValidationResult for Result<(), Vec<Violation>> {
   fn push_violations(self, violations: &mut Vec<Violation>) {
     if let Err(new_violations) = self {
       violations.extend(new_violations);
-    }
-  }
-
-  fn push_violations_with_subscript<S>(self, violations: &mut Vec<Violation>, subscript: &S)
-  where
-    S: Clone + IntoSubscript,
-  {
-    if let Err(new_violations) = self {
-      let subscript = subscript.clone().into_subscript();
-
-      for mut v in new_violations {
-        if let Some(elements) = &mut v.field && let Some(element) = elements.elements.last_mut() {
-          element.subscript = Some(subscript.clone());
-        }
-
-        violations.push(v);
-      }
     }
   }
 }
@@ -83,12 +77,12 @@ impl IntoSubscript for Subscript {
 #[derive(Clone, Debug)]
 pub struct FieldContext<'a> {
   pub name: &'a str,
-  pub tag: u32,
-  pub parent_elements: &'a [FieldPathElement],
+  pub tag: i32,
   pub key_type: Option<Type>,
   pub value_type: Option<Type>,
   pub kind: FieldKind,
   pub field_type: Type,
+  pub subscript: Option<Subscript>,
 }
 
 #[derive(Clone, Default, Debug, Copy, PartialEq, Eq)]
@@ -118,18 +112,19 @@ pub struct ValidationContext {
 fn create_violation_core(
   custom_rule_id: Option<&str>,
   field_context: &FieldContext,
+  parent_elements: &[FieldPathElement],
   violation_data: &ViolationData,
   error_message: &str,
 ) -> Violation {
-  let mut field_elements = field_context.parent_elements.to_vec();
+  let mut field_elements = parent_elements.to_vec();
 
   let current_elem = FieldPathElement {
     field_type: Some(field_context.field_type as i32),
     field_name: Some(field_context.name.to_string()),
     key_type: field_context.key_type.map(|t| t as i32),
     value_type: field_context.value_type.map(|t| t as i32),
-    field_number: Some(field_context.tag as i32),
-    subscript: None,
+    field_number: Some(field_context.tag),
+    subscript: field_context.subscript.clone(),
   };
 
   field_elements.push(current_elem);
@@ -162,17 +157,31 @@ fn create_violation_core(
 
 pub(crate) fn new_violation(
   field_context: &FieldContext,
+  parent_elements: &[FieldPathElement],
   violation_data: &ViolationData,
   error_message: &str,
 ) -> Violation {
-  create_violation_core(None, field_context, violation_data, error_message)
+  create_violation_core(
+    None,
+    field_context,
+    parent_elements,
+    violation_data,
+    error_message,
+  )
 }
 
 pub(crate) fn new_violation_with_custom_id(
   rule_id: &str,
   field_context: &FieldContext,
+  parent_elements: &[FieldPathElement],
   violation_data: &ViolationData,
   error_message: &str,
 ) -> Violation {
-  create_violation_core(Some(rule_id), field_context, violation_data, error_message)
+  create_violation_core(
+    Some(rule_id),
+    field_context,
+    parent_elements,
+    violation_data,
+    error_message,
+  )
 }

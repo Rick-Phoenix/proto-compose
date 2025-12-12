@@ -3,7 +3,10 @@ mod common_strings;
 use std::{fmt::Debug, hash::Hash, sync::Arc};
 
 use common_strings::*;
-use proto_types::{field_descriptor_proto::Type, protovalidate::*};
+use proto_types::{
+  field_descriptor_proto::Type,
+  protovalidate::{field_path_element::Subscript, *},
+};
 
 pub trait Validator<T>: Into<ProtoOption> {
   type Target;
@@ -11,6 +14,7 @@ pub trait Validator<T>: Into<ProtoOption> {
   fn validate(
     &self,
     _field_context: &FieldContext,
+    _parent_elements: &mut Vec<FieldPathElement>,
     _val: Option<&Self::Target>,
   ) -> Result<(), Vec<Violation>> {
     Ok(())
@@ -117,8 +121,11 @@ mod macros {
   macro_rules! insert_cel_rules {
     ($validator:ident, $values:ident) => {
       if let Some(cel_rules) = $validator.cel {
-        let rule_values: Vec<OptionValue> =
-          cel_rules.iter().cloned().map(OptionValue::from).collect();
+        let rule_values: Vec<OptionValue> = cel_rules
+          .iter()
+          .cloned()
+          .map(OptionValue::from)
+          .collect();
         $values.push((CEL.clone(), OptionValue::List(rule_values.into())));
       }
     };

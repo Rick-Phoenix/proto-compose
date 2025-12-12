@@ -75,28 +75,24 @@ where
   fn validate(
     &self,
     field_context: &FieldContext,
+    parent_elements: &mut Vec<FieldPathElement>,
     val: Option<&Vec<T::Target>>,
   ) -> Result<(), Vec<Violation>> {
     let mut violations_agg: Vec<Violation> = Vec::new();
     let violations = &mut violations_agg;
 
     if let Some(val) = val {
-      let items_validator = self
-        .items
-        .as_ref()
-        .filter(|_| !val.is_empty())
-        .map(|v| {
-          let mut ctx = field_context.clone();
-          ctx.kind = FieldKind::RepeatedItem;
-
-          (v, ctx)
-        });
+      let items_validator = self.items.as_ref().filter(|_| !val.is_empty());
 
       for (i, value) in val.iter().enumerate() {
-        if let Some((validator, ctx)) = &items_validator {
+        if let Some(validator) = &items_validator {
+          let mut ctx = field_context.clone();
+          ctx.kind = FieldKind::RepeatedItem;
+          ctx.subscript = Some(Subscript::Index(i as u64));
+
           validator
-            .validate(ctx, Some(value))
-            .push_violations_with_subscript(violations, &Subscript::Index(i as u64));
+            .validate(&ctx, parent_elements, Some(value))
+            .push_violations(violations);
         }
       }
     }

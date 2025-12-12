@@ -40,10 +40,11 @@ fn random_option() -> ProtoOption {
 
 #[proc_macro_impls::proto_module(file = "abc.proto", package = "myapp.v1")]
 mod inner {
-  use prelude::{cel_rule, CelRule, FieldKind, Validator, DEPRECATED};
+  use prelude::{cel_rule, CelRule, FieldContext, FieldKind, Validator, DEPRECATED};
   use proc_macro_impls::{
     proto_enum, proto_extension, proto_message, proto_oneof, proto_service, Extension, Service,
   };
+  use proto_types::{field_descriptor_proto::Type, protovalidate::FieldPathElement};
 
   use super::*;
 

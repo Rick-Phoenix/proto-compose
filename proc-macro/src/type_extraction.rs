@@ -67,7 +67,7 @@ impl TypeInfo {
     };
 
     quote! {
-      #validation_expr.validate(&#field_context_tokens, #argument).push_violations(&mut violations);
+      #validation_expr.validate(&#field_context_tokens, parent_elements, #argument).push_violations(&mut violations);
     }
   }
 

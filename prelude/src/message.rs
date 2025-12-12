@@ -1,8 +1,21 @@
+use proto_types::protovalidate::{FieldPathElement, Violation};
+
 use crate::{validators::CelRule, *};
 
 pub trait ProtoMessage {
   fn proto_path() -> ProtoPath;
   fn proto_schema() -> Message;
+
+  fn validate(&self) -> Result<(), Vec<Violation>> {
+    Ok(())
+  }
+
+  fn nested_validate(
+    &self,
+    _parent_messages: &mut Vec<FieldPathElement>,
+  ) -> Result<(), Vec<Violation>> {
+    Ok(())
+  }
 }
 
 impl<T> ProtoMessage for Box<T>
@@ -70,7 +83,10 @@ impl Message {
       .map(|rule| rule.into())
       .collect();
 
-    let options = self.options.iter().chain(cel_rules_options.iter());
+    let options = self
+      .options
+      .iter()
+      .chain(cel_rules_options.iter());
 
     Some(render_normal_options(options))
   }

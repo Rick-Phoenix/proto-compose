@@ -95,7 +95,7 @@ pub fn process_message_derive_shadow(
     fields_tokens.push(field_tokens);
 
     if let Some(validator) = &field_attrs.validator {
-      let field_tag = field_attrs.tag as u32;
+      let field_tag = field_attrs.tag;
       let field_name = &field_attrs.name;
       let field_type = type_info.proto_field.proto_kind_tokens();
 
@@ -106,8 +106,8 @@ pub fn process_message_derive_shadow(
           field_type: #field_type,
           key_type: None,
           value_type: None,
+          subscript: None,
           kind: Default::default(),
-          parent_elements: &[]
         }
       };
 
@@ -173,6 +173,14 @@ pub fn process_message_derive_shadow(
 
     impl #shadow_struct_ident {
       pub fn validate(&self) -> Result<(), Vec<::proto_types::protovalidate::Violation>> {
+        use ::prelude::{ProtoValidator, Validator, ValidationResult};
+
+        let mut parent_elements: Vec<FieldPathElement> = Vec::new();
+
+        self.nested_validate(&mut parent_elements)
+      }
+
+      pub fn nested_validate(&self, parent_elements: &mut Vec<FieldPathElement>) -> Result<(), Vec<::proto_types::protovalidate::Violation>> {
         use ::prelude::{ProtoValidator, Validator, ValidationResult};
 
         let mut violations = Vec::new();
