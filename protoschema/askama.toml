@@ -1,6 +1,0 @@
-[[escaper]]
-path = "askama::filters::Text"
-extensions = ["j2"]
-
-[general]
-whitespace = "suppress"

@@ -218,15 +218,6 @@ dependencies = [
 
 [[package]]
 name = "convert_case"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "baaaa0ecca5b51987b9423ccdc971514dd8b0bb7b4060b983d3664dad3f1f89f"
-dependencies = [
- "unicode-segmentation",
-]
-
-[[package]]
-name = "convert_case"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db05ffb6856bf0ecdf6367558a76a0e8a77b1713044eb92845c692100ed50190"
@@ -478,6 +469,7 @@ dependencies = [
  "askama",
  "bon",
  "bytes",
+ "cel",
  "paste",
  "proto-types",
  "regex",
@@ -498,7 +490,7 @@ dependencies = [
 name = "proc-macro-impls"
 version = "0.1.0"
 dependencies = [
- "convert_case 0.9.0",
+ "convert_case",
  "itertools",
  "proc-macro2",
  "proto-types",
@@ -548,20 +540,6 @@ dependencies = [
  "document-features",
  "paste",
  "prost",
- "thiserror 2.0.17",
-]
-
-[[package]]
-name = "protoschema"
-version = "0.1.9"
-dependencies = [
- "askama",
- "bon",
- "convert_case 0.8.0",
- "document-features",
- "paste",
- "proto-types",
- "regex",
  "thiserror 2.0.17",
 ]
 
