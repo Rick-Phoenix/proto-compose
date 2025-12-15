@@ -27,13 +27,13 @@ impl TypeContext {
     self.proto_field.default_from_proto(&base_ident)
   }
 
-  pub fn field_validator_schema(&self, validator: &ValidatorExpr) -> TokenStream2 {
+  pub fn field_validator_schema(&self, validator: &CallOrClosure) -> TokenStream2 {
     let target_type = self.proto_field.validator_target_type();
 
     let validator_expr = match validator {
-      ValidatorExpr::Call(call) => quote! { #call.build_validator() },
+      CallOrClosure::Call(call) => quote! { #call.build_validator() },
 
-      ValidatorExpr::Closure(closure) => {
+      CallOrClosure::Closure(closure) => {
         quote! { <#target_type as ::prelude::ProtoValidator<#target_type>>::validator_from_closure(#closure) }
       }
     };
@@ -43,13 +43,13 @@ impl TypeContext {
     }
   }
 
-  pub fn cel_rules_extractor(&self, validator: &ValidatorExpr) -> TokenStream2 {
+  pub fn cel_rules_extractor(&self, validator: &CallOrClosure) -> TokenStream2 {
     let target_type = self.proto_field.validator_target_type();
 
     let validation_expr = match validator {
-      ValidatorExpr::Call(call) => quote! { #call.build_validator() },
+      CallOrClosure::Call(call) => quote! { #call.build_validator() },
 
-      ValidatorExpr::Closure(closure) => {
+      CallOrClosure::Closure(closure) => {
         quote! { <#target_type as ::prelude::ProtoValidator<#target_type>>::validator_from_closure(#closure) }
       }
     };
@@ -63,14 +63,14 @@ impl TypeContext {
     &self,
     field_ident: &Ident,
     field_context_tokens: TokenStream2,
-    validator: &ValidatorExpr,
+    validator: &CallOrClosure,
   ) -> TokenStream2 {
     let target_type = self.proto_field.validator_target_type();
 
     let validation_expr = match validator {
-      ValidatorExpr::Call(call) => quote! { #call.build_validator() },
+      CallOrClosure::Call(call) => quote! { #call.build_validator() },
 
-      ValidatorExpr::Closure(closure) => {
+      CallOrClosure::Closure(closure) => {
         quote! { <#target_type as ::prelude::ProtoValidator<#target_type>>::validator_from_closure(#closure) }
       }
     };

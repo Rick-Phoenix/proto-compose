@@ -50,7 +50,7 @@ pub fn process_enum_derive_prost(
   let mut used_tags: Vec<i32> = Vec::new();
   for variant in variants.iter() {
     if let Some((_, expr)) = &variant.discriminant {
-      let num = extract_i32(expr)?;
+      let num = expr.as_int::<i32>()?;
 
       used_tags.push(num);
     }
@@ -84,7 +84,7 @@ pub fn process_enum_derive_prost(
     });
 
     let tag = if let Some((_, expr)) = &variant.discriminant {
-      let tag = extract_i32(expr)?;
+      let tag = expr.as_int::<i32>()?;
 
       if i == 0 && tag != 0 {
         bail!(

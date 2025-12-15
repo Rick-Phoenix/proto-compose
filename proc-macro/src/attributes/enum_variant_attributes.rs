@@ -1,3 +1,5 @@
+use syn_utils::filter_attributes;
+
 use crate::*;
 
 pub struct EnumVariantAttrs {
@@ -8,38 +10,30 @@ pub struct EnumVariantAttrs {
 pub fn process_derive_enum_variants_attrs(
   enum_name: &str,
   variant_ident: &Ident,
-  attrs: &Vec<Attribute>,
+  attrs: &[Attribute],
   no_prefix: bool,
 ) -> Result<EnumVariantAttrs, Error> {
   let mut options: Option<Expr> = None;
   let mut name: Option<String> = None;
 
-  for attr in attrs {
-    if !attr.path().is_ident("proto") {
-      continue;
-    }
+  for arg in filter_attributes(attrs, &["proto"])? {
+    match arg {
+      Meta::NameValue(nv) => {
+        let ident = nv.path.require_ident()?.to_string();
 
-    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
-
-    for meta in args.inner {
-      match meta {
-        Meta::NameValue(nv) => {
-          let ident = nv.path.require_ident()?.to_string();
-
-          match ident.as_str() {
-            "name" => {
-              name = Some(extract_string_lit(&nv.value)?);
-            }
-            "options" => {
-              options = Some(nv.value);
-            }
-            _ => bail!(nv.path, "Unknown attribute `{ident}`"),
-          };
-        }
-        Meta::List(_) => {}
-        Meta::Path(_) => {}
-      };
-    }
+        match ident.as_str() {
+          "name" => {
+            name = Some(nv.value.as_string()?);
+          }
+          "options" => {
+            options = Some(nv.value);
+          }
+          _ => bail!(nv.path, "Unknown attribute `{ident}`"),
+        };
+      }
+      Meta::List(_) => {}
+      Meta::Path(_) => {}
+    };
   }
 
   let name = if let Some(name) = name {

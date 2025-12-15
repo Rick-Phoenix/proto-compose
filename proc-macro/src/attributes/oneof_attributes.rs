@@ -11,10 +11,7 @@ pub struct OneofAttrs {
   pub backend: Backend,
 }
 
-pub fn process_oneof_attrs(
-  enum_ident: &Ident,
-  attrs: &Vec<Attribute>,
-) -> Result<OneofAttrs, Error> {
+pub fn process_oneof_attrs(enum_ident: &Ident, attrs: &[Attribute]) -> Result<OneofAttrs, Error> {
   let mut options: Option<Expr> = None;
   let mut name: Option<String> = None;
   let mut required = false;
@@ -24,56 +21,44 @@ pub fn process_oneof_attrs(
   let mut shadow_derives: Option<MetaList> = None;
   let mut backend = Backend::default();
 
-  for attr in attrs {
-    if !attr.path().is_ident("proto") {
-      continue;
-    }
+  for arg in filter_attributes(attrs, &["proto"])? {
+    match arg {
+      Meta::Path(path) => {
+        let ident = path.require_ident()?.to_string();
 
-    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
+        match ident.as_str() {
+          "required" => required = true,
+          "direct" => direct = true,
+          _ => bail!(path, "Unknown attribute `{ident}`"),
+        };
+      }
+      Meta::List(list) => {
+        let ident = list.path.require_ident()?.to_string();
 
-    for arg in args.inner {
-      match arg {
-        Meta::Path(path) => {
-          let ident = path.require_ident()?.to_string();
+        match ident.as_str() {
+          "derive" => shadow_derives = Some(list),
+          _ => bail!(list, "Unknown attribute `{ident}`"),
+        };
+      }
+      Meta::NameValue(nv) => {
+        let ident = nv.path.require_ident()?.to_string();
 
-          match ident.as_str() {
-            "required" => required = true,
-            "direct" => direct = true,
-            _ => bail!(path, "Unknown attribute `{ident}`"),
-          };
-        }
-        Meta::List(list) => {
-          let ident = list.path.require_ident()?.to_string();
-
-          match ident.as_str() {
-            "derive" => shadow_derives = Some(list),
-            _ => bail!(list, "Unknown attribute `{ident}`"),
-          };
-        }
-        Meta::NameValue(nv) => {
-          let ident = nv.path.require_ident()?.to_string();
-
-          match ident.as_str() {
-            "backend" => {
-              backend = Backend::from_expr(&nv.value)?;
-            }
-            "options" => {
-              options = Some(nv.value);
-            }
-            "from_proto" => {
-              let expr = parse_path_or_closure(nv.value)?;
-
-              from_proto = Some(expr);
-            }
-            "into_proto" => {
-              let expr = parse_path_or_closure(nv.value)?;
-
-              into_proto = Some(expr);
-            }
-            "name" => name = Some(extract_string_lit(&nv.value)?),
-            _ => bail!(nv.path, "Unknown attribute `{ident}`"),
-          };
-        }
+        match ident.as_str() {
+          "backend" => {
+            backend = Backend::from_expr(&nv.value)?;
+          }
+          "options" => {
+            options = Some(nv.value);
+          }
+          "from_proto" => {
+            from_proto = Some(nv.value.as_path_or_closure()?);
+          }
+          "into_proto" => {
+            into_proto = Some(nv.value.as_path_or_closure()?);
+          }
+          "name" => name = Some(nv.value.as_string()?),
+          _ => bail!(nv.path, "Unknown attribute `{ident}`"),
+        };
       }
     }
   }

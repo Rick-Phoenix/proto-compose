@@ -85,7 +85,7 @@ impl Parse for ReservedNumbers {
     for item in items {
       if let Expr::Range(range_expr) = &item {
         let start = if let Some(start_expr) = &range_expr.start {
-          extract_i32(start_expr)?
+          start_expr.as_int::<i32>()?
         } else {
           0
         };

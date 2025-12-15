@@ -1,3 +1,5 @@
+use syn_utils::AsNamedField;
+
 use crate::*;
 
 pub fn process_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, Error> {
@@ -43,35 +45,32 @@ pub fn process_message_derive_shadow(
   let mut cel_rules_collection: Vec<TokenStream2> = Vec::new();
 
   for (src_field, dst_field) in orig_struct_fields.zip(shadow_struct_fields) {
-    let src_field_ident = src_field
-      .ident
-      .as_ref()
-      .ok_or(error!(&src_field, "Expected a named field"))?;
+    let src_field_ident = src_field.require_ident()?;
 
     let rust_type = TypeInfo::from_type(&src_field.ty)?;
 
-    let field_data = process_derive_field_attrs(src_field_ident, &rust_type, &src_field.attrs)?;
+    let field_attrs =
+      match process_derive_field_attrs(src_field_ident, &rust_type, &src_field.attrs)? {
+        FieldAttrData::Ignored { from_proto } => {
+          ignored_fields.push(src_field_ident.clone());
 
-    let field_attrs = match field_data {
-      FieldAttrData::Ignored { from_proto } => {
-        ignored_fields.push(src_field.ident.clone().unwrap());
+          if message_attrs.from_proto.is_none() {
+            let from_proto_expr = field_from_proto_expression(FromProto {
+              custom_expression: &from_proto,
+              kind: FieldConversionKind::StructField {
+                ident: src_field_ident,
+              },
+              type_info: None,
+            })?;
 
-        if message_attrs.from_proto.is_none() {
-          let from_proto_expr = field_from_proto_expression(FromProto {
-            custom_expression: &from_proto,
-            kind: FieldConversionKind::StructField {
-              ident: src_field_ident,
-            },
-            type_info: None,
-          })?;
+            from_proto_body.extend(from_proto_expr);
+          }
 
-          from_proto_body.extend(from_proto_expr);
+          continue;
         }
 
-        continue;
-      }
-      FieldAttrData::Normal(field_attrs) => *field_attrs,
-    };
+        FieldAttrData::Normal(field_attrs) => *field_attrs,
+      };
 
     let type_ctx = TypeContext::from_type(rust_type, field_attrs.proto_field.clone())?;
 
@@ -294,33 +293,24 @@ pub fn process_message_derive_direct(
   let mut fields_data: Vec<TokenStream2> = Vec::new();
 
   for src_field in item.fields.iter_mut() {
-    let src_field_ident = src_field
-      .ident
-      .as_ref()
-      .ok_or(error!(&src_field, "Expected a named field"))?;
+    let src_field_ident = src_field.require_ident()?;
 
     let rust_type = TypeInfo::from_type(&src_field.ty)?;
 
-    let field_data = process_derive_field_attrs(src_field_ident, &rust_type, &src_field.attrs)?;
+    let field_attrs =
+      match process_derive_field_attrs(src_field_ident, &rust_type, &src_field.attrs)? {
+        FieldAttrData::Ignored { .. } => {
+          bail!(src_field, "Fields cannot be ignored in a direct impl")
+        }
 
-    let field_attrs = match field_data {
-      FieldAttrData::Ignored { .. } => {
-        return Err(error!(
-          src_field,
-          "Fields cannot be ignored in a direct impl"
-        ))
-      }
-      FieldAttrData::Normal(attrs) => *attrs,
-    };
+        FieldAttrData::Normal(attrs) => *attrs,
+      };
 
     let type_ctx = TypeContext::from_type(rust_type, field_attrs.proto_field.clone())?;
 
     match type_ctx.rust_type.type_.as_ref() {
       RustType::Box(inner) => {
-        return Err(error!(
-          inner,
-          "Boxed messages must be optional in a direct impl"
-        ))
+        bail!(inner, "Boxed messages must be optional in a direct impl")
       }
       RustType::Option(inner) => {
         if inner.is_option()
@@ -329,7 +319,7 @@ pub fn process_message_derive_direct(
             ProtoField::Single(ProtoType::Message { is_boxed: true, .. })
           )
         {
-          return Err(error!(inner, "Must be a boxed message"));
+          bail!(inner, "Must be a boxed message");
         }
       }
       RustType::Other(inner) => {
@@ -337,10 +327,10 @@ pub fn process_message_derive_direct(
           type_ctx.proto_field,
           ProtoField::Single(ProtoType::Message { .. })
         ) {
-          return Err(error!(
+          bail!(
             &inner.path,
             "Messages must be wrapped in Option in direct impls"
-          ));
+          );
         }
       }
       _ => {}

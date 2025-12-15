@@ -66,7 +66,7 @@ pub fn process_extension_derive(
 
     match ident.as_str() {
       "target" => {
-        let path = extract_path(&arg.value)?;
+        let path = arg.value.as_path()?;
         target = Some(ExtendTarget::from_ident(path.require_ident()?)?);
       }
       _ => bail!(arg, "Unknown attribute `{ident}`"),

@@ -3,7 +3,7 @@ use crate::*;
 #[derive(Clone)]
 pub struct FieldAttrs {
   pub tag: i32,
-  pub validator: Option<ValidatorExpr>,
+  pub validator: Option<CallOrClosure>,
   pub options: Option<Expr>,
   pub name: String,
   pub proto_field: ProtoField,
@@ -17,18 +17,12 @@ pub enum FieldAttrData {
   Normal(Box<FieldAttrs>),
 }
 
-#[derive(Clone)]
-pub enum ValidatorExpr {
-  Closure(ExprClosure),
-  Call(ExprCall),
-}
-
 pub fn process_derive_field_attrs(
   original_name: &Ident,
   type_info: &TypeInfo,
-  attrs: &Vec<Attribute>,
+  attrs: &[Attribute],
 ) -> Result<FieldAttrData, Error> {
-  let mut validator: Option<ValidatorExpr> = None;
+  let mut validator: Option<CallOrClosure> = None;
   let mut tag: Option<i32> = None;
   let mut options: Option<Expr> = None;
   let mut name: Option<String> = None;
@@ -39,131 +33,114 @@ pub fn process_derive_field_attrs(
 
   let mut oneof_attrs: Vec<MetaList> = Vec::new();
 
-  for attr in attrs {
-    if !attr.path().is_ident("proto") {
-      continue;
-    }
+  for arg in filter_attributes(attrs, &["proto"])? {
+    match arg {
+      Meta::NameValue(nv) => {
+        let ident = nv.path.require_ident()?.to_string();
 
-    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
+        match ident.as_str() {
+          "options" => {
+            options = Some(nv.value);
+          }
 
-    for meta in args.inner {
-      match meta {
-        Meta::NameValue(nv) => {
-          let ident = nv.path.require_ident()?.to_string();
+          "validate" => {
+            validator = Some(nv.value.as_call_or_closure()?);
+          }
+          "from_proto" => {
+            from_proto = Some(nv.value.as_path_or_closure()?);
+          }
+          "into_proto" => {
+            into_proto = Some(nv.value.as_path_or_closure()?);
+          }
+          "tag" => {
+            tag = Some(nv.value.as_int::<i32>()?);
+          }
+          "name" => {
+            name = Some(nv.value.as_string()?);
+          }
+          _ => bail!(nv.path, "Unknown attribute `{ident}`"),
+        };
+      }
+      Meta::List(list) => {
+        let ident = list.path.require_ident()?.to_string();
 
-          match ident.as_str() {
-            "options" => {
-              options = Some(nv.value);
+        match ident.as_str() {
+          "oneof" => {
+            oneof_attrs.push(list);
+          }
+
+          "repeated" => {
+            let args = list.parse_args::<Meta>()?;
+            let span = args.span();
+
+            let fallback = if let RustType::Vec(inner) = type_info.type_.as_ref() {
+              inner.as_path()
+            } else {
+              None
+            };
+
+            let inner = ProtoType::from_meta(args, fallback.as_ref())?
+              .ok_or(error_with_span!(span, "Missing inner type"))?;
+
+            proto_field = Some(ProtoField::Repeated(inner));
+          }
+
+          "optional" => {
+            let args = list.parse_args::<Meta>()?;
+            let span = args.span();
+
+            let fallback = if let RustType::Option(inner) = type_info.type_.as_ref() {
+              inner.as_path()
+            } else {
+              None
+            };
+
+            let inner = ProtoType::from_meta(args, fallback.as_ref())?
+              .ok_or(error_with_span!(span, "Missing inner type"))?;
+
+            proto_field = Some(ProtoField::Optional(inner));
+          }
+
+          "map" => {
+            let parser = |input: ParseStream| parse_map_with_context(input, &type_info.type_);
+
+            let map = parser.parse2(list.tokens)?;
+
+            proto_field = Some(ProtoField::Map(map));
+          }
+
+          _ => {
+            let list_span = list.span();
+            let fallback = type_info.inner().as_path();
+
+            if let Some(field_info) = ProtoType::from_meta_list(&ident, list, fallback.as_ref())? {
+              proto_field = Some(ProtoField::Single(field_info));
+            } else {
+              return Err(error_with_span!(list_span, "Unknown attribute `{ident}`"));
             }
+          }
+        };
+      }
+      Meta::Path(path) => {
+        let ident = path.require_ident()?.to_string();
 
-            "validate" => {
-              validator = match nv.value {
-                Expr::Closure(closure) => Some(ValidatorExpr::Closure(closure)),
-                Expr::Call(call) => Some(ValidatorExpr::Call(call)),
-                _ => bail!(nv.value, "Expected a closure or a function call"),
-              };
+        match ident.as_str() {
+          "ignore" => is_ignored = true,
+          "oneof" => {}
+
+          _ => {
+            let fallback = type_info.inner().as_path();
+            let span = path.span();
+
+            if let Some(parsed_kind) = ProtoType::from_ident(&ident, span, fallback.as_ref())? {
+              proto_field = Some(ProtoField::Single(parsed_kind));
+            } else {
+              return Err(error_with_span!(span, "Unknown attribute `{ident}`"));
             }
-            "from_proto" => {
-              let value = parse_path_or_closure(nv.value)?;
-
-              from_proto = Some(value);
-            }
-            "into_proto" => {
-              let value = parse_path_or_closure(nv.value)?;
-
-              into_proto = Some(value);
-            }
-            "tag" => {
-              tag = Some(extract_i32(&nv.value)?);
-            }
-            "name" => {
-              name = Some(extract_string_lit(&nv.value)?);
-            }
-            _ => bail!(nv.path, "Unknown attribute `{ident}`"),
-          };
-        }
-        Meta::List(list) => {
-          let ident = list.path.require_ident()?.to_string();
-
-          match ident.as_str() {
-            "oneof" => {
-              oneof_attrs.push(list);
-            }
-
-            "repeated" => {
-              let args = list.parse_args::<Meta>()?;
-              let span = args.span();
-
-              let fallback = if let RustType::Vec(inner) = type_info.type_.as_ref() {
-                inner.as_path()
-              } else {
-                None
-              };
-
-              let inner = ProtoType::from_meta(args, fallback.as_ref())?
-                .ok_or(error_with_span!(span, "Missing inner type"))?;
-
-              proto_field = Some(ProtoField::Repeated(inner));
-            }
-
-            "optional" => {
-              let args = list.parse_args::<Meta>()?;
-              let span = args.span();
-
-              let fallback = if let RustType::Option(inner) = type_info.type_.as_ref() {
-                inner.as_path()
-              } else {
-                None
-              };
-
-              let inner = ProtoType::from_meta(args, fallback.as_ref())?
-                .ok_or(error_with_span!(span, "Missing inner type"))?;
-
-              proto_field = Some(ProtoField::Optional(inner));
-            }
-
-            "map" => {
-              let parser = |input: ParseStream| parse_map_with_context(input, &type_info.type_);
-
-              let map = parser.parse2(list.tokens)?;
-
-              proto_field = Some(ProtoField::Map(map));
-            }
-
-            _ => {
-              let list_span = list.span();
-              let fallback = type_info.inner().as_path();
-
-              if let Some(field_info) = ProtoType::from_meta_list(&ident, list, fallback.as_ref())?
-              {
-                proto_field = Some(ProtoField::Single(field_info));
-              } else {
-                return Err(error_with_span!(list_span, "Unknown attribute `{ident}`"));
-              }
-            }
-          };
-        }
-        Meta::Path(path) => {
-          let ident = path.require_ident()?.to_string();
-
-          match ident.as_str() {
-            "ignore" => is_ignored = true,
-            "oneof" => {}
-
-            _ => {
-              let fallback = type_info.inner().as_path();
-              let span = path.span();
-
-              if let Some(parsed_kind) = ProtoType::from_ident(&ident, span, fallback.as_ref())? {
-                proto_field = Some(ProtoField::Single(parsed_kind));
-              } else {
-                return Err(error_with_span!(span, "Unknown attribute `{ident}`"));
-              }
-            }
-          };
-        }
-      };
-    }
+          }
+        };
+      }
+    };
   }
 
   if is_ignored {

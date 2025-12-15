@@ -6,32 +6,24 @@ pub struct ModuleEnumAttrs {
 
 pub fn process_module_enum_attrs(
   rust_name: &Ident,
-  attrs: &Vec<Attribute>,
+  attrs: &[Attribute],
 ) -> Result<ModuleEnumAttrs, Error> {
   let mut proto_name: Option<String> = None;
 
-  for attr in attrs {
-    if !attr.path().is_ident("proto") {
-      continue;
-    }
+  for arg in filter_attributes(attrs, &["proto"])? {
+    match arg {
+      Meta::List(_) => {}
+      Meta::NameValue(nv) => {
+        let ident = get_ident_or_continue!(nv.path);
 
-    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
-
-    for arg in args.inner {
-      match arg {
-        Meta::List(_) => {}
-        Meta::NameValue(nv) => {
-          let ident = get_ident_or_continue!(nv.path);
-
-          match ident.as_str() {
-            "name" => {
-              proto_name = Some(extract_string_lit(&nv.value)?);
-            }
-            _ => {}
-          };
-        }
-        Meta::Path(_) => {}
+        match ident.as_str() {
+          "name" => {
+            proto_name = Some(nv.value.as_string()?);
+          }
+          _ => {}
+        };
       }
+      Meta::Path(_) => {}
     }
   }
 

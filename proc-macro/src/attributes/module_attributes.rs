@@ -24,7 +24,7 @@ impl Display for Backend {
 
 impl Backend {
   pub fn from_expr(expr: &Expr) -> Result<Self, Error> {
-    let expr_str = extract_string_lit(expr)?;
+    let expr_str = expr.as_string()?;
 
     let output = match expr_str.as_str() {
       "prost" => Self::Prost,
@@ -76,10 +76,10 @@ impl Parse for ModuleAttrs {
           backend = Some(Backend::from_expr(&arg.value)?);
         }
         "file" => {
-          file = Some(extract_string_lit(&arg.value)?);
+          file = Some(arg.value.as_string()?);
         }
         "package" => {
-          package = Some(extract_string_lit(&arg.value)?);
+          package = Some(arg.value.as_string()?);
         }
 
         _ => bail!(arg.path, "Unknown attribute `{ident}`"),

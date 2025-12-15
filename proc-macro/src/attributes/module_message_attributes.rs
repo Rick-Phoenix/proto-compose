@@ -10,7 +10,7 @@ pub struct ModuleMessageAttrs {
 
 pub fn process_module_message_attrs(
   rust_name: &Ident,
-  attrs: &Vec<Attribute>,
+  attrs: &[Attribute],
 ) -> Result<ModuleMessageAttrs, Error> {
   let mut reserved_names: Vec<String> = Vec::new();
   let mut reserved_numbers = ReservedNumbers::default();
@@ -18,55 +18,47 @@ pub fn process_module_message_attrs(
   let mut nested_messages: Vec<Ident> = Vec::new();
   let mut nested_enums: Vec<Ident> = Vec::new();
 
-  for attr in attrs {
-    if !attr.path().is_ident("proto") {
-      continue;
-    }
+  for arg in filter_attributes(attrs, &["proto"])? {
+    match arg {
+      Meta::List(list) => {
+        let ident = get_ident_or_continue!(list.path);
 
-    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
+        match ident.as_str() {
+          "reserved_names" => {
+            let names = list.parse_args::<StringList>()?;
 
-    for arg in args.inner {
-      match arg {
-        Meta::List(list) => {
-          let ident = get_ident_or_continue!(list.path);
+            reserved_names = names.list;
+          }
+          "reserved_numbers" => {
+            let numbers = list.parse_args::<ReservedNumbers>()?;
 
-          match ident.as_str() {
-            "reserved_names" => {
-              let names = list.parse_args::<StringList>()?;
+            reserved_numbers = numbers;
+          }
+          "nested_messages" => {
+            let idents = list.parse_args::<IdentList>()?.items;
 
-              reserved_names = names.list;
-            }
-            "reserved_numbers" => {
-              let numbers = list.parse_args::<ReservedNumbers>()?;
+            nested_messages.extend(idents);
+          }
+          "nested_enums" => {
+            let idents = list.parse_args::<IdentList>()?.items;
 
-              reserved_numbers = numbers;
-            }
-            "nested_messages" => {
-              let idents = list.parse_args::<PunctuatedParser<Ident>>()?.inner;
-
-              nested_messages.extend(idents);
-            }
-            "nested_enums" => {
-              let idents = list.parse_args::<PunctuatedParser<Ident>>()?.inner;
-
-              nested_enums.extend(idents);
-            }
-            _ => {}
-          };
-        }
-        Meta::NameValue(nv) => {
-          let ident = get_ident_or_continue!(nv.path);
-
-          match ident.as_str() {
-            "name" => {
-              proto_name = Some(extract_string_lit(&nv.value)?);
-            }
-
-            _ => {}
-          };
-        }
-        Meta::Path(_) => {}
+            nested_enums.extend(idents);
+          }
+          _ => {}
+        };
       }
+      Meta::NameValue(nv) => {
+        let ident = get_ident_or_continue!(nv.path);
+
+        match ident.as_str() {
+          "name" => {
+            proto_name = Some(nv.value.as_string()?);
+          }
+
+          _ => {}
+        };
+      }
+      Meta::Path(_) => {}
     }
   }
 

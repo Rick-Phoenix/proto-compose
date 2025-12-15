@@ -21,11 +21,14 @@ use syn::{
   spanned::Spanned,
   token,
   token::{Brace, Struct},
-  Attribute, Error, Expr, ExprCall, ExprClosure, Field, Fields, Generics, Ident, Item, ItemEnum,
-  ItemFn, ItemMod, ItemStruct, Lit, LitStr, Meta, MetaList, MetaNameValue, Path, RangeLimits,
-  Token, Type, Variant, Visibility,
+  Attribute, Error, Expr, Field, Fields, Generics, Ident, Item, ItemEnum, ItemFn, ItemMod,
+  ItemStruct, Lit, Meta, MetaList, MetaNameValue, Path, RangeLimits, Token, Type, Variant,
+  Visibility,
 };
-use syn_utils::{bail, error, error_call_site, error_with_span, RustType, TypeInfo};
+use syn_utils::{
+  bail, error, error_call_site, error_with_span, filter_attributes, CallOrClosure, ExprExt,
+  IdentList, NumList, PathOrClosure, RustType, StringList, TypeInfo,
+};
 
 use crate::{
   conversions::*, enum_derive::*, extension_derive::*, item_cloners::*, message_derive::*,

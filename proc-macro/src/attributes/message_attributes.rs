@@ -20,7 +20,7 @@ pub struct MessageAttrs {
 
 pub fn process_derive_message_attrs(
   rust_name: &Ident,
-  attrs: &Vec<Attribute>,
+  attrs: &[Attribute],
 ) -> Result<MessageAttrs, Error> {
   let mut reserved_names: Vec<String> = Vec::new();
   let mut reserved_numbers = ReservedNumbers::default();
@@ -38,93 +38,77 @@ pub fn process_derive_message_attrs(
   let mut validator: Option<Expr> = None;
   let mut backend = Backend::default();
 
-  for attr in attrs {
-    if !attr.path().is_ident("proto") {
-      continue;
-    }
+  for arg in filter_attributes(attrs, &["proto"])? {
+    match arg {
+      Meta::List(list) => {
+        let ident = list.path.require_ident()?.to_string();
 
-    let args = attr.parse_args::<PunctuatedParser<Meta>>()?;
+        match ident.as_str() {
+          "reserved_names" => {
+            let names = list.parse_args::<StringList>()?;
 
-    for arg in args.inner {
-      match arg {
-        Meta::List(list) => {
-          let ident = list.path.require_ident()?.to_string();
+            reserved_names = names.list;
+          }
+          "reserved_numbers" => {
+            let numbers = list.parse_args::<ReservedNumbers>()?;
 
-          match ident.as_str() {
-            "reserved_names" => {
-              let names = list.parse_args::<StringList>()?;
+            reserved_numbers = numbers;
+          }
+          "nested_messages" => {
+            let idents = list.parse_args::<IdentList>()?.items;
 
-              reserved_names = names.list;
-            }
-            "reserved_numbers" => {
-              let numbers = list.parse_args::<ReservedNumbers>()?;
+            nested_messages.extend(idents.into_iter());
+          }
+          "nested_enums" => {
+            let idents = list.parse_args::<IdentList>()?.items;
 
-              reserved_numbers = numbers;
-            }
-            "nested_messages" => {
-              let idents = list
-                .parse_args::<PunctuatedParser<Ident>>()?
-                .inner;
+            nested_enums.extend(idents.into_iter());
+          }
+          "derive" => shadow_derives = Some(list),
+          _ => bail!(list, "Unknown attribute `{ident}`"),
+        };
+      }
+      Meta::NameValue(nv) => {
+        let ident = nv.path.require_ident()?.to_string();
 
-              nested_messages.extend(idents.into_iter());
-            }
-            "nested_enums" => {
-              let idents = list
-                .parse_args::<PunctuatedParser<Ident>>()?
-                .inner;
+        match ident.as_str() {
+          "backend" => {
+            backend = Backend::from_expr(&nv.value)?;
+          }
+          "options" => {
+            options = Some(nv.value);
+          }
+          "validate" => {
+            validator = Some(nv.value);
+          }
+          "from_proto" => {
+            from_proto = Some(nv.value.as_path_or_closure()?);
+          }
+          "into_proto" => {
+            into_proto = Some(nv.value.as_path_or_closure()?);
+          }
+          "name" => {
+            proto_name = Some(nv.value.as_string()?);
+          }
+          "full_name" => {
+            full_name = Some(nv.value.as_string()?);
+          }
+          "file" => {
+            file = Some(nv.value.as_string()?);
+          }
+          "package" => {
+            package = Some(nv.value.as_string()?);
+          }
+          _ => bail!(nv.path, "Unknown attribute `{ident}`"),
+        };
+      }
+      Meta::Path(path) => {
+        let ident = path.require_ident()?.to_string();
 
-              nested_enums.extend(idents.into_iter());
-            }
-            "derive" => shadow_derives = Some(list),
-            _ => bail!(list, "Unknown attribute `{ident}`"),
-          };
-        }
-        Meta::NameValue(nv) => {
-          let ident = nv.path.require_ident()?.to_string();
-
-          match ident.as_str() {
-            "backend" => {
-              backend = Backend::from_expr(&nv.value)?;
-            }
-            "options" => {
-              options = Some(nv.value);
-            }
-            "validate" => {
-              validator = Some(nv.value);
-            }
-            "from_proto" => {
-              let expr = parse_path_or_closure(nv.value)?;
-
-              from_proto = Some(expr);
-            }
-            "into_proto" => {
-              let expr = parse_path_or_closure(nv.value)?;
-
-              into_proto = Some(expr);
-            }
-            "name" => {
-              proto_name = Some(extract_string_lit(&nv.value)?);
-            }
-            "full_name" => {
-              full_name = Some(extract_string_lit(&nv.value)?);
-            }
-            "file" => {
-              file = Some(extract_string_lit(&nv.value)?);
-            }
-            "package" => {
-              package = Some(extract_string_lit(&nv.value)?);
-            }
-            _ => bail!(nv.path, "Unknown attribute `{ident}`"),
-          };
-        }
-        Meta::Path(path) => {
-          let ident = path.require_ident()?.to_string();
-
-          match ident.as_str() {
-            "direct" => direct = true,
-            _ => bail!(path, "Unknown attribute `{ident}`"),
-          };
-        }
+        match ident.as_str() {
+          "direct" => direct = true,
+          _ => bail!(path, "Unknown attribute `{ident}`"),
+        };
       }
     }
   }
