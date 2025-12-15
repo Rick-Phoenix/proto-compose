@@ -94,7 +94,7 @@ impl<'a> TypeContext<'a> {
     }
   }
 
-  pub fn from_type(rust_type: TypeInfo, proto_field: &'a ProtoField) -> Result<Self, Error> {
+  pub fn new(rust_type: TypeInfo, proto_field: &'a ProtoField) -> Result<Self, Error> {
     Ok(Self {
       rust_type,
       proto_field,

@@ -36,8 +36,13 @@ pub(crate) fn process_oneof_derive_shadow(
   let shadow_enum_variants = shadow_enum.variants.iter_mut();
   let mut ignored_variants: Vec<Ident> = Vec::new();
 
-  let mut from_proto_body = TokenStream2::new();
-  let mut into_proto_body = TokenStream2::new();
+  let mut proto_conversion_impls = ProtoConversionImpl {
+    source_ident: orig_enum_ident,
+    target_ident: shadow_enum_ident,
+    kind: ItemConversionKind::Enum,
+    into_proto: ConversionData::new(&oneof_attrs.into_proto),
+    from_proto: ConversionData::new(&oneof_attrs.from_proto),
+  };
 
   for (src_variant, dst_variant) in orig_enum_variants.zip(shadow_enum_variants) {
     let variant_ident = &src_variant.ident;
@@ -67,24 +72,27 @@ pub(crate) fn process_oneof_derive_shadow(
       FieldAttrData::Ignored { from_proto } => {
         ignored_variants.push(src_variant.ident.clone());
 
-        let from_proto_expr = field_from_proto_expression(FromProto {
-          custom_expression: &from_proto,
-          kind: FieldConversionKind::EnumVariant {
-            variant_ident,
-            source_enum_ident: orig_enum_ident,
-            target_enum_ident: shadow_enum_ident,
-          },
-          type_info: None,
-        });
-
-        from_proto_body.extend(from_proto_expr);
+        if !proto_conversion_impls
+          .from_proto
+          .has_custom_impl()
+        {
+          proto_conversion_impls.add_field_from_proto_impl(
+            &from_proto,
+            None,
+            FieldConversionKind::EnumVariant {
+              variant_ident,
+              source_enum_ident: orig_enum_ident,
+              target_enum_ident: shadow_enum_ident,
+            },
+          );
+        }
 
         continue;
       }
       FieldAttrData::Normal(field_attrs) => *field_attrs,
     };
 
-    let type_ctx = TypeContext::from_type(rust_type, &field_attrs.proto_field)?;
+    let type_ctx = TypeContext::new(rust_type, &field_attrs.proto_field)?;
 
     let variant_proto_tokens = process_field(
       &mut FieldOrVariant::Variant(dst_variant),
@@ -94,32 +102,34 @@ pub(crate) fn process_oneof_derive_shadow(
 
     variants_tokens.push(variant_proto_tokens);
 
-    if oneof_attrs.into_proto.is_none() {
-      let field_into_proto = field_into_proto_expression(IntoProto {
-        custom_expression: &field_attrs.into_proto,
-        kind: FieldConversionKind::EnumVariant {
-          variant_ident: &src_variant.ident,
-          source_enum_ident: orig_enum_ident,
-          target_enum_ident: shadow_enum_ident,
-        },
-        type_info: &type_ctx,
-      })?;
-
-      into_proto_body.extend(field_into_proto);
-    }
-
-    if oneof_attrs.from_proto.is_none() {
-      let from_proto_expr = field_from_proto_expression(FromProto {
-        custom_expression: &field_attrs.from_proto,
-        kind: FieldConversionKind::EnumVariant {
+    if !proto_conversion_impls
+      .into_proto
+      .has_custom_impl()
+    {
+      proto_conversion_impls.add_field_into_proto_impl(
+        &oneof_attrs.into_proto,
+        &type_ctx,
+        FieldConversionKind::EnumVariant {
           variant_ident,
           source_enum_ident: orig_enum_ident,
           target_enum_ident: shadow_enum_ident,
         },
-        type_info: Some(&type_ctx),
-      });
+      );
+    }
 
-      from_proto_body.extend(from_proto_expr);
+    if !proto_conversion_impls
+      .from_proto
+      .has_custom_impl()
+    {
+      proto_conversion_impls.add_field_from_proto_impl(
+        &field_attrs.from_proto,
+        Some(&type_ctx),
+        FieldConversionKind::EnumVariant {
+          variant_ident,
+          source_enum_ident: orig_enum_ident,
+          target_enum_ident: shadow_enum_ident,
+        },
+      );
     }
   }
 
@@ -131,21 +141,9 @@ pub(crate) fn process_oneof_derive_shadow(
 
   let oneof_schema_impl = oneof_schema_impl(&oneof_attrs, orig_enum_ident, variants_tokens);
 
-  let into_proto_impl = into_proto_impl(ItemConversion {
-    source_ident: orig_enum_ident,
-    target_ident: shadow_enum_ident,
-    kind: ItemConversionKind::Enum,
-    custom_expression: &oneof_attrs.into_proto,
-    conversion_tokens: into_proto_body,
-  });
-
-  let from_proto_impl = from_proto_impl(ItemConversion {
-    source_ident: orig_enum_ident,
-    target_ident: shadow_enum_ident,
-    kind: ItemConversionKind::Enum,
-    custom_expression: &oneof_attrs.from_proto,
-    conversion_tokens: from_proto_body,
-  });
+  let into_proto_impl = proto_conversion_impls.create_into_proto_impl();
+  let from_proto_impl = proto_conversion_impls.create_from_proto_impl();
+  let conversion_helpers = proto_conversion_impls.create_conversion_helpers();
 
   let shadow_enum_derives = oneof_attrs
     .shadow_derives
@@ -160,6 +158,7 @@ pub(crate) fn process_oneof_derive_shadow(
 
     #from_proto_impl
     #into_proto_impl
+    #conversion_helpers
 
     impl ::prelude::ProtoOneof for #shadow_enum_ident {
       fn proto_schema() -> ::prelude::Oneof {
@@ -215,7 +214,7 @@ pub(crate) fn process_oneof_derive_direct(
       FieldAttrData::Normal(field_attrs) => *field_attrs,
     };
 
-    let type_ctx = TypeContext::from_type(rust_type, &field_attrs.proto_field)?;
+    let type_ctx = TypeContext::new(rust_type, &field_attrs.proto_field)?;
 
     match type_ctx.rust_type.type_.as_ref() {
       RustType::Box(_) => {

@@ -38,11 +38,16 @@ pub fn process_message_derive_shadow(
   let shadow_struct_fields = shadow_struct.fields.iter_mut();
   let mut ignored_fields: Vec<Ident> = Vec::new();
 
-  let mut from_proto_body = TokenStream2::new();
-  let mut into_proto_body = TokenStream2::new();
-
   let mut validator_tokens = TokenStream2::new();
   let mut cel_rules_collection: Vec<TokenStream2> = Vec::new();
+
+  let mut proto_conversion_impls = ProtoConversionImpl {
+    source_ident: orig_struct_ident,
+    target_ident: shadow_struct_ident,
+    kind: ItemConversionKind::Struct,
+    into_proto: ConversionData::new(&message_attrs.into_proto),
+    from_proto: ConversionData::new(&message_attrs.from_proto),
+  };
 
   for (src_field, dst_field) in orig_struct_fields.zip(shadow_struct_fields) {
     let src_field_ident = src_field.require_ident()?;
@@ -54,16 +59,17 @@ pub fn process_message_derive_shadow(
         FieldAttrData::Ignored { from_proto } => {
           ignored_fields.push(src_field_ident.clone());
 
-          if message_attrs.from_proto.is_none() {
-            let from_proto_expr = field_from_proto_expression(FromProto {
-              custom_expression: &from_proto,
-              kind: FieldConversionKind::StructField {
+          if !proto_conversion_impls
+            .from_proto
+            .has_custom_impl()
+          {
+            proto_conversion_impls.add_field_from_proto_impl(
+              &from_proto,
+              None,
+              FieldConversionKind::StructField {
                 ident: src_field_ident,
               },
-              type_info: None,
-            })?;
-
-            from_proto_body.extend(from_proto_expr);
+            );
           }
 
           continue;
@@ -72,19 +78,7 @@ pub fn process_message_derive_shadow(
         FieldAttrData::Normal(field_attrs) => *field_attrs,
       };
 
-    let type_ctx = TypeContext::from_type(rust_type, &field_attrs.proto_field)?;
-
-    if message_attrs.from_proto.is_none() {
-      let from_proto_expr = field_from_proto_expression(FromProto {
-        custom_expression: &field_attrs.from_proto,
-        kind: FieldConversionKind::StructField {
-          ident: src_field_ident,
-        },
-        type_info: Some(&type_ctx),
-      })?;
-
-      from_proto_body.extend(from_proto_expr);
-    }
+    let type_ctx = TypeContext::new(rust_type, &field_attrs.proto_field)?;
 
     let field_tokens = process_field(
       &mut FieldOrVariant::Field(dst_field),
@@ -121,16 +115,30 @@ pub fn process_message_derive_shadow(
       cel_rules_collection.push(cel_rules);
     }
 
-    if message_attrs.into_proto.is_none() {
-      let field_into_proto = field_into_proto_expression(IntoProto {
-        custom_expression: &field_attrs.into_proto,
-        kind: FieldConversionKind::StructField {
+    if !proto_conversion_impls
+      .into_proto
+      .has_custom_impl()
+    {
+      proto_conversion_impls.add_field_into_proto_impl(
+        &field_attrs.into_proto,
+        &type_ctx,
+        FieldConversionKind::StructField {
           ident: src_field_ident,
         },
-        type_info: &type_ctx,
-      })?;
+      );
+    }
 
-      into_proto_body.extend(field_into_proto);
+    if !proto_conversion_impls
+      .from_proto
+      .has_custom_impl()
+    {
+      proto_conversion_impls.add_field_from_proto_impl(
+        &field_attrs.from_proto,
+        Some(&type_ctx),
+        FieldConversionKind::StructField {
+          ident: src_field_ident,
+        },
+      );
     }
   }
 
@@ -150,21 +158,9 @@ pub fn process_message_derive_shadow(
     cel_rules_collection,
   );
 
-  let into_proto_impl = into_proto_impl(ItemConversion {
-    source_ident: orig_struct_ident,
-    target_ident: shadow_struct_ident,
-    kind: ItemConversionKind::Struct,
-    custom_expression: &message_attrs.into_proto,
-    conversion_tokens: into_proto_body,
-  });
-
-  let from_proto_impl = from_proto_impl(ItemConversion {
-    source_ident: orig_struct_ident,
-    target_ident: shadow_struct_ident,
-    kind: ItemConversionKind::Struct,
-    custom_expression: &message_attrs.from_proto,
-    conversion_tokens: from_proto_body,
-  });
+  let into_proto_impl = proto_conversion_impls.create_into_proto_impl();
+  let from_proto_impl = proto_conversion_impls.create_from_proto_impl();
+  let conversion_helpers = proto_conversion_impls.create_conversion_helpers();
 
   let shadow_struct_derives = message_attrs
     .shadow_derives
@@ -183,6 +179,7 @@ pub fn process_message_derive_shadow(
 
     #from_proto_impl
     #into_proto_impl
+    #conversion_helpers
 
     impl #shadow_struct_ident {
       #[doc(hidden)]
@@ -306,7 +303,7 @@ pub fn process_message_derive_direct(
         FieldAttrData::Normal(attrs) => *attrs,
       };
 
-    let type_ctx = TypeContext::from_type(rust_type, &field_attrs.proto_field)?;
+    let type_ctx = TypeContext::new(rust_type, &field_attrs.proto_field)?;
 
     match type_ctx.rust_type.type_.as_ref() {
       RustType::Box(inner) => {

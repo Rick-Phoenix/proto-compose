@@ -97,7 +97,7 @@ pub fn process_extension_derive(
       bail!(&field, "Cannot ignore fields in extensions");
     };
 
-    let type_ctx = TypeContext::from_type(rust_type, &proto_field)?;
+    let type_ctx = TypeContext::new(rust_type, &proto_field)?;
     let options_tokens = tokens_or_default!(options, quote! { vec![] });
     let field_type_tokens = type_ctx.proto_field.as_proto_type_trait_expr();
 
