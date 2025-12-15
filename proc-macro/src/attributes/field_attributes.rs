@@ -25,7 +25,7 @@ pub enum ValidatorExpr {
 
 pub fn process_derive_field_attrs(
   original_name: &Ident,
-  rust_type: &RustType,
+  type_info: &TypeInfo,
   attrs: &Vec<Attribute>,
 ) -> Result<FieldAttrData, Error> {
   let mut validator: Option<ValidatorExpr> = None;
@@ -94,14 +94,14 @@ pub fn process_derive_field_attrs(
               let args = list.parse_args::<Meta>()?;
               let span = args.span();
 
-              let fallback = if let RustType::Vec(path) = rust_type {
-                Some(path)
+              let fallback = if let RustType::Vec(inner) = type_info.type_.as_ref() {
+                inner.as_path()
               } else {
                 None
               };
 
-              let inner =
-                ProtoType::from_meta(args, fallback)?.ok_or(error!(span, "Missing inner type"))?;
+              let inner = ProtoType::from_meta(args, fallback.as_ref())?
+                .ok_or(error!(span, "Missing inner type"))?;
 
               proto_field = Some(ProtoField::Repeated(inner));
             }
@@ -110,20 +110,20 @@ pub fn process_derive_field_attrs(
               let args = list.parse_args::<Meta>()?;
               let span = args.span();
 
-              let fallback = if let RustType::Option(path) = rust_type {
-                Some(path)
+              let fallback = if let RustType::Option(inner) = type_info.type_.as_ref() {
+                inner.as_path()
               } else {
                 None
               };
 
-              let inner =
-                ProtoType::from_meta(args, fallback)?.ok_or(error!(span, "Missing inner type"))?;
+              let inner = ProtoType::from_meta(args, fallback.as_ref())?
+                .ok_or(error!(span, "Missing inner type"))?;
 
               proto_field = Some(ProtoField::Optional(inner));
             }
 
             "map" => {
-              let parser = |input: ParseStream| parse_map_with_context(input, rust_type);
+              let parser = |input: ParseStream| parse_map_with_context(input, &type_info.type_);
 
               let map = parser.parse2(list.tokens)?;
 
@@ -132,9 +132,10 @@ pub fn process_derive_field_attrs(
 
             _ => {
               let list_span = list.span();
-              let fallback = rust_type.inner_path();
+              let fallback = type_info.inner().as_path();
 
-              if let Some(field_info) = ProtoType::from_meta_list(&ident, list, fallback)? {
+              if let Some(field_info) = ProtoType::from_meta_list(&ident, list, fallback.as_ref())?
+              {
                 proto_field = Some(ProtoField::Single(field_info));
               } else {
                 return Err(error!(list_span, format!("Unknown attribute `{ident}`")));
@@ -150,10 +151,10 @@ pub fn process_derive_field_attrs(
             "oneof" => {}
 
             _ => {
-              let fallback = rust_type.inner_path();
+              let fallback = type_info.inner().as_path();
               let span = path.span();
 
-              if let Some(parsed_kind) = ProtoType::from_ident(&ident, span, fallback)? {
+              if let Some(parsed_kind) = ProtoType::from_ident(&ident, span, fallback.as_ref())? {
                 proto_field = Some(ProtoField::Single(parsed_kind));
               } else {
                 return Err(error!(span, format!("Unknown attribute `{ident}`")));
@@ -175,7 +176,7 @@ pub fn process_derive_field_attrs(
     let mut use_default = false;
     let mut attr_span: Option<Span> = None;
 
-    let fallback = rust_type.inner_path();
+    let fallback = type_info.inner().as_path();
 
     for attr in oneof_attrs {
       let OneofInfo {
@@ -201,11 +202,13 @@ pub fn process_derive_field_attrs(
       }
     }
 
-    let oneof_path = oneof_path.get_path_or_fallback(fallback).ok_or(error!(
-      // Just an overly cautious fallback here, the span cannot be empty
-      attr_span.unwrap_or_else(Span::call_site),
-      "Failed to infer the path to the oneof. Please set it manually"
-    ))?;
+    let oneof_path = oneof_path
+      .get_path_or_fallback(fallback.as_ref())
+      .ok_or(error!(
+        // Just an overly cautious fallback here, the span cannot be empty
+        attr_span.unwrap_or_else(Span::call_site),
+        "Failed to infer the path to the oneof. Please set it manually"
+      ))?;
 
     proto_field = Some(ProtoField::Oneof {
       path: oneof_path,
@@ -215,7 +218,7 @@ pub fn process_derive_field_attrs(
   }
 
   let proto_field = if let Some(mut field) = proto_field {
-    if let ProtoField::Single(proto_type) = &mut field && rust_type.is_option() {
+    if let ProtoField::Single(proto_type) = &mut field && type_info.is_option() {
       let inner = std::mem::take(proto_type);
 
       field = ProtoField::Optional(inner);
@@ -223,24 +226,28 @@ pub fn process_derive_field_attrs(
 
     field
   } else {
-    match rust_type {
-      RustType::Map((k, v)) => {
-        let keys = ProtoMapKeys::from_path(k)?;
-        let values = ProtoType::from_primitive(v)?;
+    match type_info.type_.as_ref() {
+      RustType::HashMap((k, v)) => {
+        let keys = ProtoMapKeys::from_path(&k.as_path().unwrap())?;
+        let values = ProtoType::from_primitive(&v.as_path().unwrap())?;
 
         let proto_map = ProtoMap { keys, values };
 
         ProtoField::Map(proto_map)
       }
-      RustType::Option(path) => ProtoField::Optional(ProtoType::from_primitive(path)?),
-      RustType::OptionBoxed(path) => {
-        return Err(spanned_error!(path, "You seem to be using Option<Box<T>>. If you are using a boxed message, please use message(boxed)"))
+      RustType::Option(inner) => {
+        if inner.is_box() {
+        return Err(spanned_error!(inner, "You seem to be using Option<Box<T>>. If you are using a boxed message, please use message(boxed)"))
+        } else {
+          ProtoField::Optional(ProtoType::from_primitive(&inner.as_path().unwrap())?)
+        }
       },
-      RustType::Boxed(path) => {
-        return Err(spanned_error!(path, "You seem to be using Box<T>. If you meant to use a boxed message as a oneof variant, please use message(boxed)"))
+      RustType::Box(inner) => {
+        return Err(spanned_error!(inner, "You seem to be using Box<T>. If you meant to use a boxed message as a oneof variant, please use message(boxed)"))
       },
-      RustType::Vec(path) => ProtoField::Repeated(ProtoType::from_primitive(path)?),
-      RustType::Normal(path) => ProtoField::Single(ProtoType::from_primitive(path)?),
+      RustType::Vec(inner) => ProtoField::Repeated(ProtoType::from_primitive(&inner.as_path().unwrap())?),
+      RustType::Other(inner) => ProtoField::Single(ProtoType::from_primitive(&inner.path)?),
+      _ => panic!("Unsupported field type")
     }
   };
 

@@ -11,7 +11,6 @@ use std::{borrow::Cow, collections::HashMap, fmt::Display, ops::Range};
 
 use attributes::*;
 use convert_case::ccase;
-use itertools::Itertools;
 use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{format_ident, quote, ToTokens};
@@ -22,16 +21,17 @@ use syn::{
   spanned::Spanned,
   token,
   token::{Brace, Struct},
-  Attribute, Error, Expr, ExprCall, ExprClosure, Field, Fields, GenericArgument, Generics, Ident,
-  Item, ItemEnum, ItemFn, ItemMod, ItemStruct, Lit, LitStr, Meta, MetaList, MetaNameValue, Path,
-  PathArguments, PathSegment, RangeLimits, Token, Type, Variant, Visibility,
+  Attribute, Error, Expr, ExprCall, ExprClosure, Field, Fields, Generics, Ident, Item, ItemEnum,
+  ItemFn, ItemMod, ItemStruct, Lit, LitStr, Meta, MetaList, MetaNameValue, Path, RangeLimits,
+  Token, Type, Variant, Visibility,
 };
+use syn_utils::{RustType, TypeInfo};
 
 use crate::{
   conversions::*, enum_derive::*, extension_derive::*, item_cloners::*, message_derive::*,
   message_schema_impl::*, module_processing::*, oneof_derive::*, oneof_schema_impl::*,
-  path_utils::*, process_field::*, proto_field::*, proto_map::*, proto_types::*, rust_type::*,
-  service_derive::*, type_extraction::*,
+  path_utils::*, process_field::*, proto_field::*, proto_map::*, proto_types::*, service_derive::*,
+  type_extraction::*,
 };
 
 mod conversions;
@@ -48,7 +48,6 @@ mod process_field;
 mod proto_field;
 mod proto_map;
 mod proto_types;
-mod rust_type;
 mod service_derive;
 mod type_extraction;
 

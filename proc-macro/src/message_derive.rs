@@ -48,7 +48,7 @@ pub fn process_message_derive_shadow(
       .as_ref()
       .ok_or(spanned_error!(&src_field, "Expected a named field"))?;
 
-    let rust_type = RustType::from_type(&src_field.ty, orig_struct_ident)?;
+    let rust_type = TypeInfo::from_type(&src_field.ty)?;
 
     let field_data = process_derive_field_attrs(src_field_ident, &rust_type, &src_field.attrs)?;
 
@@ -73,7 +73,7 @@ pub fn process_message_derive_shadow(
       FieldAttrData::Normal(field_attrs) => *field_attrs,
     };
 
-    let type_info = TypeInfo::from_type(rust_type, field_attrs.proto_field.clone())?;
+    let type_ctx = TypeContext::from_type(rust_type, field_attrs.proto_field.clone())?;
 
     if message_attrs.from_proto.is_none() {
       let from_proto_expr = field_from_proto_expression(FromProto {
@@ -81,7 +81,7 @@ pub fn process_message_derive_shadow(
         kind: FieldConversionKind::StructField {
           ident: src_field_ident,
         },
-        type_info: Some(&type_info),
+        type_info: Some(&type_ctx),
       })?;
 
       from_proto_body.extend(from_proto_expr);
@@ -90,7 +90,7 @@ pub fn process_message_derive_shadow(
     let field_tokens = process_field(
       &mut FieldOrVariant::Field(dst_field),
       field_attrs.clone(),
-      &type_info,
+      &type_ctx,
     )?;
 
     fields_tokens.push(field_tokens);
@@ -98,7 +98,7 @@ pub fn process_message_derive_shadow(
     if let Some(validator) = &field_attrs.validator {
       let field_tag = field_attrs.tag;
       let field_name = &field_attrs.name;
-      let field_type = type_info.proto_field.proto_kind_tokens();
+      let field_type = type_ctx.proto_field.proto_kind_tokens();
 
       let field_context_tokens = quote! {
         ::prelude::FieldContext {
@@ -113,11 +113,11 @@ pub fn process_message_derive_shadow(
       };
 
       let field_validator =
-        type_info.validator_tokens(src_field_ident, field_context_tokens, validator);
+        type_ctx.validator_tokens(src_field_ident, field_context_tokens, validator);
 
       validator_tokens.extend(field_validator);
 
-      let cel_rules = type_info.cel_rules_extractor(validator);
+      let cel_rules = type_ctx.cel_rules_extractor(validator);
 
       cel_rules_collection.push(cel_rules);
     }
@@ -128,7 +128,7 @@ pub fn process_message_derive_shadow(
         kind: FieldConversionKind::StructField {
           ident: src_field_ident,
         },
-        type_info: &type_info,
+        type_info: &type_ctx,
       })?;
 
       into_proto_body.extend(field_into_proto);
@@ -299,7 +299,7 @@ pub fn process_message_derive_direct(
       .as_ref()
       .ok_or(spanned_error!(&src_field, "Expected a named field"))?;
 
-    let rust_type = RustType::from_type(&src_field.ty, &item.ident)?;
+    let rust_type = TypeInfo::from_type(&src_field.ty)?;
 
     let field_data = process_derive_field_attrs(src_field_ident, &rust_type, &src_field.attrs)?;
 
@@ -313,30 +313,32 @@ pub fn process_message_derive_direct(
       FieldAttrData::Normal(attrs) => *attrs,
     };
 
-    let type_info = TypeInfo::from_type(rust_type, field_attrs.proto_field.clone())?;
+    let type_ctx = TypeContext::from_type(rust_type, field_attrs.proto_field.clone())?;
 
-    match &type_info.rust_type {
-      RustType::Boxed(path) => {
+    match type_ctx.rust_type.type_.as_ref() {
+      RustType::Box(inner) => {
         return Err(spanned_error!(
-          path,
+          inner,
           "Boxed messages must be optional in a direct impl"
         ))
       }
-      RustType::OptionBoxed(path) => {
-        if !matches!(
-          type_info.proto_field,
-          ProtoField::Single(ProtoType::Message { is_boxed: true, .. })
-        ) {
-          return Err(spanned_error!(path, "Must be a boxed message"));
+      RustType::Option(inner) => {
+        if inner.is_option()
+          && !matches!(
+            type_ctx.proto_field,
+            ProtoField::Single(ProtoType::Message { is_boxed: true, .. })
+          )
+        {
+          return Err(spanned_error!(inner, "Must be a boxed message"));
         }
       }
-      RustType::Normal(path) => {
+      RustType::Other(inner) => {
         if matches!(
-          type_info.proto_field,
+          type_ctx.proto_field,
           ProtoField::Single(ProtoType::Message { .. })
         ) {
           return Err(spanned_error!(
-            path,
+            &inner.path,
             "Messages must be wrapped in Option in direct impls"
           ));
         }
@@ -347,7 +349,7 @@ pub fn process_message_derive_direct(
     let field_tokens = process_field(
       &mut FieldOrVariant::Field(src_field),
       field_attrs,
-      &type_info,
+      &type_ctx,
     )?;
 
     fields_data.push(field_tokens);

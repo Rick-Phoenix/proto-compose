@@ -44,7 +44,7 @@ impl<'a> FieldOrVariant<'a> {
 pub fn process_field(
   field: &mut FieldOrVariant,
   field_attrs: FieldAttrs,
-  type_info: &TypeInfo,
+  type_info: &TypeContext,
 ) -> Result<TokenStream2, Error> {
   let FieldAttrs {
     tag,

@@ -81,7 +81,7 @@ pub fn process_extension_derive(
       .as_ref()
       .ok_or(spanned_error!(&field, "Expected a named field"))?;
 
-    let rust_type = RustType::from_type(&field.ty, ident)?;
+    let rust_type = TypeInfo::from_type(&field.ty)?;
 
     let field_data = process_derive_field_attrs(field_ident, &rust_type, &field.attrs)?;
 
@@ -97,9 +97,9 @@ pub fn process_extension_derive(
       bail!(&field, "Cannot ignore fields in extensions");
     };
 
-    let type_info = TypeInfo::from_type(rust_type, proto_field)?;
+    let type_ctx = TypeContext::from_type(rust_type, proto_field)?;
     let options_tokens = tokens_or_default!(options, quote! { vec![] });
-    let field_type_tokens = type_info.proto_field.as_proto_type_trait_expr();
+    let field_type_tokens = type_ctx.proto_field.as_proto_type_trait_expr();
 
     fields_tokens.push(quote! {
       ::prelude::ProtoField {

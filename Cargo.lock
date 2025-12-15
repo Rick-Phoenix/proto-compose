@@ -674,11 +674,11 @@ name = "proc-macro-impls"
 version = "0.1.0"
 dependencies = [
  "convert_case 0.9.0",
- "itertools",
  "proc-macro2",
  "proto-types",
  "quote",
  "syn",
+ "syn-utils",
 ]
 
 [[package]]
@@ -957,6 +957,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syn-utils"
+version = "0.2.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

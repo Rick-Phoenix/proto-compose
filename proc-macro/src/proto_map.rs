@@ -123,26 +123,26 @@ pub fn parse_map_with_context(
       let ident = path.require_ident()?.to_string();
       let span = path.span();
 
-      let fallback = if let RustType::Map((_, v)) = rust_type {
-        Some(v)
+      let fallback = if let RustType::HashMap((_, v)) = rust_type {
+        v.as_path()
       } else {
         None
       };
 
-      ProtoType::from_ident(&ident, span, fallback)?
+      ProtoType::from_ident(&ident, span, fallback.as_ref())?
         .ok_or(error!(span, "Unrecognized map keys type"))?
     }
     Meta::List(list) => {
       let list_ident = ident_string!(list.path);
       let span = list.span();
 
-      let fallback = if let RustType::Map((_, v)) = rust_type {
-        Some(v)
+      let fallback = if let RustType::HashMap((_, v)) = rust_type {
+        v.as_path()
       } else {
         None
       };
 
-      ProtoType::from_meta_list(&list_ident, list, fallback)
+      ProtoType::from_meta_list(&list_ident, list, fallback.as_ref())
         .map_err(|e| input.error(e))?
         .ok_or(error!(span, "Unrecognized map values type"))?
     }

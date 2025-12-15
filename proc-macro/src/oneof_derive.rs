@@ -58,7 +58,7 @@ pub(crate) fn process_oneof_derive_shadow(
       );
     };
 
-    let rust_type = RustType::from_type(&variant_type, orig_enum_ident)?;
+    let rust_type = TypeInfo::from_type(&variant_type)?;
 
     let field_data =
       process_derive_field_attrs(&src_variant.ident, &rust_type, &src_variant.attrs)?;
@@ -84,12 +84,12 @@ pub(crate) fn process_oneof_derive_shadow(
       FieldAttrData::Normal(field_attrs) => *field_attrs,
     };
 
-    let type_info = TypeInfo::from_type(rust_type, field_attrs.proto_field.clone())?;
+    let type_ctx = TypeContext::from_type(rust_type, field_attrs.proto_field.clone())?;
 
     let variant_proto_tokens = process_field(
       &mut FieldOrVariant::Variant(dst_variant),
       field_attrs.clone(),
-      &type_info,
+      &type_ctx,
     )?;
 
     variants_tokens.push(variant_proto_tokens);
@@ -102,7 +102,7 @@ pub(crate) fn process_oneof_derive_shadow(
           source_enum_ident: orig_enum_ident,
           target_enum_ident: shadow_enum_ident,
         },
-        type_info: &type_info,
+        type_info: &type_ctx,
       })?;
 
       into_proto_body.extend(field_into_proto);
@@ -116,7 +116,7 @@ pub(crate) fn process_oneof_derive_shadow(
           source_enum_ident: orig_enum_ident,
           target_enum_ident: shadow_enum_ident,
         },
-        type_info: Some(&type_info),
+        type_info: Some(&type_ctx),
       });
 
       from_proto_body.extend(from_proto_expr);
@@ -201,7 +201,7 @@ pub(crate) fn process_oneof_derive_direct(
       );
     };
 
-    let rust_type = RustType::from_type(&variant_type, &item.ident)?;
+    let rust_type = TypeInfo::from_type(&variant_type)?;
 
     let field_data = process_derive_field_attrs(&variant.ident, &rust_type, &variant.attrs)?;
 
@@ -215,22 +215,22 @@ pub(crate) fn process_oneof_derive_direct(
       FieldAttrData::Normal(field_attrs) => *field_attrs,
     };
 
-    let type_info = TypeInfo::from_type(rust_type, field_attrs.proto_field.clone())?;
+    let type_ctx = TypeContext::from_type(rust_type, field_attrs.proto_field.clone())?;
 
-    match &type_info.rust_type {
-        RustType::Boxed(_) => {
-            if !matches!(type_info.proto_field, ProtoField::Single(ProtoType::Message { is_boxed: true, .. })) {
-              bail!(variant_type, "Box can only be used for messages in a native oneof");
-            }
-          },
-        RustType::Normal(_) => {},
-        _ => bail!(variant_type, "Unsupported Oneof variant type. If you want to use a custom type, you must use a proxied oneof with custom conversions"),
+    match type_ctx.rust_type.type_.as_ref() {
+      RustType::Box(_) => {
+          if !matches!(type_ctx.proto_field, ProtoField::Single(ProtoType::Message { is_boxed: true, .. })) {
+            bail!(variant_type, "Box can only be used for messages in a native oneof");
+          }
+        },
+      RustType::Other(_) => {},
+      _ => bail!(variant_type, "Unsupported Oneof variant type. If you want to use a custom type, you must use a proxied oneof with custom conversions"),
     };
 
     let variant_proto_tokens = process_field(
       &mut FieldOrVariant::Variant(variant),
       field_attrs,
-      &type_info,
+      &type_ctx,
     )?;
 
     variants_tokens.push(variant_proto_tokens);

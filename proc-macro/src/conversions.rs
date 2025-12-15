@@ -3,13 +3,13 @@ use crate::*;
 pub struct IntoProto<'a> {
   pub custom_expression: &'a Option<PathOrClosure>,
   pub kind: FieldConversionKind<'a>,
-  pub type_info: &'a TypeInfo,
+  pub type_info: &'a TypeContext,
 }
 
 pub struct FromProto<'a> {
   pub custom_expression: &'a Option<PathOrClosure>,
   pub kind: FieldConversionKind<'a>,
-  pub type_info: Option<&'a TypeInfo>,
+  pub type_info: Option<&'a TypeContext>,
 }
 
 pub enum FieldConversionKind<'a> {

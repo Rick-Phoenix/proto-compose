@@ -1,12 +1,12 @@
 use crate::*;
 
 #[derive(Clone)]
-pub struct TypeInfo {
-  pub rust_type: RustType,
+pub struct TypeContext {
+  pub rust_type: TypeInfo,
   pub proto_field: ProtoField,
 }
 
-impl TypeInfo {
+impl TypeContext {
   pub fn as_prost_attr(&self, tag: i32) -> TokenStream2 {
     let type_attr = self.proto_field.as_prost_attr_type();
 
@@ -25,20 +25,6 @@ impl TypeInfo {
 
   pub fn field_from_proto_impl(&self, base_ident: TokenStream2) -> TokenStream2 {
     self.proto_field.default_from_proto(&base_ident)
-  }
-
-  pub fn validator_schema_tokens(&self, validator: &ValidatorExpr) -> TokenStream2 {
-    let target_type = self.proto_field.validator_target_type();
-
-    match validator {
-      ValidatorExpr::Call(call) => {
-        quote! { Some(<#target_type as ::prelude::ProtoValidator<#target_type>>::from_builder(#call)) }
-      }
-
-      ValidatorExpr::Closure(closure) => {
-        quote! { Some(<#target_type as ::prelude::ProtoValidator<#target_type>>::build_rules(#closure)) }
-      }
-    }
   }
 
   pub fn field_validator_schema(&self, validator: &ValidatorExpr) -> TokenStream2 {
@@ -89,13 +75,18 @@ impl TypeInfo {
       }
     };
 
-    let argument = match &self.rust_type {
-      RustType::Option(_) => quote! { self.#field_ident.as_ref() },
-      RustType::OptionBoxed(_) => quote! { self.#field_ident.as_deref() },
-      RustType::Boxed(_) => quote! { &(*self.#field_ident) },
-      RustType::Map(_) => quote! { Some(&self.#field_ident) },
+    let argument = match self.rust_type.type_.as_ref() {
+      RustType::Option(inner) => {
+        if inner.is_box() {
+          quote! { self.#field_ident.as_deref() }
+        } else {
+          quote! { self.#field_ident.as_ref() }
+        }
+      }
+      RustType::Box(_) => quote! { &(*self.#field_ident) },
+      RustType::HashMap(_) => quote! { Some(&self.#field_ident) },
       RustType::Vec(_) => quote! {  Some(&self.#field_ident)  },
-      RustType::Normal(_) => quote! {  Some(&self.#field_ident)  },
+      _ => quote! {  Some(&self.#field_ident)  },
     };
 
     quote! {
@@ -103,7 +94,7 @@ impl TypeInfo {
     }
   }
 
-  pub fn from_type(rust_type: RustType, proto_field: ProtoField) -> Result<Self, Error> {
+  pub fn from_type(rust_type: TypeInfo, proto_field: ProtoField) -> Result<Self, Error> {
     Ok(Self {
       rust_type,
       proto_field,

@@ -15,5 +15,5 @@ proc-macro2 = "1.0"
 quote = "1.0"
 syn = { version = "2", features = ["extra-traits", "full"] }
 convert_case = "0.9"
-itertools = "0.14"
 proto-types = { workspace = true }
+syn-utils = { path = "../../syn-utils/" }
