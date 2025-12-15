@@ -36,7 +36,7 @@ pub fn process_message_derive_shadow(
 
   let orig_struct_fields = item.fields.iter_mut();
   let shadow_struct_fields = shadow_struct.fields.iter_mut();
-  let mut ignored_fields: Vec<Ident> = Vec::new();
+  let mut ignored_fields: Vec<&Ident> = Vec::new();
 
   let mut validator_tokens = TokenStream2::new();
   let mut cel_rules_collection: Vec<TokenStream2> = Vec::new();
@@ -57,7 +57,7 @@ pub fn process_message_derive_shadow(
     let field_attrs =
       match process_derive_field_attrs(src_field_ident, &rust_type, &src_field.attrs)? {
         FieldAttrData::Ignored { from_proto } => {
-          ignored_fields.push(src_field_ident.clone());
+          ignored_fields.push(src_field_ident);
 
           if !proto_conversion_impls
             .from_proto
@@ -72,6 +72,7 @@ pub fn process_message_derive_shadow(
             );
           }
 
+          // We close the loop early if the field is ignored
           continue;
         }
 
@@ -142,12 +143,13 @@ pub fn process_message_derive_shadow(
     }
   }
 
+  // We strip away the ignored fields from the shadow struct
   if let Fields::Named(fields) = &mut shadow_struct.fields {
     let old_fields = std::mem::take(&mut fields.named);
 
     fields.named = old_fields
       .into_iter()
-      .filter(|f| !ignored_fields.contains(f.ident.as_ref().unwrap()))
+      .filter(|f| !ignored_fields.contains(&f.ident.as_ref().unwrap()))
       .collect();
   }
 
@@ -310,13 +312,13 @@ pub fn process_message_derive_direct(
         bail!(inner, "Boxed messages must be optional in a direct impl")
       }
       RustType::Option(inner) => {
-        if inner.is_option()
+        if inner.is_box()
           && !matches!(
             type_ctx.proto_field,
             ProtoField::Single(ProtoType::Message { is_boxed: true, .. })
           )
         {
-          bail!(inner, "Must be a boxed message");
+          bail!(inner, "Detected usage of `Option<Box<..>>`, but the field was not marked as a boxed message. Please use `#[proto(message(boxed))]` to mark it as a boxed message.");
         }
       }
       RustType::Other(inner) => {
@@ -343,7 +345,6 @@ pub fn process_message_derive_direct(
   }
 
   let schema_impls = message_schema_impls(&item.ident, &message_attrs, fields_data, Vec::new());
-
   output_tokens.extend(schema_impls);
 
   let struct_ident = &item.ident;

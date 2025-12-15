@@ -125,7 +125,13 @@ pub fn process_derive_field_attrs(
         let ident = path.require_ident()?.to_string();
 
         match ident.as_str() {
-          "ignore" => is_ignored = true,
+          "ignore" => {
+            is_ignored = true;
+
+            if from_proto.is_some() {
+              return Ok(FieldAttrData::Ignored { from_proto });
+            }
+          }
           "oneof" => {}
 
           _ => {

@@ -34,7 +34,7 @@ pub(crate) fn process_oneof_derive_shadow(
 
   let orig_enum_variants = item.variants.iter_mut();
   let shadow_enum_variants = shadow_enum.variants.iter_mut();
-  let mut ignored_variants: Vec<Ident> = Vec::new();
+  let mut ignored_variants: Vec<&Ident> = Vec::new();
 
   let mut proto_conversion_impls = ProtoConversionImpl {
     source_ident: orig_enum_ident,
@@ -47,15 +47,10 @@ pub(crate) fn process_oneof_derive_shadow(
   for (src_variant, dst_variant) in orig_enum_variants.zip(shadow_enum_variants) {
     let variant_ident = &src_variant.ident;
 
-    let variant_type = if let Fields::Unnamed(variant_fields) = &src_variant.fields {
-      if variant_fields.unnamed.len() != 1 {
-        bail!(
-          &src_variant.fields,
-          "Oneof variants can only contain a single value"
-        );
-      }
-
-      variant_fields.unnamed.first().unwrap().ty.clone()
+    let variant_type = if let Fields::Unnamed(variant_fields) = &src_variant.fields
+      && variant_fields.unnamed.len() == 1
+    {
+      &variant_fields.unnamed.first().unwrap().ty
     } else {
       bail!(
         &src_variant.fields,
@@ -63,34 +58,34 @@ pub(crate) fn process_oneof_derive_shadow(
       );
     };
 
-    let rust_type = TypeInfo::from_type(&variant_type)?;
+    let rust_type = TypeInfo::from_type(variant_type)?;
 
-    let field_data =
-      process_derive_field_attrs(&src_variant.ident, &rust_type, &src_variant.attrs)?;
+    let field_attrs =
+      match process_derive_field_attrs(variant_ident, &rust_type, &src_variant.attrs)? {
+        FieldAttrData::Ignored { from_proto } => {
+          ignored_variants.push(variant_ident);
 
-    let field_attrs = match field_data {
-      FieldAttrData::Ignored { from_proto } => {
-        ignored_variants.push(src_variant.ident.clone());
+          if !proto_conversion_impls
+            .from_proto
+            .has_custom_impl()
+          {
+            proto_conversion_impls.add_field_from_proto_impl(
+              &from_proto,
+              None,
+              FieldConversionKind::EnumVariant {
+                variant_ident,
+                source_enum_ident: orig_enum_ident,
+                target_enum_ident: shadow_enum_ident,
+              },
+            );
+          }
 
-        if !proto_conversion_impls
-          .from_proto
-          .has_custom_impl()
-        {
-          proto_conversion_impls.add_field_from_proto_impl(
-            &from_proto,
-            None,
-            FieldConversionKind::EnumVariant {
-              variant_ident,
-              source_enum_ident: orig_enum_ident,
-              target_enum_ident: shadow_enum_ident,
-            },
-          );
+          // We close the loop early if the field is ignored
+          continue;
         }
 
-        continue;
-      }
-      FieldAttrData::Normal(field_attrs) => *field_attrs,
-    };
+        FieldAttrData::Normal(field_attrs) => *field_attrs,
+      };
 
     let type_ctx = TypeContext::new(rust_type, &field_attrs.proto_field)?;
 
@@ -133,10 +128,11 @@ pub(crate) fn process_oneof_derive_shadow(
     }
   }
 
+  // We strip away the ignored variants from the shadow enum
   shadow_enum.variants = shadow_enum
     .variants
     .into_iter()
-    .filter(|var| !ignored_variants.contains(&var.ident))
+    .filter(|var| !ignored_variants.contains(&&var.ident))
     .collect();
 
   let oneof_schema_impl = oneof_schema_impl(&oneof_attrs, orig_enum_ident, variants_tokens);
@@ -184,15 +180,10 @@ pub(crate) fn process_oneof_derive_direct(
   let mut variants_tokens: Vec<TokenStream2> = Vec::new();
 
   for variant in variants {
-    let variant_type = if let Fields::Unnamed(variant_fields) = &variant.fields {
-      if variant_fields.unnamed.len() != 1 {
-        bail!(
-          &variant.fields,
-          "Oneof variants must contain a single unnamed value"
-        );
-      }
-
-      variant_fields.unnamed.first().unwrap().ty.clone()
+    let variant_type = if let Fields::Unnamed(variant_fields) = &variant.fields
+      && variant_fields.unnamed.len() == 1 
+    {
+      &variant_fields.unnamed.first().unwrap().ty
     } else {
       bail!(
         &variant.fields,
@@ -200,11 +191,10 @@ pub(crate) fn process_oneof_derive_direct(
       );
     };
 
-    let rust_type = TypeInfo::from_type(&variant_type)?;
+    let rust_type = TypeInfo::from_type(variant_type)?;
 
-    let field_data = process_derive_field_attrs(&variant.ident, &rust_type, &variant.attrs)?;
-
-    let field_attrs = match field_data {
+    let field_attrs = match process_derive_field_attrs(&variant.ident, &rust_type, &variant.attrs)?
+    {
       FieldAttrData::Ignored { .. } => {
         bail!(
           &variant.ident,
@@ -223,6 +213,7 @@ pub(crate) fn process_oneof_derive_direct(
           }
         },
       RustType::Other(_) => {},
+
       _ => bail!(variant_type, "Unsupported Oneof variant type. If you want to use a custom type, you must use a proxied oneof with custom conversions"),
     };
 
