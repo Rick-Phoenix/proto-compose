@@ -231,7 +231,11 @@ pub fn process_derive_field_attrs(
       },
       RustType::Vec(inner) => ProtoField::Repeated(ProtoType::from_primitive(&inner.require_path()?)?),
       RustType::Other(inner) => ProtoField::Single(ProtoType::from_primitive(&inner.path)?),
-      _ => bail!(type_info, "Failed to infer the protobuf type. Please set it manually")
+      _ => {
+        let path = type_info.as_path().unwrap();
+
+        ProtoField::Single(ProtoType::from_primitive(&path)?)
+      }
     }
   };
 
