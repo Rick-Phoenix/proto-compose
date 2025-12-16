@@ -44,6 +44,10 @@ pub(crate) fn process_oneof_derive_shadow(
     from_proto: ConversionData::new(&oneof_attrs.from_proto),
   };
 
+  let mut validator_tokens = TokenStream2::new();
+  let mut cel_rules_collection: Vec<TokenStream2> = Vec::new();
+  let mut cel_checks_tokens = TokenStream2::new();
+
   for (src_variant, dst_variant) in orig_enum_variants.zip(shadow_enum_variants) {
     let variant_ident = &src_variant.ident;
 
@@ -89,11 +93,15 @@ pub(crate) fn process_oneof_derive_shadow(
 
     let type_ctx = TypeContext::new(rust_type, &field_attrs.proto_field)?;
 
-    let variant_proto_tokens = process_field(
-      &mut FieldOrVariant::Variant(dst_variant),
-      &field_attrs,
-      &type_ctx,
-    )?;
+    let variant_proto_tokens = process_field(FieldCtx {
+      field: &mut FieldOrVariant::Variant(dst_variant),
+      field_attrs: &field_attrs,
+      type_ctx: &type_ctx,
+      field_ident: &src_variant.ident,
+      validators_tokens: &mut validator_tokens,
+      cel_rules: &mut cel_rules_collection,
+      cel_checks: &mut cel_checks_tokens,
+    })?;
 
     variants_tokens.push(variant_proto_tokens);
 
@@ -179,9 +187,13 @@ pub(crate) fn process_oneof_derive_direct(
 
   let mut variants_tokens: Vec<TokenStream2> = Vec::new();
 
+  let mut validator_tokens = TokenStream2::new();
+  let mut cel_rules_collection: Vec<TokenStream2> = Vec::new();
+  let mut cel_checks_tokens = TokenStream2::new();
+
   for variant in variants {
     let variant_type = if let Fields::Unnamed(variant_fields) = &variant.fields
-      && variant_fields.unnamed.len() == 1 
+      && variant_fields.unnamed.len() == 1
     {
       &variant_fields.unnamed.first().unwrap().ty
     } else {
@@ -217,11 +229,15 @@ pub(crate) fn process_oneof_derive_direct(
       _ => bail!(variant_type, "Unsupported Oneof variant type. If you want to use a custom type, you must use a proxied oneof with custom conversions"),
     };
 
-    let variant_proto_tokens = process_field(
-      &mut FieldOrVariant::Variant(variant),
-      &field_attrs,
-      &type_ctx,
-    )?;
+    let variant_proto_tokens = process_field(FieldCtx {
+      field_ident: &variant.ident.clone(),
+      field: &mut FieldOrVariant::Variant(variant),
+      field_attrs: &field_attrs,
+      type_ctx: &type_ctx,
+      validators_tokens: &mut validator_tokens,
+      cel_rules: &mut cel_rules_collection,
+      cel_checks: &mut cel_checks_tokens,
+    })?;
 
     variants_tokens.push(variant_proto_tokens);
   }

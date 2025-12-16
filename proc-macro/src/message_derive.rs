@@ -82,43 +82,17 @@ pub fn process_message_derive_shadow(
 
     let type_ctx = TypeContext::new(rust_type, &field_attrs.proto_field)?;
 
-    let field_tokens = process_field(
-      &mut FieldOrVariant::Field(dst_field),
-      &field_attrs,
-      &type_ctx,
-    )?;
+    let field_tokens = process_field(FieldCtx {
+      field: &mut FieldOrVariant::Field(dst_field),
+      field_attrs: &field_attrs,
+      type_ctx: &type_ctx,
+      field_ident: src_field_ident,
+      validators_tokens: &mut validator_tokens,
+      cel_rules: &mut cel_rules_collection,
+      cel_checks: &mut cel_checks_tokens,
+    })?;
 
     fields_tokens.push(field_tokens);
-
-    if let Some(validator) = &field_attrs.validator {
-      let field_tag = field_attrs.tag;
-      let field_name = &field_attrs.name;
-      let field_type = type_ctx.proto_field.proto_kind_tokens();
-
-      let field_context_tokens = quote! {
-        ::prelude::FieldContext {
-          name: #field_name,
-          tag: #field_tag,
-          field_type: #field_type,
-          key_type: None,
-          value_type: None,
-          subscript: None,
-          kind: Default::default(),
-        }
-      };
-
-      let field_validator =
-        type_ctx.validator_tokens(src_field_ident, field_context_tokens, validator);
-
-      validator_tokens.extend(field_validator);
-
-      let cel_rules = type_ctx.cel_rules_extractor(validator);
-
-      cel_rules_collection.push(cel_rules);
-
-      let cel_check = type_ctx.cel_check_tokens(validator);
-      cel_checks_tokens.extend(cel_check);
-    }
 
     if !proto_conversion_impls
       .into_proto
@@ -349,6 +323,10 @@ pub fn process_message_derive_direct(
   let mut output_tokens = TokenStream2::new();
   let mut fields_data: Vec<TokenStream2> = Vec::new();
 
+  let mut validator_tokens = TokenStream2::new();
+  let mut cel_rules_collection: Vec<TokenStream2> = Vec::new();
+  let mut cel_checks_tokens = TokenStream2::new();
+
   for src_field in item.fields.iter_mut() {
     let src_field_ident = src_field.require_ident()?;
 
@@ -393,11 +371,15 @@ pub fn process_message_derive_direct(
       _ => {}
     };
 
-    let field_tokens = process_field(
-      &mut FieldOrVariant::Field(src_field),
-      &field_attrs,
-      &type_ctx,
-    )?;
+    let field_tokens = process_field(FieldCtx {
+      field_ident: &src_field_ident.clone(),
+      field: &mut FieldOrVariant::Field(src_field),
+      field_attrs: &field_attrs,
+      type_ctx: &type_ctx,
+      validators_tokens: &mut validator_tokens,
+      cel_rules: &mut cel_rules_collection,
+      cel_checks: &mut cel_checks_tokens,
+    })?;
 
     fields_data.push(field_tokens);
   }
