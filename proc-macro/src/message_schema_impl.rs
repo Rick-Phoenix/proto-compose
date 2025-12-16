@@ -5,6 +5,7 @@ pub fn message_schema_impls(
   message_attrs: &MessageAttrs,
   entries_tokens: Vec<TokenStream2>,
   fields_cel_rules: Vec<TokenStream2>,
+  top_level_programs_ident: Option<&Ident>,
 ) -> TokenStream2 {
   let MessageAttrs {
     reserved_names,
@@ -16,7 +17,6 @@ pub fn message_schema_impls(
     package,
     nested_messages,
     nested_enums,
-    validator: cel_rules,
     ..
   } = message_attrs;
 
@@ -31,19 +31,25 @@ pub fn message_schema_impls(
     nested_enums_tokens.extend(quote! { #ident::proto_schema(), });
   }
 
-  let top_level_rules = if let Some(call) = cel_rules {
-    quote! { #call.into_iter().map(|r| &r.rule).collect() }
-  } else {
-    quote! { vec![] }
-  };
-
-  let top_level_programs = if let Some(call) = cel_rules {
-    quote! { #call.into_iter().map(|r| &**r).collect() }
-  } else {
-    quote! { vec![] }
-  };
-
   let options_tokens = tokens_or_default!(options, quote! { vec![] });
+
+  let cel_rules_method = top_level_programs_ident.map(|ident| {
+    quote! {
+      fn cel_rules() -> Vec<&'static CelRule> {
+        use ::prelude::{ProtoValidator, Validator, ValidationResult, field_context::Violations};
+
+        let mut rules_agg: Vec<&CelRule> = #ident.iter().map(|prog| &prog.rule).collect();
+
+        #(
+          rules_agg.extend(#fields_cel_rules);
+        )*
+
+        rules_agg
+      }
+    }
+  });
+
+  let cel_rules_field = tokens_or_default!(top_level_programs_ident, quote! { [] });
 
   quote! {
     impl ::prelude::AsProtoType for #struct_name {
@@ -55,17 +61,7 @@ pub fn message_schema_impls(
     }
 
     impl ::prelude::ProtoMessage for #struct_name {
-      fn cel_rules() -> Vec<&'static CelRule> {
-        use ::prelude::{ProtoValidator, Validator, ValidationResult, field_context::Violations};
-
-        let mut rules_agg: Vec<&CelRule> = #top_level_rules;
-
-        #(
-          rules_agg.extend(#fields_cel_rules);
-        )*
-
-        rules_agg
-      }
+      #cel_rules_method
 
       fn proto_path() -> ::prelude::ProtoPath {
         ::prelude::ProtoPath {
@@ -93,7 +89,7 @@ pub fn message_schema_impls(
           messages: vec![ #nested_messages_tokens ],
           enums: vec![ #nested_enums_tokens ],
           entries: vec![ #(#entries_tokens,)* ],
-          cel_rules: #top_level_programs,
+          cel_rules: &#cel_rules_field,
         };
 
         new_msg

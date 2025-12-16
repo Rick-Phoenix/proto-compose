@@ -14,7 +14,7 @@ pub struct MessageAttrs {
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
   pub shadow_derives: Option<MetaList>,
-  pub validator: Option<Expr>,
+  pub cel_rules: Option<Vec<Path>>,
   pub backend: Backend,
 }
 
@@ -35,7 +35,7 @@ pub fn process_derive_message_attrs(
   let mut from_proto: Option<PathOrClosure> = None;
   let mut into_proto: Option<PathOrClosure> = None;
   let mut shadow_derives: Option<MetaList> = None;
-  let mut validator: Option<Expr> = None;
+  let mut cel_rules: Option<Vec<Path>> = None;
   let mut backend = Backend::default();
 
   for arg in filter_attributes(attrs, &["proto"])? {
@@ -44,6 +44,9 @@ pub fn process_derive_message_attrs(
         let ident = list.path.require_ident()?.to_string();
 
         match ident.as_str() {
+          "cel_rules" => {
+            cel_rules = Some(list.parse_args::<PathList>()?.list);
+          }
           "reserved_names" => {
             let names = list.parse_args::<StringList>()?;
 
@@ -55,12 +58,12 @@ pub fn process_derive_message_attrs(
             reserved_numbers = numbers;
           }
           "nested_messages" => {
-            let idents = list.parse_args::<IdentList>()?.items;
+            let idents = list.parse_args::<IdentList>()?.list;
 
             nested_messages.extend(idents.into_iter());
           }
           "nested_enums" => {
-            let idents = list.parse_args::<IdentList>()?.items;
+            let idents = list.parse_args::<IdentList>()?.list;
 
             nested_enums.extend(idents.into_iter());
           }
@@ -77,9 +80,6 @@ pub fn process_derive_message_attrs(
           }
           "options" => {
             options = Some(nv.value);
-          }
-          "validate" => {
-            validator = Some(nv.value);
           }
           "from_proto" => {
             from_proto = Some(nv.value.as_path_or_closure()?);
@@ -134,7 +134,7 @@ pub fn process_derive_message_attrs(
     from_proto,
     into_proto,
     shadow_derives,
-    validator,
+    cel_rules,
     backend,
   })
 }

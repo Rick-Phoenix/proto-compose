@@ -41,7 +41,7 @@ fn random_option() -> ProtoOption {
 
 #[proc_macro_impls::proto_module(file = "abc.proto", package = "myapp.v1")]
 mod inner {
-  use std::sync::Arc;
+  use std::sync::{Arc, LazyLock};
 
   use prelude::{cel_rule, CelProgram, CelRule, FieldContext, FieldKind, Validator, DEPRECATED};
   use proc_macro_impls::{
@@ -147,7 +147,7 @@ mod inner {
   #[proto(nested_messages(Nested))]
   #[derive(Clone, Debug, Default)]
   #[proto(options = vec![ random_option() ])]
-  #[proto(validate = vec![ &MSG_RULE ])]
+  #[proto(cel_rules(MSG_RULE))]
   pub struct Abc {
     #[proto(timestamp, validate = |v| v.lt_now())]
     pub timestamp: Option<Timestamp>,

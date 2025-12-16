@@ -27,7 +27,7 @@ use syn::{
 };
 use syn_utils::{
   bail, error, error_call_site, error_with_span, filter_attributes, CallOrClosure, ExprExt,
-  IdentList, NumList, PathOrClosure, RustType, StringList, TypeInfo,
+  IdentList, NumList, PathList, PathOrClosure, RustType, StringList, TypeInfo,
 };
 
 use crate::{

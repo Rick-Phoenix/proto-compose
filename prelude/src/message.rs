@@ -49,7 +49,7 @@ pub struct Message {
   pub options: Vec<ProtoOption>,
   pub reserved_names: Vec<&'static str>,
   pub reserved_numbers: Vec<Range<i32>>,
-  pub cel_rules: Vec<&'static CelProgram>,
+  pub cel_rules: &'static [&'static CelProgram],
 }
 
 #[derive(Debug, Clone, PartialEq)]

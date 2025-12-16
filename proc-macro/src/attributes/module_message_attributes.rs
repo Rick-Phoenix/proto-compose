@@ -35,12 +35,12 @@ pub fn process_module_message_attrs(
             reserved_numbers = numbers;
           }
           "nested_messages" => {
-            let idents = list.parse_args::<IdentList>()?.items;
+            let idents = list.parse_args::<IdentList>()?.list;
 
             nested_messages.extend(idents);
           }
           "nested_enums" => {
-            let idents = list.parse_args::<IdentList>()?.items;
+            let idents = list.parse_args::<IdentList>()?.list;
 
             nested_enums.extend(idents);
           }

@@ -157,30 +157,82 @@ pub fn process_message_derive_shadow(
       .collect();
   }
 
+  let into_proto_impl = proto_conversion_impls.create_into_proto_impl();
+  let from_proto_impl = proto_conversion_impls.create_from_proto_impl();
+  let conversion_helpers = proto_conversion_impls.create_conversion_helpers();
+
+  let top_level_programs_ident = if let Some(paths) = &message_attrs.cel_rules {
+    let ident = format_ident!(
+      "{}_CEL_RULES",
+      ccase!(constant, orig_struct_ident.to_string())
+    );
+
+    let top_level_programs = quote! { #(&*#paths),* };
+
+    let test_module_ident = format_ident!(
+      "__{}_cel_test",
+      ccase!(snake, orig_struct_ident.to_string())
+    );
+
+    output_tokens.extend(quote! {
+      static #ident: LazyLock<Vec<&'static CelProgram>> = LazyLock::new(|| {
+        vec![ #top_level_programs ]
+      });
+
+      #[cfg(test)]
+      mod #test_module_ident {
+        use super::*;
+
+        #[test]
+        fn test() {
+          #shadow_struct_ident::validate_cel()
+        }
+
+        impl #shadow_struct_ident {
+          #[track_caller]
+          fn validate_cel() {
+            let mut errors: Vec<::prelude::CelError> = Vec::new();
+
+            #cel_checks_tokens
+
+            let top_level_programs = &#ident;
+
+            if !top_level_programs.is_empty() {
+              if let Err(errs) = ::prelude::test_programs(&top_level_programs, Self::default()) {
+                errors.extend(errs);
+              }
+            }
+
+            if !errors.is_empty() {
+              for error in errors {
+                eprintln!("{error}");
+              }
+
+              panic!();
+            }
+          }
+        }
+      }
+    });
+
+    Some(ident)
+  } else {
+    None
+  };
+
   let schema_impls = message_schema_impls(
     orig_struct_ident,
     &message_attrs,
     fields_tokens,
     cel_rules_collection,
+    top_level_programs_ident.as_ref(),
   );
-
-  let into_proto_impl = proto_conversion_impls.create_into_proto_impl();
-  let from_proto_impl = proto_conversion_impls.create_from_proto_impl();
-  let conversion_helpers = proto_conversion_impls.create_conversion_helpers();
 
   let shadow_struct_derives = message_attrs
     .shadow_derives
     .map(|list| quote! { #[#list] });
 
-  let top_level_programs = &message_attrs.validator.map_or_else(
-    || quote! { vec![] },
-    |v| quote! { #v.into_iter().map(|r| &**r).collect() },
-  );
-
-  let test_module_ident = format_ident!(
-    "__{}_cel_test",
-    ccase!(snake, orig_struct_ident.to_string())
-  );
+  let top_level_programs_expr = tokens_or_default!(top_level_programs_ident, quote! { vec![] });
 
   output_tokens.extend(quote! {
     #schema_impls
@@ -192,41 +244,6 @@ pub fn process_message_derive_shadow(
     #from_proto_impl
     #into_proto_impl
     #conversion_helpers
-
-    #[cfg(test)]
-    mod #test_module_ident {
-      use super::*;
-
-      #[test]
-      fn test() {
-        #shadow_struct_ident::validate_cel()
-      }
-
-      impl #shadow_struct_ident {
-        #[track_caller]
-        fn validate_cel() {
-          let mut errors: Vec<::prelude::CelError> = Vec::new();
-
-          #cel_checks_tokens
-
-          let top_level_programs: Vec<&CelProgram> = #top_level_programs;
-
-          if !top_level_programs.is_empty() {
-            if let Err(errs) = ::prelude::test_programs(&top_level_programs, Self::default()) {
-              errors.extend(errs);
-            }
-          }
-
-          if !errors.is_empty() {
-            for error in errors {
-              eprintln!("{error}");
-            }
-
-            panic!();
-          }
-        }
-      }
-    }
 
     impl #shadow_struct_ident {
       #[doc(hidden)]
@@ -246,11 +263,11 @@ pub fn process_message_derive_shadow(
           });
         }
 
-        let mut top_level_programs: Vec<&CelProgram> = #top_level_programs;
+        let top_level_programs: &Vec<&CelProgram> = &#top_level_programs_expr;
 
         if !top_level_programs.is_empty() {
           ::prelude::execute_cel_programs(::prelude::ProgramsExecutionCtx {
-            programs: &top_level_programs,
+            programs: top_level_programs,
             value: self.clone(),
             violations: &mut violations,
             field_context,
@@ -385,10 +402,70 @@ pub fn process_message_derive_direct(
     fields_data.push(field_tokens);
   }
 
-  let schema_impls = message_schema_impls(&item.ident, &message_attrs, fields_data, Vec::new());
-  output_tokens.extend(schema_impls);
-
   let struct_ident = &item.ident;
+
+  let top_level_programs_ident = if let Some(paths) = &message_attrs.cel_rules {
+    let ident = format_ident!("{}_CEL_RULES", ccase!(constant, struct_ident.to_string()));
+
+    let top_level_programs = quote! { #(&*#paths),* };
+
+    let test_module_ident = format_ident!("__{}_cel_test", ccase!(snake, struct_ident.to_string()));
+
+    output_tokens.extend(quote! {
+      static #ident: LazyLock<Vec<&'static CelProgram>> = LazyLock::new(|| {
+        vec![ #top_level_programs ]
+      });
+
+      #[cfg(test)]
+      mod #test_module_ident {
+        use super::*;
+
+        #[test]
+        fn test() {
+          #struct_ident::validate_cel()
+        }
+
+        impl #struct_ident {
+          #[track_caller]
+          fn validate_cel() {
+            let mut errors: Vec<::prelude::CelError> = Vec::new();
+
+            // #cel_checks_tokens
+
+            let top_level_programs = &#ident;
+
+            if !top_level_programs.is_empty() {
+              if let Err(errs) = ::prelude::test_programs(&top_level_programs, Self::default()) {
+                errors.extend(errs);
+              }
+            }
+
+            if !errors.is_empty() {
+              for error in errors {
+                eprintln!("{error}");
+              }
+
+              panic!();
+            }
+          }
+        }
+      }
+    });
+
+    Some(ident)
+  } else {
+    None
+  };
+
+  let schema_impls = message_schema_impls(
+    &item.ident,
+    &message_attrs,
+    fields_data,
+    Vec::new(),
+    top_level_programs_ident.as_ref(),
+  );
+
+  output_tokens.extend(schema_impls);
 
   output_tokens.extend(quote! {
     impl ::prelude::ProtoValidator<#struct_ident> for #struct_ident {
