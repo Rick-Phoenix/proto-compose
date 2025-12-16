@@ -49,7 +49,14 @@ pub fn message_schema_impls(
     }
   });
 
-  let cel_rules_field = tokens_or_default!(top_level_programs_ident, quote! { [] });
+  let cel_rules_field = top_level_programs_ident.map_or_else(
+    || quote! { vec![] },
+    |ident| {
+      quote! {
+        #ident.iter().map(|prog| &prog.rule).collect()
+      }
+    },
+  );
 
   quote! {
     impl ::prelude::AsProtoType for #struct_name {
@@ -89,7 +96,7 @@ pub fn message_schema_impls(
           messages: vec![ #nested_messages_tokens ],
           enums: vec![ #nested_enums_tokens ],
           entries: vec![ #(#entries_tokens,)* ],
-          cel_rules: &#cel_rules_field,
+          cel_rules: #cel_rules_field,
         };
 
         new_msg

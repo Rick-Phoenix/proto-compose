@@ -49,7 +49,7 @@ pub struct Message {
   pub options: Vec<ProtoOption>,
   pub reserved_names: Vec<&'static str>,
   pub reserved_numbers: Vec<Range<i32>>,
-  pub cel_rules: &'static [&'static CelProgram],
+  pub cel_rules: Vec<&'static CelRule>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -84,7 +84,7 @@ impl Message {
     let cel_rules_options: Vec<ProtoOption> = self
       .cel_rules
       .iter()
-      .map(|program| program.rule.clone().into())
+      .map(|&rule| rule.clone().into())
       .collect();
 
     let options = self

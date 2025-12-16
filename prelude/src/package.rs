@@ -15,24 +15,20 @@ impl Package {
       .iter()
       .flat_map(|f| f.messages.iter())
       .flat_map(|message| {
-        message
-          .cel_rules
-          .iter()
-          .map(|program| &program.rule)
-          .chain(
-            message
-              .entries
-              .iter()
-              .filter_map(|e| {
-                if let MessageEntry::Field(field) = e {
-                  Some(field)
-                } else {
-                  None
-                }
-              })
-              .filter_map(|f| f.validator.as_ref())
-              .flat_map(|v| v.cel_rules.iter().copied()),
-          )
+        message.cel_rules.iter().copied().chain(
+          message
+            .entries
+            .iter()
+            .filter_map(|e| {
+              if let MessageEntry::Field(field) = e {
+                Some(field)
+              } else {
+                None
+              }
+            })
+            .filter_map(|f| f.validator.as_ref())
+            .flat_map(|v| v.cel_rules.iter().copied()),
+        )
       })
     {
       let entry = rules.entry(&rule.id);
