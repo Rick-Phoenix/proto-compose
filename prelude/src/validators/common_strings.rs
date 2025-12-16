@@ -1,4 +1,5 @@
 reusable_string!(BUF_VALIDATE_FIELD, "(buf.validate.field)");
+reusable_string!(UINT32);
 reusable_string!(CONST_, "const");
 reusable_string!(CEL);
 reusable_string!(LEN);

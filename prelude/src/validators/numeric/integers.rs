@@ -26,6 +26,22 @@ where
     self.cel.clone()
   }
 
+  fn validate_cel(&self) -> Result<(), CelError> {
+    let val = Self::Target::default();
+
+    if let Some(cel_rules) = &self.cel {
+      for rule in cel_rules.iter() {
+        let program = CelProgram::new(rule.clone());
+
+        if let Err(e) = program.execute(val) {
+          log::error!("error with CEL rule with id `{}`: {e}", rule.id);
+        }
+      }
+    }
+
+    Ok(())
+  }
+
   fn validate(
     &self,
     field_context: &FieldContext,
@@ -172,6 +188,7 @@ pub trait IntWrapper: AsProtoType {
     + Debug
     + Display
     + Eq
+    + Default
     + Into<::cel::Value>;
   const LT_VIOLATION: &'static LazyLock<ViolationData>;
   const LTE_VIOLATION: &'static LazyLock<ViolationData>;
@@ -243,3 +260,4 @@ macro_rules! impl_int_validator {
 
 impl_int!(i32, Sint32);
 impl_int!(i32, INT32, primitive);
+impl_int!(u32, UINT32, primitive);

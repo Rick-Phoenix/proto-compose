@@ -40,6 +40,7 @@ pub fn process_message_derive_shadow(
 
   let mut validator_tokens = TokenStream2::new();
   let mut cel_rules_collection: Vec<TokenStream2> = Vec::new();
+  let mut cel_checks_tokens = TokenStream2::new();
 
   let mut proto_conversion_impls = ProtoConversionImpl {
     source_ident: orig_struct_ident,
@@ -114,6 +115,9 @@ pub fn process_message_derive_shadow(
       let cel_rules = type_ctx.cel_rules_extractor(validator);
 
       cel_rules_collection.push(cel_rules);
+
+      let cel_check = type_ctx.cel_check_tokens(src_field_ident, validator);
+      cel_checks_tokens.extend(cel_check);
     }
 
     if !proto_conversion_impls
@@ -184,6 +188,10 @@ pub fn process_message_derive_shadow(
     #conversion_helpers
 
     impl #shadow_struct_ident {
+      pub fn validate_cel(&self) {
+        #cel_checks_tokens
+      }
+
       #[doc(hidden)]
       fn __validate_internal(&self, field_context: Option<&FieldContext>, parent_elements: &mut Vec<FieldPathElement>) -> Result<(), Vec<::proto_types::protovalidate::Violation>> {
         use ::prelude::{ProtoValidator, Validator, ValidationResult, field_context::Violations};

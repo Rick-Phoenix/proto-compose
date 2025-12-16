@@ -66,7 +66,8 @@ impl<K, V> ProtoValidator<ProtoMap<K, V>> for ProtoMap<K, V>
 where
   K: ProtoValidator<K>,
   V: ProtoValidator<V>,
-  K::Target: Clone + IntoSubscript,
+  K::Target: Clone + IntoSubscript + Default + Eq + Hash,
+  V::Target: Default,
 {
   type Target = HashMap<K::Target, V::Target>;
 
@@ -82,7 +83,8 @@ impl<K, V, S: State> ValidatorBuilderFor<ProtoMap<K, V>> for MapValidatorBuilder
 where
   K: ProtoValidator<K>,
   V: ProtoValidator<V>,
-  K::Target: Clone + IntoSubscript,
+  K::Target: Clone + IntoSubscript + Default + Eq + Hash,
+  V::Target: Default,
 {
   type Target = HashMap<K::Target, V::Target>;
   type Validator = MapValidator<K, V>;
@@ -121,7 +123,8 @@ impl<K, V> Validator<ProtoMap<K, V>> for MapValidator<K, V>
 where
   K: ProtoValidator<K>,
   V: ProtoValidator<V>,
-  K::Target: Clone + IntoSubscript,
+  K::Target: Clone + IntoSubscript + Default + Eq + Hash,
+  V::Target: Default,
 {
   type Target = HashMap<K::Target, V::Target>;
 
@@ -145,6 +148,18 @@ where
 
       Some(all_rules.into())
     }
+  }
+
+  fn validate_cel(&self) -> Result<(), CelError> {
+    if let Some(key_validator) = &self.keys {
+      key_validator.validate_cel().unwrap();
+    }
+
+    if let Some(values_validator) = &self.values {
+      values_validator.validate_cel().unwrap();
+    }
+
+    Ok(())
   }
 
   fn validate(

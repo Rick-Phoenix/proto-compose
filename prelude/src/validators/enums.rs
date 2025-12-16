@@ -43,6 +43,7 @@ pub struct EnumValidator<T: ProtoEnum> {
   /// Marks that this field will only accept values that are defined in the enum that it's referring to.
   pub defined_only: bool,
   /// Adds custom validation using one or more [`CelRule`]s to this field.
+  #[builder(into)]
   pub cel: Option<Arc<[CelRule]>>,
   #[builder(default, with = || true)]
   /// Specifies that the field must be set in order to be valid.

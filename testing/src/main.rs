@@ -139,7 +139,7 @@ mod inner {
   #[proto(nested_messages(Nested))]
   #[derive(Clone, Debug, Default)]
   #[proto(options = vec![ random_option() ])]
-  #[proto(validate = vec![ cel_rule!(id = "abc", msg = "abc", expr = "this.timestamp == timestamp('1975-01-01T00:00:00Z')") ])]
+  #[proto(validate = vec![ cel_rule!(id = "abc", msg = "abc", expr = "this.timestamptz == timestamp('1975-01-01T00:00:00Z')") ])]
   pub struct Abc {
     #[proto(timestamp, validate = |v| v.lt_now())]
     pub timestamp: Option<Timestamp>,
@@ -180,7 +180,7 @@ mod inner {
     #[proto(oneof(default, proxied))]
     oneof: PseudoOneof,
 
-    #[proto(sint32, validate = numeric_validator())]
+    #[proto(sint32)]
     sint32: i32,
 
     #[proto(repeated(sint32), validate = |v| v.items(|it| it.gt(0).cel([
@@ -188,8 +188,8 @@ mod inner {
     ])))]
     pub sint32_repeated: Vec<i32>,
 
-    #[proto(map(sint32, sint32), validate = |v| v.keys(|k| k.gt(0)).values(|vals| vals.gt(0)))]
-    sint32_map: HashMap<i32, i32>,
+    #[proto(map(sint32, uint32), validate = |v| v.keys(|k| k.gt(0)).values(|vals| vals.gt(0).cel([ random_cel_rule() ])))]
+    sint32_map: HashMap<i32, u32>,
 
     #[proto(sint32)]
     sint32_optional: Option<i32>,
@@ -216,36 +216,9 @@ mod inner {
 use inner::*;
 
 fn main() {
-  let mut file = prelude::ProtoFile::new("abc.proto", "myapp.v1");
-
-  let mut file2 = proto_file();
-
-  let mut msg = Abc::proto_schema();
-
-  // println!("{file2}");
+  env_logger::init();
 
   let mut msg2 = AbcProto::default();
 
-  msg2.sint32_repeated = vec![-1, -2, -3];
-
-  let result = msg2.validate().unwrap_err();
-
-  println!("{result:#?}");
-
-  let schema = Abc::proto_schema();
-
-  let field_validators: Vec<FieldValidator> = schema
-    .entries
-    .into_iter()
-    .filter_map(|e| {
-      if let MessageEntry::Field(field) = e {
-        Some(field)
-      } else {
-        None
-      }
-    })
-    .filter_map(|f| f.validator)
-    .collect();
-
-  println!("{field_validators:#?}");
+  msg2.validate_cel();
 }

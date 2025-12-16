@@ -14,6 +14,7 @@ pub enum ProtoType {
     is_boxed: bool,
   },
   Int32,
+  Uint32,
   Sint32,
   Duration,
   Timestamp,
@@ -23,6 +24,7 @@ impl ProtoType {
   pub fn field_type_tokens(&self) -> TokenStream2 {
     let prefix = quote! { ::proto_types::field_descriptor_proto::Type };
     match self {
+      ProtoType::Uint32 => quote! { #prefix::Uint32 },
       ProtoType::String => quote! { #prefix::String },
       ProtoType::Bool => quote! { #prefix::Bool },
       ProtoType::Bytes => quote! { #prefix::Bytes },
@@ -92,6 +94,7 @@ impl ProtoType {
     let output = match ident_str {
       "string" => Self::String,
       "sint32" => Self::Sint32,
+      "uint32" => Self::Uint32,
       "message" => {
         let path = fallback
           .ok_or(error_with_span!(
@@ -136,6 +139,7 @@ impl ProtoType {
       ProtoType::Sint32 => quote! { prelude::Sint32 },
       ProtoType::Duration => quote! { proto_types::Duration },
       ProtoType::Timestamp => quote! { proto_types::Timestamp },
+      ProtoType::Uint32 => quote! { u32 },
     }
   }
 
@@ -147,6 +151,7 @@ impl ProtoType {
       "String" => Self::String,
       "bool" => Self::Bool,
       "i32" => Self::Int32,
+      "u32" => Self::Uint32,
       "Timestamp" => Self::Timestamp,
       "Duration" => Self::Duration,
       _ => {
@@ -191,6 +196,7 @@ impl ProtoType {
       ProtoType::Sint32 => quote! { ::prelude::Sint32 },
       ProtoType::Duration => quote! { ::proto_types::Duration },
       ProtoType::Timestamp => quote! { ::proto_types::Timestamp },
+      ProtoType::Uint32 => quote! { u32 },
     }
   }
 
@@ -207,6 +213,7 @@ impl ProtoType {
       ProtoType::Message { .. } | ProtoType::Duration | ProtoType::Timestamp => "message".into(),
       ProtoType::Int32 => "int32".into(),
       ProtoType::Sint32 => "sint32".into(),
+      ProtoType::Uint32 => "uint32".into(),
     }
   }
 
@@ -227,6 +234,7 @@ impl ProtoType {
       ProtoType::Sint32 => quote! { i32 },
       ProtoType::Duration => quote! { proto_types::Duration },
       ProtoType::Timestamp => quote! { proto_types::Timestamp },
+      ProtoType::Uint32 => quote! { u32 },
     }
   }
 
@@ -250,6 +258,7 @@ impl ProtoType {
       ProtoType::Int32 => quote! { int32 },
       ProtoType::Sint32 => quote! { sint32 },
       ProtoType::Duration | ProtoType::Timestamp => quote! { message },
+      ProtoType::Uint32 => quote! { uint32 },
     }
   }
 

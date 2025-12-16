@@ -59,6 +59,22 @@ impl<'a> TypeContext<'a> {
     }
   }
 
+  pub fn cel_check_tokens(&self, field_ident: &Ident, validator: &CallOrClosure) -> TokenStream2 {
+    let target_type = self.proto_field.validator_target_type();
+
+    let validation_expr = match validator {
+      CallOrClosure::Call(call) => quote! { #call.build_validator() },
+
+      CallOrClosure::Closure(closure) => {
+        quote! { <#target_type as ::prelude::ProtoValidator<#target_type>>::validator_from_closure(#closure) }
+      }
+    };
+
+    quote! {
+      #validation_expr.validate_cel().unwrap();
+    }
+  }
+
   pub fn validator_tokens(
     &self,
     field_ident: &Ident,
