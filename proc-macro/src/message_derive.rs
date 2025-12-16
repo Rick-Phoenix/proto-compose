@@ -177,6 +177,11 @@ pub fn process_message_derive_shadow(
     |v| quote! { #v.into_iter().map(|r| &**r).collect() },
   );
 
+  let test_module_ident = format_ident!(
+    "__{}_cel_test",
+    ccase!(snake, orig_struct_ident.to_string())
+  );
+
   output_tokens.extend(quote! {
     #schema_impls
 
@@ -188,11 +193,42 @@ pub fn process_message_derive_shadow(
     #into_proto_impl
     #conversion_helpers
 
-    impl #shadow_struct_ident {
-      pub fn validate_cel() {
-        #cel_checks_tokens
+    #[cfg(test)]
+    mod #test_module_ident {
+      use super::*;
+
+      #[test]
+      fn test() {
+        #shadow_struct_ident::validate_cel()
       }
 
+      impl #shadow_struct_ident {
+        #[track_caller]
+        fn validate_cel() {
+          let mut errors: Vec<::prelude::CelError> = Vec::new();
+
+          #cel_checks_tokens
+
+          let top_level_programs: Vec<&CelProgram> = #top_level_programs;
+
+          if !top_level_programs.is_empty() {
+            if let Err(errs) = ::prelude::test_programs(&top_level_programs, Self::default()) {
+              errors.extend(errs);
+            }
+          }
+
+          if !errors.is_empty() {
+            for error in errors {
+              eprintln!("{error}");
+            }
+
+            panic!();
+          }
+        }
+      }
+    }
+
+    impl #shadow_struct_ident {
       #[doc(hidden)]
       fn __validate_internal(&self, field_context: Option<&FieldContext>, parent_elements: &mut Vec<FieldPathElement>) -> Result<(), Vec<::proto_types::protovalidate::Violation>> {
         use ::prelude::{ProtoValidator, Validator, ValidationResult, field_context::Violations};
@@ -213,25 +249,14 @@ pub fn process_message_derive_shadow(
         let mut top_level_programs: Vec<&CelProgram> = #top_level_programs;
 
         if !top_level_programs.is_empty() {
-          match ::prelude::initialize_context(self.clone()) {
-            Ok(ctx) => {
-              for program in top_level_programs {
-                match program.execute(&ctx) {
-                  Ok(was_successful) => {
-                    if !was_successful {
-                      violations.add_cel(&program.rule, None, parent_elements);
-                    }
-                  }
-                  Err(e) => violations.push(e.into_rule_violation(&program.rule, None, parent_elements))
-                };
-              }
-            },
-            Err(e) => {
-              violations.push(e.into_msg_violation(field_context, parent_elements));
-            }
-          };
+          ::prelude::execute_cel_programs(::prelude::ProgramsExecutionCtx {
+            programs: &top_level_programs,
+            value: self.clone(),
+            violations: &mut violations,
+            field_context,
+            parent_elements,
+          });
         }
-
 
         #validator_tokens
 

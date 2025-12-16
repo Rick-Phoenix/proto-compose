@@ -71,7 +71,9 @@ impl<'a> TypeContext<'a> {
     };
 
     quote! {
-      #validation_expr.validate_cel().unwrap();
+      if let Err(errs) = #validation_expr.validate_cel() {
+        errors.extend(errs);
+      }
     }
   }
 

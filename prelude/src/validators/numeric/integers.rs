@@ -55,25 +55,13 @@ where
       }
 
       if !self.cel.is_empty() {
-        match initialize_context(val) {
-          Ok(ctx) => {
-            for program in &self.cel {
-              match program.execute(&ctx) {
-                Ok(was_successful) => {
-                  if !was_successful {
-                    violations.add_cel(&program.rule, Some(field_context), parent_elements);
-                  }
-                }
-                Err(e) => violations.push(e.into_rule_violation(
-                  &program.rule,
-                  Some(field_context),
-                  parent_elements,
-                )),
-              };
-            }
-          }
-          Err(e) => violations.push(e.into_msg_violation(Some(field_context), parent_elements)),
-        };
+        execute_cel_programs(ProgramsExecutionCtx {
+          programs: &self.cel,
+          value: val,
+          violations,
+          field_context: Some(field_context),
+          parent_elements,
+        });
       }
     } else if self.required {
       violations.add_required(field_context, parent_elements);

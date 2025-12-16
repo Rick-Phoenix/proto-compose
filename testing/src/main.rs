@@ -225,6 +225,4 @@ fn main() {
   env_logger::init();
 
   let mut msg2 = AbcProto::default();
-
-  // AbcProto::validate_cel();
 }

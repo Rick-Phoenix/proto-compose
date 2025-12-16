@@ -7,6 +7,7 @@ use proto_types::cel::CelConversionError;
 use thiserror::Error;
 
 use super::*;
+use crate::validators::field_context::Violations;
 
 pub type CachedProgram = LazyLock<CelProgram>;
 
@@ -39,32 +40,22 @@ impl PartialEq for CelProgram {
 }
 
 impl CelError {
-  pub fn into_msg_violation(
+  // This is for runtime errors. If we get a CEL error we log the actual error while
+  // producing a generic error message
+  pub fn into_violation(
     self,
+    rule: Option<&CelRule>,
     field_context: Option<&FieldContext>,
     parent_elements: &[FieldPathElement],
   ) -> Violation {
-    log::error!("failed to convert message");
+    if let Some(rule) = rule {
+      log::error!("error with CEL rule with id `{}`: {self}", rule.id);
+    } else {
+      log::error!("{self}");
+    }
 
     create_violation_core(
-      None,
-      field_context,
-      parent_elements,
-      &CEL_VIOLATION,
-      "internal server error",
-    )
-  }
-
-  pub fn into_rule_violation(
-    self,
-    rule: &CelRule,
-    field_context: Option<&FieldContext>,
-    parent_elements: &[FieldPathElement],
-  ) -> Violation {
-    log::error!("error with CEL rule with id `{}`: {self}", rule.id);
-
-    create_violation_core(
-      Some(rule.id.as_ref()),
+      rule.map(|r| r.id.as_ref()),
       field_context,
       parent_elements,
       &CEL_VIOLATION,
@@ -77,9 +68,9 @@ impl CelError {
 pub enum CelError {
   #[error("expected a boolean result, got {0:?}")]
   NonBooleanResult(Value),
-  #[error(transparent)]
+  #[error("failed to initialize context: {0}")]
   ConversionError(#[from] CelConversionError),
-  #[error(transparent)]
+  #[error("failed to execute program: {0}")]
   ExecutionError(#[from] ExecutionError),
 }
 
@@ -99,6 +90,49 @@ where
   ctx.add_variable_from_value("now", Value::Timestamp(Utc::now().into()));
 
   Ok(ctx)
+}
+
+pub struct ProgramsExecutionCtx<'a, T> {
+  pub programs: &'a [&'a CelProgram],
+  pub value: T,
+  pub violations: &'a mut Vec<Violation>,
+  pub field_context: Option<&'a FieldContext<'a>>,
+  pub parent_elements: &'a [FieldPathElement],
+}
+
+pub fn execute_cel_programs<T, E>(ctx: ProgramsExecutionCtx<T>)
+where
+  T: TryInto<Value, Error = E>,
+  CelConversionError: From<E>,
+{
+  let ProgramsExecutionCtx {
+    programs,
+    value,
+    violations,
+    field_context,
+    parent_elements,
+  } = ctx;
+
+  let ctx = match initialize_context(value) {
+    Ok(ctx) => ctx,
+    Err(e) => {
+      violations.push(e.into_violation(None, field_context, parent_elements));
+      return;
+    }
+  };
+
+  for program in programs {
+    match program.execute(&ctx) {
+      Ok(was_successful) => {
+        if !was_successful {
+          violations.add_cel(&program.rule, field_context, parent_elements);
+        }
+      }
+      Err(e) => {
+        violations.push(e.into_violation(Some(&program.rule), field_context, parent_elements))
+      }
+    };
+  }
 }
 
 pub fn test_programs<T, E>(programs: &[&CelProgram], value: T) -> Result<(), Vec<CelError>>
