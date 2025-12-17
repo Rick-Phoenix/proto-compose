@@ -44,7 +44,7 @@ pub fn process_message_derive_shadow(
   let mut proto_conversion_impls = ProtoConversionImpl {
     source_ident: orig_struct_ident,
     target_ident: shadow_struct_ident,
-    kind: ItemConversionKind::Struct,
+    kind: InputItemKind::Struct,
     into_proto: ConversionData::new(&message_attrs.into_proto),
     from_proto: ConversionData::new(&message_attrs.from_proto),
   };
@@ -63,13 +63,7 @@ pub fn process_message_derive_shadow(
             .from_proto
             .has_custom_impl()
           {
-            proto_conversion_impls.add_field_from_proto_impl(
-              &from_proto,
-              None,
-              FieldConversionKind::StructField {
-                ident: src_field_ident,
-              },
-            );
+            proto_conversion_impls.add_field_from_proto_impl(&from_proto, None, src_field_ident);
           }
 
           // We close the loop early if the field is ignored
@@ -81,7 +75,7 @@ pub fn process_message_derive_shadow(
 
     let type_ctx = TypeContext::new(rust_type, &field_attrs.proto_field)?;
 
-    let field_tokens = process_field(FieldCtx {
+    let field_tokens = process_proto_field(FieldCtx {
       field: &mut FieldOrVariant::Field(dst_field),
       field_attrs: &field_attrs,
       type_ctx: &type_ctx,
@@ -100,9 +94,7 @@ pub fn process_message_derive_shadow(
       proto_conversion_impls.add_field_into_proto_impl(
         &field_attrs.into_proto,
         &type_ctx,
-        FieldConversionKind::StructField {
-          ident: src_field_ident,
-        },
+        src_field_ident,
       );
     }
 
@@ -113,9 +105,7 @@ pub fn process_message_derive_shadow(
       proto_conversion_impls.add_field_from_proto_impl(
         &field_attrs.from_proto,
         Some(&type_ctx),
-        FieldConversionKind::StructField {
-          ident: src_field_ident,
-        },
+        src_field_ident,
       );
     }
   }
@@ -241,7 +231,7 @@ pub fn process_message_derive_direct(
       _ => {}
     };
 
-    let field_tokens = process_field(FieldCtx {
+    let field_tokens = process_proto_field(FieldCtx {
       field_ident: &src_field_ident.clone(),
       field: &mut FieldOrVariant::Field(src_field),
       field_attrs: &field_attrs,

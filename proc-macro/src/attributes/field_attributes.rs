@@ -17,6 +17,15 @@ pub enum FieldAttrData {
   Normal(Box<FieldAttrs>),
 }
 
+impl FieldAttrData {
+  pub fn from_proto_expr(&self) -> &Option<PathOrClosure> {
+    match self {
+      FieldAttrData::Ignored { from_proto } => from_proto,
+      FieldAttrData::Normal(field_attrs) => &field_attrs.from_proto,
+    }
+  }
+}
+
 pub fn process_derive_field_attrs(
   original_name: &Ident,
   type_info: &TypeInfo,

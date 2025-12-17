@@ -51,7 +51,7 @@ pub struct FieldCtx<'a> {
   pub cel_checks: &'a mut Vec<TokenStream2>,
 }
 
-pub fn process_field(ctx: FieldCtx) -> Result<TokenStream2, Error> {
+pub fn process_proto_field(ctx: FieldCtx) -> Result<TokenStream2, Error> {
   let FieldCtx {
     field,
     field_attrs: FieldAttrs {
@@ -88,7 +88,7 @@ pub fn process_field(ctx: FieldCtx) -> Result<TokenStream2, Error> {
   }
 
   let validator_schema_tokens = if let Some(validator) = validator {
-    let field_validator = FieldValidatorExpr::new(&type_ctx.proto_field, validator);
+    let field_validator = FieldValidatorExpr::new(type_ctx.proto_field, validator);
 
     let field_type = type_ctx.proto_field.proto_kind_tokens();
 

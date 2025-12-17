@@ -66,14 +66,14 @@ fn process_custom_expression(expr: &PathOrClosure, base_ident: &TokenStream2) ->
 pub struct FromImpl<'a> {
   pub source_ident: &'a Ident,
   pub target_ident: &'a Ident,
-  pub kind: ItemConversionKind,
+  pub kind: InputItemKind,
   pub conversion_data: &'a ConversionData<'a>,
 }
 
 pub struct ProtoConversionImpl<'a> {
   pub source_ident: &'a Ident,
   pub target_ident: &'a Ident,
-  pub kind: ItemConversionKind,
+  pub kind: InputItemKind,
   pub into_proto: ConversionData<'a>,
   pub from_proto: ConversionData<'a>,
 }
@@ -140,8 +140,17 @@ impl<'a> ProtoConversionImpl<'a> {
     &mut self,
     custom_expression: &Option<PathOrClosure>,
     type_ctx: &TypeContext,
-    field_conversion_kind: FieldConversionKind,
+    field_ident: &Ident,
   ) {
+    let field_conversion_kind = match &self.kind {
+      InputItemKind::Enum => FieldConversionKind::EnumVariant {
+        variant_ident: field_ident,
+        source_enum_ident: self.source_ident,
+        target_enum_ident: self.target_ident,
+      },
+      InputItemKind::Struct => FieldConversionKind::StructField { ident: field_ident },
+    };
+
     let base_ident = field_conversion_kind.base_ident();
 
     let conversion_expr = if let Some(expr) = custom_expression {
@@ -161,8 +170,17 @@ impl<'a> ProtoConversionImpl<'a> {
     &mut self,
     custom_expression: &Option<PathOrClosure>,
     type_ctx: Option<&TypeContext>,
-    field_conversion_kind: FieldConversionKind,
+    field_ident: &Ident,
   ) {
+    let field_conversion_kind = match &self.kind {
+      InputItemKind::Enum => FieldConversionKind::EnumVariant {
+        variant_ident: field_ident,
+        source_enum_ident: self.source_ident,
+        target_enum_ident: self.target_ident,
+      },
+      InputItemKind::Struct => FieldConversionKind::StructField { ident: field_ident },
+    };
+
     let conversion_expr = if let Some(type_ctx) = type_ctx {
       let base_ident = field_conversion_kind.base_ident();
 
@@ -212,7 +230,7 @@ impl<'a> ConversionData<'a> {
 }
 
 #[derive(Clone, Copy)]
-pub enum ItemConversionKind {
+pub enum InputItemKind {
   Enum,
   Struct,
 }
@@ -235,12 +253,12 @@ fn create_from_impl(info: &FromImpl) -> TokenStream2 {
     process_custom_expression(expr, &base_ident)
   } else {
     match kind {
-      ItemConversionKind::Enum => quote! {
+      InputItemKind::Enum => quote! {
         match value {
           #conversion_tokens
         }
       },
-      ItemConversionKind::Struct => quote! {
+      InputItemKind::Struct => quote! {
         Self {
           #conversion_tokens
         }

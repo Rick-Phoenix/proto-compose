@@ -39,7 +39,7 @@ pub(crate) fn process_oneof_derive_shadow(
   let mut proto_conversion_impls = ProtoConversionImpl {
     source_ident: orig_enum_ident,
     target_ident: shadow_enum_ident,
-    kind: ItemConversionKind::Enum,
+    kind: InputItemKind::Enum,
     into_proto: ConversionData::new(&oneof_attrs.into_proto),
     from_proto: ConversionData::new(&oneof_attrs.from_proto),
   };
@@ -73,15 +73,7 @@ pub(crate) fn process_oneof_derive_shadow(
             .from_proto
             .has_custom_impl()
           {
-            proto_conversion_impls.add_field_from_proto_impl(
-              &from_proto,
-              None,
-              FieldConversionKind::EnumVariant {
-                variant_ident,
-                source_enum_ident: orig_enum_ident,
-                target_enum_ident: shadow_enum_ident,
-              },
-            );
+            proto_conversion_impls.add_field_from_proto_impl(&from_proto, None, variant_ident);
           }
 
           // We close the loop early if the field is ignored
@@ -93,7 +85,7 @@ pub(crate) fn process_oneof_derive_shadow(
 
     let type_ctx = TypeContext::new(rust_type, &field_attrs.proto_field)?;
 
-    let variant_proto_tokens = process_field(FieldCtx {
+    let variant_proto_tokens = process_proto_field(FieldCtx {
       field: &mut FieldOrVariant::Variant(dst_variant),
       field_attrs: &field_attrs,
       type_ctx: &type_ctx,
@@ -110,13 +102,9 @@ pub(crate) fn process_oneof_derive_shadow(
       .has_custom_impl()
     {
       proto_conversion_impls.add_field_into_proto_impl(
-        &oneof_attrs.into_proto,
+        &field_attrs.into_proto,
         &type_ctx,
-        FieldConversionKind::EnumVariant {
-          variant_ident,
-          source_enum_ident: orig_enum_ident,
-          target_enum_ident: shadow_enum_ident,
-        },
+        variant_ident,
       );
     }
 
@@ -127,11 +115,7 @@ pub(crate) fn process_oneof_derive_shadow(
       proto_conversion_impls.add_field_from_proto_impl(
         &field_attrs.from_proto,
         Some(&type_ctx),
-        FieldConversionKind::EnumVariant {
-          variant_ident,
-          source_enum_ident: orig_enum_ident,
-          target_enum_ident: shadow_enum_ident,
-        },
+        variant_ident,
       );
     }
   }
@@ -229,7 +213,7 @@ pub(crate) fn process_oneof_derive_direct(
       _ => bail!(variant_type, "Unsupported Oneof variant type. If you want to use a custom type, you must use a proxied oneof with custom conversions"),
     };
 
-    let variant_proto_tokens = process_field(FieldCtx {
+    let variant_proto_tokens = process_proto_field(FieldCtx {
       field_ident: &variant.ident.clone(),
       field: &mut FieldOrVariant::Variant(variant),
       field_attrs: &field_attrs,
