@@ -44,12 +44,12 @@ impl Validator<Duration> for DurationValidator {
         violations.add(field_context, parent_elements, &DURATION_LTE_VIOLATION, &format!("must be shorter than or equal to {lte}"));
       }
 
-      if let Some(allowed_list) = &self.in_ && !Duration::is_in(allowed_list, val) {
-        violations.add(field_context, parent_elements, &DURATION_IN_VIOLATION, &format!("must be one of these values: {}", format_list(allowed_list.into_iter())));
+      if let Some(allowed_list) = self.in_ && !Duration::is_in(allowed_list, val) {
+        violations.add(field_context, parent_elements, &DURATION_IN_VIOLATION, &format!("must be one of these values: {}", format_list(allowed_list.iter())));
       }
 
-      if let Some(forbidden_list) = &self.not_in && Duration::is_in(forbidden_list, val) {
-        violations.add(field_context, parent_elements, &DURATION_NOT_IN_VIOLATION, &format!("cannot be one of these values: {}", format_list(forbidden_list.into_iter())));
+      if let Some(forbidden_list) = self.not_in && Duration::is_in(forbidden_list, val) {
+        violations.add(field_context, parent_elements, &DURATION_NOT_IN_VIOLATION, &format!("cannot be one of these values: {}", format_list(forbidden_list.iter())));
       }
 
       if !self.cel.is_empty() {
@@ -79,11 +79,9 @@ impl Validator<Duration> for DurationValidator {
 #[builder(derive(Clone))]
 pub struct DurationValidator {
   /// Specifies that only the values in this list will be considered valid for this field.
-  #[builder(into)]
-  pub in_: Option<ItemLookup<'static, Duration>>,
+  pub in_: Option<&'static ItemLookup<Duration>>,
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  #[builder(into)]
-  pub not_in: Option<ItemLookup<'static, Duration>>,
+  pub not_in: Option<&'static ItemLookup<Duration>>,
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<Duration>,
   /// Specifies that the value must be smaller than the indicated amount in order to pass validation.
@@ -126,8 +124,14 @@ impl From<DurationValidator> for ProtoOption {
     insert_option!(validator, rules, lte);
     insert_option!(validator, rules, gt);
     insert_option!(validator, rules, gte);
-    insert_list_option!(validator, rules, in_);
-    insert_list_option!(validator, rules, not_in);
+
+    if let Some(allowed_list) = &validator.in_ {
+      rules.push((IN_.clone(), OptionValue::new_list(allowed_list.iter())));
+    }
+
+    if let Some(forbidden_list) = &validator.not_in {
+      rules.push((NOT_IN.clone(), OptionValue::new_list(forbidden_list.iter())));
+    }
 
     let mut outer_rules: OptionValueList = vec![];
 

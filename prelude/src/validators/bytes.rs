@@ -94,11 +94,11 @@ impl Validator<Bytes> for BytesValidator {
       }
 
       if let Some(allowed_list) = &self.in_ && !<&Bytes>::is_in(allowed_list, val) {
-        violations.add(field_context, parent_elements, &BYTES_IN_VIOLATION, &format!("must be one of these values: {}", format_bytes_list(allowed_list.into_iter().copied())));
+        violations.add(field_context, parent_elements, &BYTES_IN_VIOLATION, &format!("must be one of these values: {}", format_bytes_list(allowed_list.iter().map(|b| b.as_ref()))));
       }
 
       if let Some(forbidden_list) = &self.not_in && <&Bytes>::is_in(forbidden_list, val) {
-        violations.add(field_context, parent_elements, &BYTES_IN_VIOLATION, &format!("cannot be one of these values: {}", format_bytes_list(forbidden_list.into_iter().copied())));
+        violations.add(field_context, parent_elements, &BYTES_IN_VIOLATION, &format!("cannot be one of these values: {}", format_bytes_list(forbidden_list.iter().map(|b| b.as_ref()))));
       }
 
       if let Some(well_known) = &self.well_known {
@@ -191,11 +191,9 @@ pub struct BytesValidator {
   /// Specifies a subset of bytes that the value must contain in order to pass validation.
   pub contains: Option<Bytes>,
   /// Specifies that only the values in this list will be considered valid for this field.
-  #[builder(into)]
-  pub in_: Option<ItemLookup<'static, &'static [u8]>>,
+  pub in_: Option<&'static ItemLookup<&'static [u8]>>,
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  #[builder(into)]
-  pub not_in: Option<ItemLookup<'static, &'static [u8]>>,
+  pub not_in: Option<&'static ItemLookup<&'static [u8]>>,
   #[builder(setters(vis = "", name = well_known))]
   pub well_known: Option<WellKnownBytes>,
   /// Specifies that only this specific value will be considered valid for this field.

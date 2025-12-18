@@ -72,11 +72,11 @@ where
       }
 
       if let Some(allowed_list) = &self.in_ && !Num::RustType::is_in(allowed_list, val) {
-        violations.add(field_context, parent_elements, Num::IN_VIOLATION, &format!("must be one of these values: {}", format_list(allowed_list.into_iter())));
+        violations.add(field_context, parent_elements, Num::IN_VIOLATION, &format!("must be one of these values: {}", format_list(allowed_list.iter())));
       }
 
       if let Some(forbidden_list) = &self.not_in && Num::RustType::is_in(forbidden_list, val) {
-        violations.add(field_context, parent_elements, Num::NOT_IN_VIOLATION, &format!("cannot be one of these values: {}", format_list(forbidden_list.into_iter())));
+        violations.add(field_context, parent_elements, Num::NOT_IN_VIOLATION, &format!("cannot be one of these values: {}", format_list(forbidden_list.iter())));
       }
 
       if !self.cel.is_empty() {
@@ -120,11 +120,9 @@ where
   /// Specifies that this field's value will be valid only if it is smaller than, or equal to, the specified amount
   pub gte: Option<Num::RustType>,
   /// Specifies that only the values in this list will be considered valid for this field.
-  #[builder(into)]
-  pub in_: Option<ItemLookup<'static, OrderedFloat<Num::RustType>>>,
+  pub in_: Option<&'static ItemLookup<OrderedFloat<Num::RustType>>>,
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  #[builder(into)]
-  pub not_in: Option<ItemLookup<'static, OrderedFloat<Num::RustType>>>,
+  pub not_in: Option<&'static ItemLookup<OrderedFloat<Num::RustType>>>,
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   #[builder(default, with = |programs: impl IntoIterator<Item = &'static LazyLock<CelProgram>>| collect_programs(programs))]
   pub cel: Vec<&'static CelProgram>,
@@ -183,14 +181,14 @@ where
     if let Some(allowed_list) = &validator.in_ {
       values.push((
         IN_.clone(),
-        OptionValue::new_list(allowed_list.into_iter().map(|of| of.0)),
+        OptionValue::new_list(allowed_list.iter().map(|of| of.0)),
       ));
     }
 
     if let Some(forbidden_list) = &validator.not_in {
       values.push((
         NOT_IN.clone(),
-        OptionValue::new_list(forbidden_list.into_iter().map(|of| of.0)),
+        OptionValue::new_list(forbidden_list.iter().map(|of| of.0)),
       ));
     }
 

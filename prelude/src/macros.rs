@@ -1,4 +1,59 @@
 #[macro_export]
+macro_rules! cached_slice {
+  ($items:expr) => {{
+    use std::sync::LazyLock;
+
+    LazyLock::new(|| {
+      ::prelude::ItemLookup::Slice(
+        $items
+          .into_iter()
+          .collect::<Vec<_>>()
+          .into_boxed_slice(),
+      )
+    })
+  }};
+}
+
+#[macro_export]
+macro_rules! inline_cached_slice {
+  ($typ:ty, $items:expr) => {{
+    use std::sync::LazyLock;
+
+    static LIST: LazyLock<::prelude::ItemLookup<$typ>> = LazyLock::new(|| {
+      ::prelude::ItemLookup::Slice(
+        $items
+          .into_iter()
+          .collect::<Vec<$typ>>()
+          .into_boxed_slice(),
+      )
+    });
+
+    &LIST
+  }};
+}
+
+#[macro_export]
+macro_rules! cached_set {
+  ($items:expr) => {{
+    use std::{collections::HashSet, sync::LazyLock};
+
+    LazyLock::new(|| ::prelude::ItemLookup::Set($items.into_iter().collect()))
+  }};
+}
+
+#[macro_export]
+macro_rules! inline_cached_set {
+  ($typ:ty, $items:expr) => {{
+    use std::{collections::HashSet, sync::LazyLock};
+
+    static LIST: LazyLock<::prelude::ItemLookup<$typ>> =
+      LazyLock::new(|| ::prelude::ItemLookup::Set($items.into_iter().collect()));
+
+    &LIST
+  }};
+}
+
+#[macro_export]
 macro_rules! regex {
   ($id:literal, $content:expr) => {
     std::sync::LazyLock::new(|| {
@@ -8,12 +63,34 @@ macro_rules! regex {
 }
 
 #[macro_export]
+macro_rules! inline_regex {
+  ($id:literal, $content:expr) => {{
+    static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
+      ::regex::Regex::new($content).expect(concat!("failed to parse regex with id ", $id))
+    });
+
+    &*REGEX
+  }};
+}
+
+#[macro_export]
 macro_rules! bytes_regex {
   ($id:literal, $content:expr) => {
     std::sync::LazyLock::new(|| {
       ::regex::bytes::Regex::new($content).expect(concat!("failed to parse regex with id ", $id))
     })
   };
+}
+
+#[macro_export]
+macro_rules! inline_bytes_regex {
+  ($id:literal, $content:expr) => {{
+    static REGEX: std::sync::LazyLock<::regex::bytes::Regex> = std::sync::LazyLock::new(|| {
+      ::regex::bytes::Regex::new($content).expect(concat!("failed to parse regex with id ", $id))
+    });
+
+    &*REGEX
+  }};
 }
 
 macro_rules! handle_ignore_always {
@@ -67,6 +144,22 @@ macro_rules! cel_program {
   ($rule:expr) => {
     std::sync::LazyLock::new(|| CelProgram::new($rule))
   };
+}
+
+#[macro_export]
+macro_rules! inline_cel_program {
+  (id = $id:expr, msg = $msg:expr, expr = $expr:expr) => {{
+    static PROGRAM: ::std::sync::LazyLock<::prelude::CelProgram> =
+      $crate::cel_program!(id = $id, msg = $msg, expr = $expr);
+
+    &PROGRAM
+  }};
+
+  ($rule:expr) => {{
+    static PROGRAM: ::std::sync::LazyLock<::prelude::CelProgram> = $crate::cel_program!($rule);
+
+    &PROGRAM
+  }};
 }
 
 macro_rules! reusable_string {

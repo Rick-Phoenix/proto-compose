@@ -41,10 +41,13 @@ fn random_option() -> ProtoOption {
 
 #[proc_macro_impls::proto_module(file = "abc.proto", package = "myapp.v1")]
 mod inner {
-  use std::sync::{Arc, LazyLock};
+  use std::{
+    collections::HashSet,
+    sync::{Arc, LazyLock},
+  };
 
   use bytes::Bytes;
-  use prelude::{bytes_regex, CachedBytesRegex, *};
+  use prelude::{bytes_regex, cached_set, CachedBytesRegex, *};
   use proc_macro_impls::{
     proto_enum, proto_extension, proto_message, proto_oneof, proto_service, Extension, Service,
   };
@@ -123,6 +126,8 @@ mod inner {
   static ABC: CachedRegex = regex!("abc", "abcde");
   static BYTES_REGEX: CachedBytesRegex = bytes_regex!("abc", "abcde");
 
+  static AB: CachedList<&str> = cached_slice!(["abc"]);
+
   #[proto_message]
   #[proto(reserved_numbers(1, 2, 3..9))]
   #[proto(reserved_names("abc", "bcd"))]
@@ -143,10 +148,10 @@ mod inner {
     #[proto(message(AbcProto, boxed), validate = |v| v.required())]
     boxed: Option<Box<Abc>>,
 
-    #[proto(bytes, validate = |v| v.pattern(&BYTES_REGEX))]
+    #[proto(bytes, validate = |v| v.pattern(inline_bytes_regex!("abc", "abc")))]
     pub bytes: Bytes,
 
-    #[proto(tag = 35, validate = |v| v.pattern(&ABC))]
+    #[proto(tag = 35, validate = |v| v.pattern(inline_regex!("abc", "abc")).in_(inline_cached_slice!(&str, ["abc"])))]
     name: String,
 
     #[proto(ignore, from_proto = Default::default)]

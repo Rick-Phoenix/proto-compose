@@ -270,11 +270,9 @@ pub struct StringValidator {
   /// Specifies a substring that this field's value must not contain in order to be considered valid.
   pub not_contains: Option<Arc<str>>,
   /// Specifies that only the values in this list will be considered valid for this field.
-  #[builder(into)]
-  pub in_: Option<ItemLookup<'static, &'static str>>,
+  pub in_: Option<&'static ItemLookup<&'static str>>,
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  #[builder(into)]
-  pub not_in: Option<ItemLookup<'static, &'static str>>,
+  pub not_in: Option<&'static ItemLookup<&'static str>>,
   #[builder(setters(vis = "", name = well_known))]
   pub well_known: Option<WellKnownStrings>,
   /// Specifies that only this specific value will be considered valid for this field.
@@ -323,8 +321,14 @@ impl From<StringValidator> for ProtoOption {
     insert_option!(validator, rules, suffix);
     insert_option!(validator, rules, contains);
     insert_option!(validator, rules, not_contains);
-    insert_list_option!(validator, rules, in_);
-    insert_list_option!(validator, rules, not_in);
+
+    if let Some(allowed_list) = &validator.in_ {
+      rules.push((IN_.clone(), OptionValue::new_list(allowed_list.iter())));
+    }
+
+    if let Some(forbidden_list) = &validator.not_in {
+      rules.push((NOT_IN.clone(), OptionValue::new_list(forbidden_list.iter())));
+    }
 
     if let Some(v) = validator.well_known {
       v.to_option(&mut rules)

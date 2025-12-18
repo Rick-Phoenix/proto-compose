@@ -35,11 +35,11 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
       }
 
       if let Some(allowed_list) = &self.in_ && !protocheck_core::wrappers::EnumVariant::is_in(allowed_list, protocheck_core::wrappers::EnumVariant(val)) {
-        violations.add(field_context, parent_elements, &ENUM_IN_VIOLATION, &format!("must be one of these values: {}", format_list(allowed_list.into_iter())));
+        violations.add(field_context, parent_elements, &ENUM_IN_VIOLATION, &format!("must be one of these values: {}", format_list(allowed_list.iter())));
       }
 
       if let Some(forbidden_list) = &self.not_in && protocheck_core::wrappers::EnumVariant::is_in(forbidden_list, protocheck_core::wrappers::EnumVariant(val)) {
-        violations.add(field_context, parent_elements, &ENUM_NOT_IN_VIOLATION, &format!("cannot be one of these values: {}", format_list(forbidden_list.into_iter())));
+        violations.add(field_context, parent_elements, &ENUM_NOT_IN_VIOLATION, &format!("cannot be one of these values: {}", format_list(forbidden_list.iter())));
       }
 
       if self.defined_only && T::try_from(val).is_err() {
@@ -80,11 +80,9 @@ pub struct EnumValidator<T: ProtoEnum> {
   #[builder(default, setters(vis = ""))]
   _enum: PhantomData<T>,
   /// Specifies that only the values in this list will be considered valid for this field.
-  #[builder(into)]
-  pub in_: Option<ItemLookup<'static, i32>>,
+  pub in_: Option<&'static ItemLookup<i32>>,
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  #[builder(into)]
-  pub not_in: Option<ItemLookup<'static, i32>>,
+  pub not_in: Option<&'static ItemLookup<i32>>,
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<i32>,
   #[builder(default, with = || true)]
@@ -133,8 +131,14 @@ impl<T: ProtoEnum> From<EnumValidator<T>> for ProtoOption {
     }
 
     insert_boolean_option!(validator, rules, defined_only);
-    insert_list_option!(validator, rules, in_);
-    insert_list_option!(validator, rules, not_in);
+
+    if let Some(allowed_list) = &validator.in_ {
+      rules.push((IN_.clone(), OptionValue::new_list(allowed_list.iter())));
+    }
+
+    if let Some(forbidden_list) = &validator.not_in {
+      rules.push((NOT_IN.clone(), OptionValue::new_list(forbidden_list.iter())));
+    }
 
     let mut outer_rules: OptionValueList = vec![];
 

@@ -26,11 +26,11 @@ impl Validator<Any> for AnyValidator {
 
     if let Some(val) = val {
       if let Some(allowed_list) = &self.in_ && !<&Any>::is_in(allowed_list, val) {
-        violations.add(field_context, parent_elements, &ANY_IN_VIOLATION, &format!("must have one of these type URLs: {}", format_list(allowed_list.into_iter())));
+        violations.add(field_context, parent_elements, &ANY_IN_VIOLATION, &format!("must have one of these type URLs: {}", format_list(allowed_list.iter())));
       }
 
       if let Some(forbidden_list) = &self.not_in && <&Any>::is_in(forbidden_list, val) {
-        violations.add(field_context, parent_elements, &ANY_NOT_IN_VIOLATION, &format!("cannot have one of these type URLs: {}", format_list(forbidden_list.into_iter())));
+        violations.add(field_context, parent_elements, &ANY_NOT_IN_VIOLATION, &format!("cannot have one of these type URLs: {}", format_list(forbidden_list.iter())));
       }
 
       if !self.cel.is_empty() {
@@ -59,12 +59,10 @@ impl Validator<Any> for AnyValidator {
 #[derive(Clone, Debug, Builder)]
 #[builder(derive(Clone))]
 pub struct AnyValidator {
-  /// Specifies that the given `google.protobuf.Any` message must have a type URL that is contained in this list.
-  #[builder(into)]
-  pub in_: Option<ItemLookup<'static, &'static str>>,
-  /// Specifies that the given `google.protobuf.Any` message must have a type URL that is NOT contained in this list.
-  #[builder(into)]
-  pub not_in: Option<ItemLookup<'static, &'static str>>,
+  /// Specifies that only the values in this list will be considered valid for this field.
+  pub in_: Option<&'static ItemLookup<&'static str>>,
+  /// Specifies that the values in this list will be considered NOT valid for this field.
+  pub not_in: Option<&'static ItemLookup<&'static str>>,
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   #[builder(default, with = |programs: impl IntoIterator<Item = &'static LazyLock<CelProgram>>| collect_programs(programs))]
   pub cel: Vec<&'static CelProgram>,
@@ -89,8 +87,13 @@ impl From<AnyValidator> for ProtoOption {
   fn from(validator: AnyValidator) -> Self {
     let mut rules: OptionValueList = Vec::new();
 
-    insert_list_option!(validator, rules, in_);
-    insert_list_option!(validator, rules, not_in);
+    if let Some(allowed_list) = &validator.in_ {
+      rules.push((IN_.clone(), OptionValue::new_list(allowed_list.iter())));
+    }
+
+    if let Some(forbidden_list) = &validator.not_in {
+      rules.push((NOT_IN.clone(), OptionValue::new_list(forbidden_list.iter())));
+    }
 
     let mut outer_rules: OptionValueList = vec![];
 

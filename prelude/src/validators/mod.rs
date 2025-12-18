@@ -3,7 +3,7 @@ mod common_strings;
 use std::{fmt::Debug, hash::Hash, sync::Arc};
 
 use common_strings::*;
-use proto_types::{field_descriptor_proto::Type, protovalidate::*};
+use proto_types::protovalidate::*;
 use protocheck_core::{
   ordered_float::OrderedFloat,
   validators::{
@@ -71,6 +71,8 @@ pub trait ProtoValidator: std::marker::Sized {
   }
 }
 
+pub type CachedList<T> = LazyLock<ItemLookup<T>>;
+
 type OptionValueList = Vec<(Arc<str>, OptionValue)>;
 
 impl From<Ignore> for OptionValue {
@@ -117,20 +119,6 @@ mod macros {
           .map(|program| program.rule.clone().into())
           .collect();
         $values.push((CEL.clone(), OptionValue::List(rule_values.into())));
-      }
-    };
-  }
-
-  macro_rules! insert_list_option {
-    (
-    $validator:ident,
-    $values:ident,
-    $field:ident
-  ) => {
-      $crate::paste! {
-        if let Some(value) = $validator.$field {
-          $values.push(([< $field:snake:upper >].clone(), OptionValue::new_list(value)))
-        }
       }
     };
   }
