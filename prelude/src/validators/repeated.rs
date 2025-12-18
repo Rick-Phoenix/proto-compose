@@ -68,12 +68,22 @@ where
 {
   type Target = Vec<T::Target>;
 
+  #[cfg(feature = "testing")]
   fn cel_rules(&self) -> Vec<&'static CelRule> {
     let mut rules = Vec::new();
 
     rules.extend(self.items.iter().flat_map(|i| i.cel_rules()));
 
     rules
+  }
+
+  #[cfg(feature = "testing")]
+  fn check_cel_programs_with(&self, _val: Self::Target) -> Result<(), Vec<CelError>> {
+    if let Some(items_validator) = &self.items {
+      items_validator.check_cel_programs()
+    } else {
+      Ok(())
+    }
   }
 
   fn validate(

@@ -10,6 +10,8 @@ impl_into_option!(TimestampValidator);
 impl Validator<Timestamp> for TimestampValidator {
   type Target = Timestamp;
 
+  impl_testing_methods!();
+
   fn validate(
     &self,
     field_context: &FieldContext,

@@ -15,6 +15,8 @@ impl<T: ProtoEnum, S: State> ValidatorBuilderFor<T> for EnumValidatorBuilder<T, 
 impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
   type Target = i32;
 
+  impl_testing_methods!();
+
   fn validate(
     &self,
     field_context: &FieldContext,

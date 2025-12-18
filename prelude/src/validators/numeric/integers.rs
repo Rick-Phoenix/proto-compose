@@ -23,8 +23,7 @@ where
 {
   type Target = Num::RustType;
 
-  impl_rules_collection!();
-  impl_cel_check!();
+  impl_testing_methods!();
 
   fn validate(
     &self,

@@ -122,6 +122,7 @@ where
 {
   type Target = HashMap<K::Target, V::Target>;
 
+  #[cfg(feature = "testing")]
   fn cel_rules(&self) -> Vec<&'static CelRule> {
     let mut rules = Vec::new();
 
@@ -132,7 +133,7 @@ where
   }
 
   #[cfg(feature = "testing")]
-  fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
+  fn check_cel_programs_with(&self, _val: Self::Target) -> Result<(), Vec<CelError>> {
     let mut errors: Vec<CelError> = Vec::new();
 
     if let Some(key_validator) = &self.keys {

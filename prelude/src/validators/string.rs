@@ -13,6 +13,8 @@ impl_ignore!(StringValidatorBuilder);
 impl Validator<String> for StringValidator {
   type Target = String;
 
+  impl_testing_methods!();
+
   fn validate(
     &self,
     field_context: &FieldContext,

@@ -10,6 +10,8 @@ impl_into_option!(AnyValidator);
 impl Validator<Any> for AnyValidator {
   type Target = Any;
 
+  impl_testing_methods!();
+
   fn validate(
     &self,
     field_context: &FieldContext,

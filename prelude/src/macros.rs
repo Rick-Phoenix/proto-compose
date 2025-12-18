@@ -14,7 +14,7 @@ macro_rules! handle_ignore_if_zero_value {
   };
 }
 
-macro_rules! impl_cel_check {
+macro_rules! impl_testing_methods {
   () => {
     #[cfg(feature = "testing")]
     fn check_cel_programs_with(&self, val: Self::Target) -> Result<(), Vec<CelError>> {
@@ -24,11 +24,8 @@ macro_rules! impl_cel_check {
         Ok(())
       }
     }
-  };
-}
 
-macro_rules! impl_rules_collection {
-  () => {
+    #[cfg(feature = "testing")]
     fn cel_rules(&self) -> Vec<&'static CelRule> {
       self.cel.iter().map(|prog| &prog.rule).collect()
     }

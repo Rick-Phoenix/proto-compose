@@ -10,6 +10,8 @@ impl_into_option!(DurationValidator);
 impl Validator<Duration> for DurationValidator {
   type Target = Duration;
 
+  impl_testing_methods!();
+
   fn validate(
     &self,
     field_context: &FieldContext,

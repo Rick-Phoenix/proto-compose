@@ -23,14 +23,7 @@ where
 {
   type Target = T;
 
-  #[cfg(feature = "testing")]
-  fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
-    if !self.cel.is_empty() {
-      test_programs(&self.cel, T::default())
-    } else {
-      Ok(())
-    }
-  }
+  impl_testing_methods!();
 
   fn validate(
     &self,
