@@ -65,7 +65,7 @@ impl<'a> FieldValidatorExpr<'a> {
       CallOrClosure::Call(call) => quote! { #call.build_validator() },
 
       CallOrClosure::Closure(closure) => {
-        quote! { <#target_type as ::prelude::ProtoValidator<#target_type>>::validator_from_closure(#closure) }
+        quote! { <#target_type as ::prelude::ProtoValidator>::validator_from_closure(#closure) }
       }
     }
   }

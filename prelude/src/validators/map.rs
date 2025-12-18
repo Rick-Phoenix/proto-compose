@@ -60,10 +60,10 @@ impl IntoSubscript for u64 {
   }
 }
 
-impl<K, V> ProtoValidator<ProtoMap<K, V>> for ProtoMap<K, V>
+impl<K, V> ProtoValidator for ProtoMap<K, V>
 where
-  K: ProtoValidator<K>,
-  V: ProtoValidator<V>,
+  K: ProtoValidator,
+  V: ProtoValidator,
   K::Target: Clone + IntoSubscript + Default + Eq + Hash,
   V::Target: Default,
 {
@@ -79,8 +79,8 @@ where
 
 impl<K, V, S: State> ValidatorBuilderFor<ProtoMap<K, V>> for MapValidatorBuilder<K, V, S>
 where
-  K: ProtoValidator<K>,
-  V: ProtoValidator<V>,
+  K: ProtoValidator,
+  V: ProtoValidator,
   K::Target: Clone + IntoSubscript + Default + Eq + Hash,
   V::Target: Default,
 {
@@ -95,8 +95,8 @@ where
 #[derive(Clone, Debug)]
 pub struct MapValidator<K, V>
 where
-  K: ProtoValidator<K>,
-  V: ProtoValidator<V>,
+  K: ProtoValidator,
+  V: ProtoValidator,
 {
   /// The validation rules to apply to the keys of this map field.
   pub keys: Option<K::Validator>,
@@ -115,8 +115,8 @@ where
 
 impl<K, V> Validator<ProtoMap<K, V>> for MapValidator<K, V>
 where
-  K: ProtoValidator<K>,
-  V: ProtoValidator<V>,
+  K: ProtoValidator,
+  V: ProtoValidator,
   K::Target: Clone + IntoSubscript + Default + Eq + Hash,
   V::Target: Default,
 {
@@ -240,8 +240,8 @@ where
 
 impl<K, V> MapValidator<K, V>
 where
-  K: ProtoValidator<K>,
-  V: ProtoValidator<V>,
+  K: ProtoValidator,
+  V: ProtoValidator,
 {
   pub fn builder() -> MapValidatorBuilder<K, V> {
     MapValidatorBuilder {
@@ -260,8 +260,8 @@ where
 #[derive(Clone, Debug, Default)]
 pub struct MapValidatorBuilder<K, V, S: State = Empty>
 where
-  K: ProtoValidator<K>,
-  V: ProtoValidator<V>,
+  K: ProtoValidator,
+  V: ProtoValidator,
 {
   pub keys: Option<K::Validator>,
 
@@ -277,8 +277,8 @@ where
 
 impl<S: State, K, V> MapValidatorBuilder<K, V, S>
 where
-  K: ProtoValidator<K>,
-  V: ProtoValidator<V>,
+  K: ProtoValidator,
+  V: ProtoValidator,
 {
   pub fn build(self) -> MapValidator<K, V> {
     let Self {
@@ -376,7 +376,7 @@ where
   /// Sets the rules for the values of this map field.
   pub fn values<F, FinalBuilder>(self, config_fn: F) -> MapValidatorBuilder<K, V, SetValues<S>>
   where
-    V: ProtoValidator<V>,
+    V: ProtoValidator,
     FinalBuilder: ValidatorBuilderFor<V, Validator = V::Validator>,
     F: FnOnce(V::Builder) -> FinalBuilder,
   {
@@ -397,8 +397,8 @@ where
 
 impl<K, V, S: State> From<MapValidatorBuilder<K, V, S>> for ProtoOption
 where
-  K: ProtoValidator<K>,
-  V: ProtoValidator<V>,
+  K: ProtoValidator,
+  V: ProtoValidator,
 {
   fn from(value: MapValidatorBuilder<K, V, S>) -> Self {
     value.build().into()
@@ -407,8 +407,8 @@ where
 
 impl<K, V> From<MapValidator<K, V>> for ProtoOption
 where
-  K: ProtoValidator<K>,
-  V: ProtoValidator<V>,
+  K: ProtoValidator,
+  V: ProtoValidator,
 {
   fn from(validator: MapValidator<K, V>) -> Self {
     let mut rules: OptionValueList = Vec::new();

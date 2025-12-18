@@ -261,7 +261,7 @@ macro_rules! impl_float_wrapper {
         }
       }
 
-      impl ProtoValidator<$target_type> for $target_type {
+      impl ProtoValidator for $target_type {
         type Target = $target_type;
         type Validator = FloatValidator<$target_type>;
         type Builder = FloatValidatorBuilder<$target_type>;

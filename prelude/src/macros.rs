@@ -92,7 +92,7 @@ macro_rules! impl_into_option {
 macro_rules! impl_validator {
   ($validator:ident, $rust_type:ty) => {
     $crate::paste! {
-      impl ProtoValidator<$rust_type> for $rust_type {
+      impl ProtoValidator for $rust_type {
         type Target = $rust_type;
         type Validator = $validator;
         type Builder = [< $validator Builder >];

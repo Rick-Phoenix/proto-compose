@@ -95,7 +95,7 @@ pub fn impl_validator(ctx: ValidatorImplCtx) -> TokenStream2 {
       }
     }
 
-    impl ::prelude::ProtoValidator<#target_ident> for #target_ident {
+    impl ::prelude::ProtoValidator for #target_ident {
       type Target = Self;
       type Validator = ::prelude::MessageValidator<Self>;
       type Builder = ::prelude::MessageValidatorBuilder<Self>;

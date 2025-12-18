@@ -16,9 +16,9 @@ impl<T: AsProtoField> AsProtoField for Vec<T> {
   }
 }
 
-impl<T> ProtoValidator<Vec<T>> for Vec<T>
+impl<T> ProtoValidator for Vec<T>
 where
-  T: AsProtoType + ProtoValidator<T>,
+  T: AsProtoType + ProtoValidator,
   T::Target: UniqueItem,
 {
   type Target = Vec<T::Target>;
@@ -33,7 +33,7 @@ where
 impl<T, S> ValidatorBuilderFor<Vec<T>> for RepeatedValidatorBuilder<T, S>
 where
   S: State,
-  T: AsProtoType + ProtoValidator<T>,
+  T: AsProtoType + ProtoValidator,
   T::Target: UniqueItem,
 {
   type Target = Vec<T::Target>;
@@ -47,7 +47,7 @@ where
 #[derive(Clone, Debug)]
 pub struct RepeatedValidator<T>
 where
-  T: AsProtoType + ProtoValidator<T>,
+  T: AsProtoType + ProtoValidator,
 {
   _inner_type: PhantomData<T>,
 
@@ -63,7 +63,7 @@ where
 
 impl<T> Validator<Vec<T>> for RepeatedValidator<T>
 where
-  T: AsProtoType + ProtoValidator<T>,
+  T: AsProtoType + ProtoValidator,
   T::Target: UniqueItem,
 {
   type Target = Vec<T::Target>;
@@ -159,7 +159,7 @@ where
 
 impl<T> RepeatedValidator<T>
 where
-  T: AsProtoType + ProtoValidator<T>,
+  T: AsProtoType + ProtoValidator,
 {
   pub fn builder() -> RepeatedValidatorBuilder<T> {
     RepeatedValidatorBuilder {
@@ -177,7 +177,7 @@ where
 #[derive(Clone, Debug)]
 pub struct RepeatedValidatorBuilder<T, S: State = Empty>
 where
-  T: AsProtoType + ProtoValidator<T>,
+  T: AsProtoType + ProtoValidator,
 {
   _state: PhantomData<S>,
   _inner_type: PhantomData<T>,
@@ -195,7 +195,7 @@ where
 
 impl<T, S: State> RepeatedValidatorBuilder<T, S>
 where
-  T: AsProtoType + ProtoValidator<T>,
+  T: AsProtoType + ProtoValidator,
 {
   pub fn build(self) -> RepeatedValidator<T> {
     let Self {
@@ -222,7 +222,7 @@ where
   pub fn items<F, FinalBuilder>(self, config_fn: F) -> RepeatedValidatorBuilder<T, SetItems<S>>
   where
     S::Items: IsUnset,
-    T: ProtoValidator<T>,
+    T: ProtoValidator,
     FinalBuilder: ValidatorBuilderFor<T, Validator = T::Validator>,
     F: FnOnce(T::Builder) -> FinalBuilder,
   {
@@ -303,7 +303,7 @@ where
 
 impl<T, S: State> From<RepeatedValidatorBuilder<T, S>> for ProtoOption
 where
-  T: AsProtoType + ProtoValidator<T>,
+  T: AsProtoType + ProtoValidator,
 {
   fn from(value: RepeatedValidatorBuilder<T, S>) -> Self {
     value.build().into()
@@ -312,7 +312,7 @@ where
 
 impl<T> From<RepeatedValidator<T>> for ProtoOption
 where
-  T: AsProtoType + ProtoValidator<T>,
+  T: AsProtoType + ProtoValidator,
 {
   fn from(validator: RepeatedValidator<T>) -> ProtoOption {
     let mut rules: OptionValueList = Vec::new();
