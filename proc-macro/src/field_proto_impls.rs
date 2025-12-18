@@ -55,13 +55,13 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
 
       let field_context_tokens = quote! {
         ::prelude::FieldContext {
-          name: #name,
+          proto_name: #name,
           tag: #tag,
           field_type: #field_type,
           key_type: None,
           value_type: None,
           subscript: None,
-          kind: Default::default(),
+          field_kind: Default::default(),
         }
       };
 

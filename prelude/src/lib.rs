@@ -24,7 +24,6 @@ mod proto_type;
 mod rendering_utils;
 mod service;
 mod well_known_types;
-
 use bon::Builder;
 pub use field::*;
 pub use file::*;
@@ -34,6 +33,8 @@ pub use options::*;
 pub use package::*;
 pub use proto_enum::*;
 pub use proto_type::*;
+pub use protocheck_core::field_data::FieldContext;
+use protocheck_core::field_data::FieldKind;
 use rendering_utils::*;
 pub use service::*;
 pub use validators::*;

@@ -49,14 +49,7 @@ pub fn impl_validator(ctx: ValidatorImplCtx) -> TokenStream2 {
         let mut violations = Violations::new();
 
         if let Some(field_context) = field_context {
-          parent_elements.push(FieldPathElement {
-            field_number: Some(field_context.tag),
-            field_name: Some(field_context.name.to_string()),
-            field_type: Some(Type::Message as i32),
-            key_type: field_context.key_type.map(|t| t as i32),
-            value_type: field_context.value_type.map(|t| t as i32),
-            subscript: field_context.subscript.clone(),
-          });
+          parent_elements.push(field_context.as_path_element());
         }
 
         let top_level_programs: &Vec<&CelProgram> = &#top_level_programs_expr;

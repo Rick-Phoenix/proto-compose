@@ -7,7 +7,8 @@ pub struct Package {
 }
 
 impl Package {
-  pub fn check_cel_rules(&self) -> Result<(), String> {
+  #[cfg(feature = "testing")]
+  pub fn check_unique_cel_rules(&self) -> Result<(), String> {
     let mut rules: HashMap<&str, &CelRule> = HashMap::new();
 
     for rule in self

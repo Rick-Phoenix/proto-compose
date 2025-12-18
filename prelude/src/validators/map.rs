@@ -194,7 +194,7 @@ where
         .filter(|_| !val.is_empty())
         .map(|v| {
           let mut ctx = field_context.clone();
-          ctx.kind = FieldKind::MapKey;
+          ctx.field_kind = FieldKind::MapKey;
 
           (v, ctx)
         });
@@ -205,7 +205,7 @@ where
         .filter(|_| !val.is_empty())
         .map(|v| {
           let mut ctx = field_context.clone();
-          ctx.kind = FieldKind::MapValue;
+          ctx.field_kind = FieldKind::MapValue;
 
           (v, ctx)
         });

@@ -121,7 +121,7 @@ where
         .filter(|_| !val.is_empty())
         .map(|v| {
           let mut ctx = field_context.clone();
-          ctx.kind = FieldKind::RepeatedItem;
+          ctx.field_kind = FieldKind::RepeatedItem;
 
           (v, ctx)
         });

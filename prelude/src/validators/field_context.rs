@@ -1,3 +1,5 @@
+use protocheck_core::field_data::FieldKind;
+
 use super::{field_path_element::Subscript, *};
 
 pub trait ViolationsExt {
@@ -105,37 +107,6 @@ impl IntoSubscript for Subscript {
   }
 }
 
-/// The context for the field being validated.
-#[derive(Clone, Debug)]
-pub struct FieldContext<'a> {
-  pub name: &'a str,
-  pub tag: i32,
-  pub key_type: Option<Type>,
-  pub value_type: Option<Type>,
-  pub kind: FieldKind,
-  pub field_type: Type,
-  pub subscript: Option<Subscript>,
-}
-
-#[derive(Clone, Default, Debug, Copy, PartialEq, Eq)]
-pub enum FieldKind {
-  MapKey,
-  MapValue,
-  RepeatedItem,
-  #[default]
-  Other,
-}
-
-impl FieldKind {
-  /// Returns `true` if the field kind is [`MapKey`].
-  ///
-  /// [`MapKey`]: FieldKind::MapKey
-  #[must_use]
-  pub fn is_map_key(&self) -> bool {
-    matches!(self, Self::MapKey)
-  }
-}
-
 pub(crate) fn create_violation_core(
   custom_rule_id: Option<&str>,
   field_context: Option<&FieldContext>,
@@ -156,7 +127,7 @@ pub(crate) fn create_violation_core(
 
     let current_elem = FieldPathElement {
       field_type: Some(field_context.field_type as i32),
-      field_name: Some(field_context.name.to_string()),
+      field_name: Some(field_context.proto_name.to_string()),
       key_type: field_context.key_type.map(|t| t as i32),
       value_type: field_context.value_type.map(|t| t as i32),
       field_number: Some(field_context.tag),
@@ -165,7 +136,7 @@ pub(crate) fn create_violation_core(
 
     elements.push(current_elem);
 
-    match &field_context.kind {
+    match &field_context.field_kind {
       FieldKind::MapKey => {
         is_for_key = true;
         rule_elements.extend(MAP_KEY_VIOLATION.elements.to_vec());
