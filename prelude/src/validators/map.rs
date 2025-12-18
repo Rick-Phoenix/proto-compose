@@ -174,7 +174,7 @@ where
           field_context,
           parent_elements,
           &MAP_MIN_PAIRS_VIOLATION,
-          &format!("must contain at least {min_pairs} key-value pairs")
+          &format!("must contain at least {min_pairs} pairs")
         );
       }
 
@@ -183,7 +183,7 @@ where
           field_context,
           parent_elements,
           &MAP_MAX_PAIRS_VIOLATION,
-          &format!("cannot contain more than {max_pairs} key-value pairs")
+          &format!("cannot contain more than {max_pairs} pairs")
         );
       }
 

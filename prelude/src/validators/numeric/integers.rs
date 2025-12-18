@@ -31,12 +31,39 @@ where
     parent_elements: &mut Vec<FieldPathElement>,
     val: Option<&Self::Target>,
   ) -> Result<(), Violations> {
+    handle_ignore_always!(&self.ignore);
+    handle_ignore_if_zero_value!(&self.ignore, val.is_none_or(|v| v.is_default()));
+
     let mut violations_agg = Violations::new();
     let violations = &mut violations_agg;
 
     if let Some(&val) = val {
+      if let Some(const_val) = self.const_ && val != const_val {
+        violations.add(field_context, parent_elements, Num::CONST_VIOLATION, &format!("must be equal to {const_val}"));
+      }
+
       if let Some(gt) = self.gt && val <= gt {
         violations.add(field_context, parent_elements, Num::GT_VIOLATION, &format!("must be greater than {gt}"));
+      }
+
+      if let Some(gte) = self.gte && val < gte {
+        violations.add(field_context, parent_elements, Num::GTE_VIOLATION, &format!("must be greater than or equal to {gte}"));
+      }
+
+      if let Some(lt) = self.lt && val >= lt {
+        violations.add(field_context, parent_elements, Num::LT_VIOLATION, &format!("must be smaller than {lt}"));
+      }
+
+      if let Some(lte) = self.lte && val > lte {
+        violations.add(field_context, parent_elements, Num::LTE_VIOLATION, &format!("must be smaller than or equal to {lte}"));
+      }
+
+      if let Some(allowed_list) = &self.in_ && !Num::RustType::is_in(allowed_list, val) {
+        violations.add(field_context, parent_elements, Num::IN_VIOLATION, &format!("must be one of these values: {}", format_list(allowed_list.into_iter())));
+      }
+
+      if let Some(forbidden_list) = &self.not_in && Num::RustType::is_in(forbidden_list, val) {
+        violations.add(field_context, parent_elements, Num::NOT_IN_VIOLATION, &format!("cannot be one of these values: {}", format_list(forbidden_list.into_iter())));
       }
 
       if !self.cel.is_empty() {
@@ -88,10 +115,10 @@ where
   pub gte: Option<Num::RustType>,
   /// Specifies that only the values in this list will be considered valid for this field.
   #[builder(into)]
-  pub in_: Option<Arc<[Num::RustType]>>,
+  pub in_: Option<ItemLookup<'static, Num::RustType>>,
   /// Specifies that the values in this list will be considered NOT valid for this field.
   #[builder(into)]
-  pub not_in: Option<Arc<[Num::RustType]>>,
+  pub not_in: Option<ItemLookup<'static, Num::RustType>>,
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   #[builder(default, with = |programs: impl IntoIterator<Item = &'static LazyLock<CelProgram>>| collect_programs(programs))]
   pub cel: Vec<&'static CelProgram>,
@@ -142,8 +169,8 @@ where
     insert_option!(validator, values, lte);
     insert_option!(validator, values, gt);
     insert_option!(validator, values, gte);
-    insert_option!(validator, values, in_);
-    insert_option!(validator, values, not_in);
+    insert_list_option!(validator, values, in_);
+    insert_list_option!(validator, values, not_in);
 
     let mut outer_rules: OptionValueList =
       vec![(N::type_name(), OptionValue::Message(values.into()))];
@@ -169,7 +196,9 @@ pub trait IntWrapper: AsProtoType {
     + Display
     + Eq
     + Default
-    + Into<::cel::Value>;
+    + ListRules<LookupTarget = Self::RustType>
+    + Into<::cel::Value>
+    + 'static;
   const LT_VIOLATION: &'static LazyLock<ViolationData>;
   const LTE_VIOLATION: &'static LazyLock<ViolationData>;
   const GT_VIOLATION: &'static LazyLock<ViolationData>;

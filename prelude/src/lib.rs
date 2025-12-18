@@ -9,6 +9,7 @@ mod options;
 mod validators;
 use std::{
   collections::{HashMap, HashSet},
+  fmt::Write,
   marker::PhantomData,
   ops::Range,
   sync::{Arc, LazyLock},
