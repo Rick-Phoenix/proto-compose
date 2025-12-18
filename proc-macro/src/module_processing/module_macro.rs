@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::*;
 
 // We collect the items in this so that we can retain the order in the output
@@ -13,7 +11,7 @@ pub enum ModuleItem {
 // The module macro currently does this:
 // - It processes nested items and emits their full names
 // - It processes tags for oneofs and messages
-// - It injects the package and module attributes
+// - It injects the package and file attributes
 pub fn process_module_items(
   module_attrs: ModuleAttrs,
   mut module: ItemMod,
@@ -27,13 +25,14 @@ pub fn process_module_items(
   let mut mod_items: Vec<ModuleItem> = Vec::new();
 
   let mut oneofs: HashMap<Ident, OneofData> = HashMap::new();
-  let mut used_oneofs: HashSet<Ident> = HashSet::new();
+  let mut oneof_references: HashMap<Ident, usize> = HashMap::new();
 
   let mut messages: HashMap<Ident, MessageData> = HashMap::new();
   let mut enums: HashMap<Ident, EnumData> = HashMap::new();
   let mut services: Vec<Ident> = Vec::new();
   let mut extensions: Vec<Ident> = Vec::new();
 
+  // Child to parent
   let mut messages_relational_map: HashMap<Ident, Ident> = HashMap::new();
   let mut enums_relational_map: HashMap<Ident, Ident> = HashMap::new();
 
@@ -69,11 +68,11 @@ pub fn process_module_items(
             }
 
             for oneof in &message_data.oneofs {
-              if let Some(oneof_data) = oneofs.get(oneof) && !oneof_data.has_all_tags_assigned() {
-                bail!(oneof, "Oneof `{oneof}` must have all tags manually assigned in order to be used by multiple messages");
-              } else {
-                used_oneofs.insert(oneof.clone());
-              }
+              // We check if the oneof was already referenced or not
+              oneof_references
+                .entry(oneof.clone())
+                .and_modify(|count| *count += 1)
+                .or_insert(1);
             }
 
             mod_items.push(ModuleItem::Message(item_ident.clone()));
@@ -126,7 +125,7 @@ pub fn process_module_items(
       top_level_messages.push(ident.clone());
     }
 
-    process_message_from_module(msg, &mut oneofs, &module_attrs)?;
+    process_message_from_module(msg, &mut oneofs, &oneof_references, &module_attrs)?;
   }
 
   for (ident, enum_) in enums.iter_mut() {

@@ -17,15 +17,6 @@ pub enum FieldAttrData {
   Normal(Box<FieldAttrs>),
 }
 
-impl FieldAttrData {
-  pub fn from_proto_expr(&self) -> &Option<PathOrClosure> {
-    match self {
-      FieldAttrData::Ignored { from_proto } => from_proto,
-      FieldAttrData::Normal(field_attrs) => &field_attrs.from_proto,
-    }
-  }
-}
-
 pub fn process_derive_field_attrs(
   field_ident: &Ident,
   type_info: &TypeInfo,
@@ -257,8 +248,6 @@ pub fn process_derive_field_attrs(
   };
 
   let name = name.unwrap_or_else(|| ccase!(snake, field_ident.to_string()));
-
-  let type_ctx = TypeContext::new(type_info.clone(), &proto_field)?;
 
   Ok(FieldAttrData::Normal(Box::new(FieldAttrs {
     validator,

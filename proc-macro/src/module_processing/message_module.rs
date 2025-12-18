@@ -3,6 +3,7 @@ use crate::*;
 pub fn process_message_from_module(
   msg: &mut MessageData,
   oneofs_map: &mut HashMap<Ident, OneofData>,
+  oneofs_refs_map: &HashMap<Ident, usize>,
   module_attrs: &ModuleAttrs,
 ) -> Result<(), Error> {
   let MessageData {
@@ -20,6 +21,15 @@ pub fn process_message_from_module(
       oneof,
       "Failed to find the data for the oneof `{oneof}`"
     ))?;
+
+    let oneof_refs_count = oneofs_refs_map.get(oneof).ok_or(error!(
+      oneof,
+      "Failed to find reference count for oneof `{oneof}`"
+    ))?;
+
+    if *oneof_refs_count > 1 && !oneof_data.has_all_tags_assigned() {
+      bail!(oneof, "Oneof `{oneof}` must have all tags manually assigned in order to be used by multiple messages");
+    }
 
     for tag in &oneof_data.used_tags {
       used_tags.push(*tag);

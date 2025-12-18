@@ -63,7 +63,7 @@ pub(crate) fn process_oneof_derive_shadow(
 
   for (src_variant, dst_variant) in orig_enum_variants.zip(shadow_enum_variants) {
     let src_variant_ident = &src_variant.ident;
-    let type_info = TypeInfo::from_type(src_variant.typ()?)?;
+    let type_info = TypeInfo::from_type(src_variant.type_()?)?;
     let field_attrs =
       process_derive_field_attrs(src_variant_ident, &type_info, &src_variant.attrs)?;
 
@@ -142,7 +142,7 @@ pub(crate) fn process_oneof_derive_direct(
 
   for variant in variants {
     let variant_ident = &variant.ident;
-    let variant_type = variant.typ()?;
+    let variant_type = variant.type_()?;
     let type_info = TypeInfo::from_type(variant_type)?;
     let field_attrs = process_derive_field_attrs(variant_ident, &type_info, &variant.attrs)?;
 

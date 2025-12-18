@@ -13,10 +13,6 @@ impl<'a> FieldOrVariant<'a> {
     }
   }
 
-  pub fn type_info(&self) -> syn::Result<TypeInfo> {
-    TypeInfo::from_type(self.get_type()?)
-  }
-
   pub fn get_type(&self) -> syn::Result<&Type> {
     let output = match self {
       FieldOrVariant::Field(field) => &field.ty,
