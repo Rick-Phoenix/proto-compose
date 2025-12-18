@@ -16,6 +16,7 @@ use protocheck_core::{
 pub trait Validator<T>: Into<ProtoOption> {
   type Target: Default;
 
+  #[cfg(feature = "testing")]
   fn cel_rules(&self) -> Vec<&'static CelRule> {
     Vec::new()
   }
@@ -162,6 +163,14 @@ mod macros {
     };
   }
 }
+
+pub(crate) trait IsDefault: Default + PartialEq {
+  fn is_default(&self) -> bool {
+    (*self) == Self::default()
+  }
+}
+
+impl<T: Default + PartialEq> IsDefault for T {}
 
 mod any;
 mod bool;

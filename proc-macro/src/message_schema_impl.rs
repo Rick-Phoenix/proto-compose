@@ -5,7 +5,6 @@ pub struct MessageSchemaImplsCtx<'a> {
   pub shadow_struct_ident: Option<&'a Ident>,
   pub message_attrs: &'a MessageAttrs,
   pub entries_tokens: Vec<TokenStream2>,
-  pub fields_cel_rules: Vec<TokenStream2>,
   pub top_level_programs_ident: Option<&'a Ident>,
 }
 
@@ -27,7 +26,6 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
         ..
       },
     entries_tokens,
-    fields_cel_rules,
     top_level_programs_ident,
   } = ctx;
 
@@ -45,20 +43,6 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
   }
 
   let options_tokens = tokens_or_default!(options, quote! { vec![] });
-
-  let cel_rules_method = top_level_programs_ident.map(|ident| {
-    quote! {
-      fn cel_rules() -> Vec<&'static CelRule> {
-        let mut rules_agg: Vec<&CelRule> = #ident.iter().map(|prog| &prog.rule).collect();
-
-        #(
-          rules_agg.extend(#fields_cel_rules);
-        )*
-
-        rules_agg
-      }
-    }
-  });
 
   let cel_rules_field = top_level_programs_ident.map_or_else(
     || quote! { vec![] },
@@ -79,8 +63,6 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
     }
 
     impl ::prelude::ProtoMessage for #orig_struct_ident {
-      #cel_rules_method
-
       fn proto_path() -> ::prelude::ProtoPath {
         ::prelude::ProtoPath {
           name: #full_name,
@@ -112,10 +94,6 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
   if let Some(shadow_struct_ident) = shadow_struct_ident {
     output.extend(quote! {
       impl ::prelude::ProtoMessage for #shadow_struct_ident {
-        fn cel_rules() -> Vec<&'static CelRule> {
-          #orig_struct_ident::cel_rules()
-        }
-
         fn proto_path() -> ::prelude::ProtoPath {
           <#orig_struct_ident as ::prelude::ProtoMessage>::proto_path()
         }

@@ -140,6 +140,7 @@ mod inner {
   #[proto(nested_messages(Nested))]
   #[derive(Clone, Debug, Default)]
   #[proto(options = vec![ random_option() ])]
+  #[proto(cel_rules(MSG_RULE))]
   pub struct Abc {
     #[proto(repeated(float), validate = |v| v.unique())]
     pub repeated_float: Vec<f32>,

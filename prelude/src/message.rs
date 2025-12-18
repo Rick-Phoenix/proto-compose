@@ -10,10 +10,6 @@ pub trait ProtoMessage {
     Ok(())
   }
 
-  fn cel_rules() -> Vec<&'static CelRule> {
-    Vec::new()
-  }
-
   fn nested_validate(
     &self,
     _field_context: &FieldContext,

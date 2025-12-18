@@ -6,12 +6,6 @@ use protocheck_core::ordered_float::{self, FloatCore};
 
 use super::*;
 
-pub(crate) trait IsDefault: Default + PartialEq {
-  fn is_default(&self) -> bool {
-    (*self) == Self::default()
-  }
-}
-
 pub(crate) fn format_list<T: Display, I: IntoIterator<Item = T>>(list: I) -> String {
   let mut string = String::new();
   let mut iter = list.into_iter().peekable();
@@ -26,8 +20,6 @@ pub(crate) fn format_list<T: Display, I: IntoIterator<Item = T>>(list: I) -> Str
 
   string
 }
-
-impl<T: Default + PartialEq> IsDefault for T {}
 
 impl<Num> Validator<Num> for FloatValidator<Num>
 where

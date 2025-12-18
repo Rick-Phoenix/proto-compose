@@ -112,7 +112,6 @@ pub fn process_message_derive_shadow(
     shadow_struct_ident: Some(shadow_struct_ident),
     message_attrs: &message_attrs,
     entries_tokens: fields_tokens,
-    fields_cel_rules: cel_rules_collection,
     top_level_programs_ident: top_level_programs_ident.as_ref(),
   });
 
@@ -229,7 +228,6 @@ pub fn process_message_derive_direct(
     shadow_struct_ident: None,
     message_attrs: &message_attrs,
     entries_tokens: fields_tokens,
-    fields_cel_rules: cel_rules_collection,
     top_level_programs_ident: top_level_programs_ident.as_ref(),
   });
 
