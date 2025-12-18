@@ -76,14 +76,11 @@ pub fn process_extension_derive(
   let target = target.ok_or(error!(&ident, "Missing target attribute"))?;
 
   for field in fields {
-    let field_ident = field
-      .ident
-      .as_ref()
-      .ok_or(error!(&field, "Expected a named field"))?;
+    let field_ident = field.require_ident()?;
 
-    let rust_type = TypeInfo::from_type(&field.ty)?;
+    let type_info = TypeInfo::from_type(&field.ty)?;
 
-    let field_data = process_derive_field_attrs(field_ident, &rust_type, &field.attrs)?;
+    let field_data = process_derive_field_attrs(field_ident, &type_info, &field.attrs)?;
 
     let FieldAttrs {
       tag,
@@ -97,9 +94,8 @@ pub fn process_extension_derive(
       bail!(&field, "Cannot ignore fields in extensions");
     };
 
-    let type_ctx = TypeContext::new(rust_type, &proto_field)?;
     let options_tokens = tokens_or_default!(options, quote! { vec![] });
-    let field_type_tokens = type_ctx.proto_field.field_proto_type_tokens();
+    let field_type_tokens = proto_field.field_proto_type_tokens();
 
     fields_tokens.push(quote! {
       ::prelude::ProtoField {

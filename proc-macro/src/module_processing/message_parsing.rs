@@ -123,9 +123,9 @@ pub fn parse_message(msg: ItemStruct) -> Result<MessageData, Error> {
       let mut oneof_path = match info.path {
         ItemPathEntry::Path(path) => path,
         _ => {
-          let rust_type = TypeInfo::from_type(&field.ty)?;
+          let type_info = TypeInfo::from_type(&field.ty)?;
 
-          rust_type.inner().as_path().ok_or(error!(
+          type_info.inner().as_path().ok_or(error!(
             &field,
             "Could not infer the path to the oneof. Please set it manually"
           ))?

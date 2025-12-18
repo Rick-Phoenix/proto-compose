@@ -26,19 +26,22 @@ impl ProtoField {
     }
   }
 
-  pub fn as_prost_attr_type(&self) -> TokenStream2 {
-    match self {
+  pub fn as_prost_attr(&self, tag: i32) -> TokenStream2 {
+    let inner = match self {
+      ProtoField::Oneof { path, tags, .. } => {
+        let oneof_path_str = path.to_token_stream().to_string();
+        let tags_str = tags_to_str(tags);
+
+        // We don't need to add the tag for oneofs,
+        // so we return early
+        return quote! { #[prost(oneof = #oneof_path_str, tags = #tags_str)] };
+      }
       Self::Map(map) => {
         let map_attr = format!("{}, {}", map.keys, map.values.as_prost_map_value());
 
         quote! { map = #map_attr }
       }
-      ProtoField::Oneof { path, tags, .. } => {
-        let oneof_path_str = path.to_token_stream().to_string();
-        let tags_str = tags_to_str(tags);
 
-        quote! { oneof = #oneof_path_str, tags = #tags_str }
-      }
       ProtoField::Repeated(proto_type) => {
         let p_type = proto_type.as_prost_attr_type();
 
@@ -50,7 +53,11 @@ impl ProtoField {
         quote! { #p_type, optional }
       }
       ProtoField::Single(proto_type) => proto_type.as_prost_attr_type(),
-    }
+    };
+
+    let tag_as_str = tag.to_string();
+
+    quote! { #[prost(#inner, tag = #tag_as_str)] }
   }
 
   pub fn default_into_proto(&self, base_ident: &TokenStream2) -> TokenStream2 {

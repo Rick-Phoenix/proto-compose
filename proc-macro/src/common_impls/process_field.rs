@@ -60,7 +60,7 @@ pub fn process_field(input: ProcessFieldInput) -> syn::Result<TokenStream2> {
     if !proto_conversion_data.into_proto.has_custom_impl() {
       proto_conversion_data.add_field_into_proto_impl(
         &field_attrs.into_proto,
-        &type_ctx,
+        type_ctx.proto_field,
         field_ident,
       );
     }
@@ -68,18 +68,20 @@ pub fn process_field(input: ProcessFieldInput) -> syn::Result<TokenStream2> {
     if !proto_conversion_data.from_proto.has_custom_impl() {
       proto_conversion_data.add_field_from_proto_impl(
         &field_attrs.from_proto,
-        Some(&type_ctx),
+        Some(type_ctx.proto_field),
         field_ident,
       );
     }
   }
 
-  field_proto_impls(FieldCtx {
+  let field_ctx = FieldCtx {
     field: &mut field_or_variant,
     field_attrs: &field_attrs,
     type_ctx: &type_ctx,
     validators_tokens,
     cel_rules: cel_rules_collection,
     cel_checks: cel_checks_tokens,
-  })
+  };
+
+  field_ctx.generate_proto_impls()
 }

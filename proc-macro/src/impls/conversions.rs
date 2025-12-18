@@ -149,7 +149,7 @@ impl<'a> ProtoConversionImpl<'a> {
   pub fn add_field_into_proto_impl(
     &mut self,
     custom_expression: &Option<PathOrClosure>,
-    type_ctx: &TypeContext,
+    proto_field: &ProtoField,
     field_ident: &Ident,
   ) {
     let field_conversion_kind = match &self.kind {
@@ -165,10 +165,10 @@ impl<'a> ProtoConversionImpl<'a> {
 
     let conversion_expr = if let Some(expr) = custom_expression {
       process_custom_expression(expr, &base_ident)
-    } else if let ProtoField::Oneof { default: true, .. } = &type_ctx.proto_field {
+    } else if let ProtoField::Oneof { default: true, .. } = &proto_field {
       quote! { Some(#base_ident.into()) }
     } else {
-      type_ctx.field_into_proto_impl(base_ident)
+      proto_field.default_into_proto(&base_ident)
     };
 
     let conversion = field_conversion_kind.conversion_from_source_to_target(&conversion_expr);
@@ -179,7 +179,7 @@ impl<'a> ProtoConversionImpl<'a> {
   pub fn add_field_from_proto_impl(
     &mut self,
     custom_expression: &Option<PathOrClosure>,
-    type_ctx: Option<&TypeContext>,
+    proto_field: Option<&ProtoField>,
     field_ident: &Ident,
   ) {
     let field_conversion_kind = match &self.kind {
@@ -191,13 +191,13 @@ impl<'a> ProtoConversionImpl<'a> {
       InputItemKind::Struct => FieldConversionKind::StructField { ident: field_ident },
     };
 
-    let conversion_expr = if let Some(type_ctx) = type_ctx {
+    let conversion_expr = if let Some(proto_field) = proto_field {
       let base_ident = field_conversion_kind.base_ident();
 
       if let Some(expr) = custom_expression {
         process_custom_expression(expr, &base_ident)
       } else {
-        type_ctx.field_from_proto_impl(base_ident)
+        proto_field.default_from_proto(&base_ident)
       }
     } else {
       if let Some(expr) = custom_expression {
