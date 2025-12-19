@@ -57,7 +57,7 @@ fn process_custom_expression(expr: &PathOrClosure, base_ident: &TokenStream2) ->
     PathOrClosure::Path(path) => quote! { #path(#base_ident) },
     PathOrClosure::Closure(closure) => {
       quote! {
-        prelude::apply(#base_ident, #closure)
+        ::prelude::apply(#base_ident, #closure)
       }
     }
   }
@@ -164,8 +164,8 @@ impl<'a> ProtoConversionImpl<'a> {
       ..
     } = self;
 
-    // We switch them to create the From impl from _Proto to the original item
     let switched = FromImpl {
+      // Note: source and target are switched here
       source_ident: target_ident,
       target_ident: source_ident,
       kind: *kind,
@@ -250,6 +250,8 @@ impl<'a> ProtoConversionImpl<'a> {
   }
 }
 
+// This is used as a wrapper to store the custom expression that was given
+// (if there was one) or provide the implementation tokens (if there wasn't one)
 pub struct ConversionData<'a> {
   pub custom_expression: &'a Option<PathOrClosure>,
   pub tokens: TokenStream2,
