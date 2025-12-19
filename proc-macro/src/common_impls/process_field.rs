@@ -49,8 +49,6 @@ pub fn process_field(input: ProcessFieldInput) -> syn::Result<TokenStream2> {
     FieldAttrData::Normal(field_attrs) => *field_attrs,
   };
 
-  let type_ctx = TypeContext::new(type_info, &field_attrs.proto_field)?;
-
   if let ImplKind::Shadow {
     proto_conversion_data,
     ..
@@ -59,7 +57,7 @@ pub fn process_field(input: ProcessFieldInput) -> syn::Result<TokenStream2> {
     if !proto_conversion_data.into_proto.has_custom_impl() {
       proto_conversion_data.add_field_into_proto_impl(
         &field_attrs.into_proto,
-        type_ctx.proto_field,
+        &field_attrs.proto_field,
         field_ident,
       );
     }
@@ -67,7 +65,7 @@ pub fn process_field(input: ProcessFieldInput) -> syn::Result<TokenStream2> {
     if !proto_conversion_data.from_proto.has_custom_impl() {
       proto_conversion_data.add_field_from_proto_impl(
         &field_attrs.from_proto,
-        Some(type_ctx.proto_field),
+        Some(&field_attrs.proto_field),
         field_ident,
       );
     }
@@ -76,7 +74,7 @@ pub fn process_field(input: ProcessFieldInput) -> syn::Result<TokenStream2> {
   let field_ctx = FieldCtx {
     field: &mut field_or_variant,
     field_attrs: &field_attrs,
-    type_ctx: &type_ctx,
+    type_info,
     validators_tokens,
     cel_checks: cel_checks_tokens,
   };
