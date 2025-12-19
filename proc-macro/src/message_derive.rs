@@ -66,13 +66,11 @@ pub fn process_message_derive_shadow(
     let type_info = TypeInfo::from_type(&src_field.ty)?;
     let field_attrs = process_derive_field_attrs(src_field_ident, &type_info, &src_field.attrs)?;
 
-    let field_data = ProcessFieldInput {
+    let field_tokens = process_field(ProcessFieldInput {
       field_or_variant: FieldOrVariant::Field(dst_field),
       input_item: &mut input_item,
       field_attrs,
-    };
-
-    let field_tokens = process_field(field_data)?;
+    })?;
 
     if !field_tokens.is_empty() {
       fields_tokens.push(field_tokens);
@@ -194,13 +192,11 @@ pub fn process_message_derive_direct(
       };
     }
 
-    let field_data = ProcessFieldInput {
+    let field_tokens = process_field(ProcessFieldInput {
       field_or_variant: FieldOrVariant::Field(src_field),
       input_item: &mut input_item,
       field_attrs,
-    };
-
-    let field_tokens = process_field(field_data)?;
+    })?;
 
     if !field_tokens.is_empty() {
       fields_tokens.push(field_tokens);

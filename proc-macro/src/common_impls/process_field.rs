@@ -8,7 +8,7 @@ pub struct ProcessFieldInput<'item, 'a, 'field> {
 
 pub fn process_field(input: ProcessFieldInput) -> syn::Result<TokenStream2> {
   let ProcessFieldInput {
-    mut field_or_variant,
+    field_or_variant,
     input_item:
       InputItem {
         impl_kind,
@@ -39,7 +39,8 @@ pub fn process_field(input: ProcessFieldInput) -> syn::Result<TokenStream2> {
           proto_conversion_impls.add_field_from_proto_impl(&from_proto, None, field_ident);
         }
 
-        // We close the loop early if the field is ignored
+        // If the field is ignored, we only need the (optional)
+        // from_proto impl, we skip everything else
         return Ok(TokenStream2::new());
       } else {
         bail!(field_ident, "Cannot ignore fields in a direct impl")
@@ -72,8 +73,8 @@ pub fn process_field(input: ProcessFieldInput) -> syn::Result<TokenStream2> {
   }
 
   let field_ctx = FieldCtx {
-    field: &mut field_or_variant,
-    field_attrs: &field_attrs,
+    field: field_or_variant,
+    field_attrs,
     type_info,
     validators_tokens,
     cel_checks: cel_checks_tokens,

@@ -65,13 +65,11 @@ pub(crate) fn process_oneof_derive_shadow(
     let field_attrs =
       process_derive_field_attrs(src_variant_ident, &type_info, &src_variant.attrs)?;
 
-    let field_data = ProcessFieldInput {
+    let field_tokens = process_field(ProcessFieldInput {
       field_or_variant: FieldOrVariant::Variant(dst_variant),
       input_item: &mut input_item,
       field_attrs,
-    };
-
-    let field_tokens = process_field(field_data)?;
+    })?;
 
     if !field_tokens.is_empty() {
       variants_tokens.push(field_tokens);
@@ -176,13 +174,11 @@ pub(crate) fn process_oneof_derive_direct(
       };
     }
 
-    let field_data = ProcessFieldInput {
+    let field_tokens = process_field(ProcessFieldInput {
       field_or_variant: FieldOrVariant::Variant(variant),
       input_item: &mut input_item,
       field_attrs,
-    };
-
-    let field_tokens = process_field(field_data)?;
+    })?;
 
     if !field_tokens.is_empty() {
       variants_tokens.push(field_tokens);

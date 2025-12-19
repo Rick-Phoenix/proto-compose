@@ -1,8 +1,8 @@
 use crate::*;
 
 pub struct FieldCtx<'a, 'field> {
-  pub field: &'a mut FieldOrVariant<'field>,
-  pub field_attrs: &'a FieldAttrs,
+  pub field: FieldOrVariant<'field>,
+  pub field_attrs: FieldAttrs,
   pub type_info: TypeInfo,
   pub validators_tokens: &'a mut Vec<TokenStream2>,
   pub cel_checks: &'a mut Vec<TokenStream2>,
@@ -11,7 +11,7 @@ pub struct FieldCtx<'a, 'field> {
 impl<'a, 'field> FieldCtx<'a, 'field> {
   pub fn generate_proto_impls(self) -> syn::Result<TokenStream2> {
     let FieldCtx {
-      field,
+      mut field,
       field_attrs:
         FieldAttrs {
           tag,
@@ -31,7 +31,7 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
 
     field.change_type(proto_output_type_outer)?;
 
-    let prost_attr = proto_field.as_prost_attr(*tag);
+    let prost_attr = proto_field.as_prost_attr(tag);
     let field_prost_attr: Attribute = parse_quote!(#prost_attr);
     field.inject_attr(field_prost_attr);
 
