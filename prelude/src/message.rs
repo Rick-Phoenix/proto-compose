@@ -1,5 +1,3 @@
-use proto_types::protovalidate::{FieldPathElement, Violations};
-
 use crate::{validators::CelRule, *};
 
 pub trait ProtoMessage {

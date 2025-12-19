@@ -5,7 +5,6 @@ pub struct FieldCtx<'a, 'field> {
   pub field_attrs: &'a FieldAttrs,
   pub type_ctx: &'a TypeContext<'a>,
   pub validators_tokens: &'a mut TokenStream2,
-  pub cel_rules: &'a mut Vec<TokenStream2>,
   pub cel_checks: &'a mut Vec<TokenStream2>,
 }
 
@@ -23,7 +22,6 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
         },
       type_ctx,
       validators_tokens,
-      cel_rules,
       cel_checks,
     } = self;
 
@@ -65,14 +63,16 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
         }
       };
 
-      let field_validator_tokens =
-        type_ctx.validator_tokens(field_ident, field_context_tokens, &field_validator);
+      let is_variant = field.is_variant();
+
+      let field_validator_tokens = type_ctx.validator_tokens(
+        is_variant,
+        field_ident,
+        field_context_tokens,
+        &field_validator,
+      );
 
       validators_tokens.extend(field_validator_tokens);
-
-      let new_cel_rules = field_validator.cel_rules_extractor_expr();
-
-      cel_rules.push(new_cel_rules);
 
       let cel_check = field_validator.cel_check_expr();
       cel_checks.push(cel_check);

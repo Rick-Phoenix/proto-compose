@@ -40,7 +40,6 @@ pub(crate) fn process_oneof_derive_shadow(
   let mut ignored_variants: Vec<Ident> = Vec::new();
 
   let mut validators_tokens = TokenStream2::new();
-  let mut cel_rules_collection: Vec<TokenStream2> = Vec::new();
   let mut cel_checks_tokens: Vec<TokenStream2> = Vec::new();
 
   let mut proto_conversion_data = ProtoConversionImpl {
@@ -57,7 +56,6 @@ pub(crate) fn process_oneof_derive_shadow(
       proto_conversion_data: &mut proto_conversion_data,
     },
     validators_tokens: &mut validators_tokens,
-    cel_rules_collection: &mut cel_rules_collection,
     cel_checks_tokens: &mut cel_checks_tokens,
   };
 
@@ -130,13 +128,11 @@ pub(crate) fn process_oneof_derive_direct(
   let mut variants_tokens: Vec<TokenStream2> = Vec::new();
 
   let mut validators_tokens = TokenStream2::new();
-  let mut cel_rules_collection: Vec<TokenStream2> = Vec::new();
   let mut cel_checks_tokens: Vec<TokenStream2> = Vec::new();
 
   let mut input_item = InputItem {
     impl_kind: ImplKind::Direct,
     validators_tokens: &mut validators_tokens,
-    cel_rules_collection: &mut cel_rules_collection,
     cel_checks_tokens: &mut cel_checks_tokens,
   };
 

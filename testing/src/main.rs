@@ -93,7 +93,7 @@ mod inner {
   #[proto(required)]
   #[derive(Clone, Debug)]
   enum PseudoOneof {
-    #[proto(tag = 200)]
+    #[proto(tag = 200, validate = |v| v.cel([ &RULE ]))]
     A(String),
     #[proto(tag = 201)]
     B(i32),

@@ -42,7 +42,6 @@ pub fn process_message_derive_shadow(
   let mut ignored_fields: Vec<Ident> = Vec::new();
 
   let mut validators_tokens = TokenStream2::new();
-  let mut cel_rules_collection: Vec<TokenStream2> = Vec::new();
   let mut cel_checks_tokens: Vec<TokenStream2> = Vec::new();
 
   let mut proto_conversion_data = ProtoConversionImpl {
@@ -59,7 +58,6 @@ pub fn process_message_derive_shadow(
       proto_conversion_data: &mut proto_conversion_data,
     },
     validators_tokens: &mut validators_tokens,
-    cel_rules_collection: &mut cel_rules_collection,
     cel_checks_tokens: &mut cel_checks_tokens,
   };
 
@@ -119,7 +117,7 @@ pub fn process_message_derive_shadow(
     .shadow_derives
     .map(|list| quote! { #[#list] });
 
-  let validator_impl = impl_validator(ValidatorImplCtx {
+  let validator_impl = impl_message_validator(ValidatorImplCtx {
     target_ident: shadow_struct_ident,
     validators_tokens,
     top_level_programs_ident: top_level_programs_ident.as_ref(),
@@ -153,13 +151,11 @@ pub fn process_message_derive_direct(
   let mut fields_tokens: Vec<TokenStream2> = Vec::new();
 
   let mut validators_tokens = TokenStream2::new();
-  let mut cel_rules_collection: Vec<TokenStream2> = Vec::new();
   let mut cel_checks_tokens: Vec<TokenStream2> = Vec::new();
 
   let mut input_item = InputItem {
     impl_kind: ImplKind::Direct,
     validators_tokens: &mut validators_tokens,
-    cel_rules_collection: &mut cel_rules_collection,
     cel_checks_tokens: &mut cel_checks_tokens,
   };
 
@@ -231,7 +227,7 @@ pub fn process_message_derive_direct(
     top_level_programs_ident: top_level_programs_ident.as_ref(),
   });
 
-  let validator_impl = impl_validator(ValidatorImplCtx {
+  let validator_impl = impl_message_validator(ValidatorImplCtx {
     target_ident: struct_ident,
     validators_tokens,
     top_level_programs_ident: top_level_programs_ident.as_ref(),

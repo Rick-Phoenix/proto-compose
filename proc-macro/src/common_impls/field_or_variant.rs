@@ -41,4 +41,12 @@ impl<'a> FieldOrVariant<'a> {
 
     Ok(())
   }
+
+  /// Returns `true` if the field or variant is [`Variant`].
+  ///
+  /// [`Variant`]: FieldOrVariant::Variant
+  #[must_use]
+  pub fn is_variant(&self) -> bool {
+    matches!(self, Self::Variant(..))
+  }
 }

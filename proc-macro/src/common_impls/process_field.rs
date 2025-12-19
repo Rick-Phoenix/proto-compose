@@ -13,7 +13,6 @@ pub fn process_field(input: ProcessFieldInput) -> syn::Result<TokenStream2> {
       InputItem {
         impl_kind,
         validators_tokens,
-        cel_rules_collection,
         cel_checks_tokens,
         ..
       },
@@ -79,7 +78,6 @@ pub fn process_field(input: ProcessFieldInput) -> syn::Result<TokenStream2> {
     field_attrs: &field_attrs,
     type_ctx: &type_ctx,
     validators_tokens,
-    cel_rules: cel_rules_collection,
     cel_checks: cel_checks_tokens,
   };
 

@@ -4,6 +4,7 @@ mod macros;
 use askama::Template;
 #[doc(hidden)]
 pub use paste::paste;
+use proto_types::protovalidate::{FieldPathElement, Violations};
 mod oneof;
 mod options;
 mod validators;
