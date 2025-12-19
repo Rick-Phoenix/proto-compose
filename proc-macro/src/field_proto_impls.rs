@@ -56,8 +56,18 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
       });
     }
 
+    let is_oneof_variant = field.is_variant();
+
     let validator_schema_tokens = if let Some(validator) = validator {
-      let field_validator = FieldValidatorExpr::new(type_ctx.proto_field, validator);
+      let validator_target_type = type_ctx.proto_field.validator_target_type();
+
+      let validator_expr = match validator {
+        CallOrClosure::Call(call) => quote! { #call.build_validator() },
+
+        CallOrClosure::Closure(closure) => {
+          quote! { <#validator_target_type as ::prelude::ProtoValidator>::validator_from_closure(#closure) }
+        }
+      };
 
       let field_type = type_ctx.proto_field.proto_kind_tokens();
 
@@ -73,23 +83,20 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
         }
       };
 
-      let is_variant = field.is_variant();
-
       let field_validator_tokens = type_ctx.validator_tokens(
-        is_variant,
+        is_oneof_variant,
         field_ident,
         field_context_tokens,
-        &field_validator,
+        &validator_expr,
       );
 
       validators_tokens.push(field_validator_tokens);
 
-      let cel_check = field_validator.cel_check_expr();
-      cel_checks.push(cel_check);
+      cel_checks.push(quote! {
+        #validator_expr.check_cel_programs()
+      });
 
-      let schema_expr = field_validator.schema_expr();
-
-      quote! { Some(#schema_expr) }
+      quote! { Some(#validator_expr.into_schema()) }
     } else {
       quote! { None }
     };

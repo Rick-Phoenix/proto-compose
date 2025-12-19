@@ -9,6 +9,12 @@ impl_into_option!(BoolValidator);
 impl Validator<bool> for BoolValidator {
   type Target = bool;
 
+  #[cfg(feature = "testing")]
+  fn check_cel_programs_with(&self, _val: Self::Target) -> Result<(), Vec<CelError>> {
+    // No CEL rules in this one
+    Ok(())
+  }
+
   fn validate(
     &self,
     field_context: &FieldContext,

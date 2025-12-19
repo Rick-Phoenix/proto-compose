@@ -32,7 +32,6 @@ pub(crate) fn format_bytes_list<'a, I: IntoIterator<Item = &'a [u8]>>(list: I) -
 impl Validator<Bytes> for BytesValidator {
   type Target = Bytes;
 
-  #[cfg(feature = "testing")]
   fn cel_rules(&self) -> Vec<&'static CelRule> {
     self.cel.iter().map(|prog| &prog.rule).collect()
   }

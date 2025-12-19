@@ -101,6 +101,17 @@ mod inner {
     C(Box<Abc>),
   }
 
+  #[proto_oneof(direct)]
+  #[proto(required)]
+  enum DirectOneof {
+    #[proto(tag = 200, validate = |v| v.cel([ &RULE ]))]
+    A(String),
+    #[proto(tag = 201)]
+    B(i32),
+    #[proto(tag = 202, message(proxied, boxed))]
+    C(Box<Abc>),
+  }
+
   impl Default for PseudoOneofProto {
     fn default() -> Self {
       Self::B(0)

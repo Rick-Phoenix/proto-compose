@@ -120,7 +120,6 @@ macro_rules! impl_testing_methods {
       }
     }
 
-    #[cfg(feature = "testing")]
     fn cel_rules(&self) -> Vec<&'static CelRule> {
       self.cel.iter().map(|prog| &prog.rule).collect()
     }

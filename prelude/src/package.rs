@@ -31,7 +31,7 @@ impl Package {
           let present_rule = present.get();
           if *present_rule != rule {
             return Err(format!(
-              "Found multiple CEL rules with ID `{}`.\nRule 1: {present_rule:#?}\nRule 2: {rule:#?}",
+              "Found multiple different CEL rules with ID `{}`.\nRule 1: {present_rule:#?}\nRule 2: {rule:#?}",
               rule.id
             ));
           }

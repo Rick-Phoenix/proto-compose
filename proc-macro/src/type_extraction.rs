@@ -12,10 +12,8 @@ impl<'a> TypeContext<'a> {
     is_variant: bool,
     field_ident: &Ident,
     field_context_tokens: TokenStream2,
-    validator: &FieldValidatorExpr,
+    validator_expr: &TokenStream2,
   ) -> TokenStream2 {
-    let validator_expr = validator.build_expr();
-
     let argument = if is_variant {
       quote! { Some(v) }
     } else {
@@ -50,50 +48,5 @@ impl<'a> TypeContext<'a> {
       rust_type,
       proto_field,
     })
-  }
-}
-
-pub struct FieldValidatorExpr<'a> {
-  pub target_type: TokenStream2,
-  pub definition_expr: &'a CallOrClosure,
-}
-
-impl<'a> FieldValidatorExpr<'a> {
-  pub fn new(proto_field: &ProtoField, definition_expr: &'a CallOrClosure) -> Self {
-    Self {
-      target_type: proto_field.validator_target_type(),
-      definition_expr,
-    }
-  }
-
-  pub fn build_expr(&self) -> TokenStream2 {
-    let Self {
-      target_type,
-      definition_expr,
-    } = self;
-
-    match definition_expr {
-      CallOrClosure::Call(call) => quote! { #call.build_validator() },
-
-      CallOrClosure::Closure(closure) => {
-        quote! { <#target_type as ::prelude::ProtoValidator>::validator_from_closure(#closure) }
-      }
-    }
-  }
-
-  pub fn schema_expr(&self) -> TokenStream2 {
-    let validator_expr = self.build_expr();
-
-    quote! {
-      #validator_expr.into_schema()
-    }
-  }
-
-  pub fn cel_check_expr(&self) -> TokenStream2 {
-    let validator_expr = self.build_expr();
-
-    quote! {
-      #validator_expr.check_cel_programs()
-    }
   }
 }

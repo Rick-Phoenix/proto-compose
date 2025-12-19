@@ -122,7 +122,6 @@ where
 {
   type Target = HashMap<K::Target, V::Target>;
 
-  #[cfg(feature = "testing")]
   fn cel_rules(&self) -> Vec<&'static CelRule> {
     let mut rules = Vec::new();
 

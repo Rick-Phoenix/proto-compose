@@ -154,14 +154,25 @@ pub(crate) fn process_oneof_derive_direct(
     if let FieldAttrData::Normal(data) = &field_attrs {
       match type_info.type_.as_ref() {
         RustType::Box(_) => {
-            if !matches!(data.proto_field, ProtoField::Single(ProtoType::Message { is_boxed: true, .. })) {
-              bail!(variant_type, "Box can only be used for messages in a native oneof");
-            }
-          },
+          if !matches!(
+            data.proto_field,
+            ProtoField::Single(ProtoType::Message { is_boxed: true, .. })
+          ) {
+            bail!(
+              variant_type,
+              "Box can only be used for messages in a native oneof"
+            );
+          }
+        }
 
-        RustType::Other(_) => {},
+        // For unknown types such as messages
+        RustType::Other(_) => {}
 
-        _ => bail!(variant_type, "Unsupported Oneof variant type. If you want to use a custom type, you must use a proxied oneof with custom conversions"),
+        _ => {
+          if !type_info.type_.is_primitive() && !type_info.type_.is_bytes() {
+            bail!(variant_type, "Unsupported Oneof variant type. If you want to use a custom type, you must use a proxied oneof with custom conversions")
+          }
+        }
       };
     }
 
@@ -178,7 +189,22 @@ pub(crate) fn process_oneof_derive_direct(
     }
   }
 
-  let oneof_schema_impl = oneof_schema_impl(&oneof_attrs, &item.ident, variants_tokens);
+  let oneof_ident = &item.ident;
 
-  Ok(wrap_with_imports(&item.ident, oneof_schema_impl))
+  let oneof_schema_impl = oneof_schema_impl(&oneof_attrs, oneof_ident, variants_tokens);
+
+  let cel_checks_impl = impl_oneof_cel_checks(oneof_ident, cel_checks_tokens);
+
+  let validator_impl = impl_oneof_validator(OneofValidatorImplCtx {
+    oneof_ident,
+    validators_tokens,
+  });
+
+  let output = quote! {
+    #oneof_schema_impl
+    #cel_checks_impl
+    #validator_impl
+  };
+
+  Ok(wrap_with_imports(&item.ident, output))
 }
