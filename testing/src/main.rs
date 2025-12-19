@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use prelude::{
   cel_program, CachedProgram, EnumValidator, FieldValidator, IntValidator, MessageEntry,
-  OptionValue, ProtoEnum, ProtoOption, RepeatedValidator, RepeatedValidatorBuilder,
+  OptionValue, Package, ProtoEnum, ProtoOption, RepeatedValidator, RepeatedValidatorBuilder,
   StringValidator, StringValidatorBuilder, ValidatorBuilderFor,
 };
 use proc_macro_impls::{Enum, Message, Oneof};
@@ -124,7 +124,7 @@ mod inner {
     }
   }
 
-  fn random_cel_rule() -> CelRule {
+  pub fn random_cel_rule() -> CelRule {
     CelRule::builder()
       .id("hobbits")
       .message("they're taking the hobbits to isengard!")
@@ -146,7 +146,6 @@ mod inner {
   #[proto(nested_messages(Nested))]
   #[derive(Clone, Debug, Default)]
   #[proto(options = vec![ random_option() ])]
-  #[proto(cel_rules(MSG_RULE))]
   pub struct Abc {
     #[proto(repeated(float), validate = |v| v.unique())]
     pub repeated_float: Vec<f32>,
@@ -186,7 +185,7 @@ mod inner {
     #[proto(enum_)]
     optional_enum: Option<PseudoEnum>,
 
-    #[proto(message(proxied), validate = |v| v.cel([ &RULE ]))]
+    #[proto(message(proxied))]
     nested: Option<Nested>,
 
     #[proto(repeated(message(proxied)), validate = |v| v.min_items(1))]
@@ -231,13 +230,11 @@ use protocheck::wrappers::Sint32;
 fn main() {
   env_logger::init();
 
-  let mut msg2 = AbcProto::default();
+  let mut package = Package::new("abc");
 
-  msg2.repeated_enum = vec![PseudoEnum::AbcDeg as i32, PseudoEnum::AbcDeg as i32];
+  package.add_files([proto_file()]);
 
-  let err = msg2.validate().unwrap_err();
-
-  eprintln!("{err:#?}");
+  package.check_unique_cel_rules().unwrap();
 }
 
 #[cfg(test)]
@@ -245,9 +242,30 @@ mod test {
   use std::collections::HashMap;
 
   use bytes::Bytes;
+  use prelude::{Package, ProtoFile, ProtoMessage};
   use proc_macro_impls::proto_message;
 
-  use crate::inner::PseudoEnum;
+  use crate::inner::{proto_file, PseudoEnum};
+
+  #[proto_message(direct)]
+  #[proto(package = "", file = "")]
+  struct DuplicateRules {
+    #[proto(tag = 1, validate = |v| v.cel([ inline_cel_program!(id = "abc", msg = "hi", expr = "hi"), inline_cel_program!(id = "abc", msg = "not hi", expr = "not hi") ]))]
+    pub id: i32,
+  }
+
+  #[test]
+  fn unique_rules() {
+    let mut package = Package::new("abc");
+
+    let mut file = ProtoFile::new("abc", "abc");
+
+    file.add_messages([DuplicateRules::proto_schema()]);
+
+    package.add_files([file]);
+
+    assert!(package.check_unique_cel_rules().is_err());
+  }
 
   #[proto_message(direct)]
   #[proto(package = "", file = "")]

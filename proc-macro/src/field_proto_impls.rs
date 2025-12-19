@@ -71,7 +71,7 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
         }
       };
 
-      let field_type = proto_field.proto_kind_tokens();
+      let field_type = proto_field.descriptor_type_tokens();
 
       let field_context_tokens = quote! {
         ::prelude::FieldContext {
