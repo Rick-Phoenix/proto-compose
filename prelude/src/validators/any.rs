@@ -25,12 +25,32 @@ impl Validator<Any> for AnyValidator {
     let violations = &mut violations_agg;
 
     if let Some(val) = val {
-      if let Some(allowed_list) = &self.in_ && !<&Any>::is_in(allowed_list, val) {
-        violations.add(field_context, parent_elements, &ANY_IN_VIOLATION, &format!("must have one of these type URLs: {}", format_list(allowed_list.iter())));
+      if let Some(allowed_list) = &self.in_
+        && !<&Any>::is_in(allowed_list, val)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &ANY_IN_VIOLATION,
+          &format!(
+            "must have one of these type URLs: {}",
+            format_list(allowed_list.iter())
+          ),
+        );
       }
 
-      if let Some(forbidden_list) = &self.not_in && <&Any>::is_in(forbidden_list, val) {
-        violations.add(field_context, parent_elements, &ANY_NOT_IN_VIOLATION, &format!("cannot have one of these type URLs: {}", format_list(forbidden_list.iter())));
+      if let Some(forbidden_list) = &self.not_in
+        && <&Any>::is_in(forbidden_list, val)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &ANY_NOT_IN_VIOLATION,
+          &format!(
+            "cannot have one of these type URLs: {}",
+            format_list(forbidden_list.iter())
+          ),
+        );
       }
 
       if !self.cel.is_empty() {
@@ -114,7 +134,7 @@ impl From<AnyValidator> for ProtoOption {
     insert_boolean_option!(validator, outer_rules, required);
     insert_option!(validator, outer_rules, ignore);
 
-    ProtoOption {
+    Self {
       name: BUF_VALIDATE_FIELD.clone(),
       value: OptionValue::Message(outer_rules.into()),
     }

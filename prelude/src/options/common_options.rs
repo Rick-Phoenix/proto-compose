@@ -6,7 +6,7 @@ pub struct DEPRECATED;
 
 impl From<DEPRECATED> for ProtoOption {
   fn from(_: DEPRECATED) -> Self {
-    ProtoOption {
+    Self {
       name: PROTO_DEPRECATED.clone(),
       value: OptionValue::Bool(true),
     }

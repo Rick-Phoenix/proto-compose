@@ -38,7 +38,7 @@ pub struct Message {
   pub package: &'static str,
   pub file: &'static str,
   pub entries: Vec<MessageEntry>,
-  pub messages: Vec<Message>,
+  pub messages: Vec<Self>,
   pub enums: Vec<Enum>,
   pub options: Vec<ProtoOption>,
   pub reserved_names: Vec<&'static str>,
@@ -55,8 +55,8 @@ pub enum MessageEntry {
 impl MessageEntry {
   pub(crate) fn cel_rules(&self) -> impl Iterator<Item = &'static CelRule> {
     let fields_slice = match self {
-      MessageEntry::Field(f) => std::slice::from_ref(f),
-      MessageEntry::Oneof(o) => o.fields.as_slice(),
+      Self::Field(f) => std::slice::from_ref(f),
+      Self::Oneof(o) => o.fields.as_slice(),
     };
 
     fields_slice
@@ -67,8 +67,8 @@ impl MessageEntry {
 
   pub(crate) fn render(&self, current_package: &'static str) -> String {
     match self {
-      MessageEntry::Field(proto_field) => proto_field.render(current_package),
-      MessageEntry::Oneof(oneof) => oneof.render(current_package),
+      Self::Field(proto_field) => proto_field.render(current_package),
+      Self::Oneof(oneof) => oneof.render(current_package),
     }
   }
 }

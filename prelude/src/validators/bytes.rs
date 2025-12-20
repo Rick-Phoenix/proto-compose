@@ -39,11 +39,11 @@ impl Validator<Bytes> for BytesValidator {
 
   #[cfg(feature = "testing")]
   fn check_cel_programs_with(&self, val: Self::Target) -> Result<(), Vec<CelError>> {
-    if !self.cel.is_empty() {
+    if self.cel.is_empty() {
+      Ok(())
+    } else {
       // This one needs a special impl because Bytes does not support Into<Value>
       test_programs(&self.cel, val.to_vec())
-    } else {
-      Ok(())
     }
   }
 
@@ -60,45 +60,123 @@ impl Validator<Bytes> for BytesValidator {
     let violations = &mut violations_agg;
 
     if let Some(val) = val {
-      if let Some(const_val) = &self.const_ && *val != const_val {
-        violations.add(field_context, parent_elements, &BYTES_CONST_VIOLATION, &format!("must be equal to {}", const_val.escape_ascii()));
+      if let Some(const_val) = &self.const_
+        && *val != const_val
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &BYTES_CONST_VIOLATION,
+          &format!("must be equal to {}", const_val.escape_ascii()),
+        );
       }
 
-      if let Some(len) = self.len && val.len() != len {
-        violations.add(field_context, parent_elements, &BYTES_LEN_VIOLATION, &format!("must be exactly {len} bytes long"));
+      if let Some(len) = self.len
+        && val.len() != len
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &BYTES_LEN_VIOLATION,
+          &format!("must be exactly {len} bytes long"),
+        );
       }
 
-      if let Some(min_len) = self.min_len && val.len() < min_len {
-        violations.add(field_context, parent_elements, &BYTES_MIN_LEN_VIOLATION, &format!("must be at least {min_len} bytes long"));
+      if let Some(min_len) = self.min_len
+        && val.len() < min_len
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &BYTES_MIN_LEN_VIOLATION,
+          &format!("must be at least {min_len} bytes long"),
+        );
       }
 
-      if let Some(max_len) = self.max_len && val.len() > max_len {
-        violations.add(field_context, parent_elements, &BYTES_MAX_LEN_VIOLATION, &format!("cannot be longer than {max_len} bytes"));
+      if let Some(max_len) = self.max_len
+        && val.len() > max_len
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &BYTES_MAX_LEN_VIOLATION,
+          &format!("cannot be longer than {max_len} bytes"),
+        );
       }
 
       #[cfg(feature = "regex")]
-      if let Some(pattern) = &self.pattern && !pattern.is_match(val) {
-        violations.add(field_context, parent_elements, &BYTES_PATTERN_VIOLATION, &format!("must match the pattern `{pattern}`"));
+      if let Some(pattern) = &self.pattern
+        && !pattern.is_match(val)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &BYTES_PATTERN_VIOLATION,
+          &format!("must match the pattern `{pattern}`"),
+        );
       }
 
-      if let Some(prefix) = &self.prefix && !val.starts_with(prefix) {
-        violations.add(field_context, parent_elements, &BYTES_PREFIX_VIOLATION, &format!("must start with {}", prefix.escape_ascii()));
+      if let Some(prefix) = &self.prefix
+        && !val.starts_with(prefix)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &BYTES_PREFIX_VIOLATION,
+          &format!("must start with {}", prefix.escape_ascii()),
+        );
       }
 
-      if let Some(suffix) = &self.suffix && !val.ends_with(suffix) {
-        violations.add(field_context, parent_elements, &BYTES_SUFFIX_VIOLATION, &format!("must end with {}", suffix.escape_ascii()));
+      if let Some(suffix) = &self.suffix
+        && !val.ends_with(suffix)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &BYTES_SUFFIX_VIOLATION,
+          &format!("must end with {}", suffix.escape_ascii()),
+        );
       }
 
-      if let Some(substring) = &self.contains && !val.windows(val.len()).any(|slice| slice == substring) {
-        violations.add(field_context, parent_elements, &BYTES_CONTAINS_VIOLATION, &format!("must contain {}", substring.escape_ascii()));
+      if let Some(substring) = &self.contains
+        && !val
+          .windows(val.len())
+          .any(|slice| slice == substring)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &BYTES_CONTAINS_VIOLATION,
+          &format!("must contain {}", substring.escape_ascii()),
+        );
       }
 
-      if let Some(allowed_list) = &self.in_ && !<&Bytes>::is_in(allowed_list, val) {
-        violations.add(field_context, parent_elements, &BYTES_IN_VIOLATION, &format!("must be one of these values: {}", format_bytes_list(allowed_list.iter().map(|b| b.as_ref()))));
+      if let Some(allowed_list) = &self.in_
+        && !<&Bytes>::is_in(allowed_list, val)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &BYTES_IN_VIOLATION,
+          &format!(
+            "must be one of these values: {}",
+            format_bytes_list(allowed_list.iter().map(|b| b.as_ref()))
+          ),
+        );
       }
 
-      if let Some(forbidden_list) = &self.not_in && <&Bytes>::is_in(forbidden_list, val) {
-        violations.add(field_context, parent_elements, &BYTES_IN_VIOLATION, &format!("cannot be one of these values: {}", format_bytes_list(forbidden_list.iter().map(|b| b.as_ref()))));
+      if let Some(forbidden_list) = &self.not_in
+        && <&Bytes>::is_in(forbidden_list, val)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &BYTES_IN_VIOLATION,
+          &format!(
+            "cannot be one of these values: {}",
+            format_bytes_list(forbidden_list.iter().map(|b| b.as_ref()))
+          ),
+        );
       }
 
       if let Some(well_known) = &self.well_known {
@@ -285,7 +363,7 @@ impl From<BytesValidator> for ProtoOption {
     insert_boolean_option!(validator, outer_rules, required);
     insert_option!(validator, outer_rules, ignore);
 
-    ProtoOption {
+    Self {
       name: BUF_VALIDATE_FIELD.clone(),
       value: OptionValue::Message(outer_rules.into()),
     }
@@ -332,9 +410,9 @@ impl<S: State> BytesValidatorBuilder<S> {
 impl WellKnownBytes {
   pub(crate) fn to_option(self, option_values: &mut OptionValueList) {
     let name = match self {
-      WellKnownBytes::Ip => IP.clone(),
-      WellKnownBytes::Ipv4 => IPV4.clone(),
-      WellKnownBytes::Ipv6 => IPV6.clone(),
+      Self::Ip => IP.clone(),
+      Self::Ipv4 => IPV4.clone(),
+      Self::Ipv6 => IPV6.clone(),
     };
 
     option_values.push((name, OptionValue::Bool(true)));
@@ -352,7 +430,7 @@ fn format_bytes_as_proto_string_literal(bytes: &[u8]) -> String {
       b'\\' => result.push_str("\\\\"),
       b'"' => result.push_str("\\\""),
       _ => {
-        result.push_str(&format!("\\x{:02x}", byte));
+        let _ = write!(result, "\\x{byte:02x}");
       }
     }
   }

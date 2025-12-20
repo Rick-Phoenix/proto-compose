@@ -51,32 +51,87 @@ where
         );
       }
 
-      if let Some(const_val) = self.const_ && val != const_val {
-        violations.add(field_context, parent_elements, Num::CONST_VIOLATION, &format!("must be equal to {const_val}"));
+      if let Some(const_val) = self.const_
+        && val != const_val
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          Num::CONST_VIOLATION,
+          &format!("must be equal to {const_val}"),
+        );
       }
 
-      if let Some(gt) = self.gt && val <= gt {
-        violations.add(field_context, parent_elements, Num::GT_VIOLATION, &format!("must be greater than {gt}"));
+      if let Some(gt) = self.gt
+        && val <= gt
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          Num::GT_VIOLATION,
+          &format!("must be greater than {gt}"),
+        );
       }
 
-      if let Some(gte) = self.gte && val < gte {
-        violations.add(field_context, parent_elements, Num::GTE_VIOLATION, &format!("must be greater than or equal to {gte}"));
+      if let Some(gte) = self.gte
+        && val < gte
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          Num::GTE_VIOLATION,
+          &format!("must be greater than or equal to {gte}"),
+        );
       }
 
-      if let Some(lt) = self.lt && val >= lt {
-        violations.add(field_context, parent_elements, Num::LT_VIOLATION, &format!("must be smaller than {lt}"));
+      if let Some(lt) = self.lt
+        && val >= lt
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          Num::LT_VIOLATION,
+          &format!("must be smaller than {lt}"),
+        );
       }
 
-      if let Some(lte) = self.lte && val > lte {
-        violations.add(field_context, parent_elements, Num::LTE_VIOLATION, &format!("must be smaller than or equal to {lte}"));
+      if let Some(lte) = self.lte
+        && val > lte
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          Num::LTE_VIOLATION,
+          &format!("must be smaller than or equal to {lte}"),
+        );
       }
 
-      if let Some(allowed_list) = &self.in_ && !Num::RustType::is_in(allowed_list, val) {
-        violations.add(field_context, parent_elements, Num::IN_VIOLATION, &format!("must be one of these values: {}", format_list(allowed_list.iter())));
+      if let Some(allowed_list) = &self.in_
+        && !Num::RustType::is_in(allowed_list, val)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          Num::IN_VIOLATION,
+          &format!(
+            "must be one of these values: {}",
+            format_list(allowed_list.iter())
+          ),
+        );
       }
 
-      if let Some(forbidden_list) = &self.not_in && Num::RustType::is_in(forbidden_list, val) {
-        violations.add(field_context, parent_elements, Num::NOT_IN_VIOLATION, &format!("cannot be one of these values: {}", format_list(forbidden_list.iter())));
+      if let Some(forbidden_list) = &self.not_in
+        && Num::RustType::is_in(forbidden_list, val)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          Num::NOT_IN_VIOLATION,
+          &format!(
+            "cannot be one of these values: {}",
+            format_list(forbidden_list.iter())
+          ),
+        );
       }
 
       if !self.cel.is_empty() {
@@ -172,9 +227,9 @@ impl<S: State, N: FloatWrapper> FloatValidatorBuilder<N, S> {
   }
 }
 
-impl<S: State, N> From<FloatValidatorBuilder<N, S>> for ProtoOption
+impl<S, N> From<FloatValidatorBuilder<N, S>> for ProtoOption
 where
-  S: IsComplete,
+  S: State + IsComplete,
   N: FloatWrapper,
 {
   fn from(value: FloatValidatorBuilder<N, S>) -> Self {
@@ -220,7 +275,7 @@ where
     insert_cel_rules!(validator, outer_rules);
     insert_boolean_option!(validator, outer_rules, required);
     insert_option!(validator, outer_rules, ignore);
-    ProtoOption {
+    Self {
       name: BUF_VALIDATE_FIELD.clone(),
       value: OptionValue::Message(outer_rules.into()),
     }

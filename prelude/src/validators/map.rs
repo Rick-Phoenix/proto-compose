@@ -50,7 +50,7 @@ impl IntoSubscript for i64 {
 
 impl IntoSubscript for i32 {
   fn into_subscript(self) -> Subscript {
-    Subscript::IntKey(self as i64)
+    Subscript::IntKey(i64::from(self))
   }
 }
 
@@ -137,14 +137,14 @@ where
 
     if let Some(key_validator) = &self.keys {
       match key_validator.check_cel_programs() {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(errs) => errors.extend(errs),
       };
     }
 
     if let Some(values_validator) = &self.values {
       match values_validator.check_cel_programs() {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(errs) => errors.extend(errs),
       };
     }
@@ -169,21 +169,25 @@ where
     let violations = &mut violations_agg;
 
     if let Some(val) = val {
-      if let Some(min_pairs) = self.min_pairs && val.len() < min_pairs {
+      if let Some(min_pairs) = self.min_pairs
+        && val.len() < min_pairs
+      {
         violations.add(
           field_context,
           parent_elements,
           &MAP_MIN_PAIRS_VIOLATION,
-          &format!("must contain at least {min_pairs} pairs")
+          &format!("must contain at least {min_pairs} pairs"),
         );
       }
 
-      if let Some(max_pairs) = self.max_pairs && val.len() > max_pairs {
+      if let Some(max_pairs) = self.max_pairs
+        && val.len() > max_pairs
+      {
         violations.add(
           field_context,
           parent_elements,
           &MAP_MAX_PAIRS_VIOLATION,
-          &format!("cannot contain more than {max_pairs} pairs")
+          &format!("cannot contain more than {max_pairs} pairs"),
         );
       }
 
@@ -243,7 +247,8 @@ where
   K: ProtoValidator,
   V: ProtoValidator,
 {
-  pub fn builder() -> MapValidatorBuilder<K, V> {
+  #[must_use]
+  pub const fn builder() -> MapValidatorBuilder<K, V> {
     MapValidatorBuilder {
       _state: PhantomData,
       _key_type: PhantomData,
@@ -417,13 +422,13 @@ where
     insert_option!(validator, rules, max_pairs);
 
     if let Some(keys_option) = validator.keys {
-      let keys_schema: ProtoOption = keys_option.into();
+      let keys_schema: Self = keys_option.into();
 
       rules.push((KEYS.clone(), keys_schema.value));
     }
 
     if let Some(values_option) = validator.values {
-      let values_schema: ProtoOption = values_option.into();
+      let values_schema: Self = values_option.into();
 
       rules.push((VALUES.clone(), values_schema.value));
     }
@@ -434,7 +439,7 @@ where
 
     insert_option!(validator, outer_rules, ignore);
 
-    ProtoOption {
+    Self {
       name: BUF_VALIDATE_FIELD.clone(),
       value: OptionValue::Message(outer_rules.into()),
     }

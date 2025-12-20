@@ -4,6 +4,7 @@ use crate::*;
 
 pub(crate) const PROTOBUF_MAX_TAG: i32 = 536_870_911;
 
+#[derive(Clone, Copy)]
 pub(crate) enum OptionKind {
   FieldOption,
   NormalOption,
@@ -37,7 +38,7 @@ where
 {
   field_str.push_str(" [\n");
 
-  for (i, option) in options.into_iter() {
+  for (i, option) in options {
     render_option(option, field_str, OptionKind::FieldOption);
 
     if i != options_len - 1 {
@@ -54,7 +55,7 @@ where
 {
   let mut options_str = String::new();
 
-  for option in options.into_iter() {
+  for option in options {
     render_option(option, &mut options_str, OptionKind::NormalOption);
     options_str.push('\n');
   }

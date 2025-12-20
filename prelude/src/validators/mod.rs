@@ -85,7 +85,7 @@ impl From<Ignore> for OptionValue {
       Ignore::Always => IGNORE_ALWAYS.clone(),
     };
 
-    OptionValue::Enum(name)
+    Self::Enum(name)
   }
 }
 

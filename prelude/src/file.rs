@@ -16,7 +16,7 @@ pub struct ProtoFile {
   pub extensions: Vec<Extension>,
 }
 
-#[derive(Default, Debug, PartialEq, Clone, Copy)]
+#[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Edition {
   Proto2,
   #[default]
@@ -27,24 +27,25 @@ pub enum Edition {
 impl Display for Edition {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      Edition::Proto2 => write!(f, "syntax = \"proto2\""),
-      Edition::Proto3 => write!(f, "syntax = \"proto3\""),
-      Edition::E2023 => write!(f, "edition = \"2023\""),
+      Self::Proto2 => write!(f, "syntax = \"proto2\""),
+      Self::Proto3 => write!(f, "syntax = \"proto3\""),
+      Self::E2023 => write!(f, "edition = \"2023\""),
     }
   }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub struct FileImports {
   pub set: HashSet<&'static str>,
   pub file: &'static str,
 }
 
 impl FileImports {
-  pub fn extend(&mut self, other: FileImports) {
+  pub fn extend(&mut self, other: Self) {
     self.set.extend(other.set);
   }
 
+  #[must_use]
   pub fn new(file: &'static str) -> Self {
     Self {
       file,
@@ -58,16 +59,18 @@ impl FileImports {
     }
   }
 
+  #[must_use]
   pub fn as_sorted_vec(&self) -> Vec<&'static str> {
-    let mut imports: Vec<&'static str> = self.set.iter().cloned().collect();
+    let mut imports: Vec<&'static str> = self.set.iter().copied().collect();
 
-    imports.sort();
+    imports.sort_unstable();
 
     imports
   }
 }
 
 impl ProtoFile {
+  #[must_use]
   pub fn new(name: &'static str, package: &'static str) -> Self {
     Self {
       name,
@@ -82,7 +85,7 @@ impl ProtoFile {
     }
   }
 
-  pub fn edition(&mut self, edition: Edition) {
+  pub const fn edition(&mut self, edition: Edition) {
     self.edition = edition;
   }
 
@@ -110,7 +113,7 @@ impl ProtoFile {
   }
 
   pub fn add_messages<I: IntoIterator<Item = Message>>(&mut self, messages: I) {
-    for message in messages.into_iter() {
+    for message in messages {
       message.register_imports(&mut self.imports);
 
       self.messages.push(message);
@@ -118,21 +121,24 @@ impl ProtoFile {
   }
 
   pub fn add_enums<I: IntoIterator<Item = Enum>>(&mut self, enums: I) {
-    for enum_ in enums.into_iter() {
+    for enum_ in enums {
       self.enums.push(enum_);
     }
   }
 
   pub fn add_services<I: IntoIterator<Item = Service>>(&mut self, services: I) {
-    for service in services.into_iter() {
+    for service in services {
       self.services.push(service);
     }
   }
 
   pub fn add_extensions<I: IntoIterator<Item = Extension>>(&mut self, extensions: I) {
-    self.imports.set.insert("google/protobuf/descriptor.proto");
+    self
+      .imports
+      .set
+      .insert("google/protobuf/descriptor.proto");
 
-    for ext in extensions.into_iter() {
+    for ext in extensions {
       self.extensions.push(ext);
     }
   }

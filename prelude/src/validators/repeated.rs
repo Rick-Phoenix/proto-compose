@@ -98,19 +98,25 @@ where
     let violations = &mut violations_agg;
 
     if let Some(val) = val {
-      if let Some(min) = &self.min_items && val.len() < *min {
+      if let Some(min) = &self.min_items
+        && val.len() < *min
+      {
         violations.add(
-          field_context, parent_elements,
+          field_context,
+          parent_elements,
           &REPEATED_MIN_ITEMS_VIOLATION,
-          &format!("must contain at least {min} items")
+          &format!("must contain at least {min} items"),
         );
       }
 
-      if let Some(max) = &self.max_items && val.len() > *max {
+      if let Some(max) = &self.max_items
+        && val.len() > *max
+      {
         violations.add(
-          field_context, parent_elements,
+          field_context,
+          parent_elements,
           &REPEATED_MAX_ITEMS_VIOLATION,
-          &format!("cannot contain more than {max} items")
+          &format!("cannot contain more than {max} items"),
         );
       }
 
@@ -134,8 +140,11 @@ where
 
       if self.unique || items_validator.is_some() {
         for (i, value) in val.iter().enumerate() {
-          if let Some(processed_values) = processed_values.as_mut() && has_unique_values_so_far {
-            has_unique_values_so_far = <T::Target as UniqueItem>::check_unique(processed_values, value);
+          if let Some(processed_values) = processed_values.as_mut()
+            && has_unique_values_so_far
+          {
+            has_unique_values_so_far =
+              <T::Target as UniqueItem>::check_unique(processed_values, value);
           }
 
           if let Some((validator, ctx)) = &mut items_validator {
@@ -170,7 +179,8 @@ impl<T> RepeatedValidator<T>
 where
   T: AsProtoType + ProtoValidator,
 {
-  pub fn builder() -> RepeatedValidatorBuilder<T> {
+  #[must_use]
+  pub const fn builder() -> RepeatedValidatorBuilder<T> {
     RepeatedValidatorBuilder {
       _state: PhantomData,
       _inner_type: PhantomData,
@@ -323,7 +333,7 @@ impl<T> From<RepeatedValidator<T>> for ProtoOption
 where
   T: AsProtoType + ProtoValidator,
 {
-  fn from(validator: RepeatedValidator<T>) -> ProtoOption {
+  fn from(validator: RepeatedValidator<T>) -> Self {
     let mut rules: OptionValueList = Vec::new();
 
     insert_boolean_option!(validator, rules, unique);
@@ -331,7 +341,7 @@ where
     insert_option!(validator, rules, max_items);
 
     if let Some(items_option) = validator.items {
-      let items_schema: ProtoOption = items_option.into();
+      let items_schema: Self = items_option.into();
 
       rules.push((ITEMS.clone(), items_schema.value));
     }
@@ -342,7 +352,7 @@ where
 
     insert_option!(validator, outer_rules, ignore);
 
-    ProtoOption {
+    Self {
       name: BUF_VALIDATE_FIELD.clone(),
       value: OptionValue::Message(outer_rules.into()),
     }

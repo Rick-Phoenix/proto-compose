@@ -52,9 +52,9 @@ impl ProtoField {
     }
 
     match &self.type_ {
-      ProtoFieldInfo::Single(ty) => ty.register_import(imports),
-      ProtoFieldInfo::Repeated(ty) => ty.register_import(imports),
-      ProtoFieldInfo::Optional(ty) => ty.register_import(imports),
+      ProtoFieldInfo::Single(ty) | ProtoFieldInfo::Repeated(ty) | ProtoFieldInfo::Optional(ty) => {
+        ty.register_import(imports)
+      }
       ProtoFieldInfo::Map { keys, values } => {
         keys.register_import(imports);
         values.register_import(imports);

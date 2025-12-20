@@ -28,8 +28,15 @@ impl Validator<bool> for BoolValidator {
     let violations = &mut violations_agg;
 
     if let Some(&val) = val {
-      if let Some(const_val) = self.const_ && val != const_val {
-        violations.add(field_context, parent_elements, &BOOL_CONST_VIOLATION, &format!("must be {const_val}"));
+      if let Some(const_val) = self.const_
+        && val != const_val
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &BOOL_CONST_VIOLATION,
+          &format!("must be {const_val}"),
+        );
       }
     } else if self.required {
       violations.add_required(field_context, parent_elements);
@@ -69,7 +76,7 @@ impl From<BoolValidator> for ProtoOption {
     insert_boolean_option!(validator, outer_rules, required);
     insert_option!(validator, outer_rules, ignore);
 
-    ProtoOption {
+    Self {
       name: BUF_VALIDATE_FIELD.clone(),
       value: OptionValue::Message(outer_rules.into()),
     }

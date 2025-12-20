@@ -29,7 +29,7 @@ impl EnumVariant {
   pub(crate) fn render(&self) -> String {
     let Self { tag, name, options } = self;
 
-    let mut variant_str = format!("{} = {}", name, tag);
+    let mut variant_str = format!("{name} = {tag}");
 
     if !options.is_empty() {
       render_field_options(options.iter().enumerate(), options.len(), &mut variant_str);

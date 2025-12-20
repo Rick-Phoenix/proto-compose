@@ -30,16 +30,49 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
     let violations = &mut violations_agg;
 
     if let Some(&val) = val {
-      if let Some(const_val) = self.const_ && val != const_val {
-        violations.add(field_context, parent_elements, &ENUM_CONST_VIOLATION, &format!("must be equal to {const_val}"));
+      if let Some(const_val) = self.const_
+        && val != const_val
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &ENUM_CONST_VIOLATION,
+          &format!("must be equal to {const_val}"),
+        );
       }
 
-      if let Some(allowed_list) = &self.in_ && !protocheck_core::wrappers::EnumVariant::is_in(allowed_list, protocheck_core::wrappers::EnumVariant(val)) {
-        violations.add(field_context, parent_elements, &ENUM_IN_VIOLATION, &format!("must be one of these values: {}", format_list(allowed_list.iter())));
+      if let Some(allowed_list) = &self.in_
+        && !protocheck_core::wrappers::EnumVariant::is_in(
+          allowed_list,
+          protocheck_core::wrappers::EnumVariant(val),
+        )
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &ENUM_IN_VIOLATION,
+          &format!(
+            "must be one of these values: {}",
+            format_list(allowed_list.iter())
+          ),
+        );
       }
 
-      if let Some(forbidden_list) = &self.not_in && protocheck_core::wrappers::EnumVariant::is_in(forbidden_list, protocheck_core::wrappers::EnumVariant(val)) {
-        violations.add(field_context, parent_elements, &ENUM_NOT_IN_VIOLATION, &format!("cannot be one of these values: {}", format_list(forbidden_list.iter())));
+      if let Some(forbidden_list) = &self.not_in
+        && protocheck_core::wrappers::EnumVariant::is_in(
+          forbidden_list,
+          protocheck_core::wrappers::EnumVariant(val),
+        )
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &ENUM_NOT_IN_VIOLATION,
+          &format!(
+            "cannot be one of these values: {}",
+            format_list(forbidden_list.iter())
+          ),
+        );
       }
 
       if self.defined_only && T::try_from(val).is_err() {
@@ -141,7 +174,7 @@ impl<T: ProtoEnum> From<EnumValidator<T>> for ProtoOption {
     let mut rules: OptionValueList = Vec::new();
 
     if let Some(const_val) = validator.const_ {
-      rules.push((CONST_.clone(), OptionValue::Int(const_val as i64)));
+      rules.push((CONST_.clone(), OptionValue::Int(i64::from(const_val))));
     }
 
     insert_boolean_option!(validator, rules, defined_only);
@@ -162,7 +195,7 @@ impl<T: ProtoEnum> From<EnumValidator<T>> for ProtoOption {
     insert_boolean_option!(validator, outer_rules, required);
     insert_option!(validator, outer_rules, ignore);
 
-    ProtoOption {
+    Self {
       name: BUF_VALIDATE_FIELD.clone(),
       value: OptionValue::Message(outer_rules.into()),
     }

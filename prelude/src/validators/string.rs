@@ -33,61 +33,165 @@ impl Validator<String> for StringValidator {
     let violations = &mut violations_agg;
 
     if let Some(val) = val {
-      if let Some(const_val) = &self.const_ && val != const_val.as_ref() {
-        violations.add(field_context, parent_elements, &STRING_CONST_VIOLATION, &format!("must be equal to {const_val}", ));
+      if let Some(const_val) = &self.const_
+        && val != const_val.as_ref()
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_CONST_VIOLATION,
+          &format!("must be equal to {const_val}",),
+        );
       }
 
-      if let Some(len) = self.len && val.chars().count() != len {
-        violations.add(field_context, parent_elements, &STRING_LEN_VIOLATION, &format!("must be exactly {len} characters long"));
+      if let Some(len) = self.len
+        && val.chars().count() != len
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_LEN_VIOLATION,
+          &format!("must be exactly {len} characters long"),
+        );
       }
 
-      if let Some(min_len) = self.min_len && val.chars().count() < min_len {
-        violations.add(field_context, parent_elements, &STRING_MIN_LEN_VIOLATION, &format!("must be at least {min_len} characters long"));
+      if let Some(min_len) = self.min_len
+        && val.chars().count() < min_len
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_MIN_LEN_VIOLATION,
+          &format!("must be at least {min_len} characters long"),
+        );
       }
 
-      if let Some(max_len) = self.max_len && val.chars().count() > max_len {
-        violations.add(field_context, parent_elements, &STRING_MAX_LEN_VIOLATION, &format!("cannot be longer than {max_len} characters"));
+      if let Some(max_len) = self.max_len
+        && val.chars().count() > max_len
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_MAX_LEN_VIOLATION,
+          &format!("cannot be longer than {max_len} characters"),
+        );
       }
 
-      if let Some(len_bytes) = self.len_bytes && val.len() != len_bytes {
-        violations.add(field_context, parent_elements, &STRING_LEN_BYTES_VIOLATION, &format!("must be exactly {len_bytes} bytes long"));
+      if let Some(len_bytes) = self.len_bytes
+        && val.len() != len_bytes
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_LEN_BYTES_VIOLATION,
+          &format!("must be exactly {len_bytes} bytes long"),
+        );
       }
 
-      if let Some(min_bytes) = self.min_bytes && val.len() < min_bytes {
-        violations.add(field_context, parent_elements, &STRING_MIN_BYTES_VIOLATION, &format!("must be at least {min_bytes} bytes long"));
+      if let Some(min_bytes) = self.min_bytes
+        && val.len() < min_bytes
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_MIN_BYTES_VIOLATION,
+          &format!("must be at least {min_bytes} bytes long"),
+        );
       }
 
-      if let Some(max_bytes) = self.max_bytes && val.len() > max_bytes {
-        violations.add(field_context, parent_elements, &STRING_MAX_BYTES_VIOLATION, &format!("cannot be longer than {max_bytes} bytes"));
+      if let Some(max_bytes) = self.max_bytes
+        && val.len() > max_bytes
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_MAX_BYTES_VIOLATION,
+          &format!("cannot be longer than {max_bytes} bytes"),
+        );
       }
 
       #[cfg(feature = "regex")]
-      if let Some(pattern) = &self.pattern && !pattern.is_match(val) {
-        violations.add(field_context, parent_elements, &STRING_PATTERN_VIOLATION, &format!("must match the pattern `{pattern}`"));
+      if let Some(pattern) = &self.pattern
+        && !pattern.is_match(val)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_PATTERN_VIOLATION,
+          &format!("must match the pattern `{pattern}`"),
+        );
       }
 
-      if let Some(prefix) = &self.prefix && !val.starts_with(prefix.as_ref()) {
-        violations.add(field_context, parent_elements, &STRING_PREFIX_VIOLATION, &format!("must start with {prefix}"));
+      if let Some(prefix) = &self.prefix
+        && !val.starts_with(prefix.as_ref())
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_PREFIX_VIOLATION,
+          &format!("must start with {prefix}"),
+        );
       }
 
-      if let Some(suffix) = &self.suffix && !val.ends_with(suffix.as_ref()) {
-        violations.add(field_context, parent_elements, &STRING_SUFFIX_VIOLATION, &format!("must end with {suffix}"));
+      if let Some(suffix) = &self.suffix
+        && !val.ends_with(suffix.as_ref())
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_SUFFIX_VIOLATION,
+          &format!("must end with {suffix}"),
+        );
       }
 
-      if let Some(substring) = &self.contains && !val.contains(substring.as_ref()) {
-        violations.add(field_context, parent_elements, &STRING_CONTAINS_VIOLATION, &format!("must contain {substring}"));
+      if let Some(substring) = &self.contains
+        && !val.contains(substring.as_ref())
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_CONTAINS_VIOLATION,
+          &format!("must contain {substring}"),
+        );
       }
 
-      if let Some(substring) = &self.not_contains && val.contains(substring.as_ref()) {
-        violations.add(field_context, parent_elements, &STRING_NOT_CONTAINS_VIOLATION, &format!("cannot contain {substring}"));
+      if let Some(substring) = &self.not_contains
+        && val.contains(substring.as_ref())
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_NOT_CONTAINS_VIOLATION,
+          &format!("cannot contain {substring}"),
+        );
       }
 
-      if let Some(allowed_list) = &self.in_ && !<&str>::is_in(allowed_list, val) {
-        violations.add(field_context, parent_elements, &STRING_IN_VIOLATION, &format!("must be one of these values: {}", format_list(allowed_list.iter()) ));
+      if let Some(allowed_list) = &self.in_
+        && !<&str>::is_in(allowed_list, val)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_IN_VIOLATION,
+          &format!(
+            "must be one of these values: {}",
+            format_list(allowed_list.iter())
+          ),
+        );
       }
 
-      if let Some(forbidden_list) = &self.not_in && <&str>::is_in(forbidden_list, val) {
-        violations.add(field_context, parent_elements, &STRING_NOT_IN_VIOLATION, &format!("cannot be one of these values: {}", format_list(forbidden_list.iter())));
+      if let Some(forbidden_list) = &self.not_in
+        && <&str>::is_in(forbidden_list, val)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &STRING_NOT_IN_VIOLATION,
+          &format!(
+            "cannot be one of these values: {}",
+            format_list(forbidden_list.iter())
+          ),
+        );
       }
 
       macro_rules! impl_well_known_check {
@@ -306,7 +410,7 @@ pub struct StringValidator {
 }
 
 impl From<StringValidator> for ProtoOption {
-  fn from(validator: StringValidator) -> ProtoOption {
+  fn from(validator: StringValidator) -> Self {
     let mut rules: OptionValueList = Vec::new();
 
     if let Some(const_val) = validator.const_ {
@@ -363,7 +467,7 @@ impl From<StringValidator> for ProtoOption {
     insert_boolean_option!(validator, outer_rules, required);
     insert_option!(validator, outer_rules, ignore);
 
-    ProtoOption {
+    Self {
       name: BUF_VALIDATE_FIELD.clone(),
       value: OptionValue::Message(outer_rules.into()),
     }
@@ -421,18 +525,18 @@ impl<S: State> StringValidatorBuilder<S> {
   #[cfg(feature = "regex")]
   well_known_impl!(
     Email,
-    r###"
+    r#"
     `email` specifies that the field value must be a valid email address, for
     example "foo@example.com".
     Conforms to the definition for a valid email address from the [HTML standard](https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address).
     Note that this standard willfully deviates from [RFC 5322](https://datatracker.ietf.org/doc/html/rfc5322),
     which allows many unexpected forms of email addresses and will easily match
     a typographical error.
-  "###
+  "#
   );
   well_known_impl!(
     Hostname,
-    r###"
+    r#"
      `hostname` specifies that the field value must be a valid hostname, for
      example "foo.example.com".
     
@@ -443,11 +547,11 @@ impl<S: State> StringValidatorBuilder<S> {
      - The right-most label must not be digits only.
      - The name can have a trailing dot—for example, "foo.example.com.".
      - The name can be 253 characters at most, excluding the optional trailing dot.
-  "###
+  "#
   );
   well_known_impl!(
     Ip,
-    r###"
+    r#"
     `ip` specifies that the field value must be a valid IP (v4 or v6) address.
 
     IPv4 addresses are expected in the dotted decimal format—for example, "192.168.5.21".
@@ -456,35 +560,35 @@ impl<S: State> StringValidatorBuilder<S> {
     
     Both formats are well-defined in the internet standard [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986).
     Zone identifiers for IPv6 addresses (for example, "fe80::a%en1") are supported.
-  "###
+  "#
   );
   well_known_impl!(
     Ipv4,
-    r###"
+    r#"
     `ipv4` specifies that the field value must be a valid IPv4 address—for
     example "192.168.5.21".
-  "###
+  "#
   );
   well_known_impl!(
     Ipv6,
-    r###"
+    r#"
     `ipv6` specifies that the field value must be a valid IPv6 address—for
     example "::1", or "d7a:115c:a1e0:ab12:4843:cd96:626b:430b".
-  "###
+  "#
   );
   well_known_impl!(
     Uri,
-    r###"
+    r#"
     `uri` specifies that the field value must be a valid URI, for example
     "https://example.com/foo/bar?baz=quux#frag".
     
     URI is defined in the internet standard [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986).
     Zone Identifiers in IPv6 address literals are supported ([RFC 6874](https://datatracker.ietf.org/doc/html/rfc6874)).
-  "###
+  "#
   );
   well_known_impl!(
     UriRef,
-    r###"
+    r#"
     `uri_ref` specifies that the field value must be a valid URI Reference—either
     a URI such as "https://example.com/foo/bar?baz=quux#frag", or a Relative
     Reference such as "./foo/bar?query".
@@ -492,91 +596,91 @@ impl<S: State> StringValidatorBuilder<S> {
     URI, URI Reference, and Relative Reference are defined in the internet
     standard [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986). Zone
     Identifiers in IPv6 address literals are supported ([RFC 6874](https://datatracker.ietf.org/doc/html/rfc6874)).
-  "###
+  "#
   );
   well_known_impl!(
     Address,
-    r###"
+    r#"
     `address` specifies that the field value must be either a valid hostname
     (for example, "example.com"), or a valid IP (v4 or v6) address (for example,
     "192.168.0.1", or "::1").
-  "###
+  "#
   );
   #[cfg(feature = "regex")]
   well_known_impl!(
     Uuid,
-    r###"
+    r"
     `uuid` specifies that the field value must be a valid UUID as defined by
     [RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122#section-4.1.2).
-  "###
+  "
   );
   #[cfg(feature = "regex")]
   well_known_impl!(
     Tuuid,
-    r###"
+    r"
     `tuuid` (trimmed UUID) specifies that the field value must be a valid UUID as
     defined by [RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122#section-4.1.2) with all dashes
     omitted.
-  "###
+  "
   );
   well_known_impl!(
     IpWithPrefixlen,
-    r###"
+    r#"
     `ip_with_prefixlen` specifies that the field value must be a valid IP
     (v4 or v6) address with prefix length—for example, "192.168.5.21/16" or
     "2001:0DB8:ABCD:0012::F1/64".
-  "###
+  "#
   );
   well_known_impl!(
     Ipv4WithPrefixlen,
-    r###"
+    r#"
     `ipv4_with_prefixlen` specifies that the field value must be a valid
     IPv4 address with prefix length—for example, "192.168.5.21/16".
-  "###
+  "#
   );
   well_known_impl!(
     Ipv6WithPrefixlen,
-    r###"
+    r#"
     `ipv6_with_prefixlen` specifies that the field value must be a valid
     IPv6 address with prefix length—for example, "2001:0DB8:ABCD:0012::F1/64".
-  "###
+  "#
   );
   well_known_impl!(
     IpPrefix,
-    r###"
+    r#"
     `ip_prefix` specifies that the field value must be a valid IP (v4 or v6)
     prefix—for example, "192.168.0.0/16" or "2001:0DB8:ABCD:0012::0/64".
 
     The prefix must have all zeros for the unmasked bits. For example,
     "2001:0DB8:ABCD:0012::0/64" designates the left-most 64 bits for the
     prefix, and the remaining 64 bits must be zero.
-  "###
+  "#
   );
   well_known_impl!(
     Ipv4Prefix,
-    r###"
+    r#"
     `ipv4_prefix` specifies that the field value must be a valid IPv4
     prefix, for example "192.168.0.0/16".
 
     The prefix must have all zeros for the unmasked bits. For example,
     "192.168.0.0/16" designates the left-most 16 bits for the prefix,
     and the remaining 16 bits must be zero.
-  "###
+  "#
   );
   well_known_impl!(
     Ipv6Prefix,
-    r###"
+    r#"
     `ipv6_prefix` specifies that the field value must be a valid IPv6 prefix—for
     example, "2001:0DB8:ABCD:0012::0/64".
 
     The prefix must have all zeros for the unmasked bits. For example,
     "2001:0DB8:ABCD:0012::0/64" designates the left-most 64 bits for the
     prefix, and the remaining 64 bits must be zero.
-  "###
+  "#
   );
   well_known_impl!(
     HostAndPort,
-    r###"
+    r#"
     `host_and_port` specifies that the field value must be valid host/port
     pair—for example, "example.com:8080".
     
@@ -587,35 +691,35 @@ impl<S: State> StringValidatorBuilder<S> {
     
     The port is separated by a colon. It must be non-empty, with a decimal number
     in the range of 0-65535, inclusive.
-  "###
+  "#
   );
   #[cfg(feature = "regex")]
   well_known_impl!(
     HeaderNameLoose,
-    r###"
+    r"
     Specifies that the value must be a valid HTTP header name. 
 
     All characters are considered valid except for `\r\n\0`. 
-    Use `header_name_strict` for stricter enforcement."###
+    Use `header_name_strict` for stricter enforcement."
   );
   #[cfg(feature = "regex")]
   well_known_impl!(
     HeaderNameStrict,
-    r###"Specifies that the value must be a valid HTTP header name, according to the [RFC specification](https://datatracker.ietf.org/doc/html/rfc7230#section-3)"###
+    r"Specifies that the value must be a valid HTTP header name, according to the [RFC specification](https://datatracker.ietf.org/doc/html/rfc7230#section-3)"
   );
   #[cfg(feature = "regex")]
   well_known_impl!(
     HeaderValueLoose,
-    r###"
+    r"
     Specifies that the value must be a valid HTTP header value. 
 
     All characters are considered valid except for `\r\n\0`. 
-    Use `header_value_strict` for stricter enforcement."###
+    Use `header_value_strict` for stricter enforcement."
   );
   #[cfg(feature = "regex")]
   well_known_impl!(
     HeaderValueStrict,
-    r###"Specifies that the value must be a valid HTTP header value, according to the [RFC specification](https://datatracker.ietf.org/doc/html/rfc7230#section-3)"###
+    r"Specifies that the value must be a valid HTTP header value, according to the [RFC specification](https://datatracker.ietf.org/doc/html/rfc7230#section-3)"
   );
 }
 
@@ -623,50 +727,50 @@ impl WellKnownStrings {
   pub(crate) fn to_option(self, option_values: &mut OptionValueList) {
     let name = match self {
       #[cfg(feature = "regex")]
-      WellKnownStrings::Email => EMAIL.clone(),
-      WellKnownStrings::Hostname => HOSTNAME.clone(),
-      WellKnownStrings::Ip => IP.clone(),
-      WellKnownStrings::Ipv4 => IPV4.clone(),
-      WellKnownStrings::Ipv6 => IPV6.clone(),
-      WellKnownStrings::Uri => URI.clone(),
-      WellKnownStrings::UriRef => URI_REF.clone(),
-      WellKnownStrings::Address => ADDRESS.clone(),
+      Self::Email => EMAIL.clone(),
+      Self::Hostname => HOSTNAME.clone(),
+      Self::Ip => IP.clone(),
+      Self::Ipv4 => IPV4.clone(),
+      Self::Ipv6 => IPV6.clone(),
+      Self::Uri => URI.clone(),
+      Self::UriRef => URI_REF.clone(),
+      Self::Address => ADDRESS.clone(),
       #[cfg(feature = "regex")]
-      WellKnownStrings::Uuid => UUID.clone(),
+      Self::Uuid => UUID.clone(),
       #[cfg(feature = "regex")]
-      WellKnownStrings::Tuuid => TUUID.clone(),
-      WellKnownStrings::IpWithPrefixlen => IP_WITH_PREFIXLEN.clone(),
-      WellKnownStrings::Ipv4WithPrefixlen => IPV4_WITH_PREFIXLEN.clone(),
-      WellKnownStrings::Ipv6WithPrefixlen => IPV6_WITH_PREFIXLEN.clone(),
-      WellKnownStrings::IpPrefix => IP_PREFIX.clone(),
-      WellKnownStrings::Ipv4Prefix => IPV4_PREFIX.clone(),
-      WellKnownStrings::Ipv6Prefix => IPV6_PREFIX.clone(),
-      WellKnownStrings::HostAndPort => HOST_AND_PORT.clone(),
+      Self::Tuuid => TUUID.clone(),
+      Self::IpWithPrefixlen => IP_WITH_PREFIXLEN.clone(),
+      Self::Ipv4WithPrefixlen => IPV4_WITH_PREFIXLEN.clone(),
+      Self::Ipv6WithPrefixlen => IPV6_WITH_PREFIXLEN.clone(),
+      Self::IpPrefix => IP_PREFIX.clone(),
+      Self::Ipv4Prefix => IPV4_PREFIX.clone(),
+      Self::Ipv6Prefix => IPV6_PREFIX.clone(),
+      Self::HostAndPort => HOST_AND_PORT.clone(),
       #[cfg(feature = "regex")]
-      WellKnownStrings::HeaderNameLoose
-      | WellKnownStrings::HeaderNameStrict
-      | WellKnownStrings::HeaderValueLoose
-      | WellKnownStrings::HeaderValueStrict => WELL_KNOWN_REGEX.clone(),
+      Self::HeaderNameLoose
+      | Self::HeaderNameStrict
+      | Self::HeaderValueLoose
+      | Self::HeaderValueStrict => WELL_KNOWN_REGEX.clone(),
     };
 
     let value = match self {
       #[cfg(feature = "regex")]
-      WellKnownStrings::HeaderNameLoose => {
+      Self::HeaderNameLoose => {
         option_values.push((STRICT.clone(), OptionValue::Bool(false)));
         OptionValue::Enum(KNOWN_REGEX_HTTP_HEADER_NAME.clone())
       }
       #[cfg(feature = "regex")]
-      WellKnownStrings::HeaderNameStrict => {
+      Self::HeaderNameStrict => {
         option_values.push((STRICT.clone(), OptionValue::Bool(true)));
         OptionValue::Enum(KNOWN_REGEX_HTTP_HEADER_NAME.clone())
       }
       #[cfg(feature = "regex")]
-      WellKnownStrings::HeaderValueLoose => {
+      Self::HeaderValueLoose => {
         option_values.push((STRICT.clone(), OptionValue::Bool(false)));
         OptionValue::Enum(KNOWN_REGEX_HTTP_HEADER_VALUE.clone())
       }
       #[cfg(feature = "regex")]
-      WellKnownStrings::HeaderValueStrict => {
+      Self::HeaderValueStrict => {
         option_values.push((STRICT.clone(), OptionValue::Bool(true)));
         OptionValue::Enum(KNOWN_REGEX_HTTP_HEADER_VALUE.clone())
       }

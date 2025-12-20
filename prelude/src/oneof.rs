@@ -42,11 +42,11 @@ impl Oneof {
     }
 
     format!(
-      r###"
+      r"
 oneof {name} {{{options_str}
 {fields_str}
 }}
-    "###,
+    ",
     )
   }
 }

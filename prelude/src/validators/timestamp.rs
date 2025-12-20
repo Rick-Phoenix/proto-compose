@@ -26,8 +26,15 @@ impl Validator<Timestamp> for TimestampValidator {
     let violations = &mut violations_agg;
 
     if let Some(&val) = val {
-      if let Some(const_val) = self.const_ && val != const_val {
-        violations.add(field_context, parent_elements, &TIMESTAMP_CONST_VIOLATION, &format!("must be equal to {const_val}"));
+      if let Some(const_val) = self.const_
+        && val != const_val
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &TIMESTAMP_CONST_VIOLATION,
+          &format!("must be equal to {const_val}"),
+        );
       }
 
       if self.gt_now && !val.is_future() {
@@ -48,24 +55,59 @@ impl Validator<Timestamp> for TimestampValidator {
         );
       }
 
-      if let Some(range) = self.within && !val.is_within_range_from_now(range) {
-        violations.add(field_context, parent_elements, &TIMESTAMP_WITHIN_VIOLATION, &format!("must be within {range} from now"));
+      if let Some(range) = self.within
+        && !val.is_within_range_from_now(range)
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &TIMESTAMP_WITHIN_VIOLATION,
+          &format!("must be within {range} from now"),
+        );
       }
 
-      if let Some(gt) = self.gt && val <= gt {
-        violations.add(field_context, parent_elements, &TIMESTAMP_GT_VIOLATION, &format!("must be later than {gt}"));
+      if let Some(gt) = self.gt
+        && val <= gt
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &TIMESTAMP_GT_VIOLATION,
+          &format!("must be later than {gt}"),
+        );
       }
 
-      if let Some(gte) = self.gte && val < gte {
-        violations.add(field_context, parent_elements, &TIMESTAMP_GTE_VIOLATION, &format!("must be later than or equal to {gte}"));
+      if let Some(gte) = self.gte
+        && val < gte
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &TIMESTAMP_GTE_VIOLATION,
+          &format!("must be later than or equal to {gte}"),
+        );
       }
 
-      if let Some(lt) = self.lt && val >= lt {
-        violations.add(field_context, parent_elements, &TIMESTAMP_LT_VIOLATION, &format!("must be earlier than {lt}"));
+      if let Some(lt) = self.lt
+        && val >= lt
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &TIMESTAMP_LT_VIOLATION,
+          &format!("must be earlier than {lt}"),
+        );
       }
 
-      if let Some(lte) = self.lte && val > lte {
-        violations.add(field_context, parent_elements, &TIMESTAMP_LTE_VIOLATION, &format!("must be earlier than or equal to {lte}"));
+      if let Some(lte) = self.lte
+        && val > lte
+      {
+        violations.add(
+          field_context,
+          parent_elements,
+          &TIMESTAMP_LTE_VIOLATION,
+          &format!("must be earlier than or equal to {lte}"),
+        );
       }
 
       if !self.cel.is_empty() {
@@ -156,7 +198,7 @@ impl From<TimestampValidator> for ProtoOption {
     insert_boolean_option!(validator, outer_rules, required);
     insert_option!(validator, outer_rules, ignore);
 
-    ProtoOption {
+    Self {
       name: BUF_VALIDATE_FIELD.clone(),
       value: OptionValue::Message(outer_rules.into()),
     }

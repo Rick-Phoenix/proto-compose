@@ -101,7 +101,7 @@ impl<T: ProtoMessage, S: State> MessageValidatorBuilder<T, S> {
 }
 
 impl<T: ProtoMessage, S: IsComplete> From<MessageValidatorBuilder<T, S>> for ProtoOption {
-  fn from(value: MessageValidatorBuilder<T, S>) -> ProtoOption {
+  fn from(value: MessageValidatorBuilder<T, S>) -> Self {
     let validator = value.build();
     validator.into()
   }
@@ -114,7 +114,7 @@ impl<T: ProtoMessage> From<MessageValidator<T>> for ProtoOption {
     insert_cel_rules!(validator, rules);
     insert_boolean_option!(validator, rules, required);
 
-    ProtoOption {
+    Self {
       name: BUF_VALIDATE_FIELD.clone(),
       value: OptionValue::Message(rules.into()),
     }

@@ -26,6 +26,7 @@ impl PartialEq for CelProgram {
 impl CelError {
   // This is for runtime errors. If we get a CEL error we log the actual error while
   // producing a generic error message
+  #[must_use]
   pub fn into_violation(
     self,
     rule: Option<&CelRule>,
@@ -84,7 +85,7 @@ pub struct ProgramsExecutionCtx<'a, T> {
   pub parent_elements: &'a [FieldPathElement],
 }
 
-impl<'a, T, E> ProgramsExecutionCtx<'a, T>
+impl<T, E> ProgramsExecutionCtx<'_, T>
 where
   T: TryInto<Value, Error = E>,
   CelConversionError: From<E>,
@@ -151,7 +152,8 @@ where
 }
 
 impl CelProgram {
-  pub fn new(rule: CelRule) -> Self {
+  #[must_use]
+  pub const fn new(rule: CelRule) -> Self {
     Self {
       rule,
       program: OnceLock::new(),
@@ -182,7 +184,7 @@ impl CelProgram {
   }
 }
 
-#[derive(Debug, Clone, Builder, PartialEq)]
+#[derive(Debug, Clone, Builder, PartialEq, Eq)]
 #[builder(on(Arc<str>, into))]
 pub struct CelRule {
   /// The id of this specific rule.
@@ -195,13 +197,13 @@ pub struct CelRule {
 
 impl From<CelRule> for CelProgram {
   fn from(value: CelRule) -> Self {
-    CelProgram::new(value)
+    Self::new(value)
   }
 }
 
-impl<S: State> From<CelRuleBuilder<S>> for OptionValue
+impl<S> From<CelRuleBuilder<S>> for OptionValue
 where
-  S: IsComplete,
+  S: State + IsComplete,
 {
   fn from(value: CelRuleBuilder<S>) -> Self {
     value.build().into()
@@ -219,11 +221,11 @@ impl From<CelRule> for ProtoOption {
 
 impl From<CelRule> for OptionValue {
   fn from(value: CelRule) -> Self {
-    OptionValue::Message(
+    Self::Message(
       vec![
-        (ID.clone(), OptionValue::String(value.id)),
-        (MESSAGE.clone(), OptionValue::String(value.message)),
-        (EXPRESSION.clone(), OptionValue::String(value.expression)),
+        (ID.clone(), Self::String(value.id)),
+        (MESSAGE.clone(), Self::String(value.message)),
+        (EXPRESSION.clone(), Self::String(value.expression)),
       ]
       .into(),
     )

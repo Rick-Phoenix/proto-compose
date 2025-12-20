@@ -35,8 +35,8 @@ pub enum OptionValue {
   Uint(u64),
   Float(f64),
   String(Arc<str>),
-  List(Arc<[OptionValue]>),
-  Message(Arc<[(Arc<str>, OptionValue)]>),
+  List(Arc<[Self]>),
+  Message(Arc<[(Arc<str>, Self)]>),
   Enum(Arc<str>),
   Duration(Duration),
   Timestamp(Timestamp),
@@ -45,7 +45,7 @@ pub enum OptionValue {
 impl OptionValue {
   pub(crate) fn is_short(&self) -> bool {
     match self {
-      Self::List(list) => list.len() <= 5 && list.iter().all(OptionValue::is_short),
+      Self::List(list) => list.len() <= 5 && list.iter().all(Self::is_short),
       Self::String(str) => str.chars().count() <= 5,
       Self::Duration(_) | Self::Timestamp(_) | Self::Message(_) => false,
       _ => true,
@@ -56,10 +56,10 @@ impl OptionValue {
   pub fn new_message<S, V, I>(items: I) -> Self
   where
     S: Into<Arc<str>>,
-    V: Into<OptionValue>,
+    V: Into<Self>,
     I: IntoIterator<Item = (S, V)>,
   {
-    let items: Vec<(Arc<str>, OptionValue)> = items
+    let items: Vec<(Arc<str>, Self)> = items
       .into_iter()
       .map(|(name, val)| (name.into(), val.into()))
       .collect();
@@ -70,16 +70,19 @@ impl OptionValue {
   /// Creates a new list option value.
   pub fn new_list<I, V>(items: I) -> Self
   where
-    V: Into<OptionValue>,
+    V: Into<Self>,
     I: IntoIterator<Item = V>,
   {
-    let items: Vec<OptionValue> = items.into_iter().map(|v| v.into()).collect();
+    let items: Vec<Self> = items
+      .into_iter()
+      .map(std::convert::Into::into)
+      .collect();
 
     Self::List(items.into())
   }
 }
 
-impl<T: Clone + Into<OptionValue>> From<&T> for OptionValue {
+impl<T: Clone + Into<Self>> From<&T> for OptionValue {
   fn from(value: &T) -> Self {
     value.clone().into()
   }
@@ -95,37 +98,37 @@ macro_rules! option_value_conversion {
   };
 }
 
-impl<T: Into<OptionValue> + Clone> From<Arc<[T]>> for OptionValue {
+impl<T: Into<Self> + Clone> From<Arc<[T]>> for OptionValue {
   fn from(value: Arc<[T]>) -> Self {
-    OptionValue::List(
+    Self::List(
       value
         .iter()
         .map(|item| (*item).clone().into())
-        .collect::<Vec<OptionValue>>()
+        .collect::<Vec<Self>>()
         .into(),
     )
   }
 }
 
-impl<T: Into<OptionValue> + Clone> From<Vec<T>> for OptionValue {
+impl<T: Into<Self> + Clone> From<Vec<T>> for OptionValue {
   fn from(value: Vec<T>) -> Self {
-    OptionValue::List(
+    Self::List(
       value
         .into_iter()
-        .map(|item| item.clone().into())
-        .collect::<Vec<OptionValue>>()
+        .map(|item| item.into())
+        .collect::<Vec<Self>>()
         .into(),
     )
   }
 }
 
-impl<T: Into<OptionValue> + Clone> From<&[T]> for OptionValue {
+impl<T: Into<Self> + Clone> From<&[T]> for OptionValue {
   fn from(value: &[T]) -> Self {
-    OptionValue::List(
+    Self::List(
       value
         .iter()
         .map(|item| item.clone().into())
-        .collect::<Vec<OptionValue>>()
+        .collect::<Vec<Self>>()
         .into(),
     )
   }
@@ -133,24 +136,25 @@ impl<T: Into<OptionValue> + Clone> From<&[T]> for OptionValue {
 
 impl From<&str> for OptionValue {
   fn from(value: &str) -> Self {
-    OptionValue::String(value.into())
+    Self::String(value.into())
   }
 }
 
 impl From<Arc<str>> for OptionValue {
   fn from(value: Arc<str>) -> Self {
-    OptionValue::String(value)
+    Self::String(value)
   }
 }
 
 impl From<std::time::Duration> for OptionValue {
   fn from(value: std::time::Duration) -> Self {
-    let seconds = value.as_secs() as i64;
+    let seconds = value.as_secs().cast_signed();
+    #[allow(clippy::cast_possible_truncation)]
     let nanos = value.as_nanos() as i32;
 
     let duration = Duration { seconds, nanos };
 
-    OptionValue::Duration(duration)
+    Self::Duration(duration)
   }
 }
 

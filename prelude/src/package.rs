@@ -8,7 +8,8 @@ pub struct Package {
 }
 
 impl Package {
-  pub fn new(name: &'static str) -> Self {
+  #[must_use]
+  pub const fn new(name: &'static str) -> Self {
     Self {
       name,
       files: Vec::new(),
