@@ -8,6 +8,17 @@ pub struct Package {
 }
 
 impl Package {
+  #[must_use]
+  pub fn extern_paths(&self) -> Vec<(String, String)> {
+    let mut entries = Vec::new();
+
+    for file in &self.files {
+      entries.extend(file.extern_paths());
+    }
+
+    entries
+  }
+
   pub fn render_files<P>(&self, output_root: P) -> std::io::Result<()>
   where
     P: AsRef<Path>,

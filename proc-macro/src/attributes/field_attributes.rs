@@ -1,3 +1,5 @@
+use syn_utils::bail_with_span;
+
 use crate::*;
 
 #[derive(Clone)]
@@ -185,13 +187,22 @@ pub fn process_derive_field_attrs(
       }
     }
 
+    // Just an overly cautious fallback here, the span cannot be empty
+    let attr_span = attr_span.unwrap_or_else(Span::call_site);
+
     let oneof_path = oneof_path
       .get_path_or_fallback(fallback.as_ref())
       .ok_or(error_with_span!(
-        // Just an overly cautious fallback here, the span cannot be empty
-        attr_span.unwrap_or_else(Span::call_site),
+        attr_span,
         "Failed to infer the path to the oneof. Please set it manually"
       ))?;
+
+    if oneof_tags.is_empty() {
+      bail_with_span!(
+        attr_span,
+        "Oneof tags are missing. Use the `proto_module` macro or set them manually."
+      );
+    }
 
     proto_field = Some(ProtoField::Oneof {
       path: oneof_path,
@@ -201,7 +212,9 @@ pub fn process_derive_field_attrs(
   }
 
   let proto_field = if let Some(mut field) = proto_field {
-    if let ProtoField::Single(proto_type) = &mut field && type_info.is_option() {
+    if let ProtoField::Single(proto_type) = &mut field
+      && type_info.is_option()
+    {
       let inner = std::mem::take(proto_type);
 
       field = ProtoField::Optional(inner);
@@ -221,15 +234,23 @@ pub fn process_derive_field_attrs(
       }
       RustType::Option(inner) => {
         if inner.is_box() {
-        return Err(error!(inner, "You seem to be using Option<Box<T>>. If you are using a boxed message, please use message(boxed)"))
+          return Err(error!(
+            inner,
+            "You seem to be using Option<Box<T>>. If you are using a boxed message, please use message(boxed)"
+          ));
         } else {
           ProtoField::Optional(ProtoType::from_primitive(&inner.require_path()?)?)
         }
-      },
+      }
       RustType::Box(inner) => {
-        return Err(error!(inner, "You seem to be using Box<T>. If you meant to use a boxed message as a oneof variant, please use message(boxed)"))
-      },
-      RustType::Vec(inner) => ProtoField::Repeated(ProtoType::from_primitive(&inner.require_path()?)?),
+        return Err(error!(
+          inner,
+          "You seem to be using Box<T>. If you meant to use a boxed message as a oneof variant, please use message(boxed)"
+        ));
+      }
+      RustType::Vec(inner) => {
+        ProtoField::Repeated(ProtoType::from_primitive(&inner.require_path()?)?)
+      }
       RustType::Other(inner) => ProtoField::Single(ProtoType::from_primitive(&inner.path)?),
       _ => {
         let path = type_info.as_path().unwrap();

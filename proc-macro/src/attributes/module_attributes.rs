@@ -4,6 +4,7 @@ pub struct ModuleAttrs {
   pub file: String,
   pub package: String,
   pub backend: Backend,
+  pub module_path: Option<String>,
 }
 
 #[derive(Default, PartialEq, Copy, Clone)]
@@ -48,6 +49,7 @@ impl ModuleAttrs {
       package,
       file,
       backend,
+      ..
     } = self;
 
     let backend_tokens = if *backend != Backend::default() {
@@ -65,6 +67,7 @@ impl Parse for ModuleAttrs {
     let mut file: Option<String> = None;
     let mut package: Option<String> = None;
     let mut backend: Option<Backend> = None;
+    let mut module_path: Option<String> = None;
 
     let args = Punctuated::<MetaNameValue, Token![,]>::parse_terminated(input)?;
 
@@ -81,6 +84,9 @@ impl Parse for ModuleAttrs {
         "package" => {
           package = Some(arg.value.as_string()?);
         }
+        "module_path" => {
+          module_path = Some(arg.value.as_string()?);
+        }
 
         _ => bail!(arg.path, "Unknown attribute `{ident}`"),
       };
@@ -93,6 +99,7 @@ impl Parse for ModuleAttrs {
       file,
       package,
       backend: backend.unwrap_or_default(),
+      module_path,
     })
   }
 }

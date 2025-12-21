@@ -53,6 +53,9 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
     },
   );
 
+  let rust_ident_str =
+    shadow_struct_ident.map_or_else(|| orig_struct_ident.to_string(), |id| id.to_string());
+
   output.extend(quote! {
     impl ::prelude::AsProtoType for #orig_struct_ident {
       fn proto_type() -> ::prelude::ProtoType {
@@ -75,6 +78,7 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
         let mut new_msg = ::prelude::Message {
           name: #proto_name,
           full_name: #full_name,
+          rust_ident: #rust_ident_str,
           package: #package,
           file: #file,
           reserved_names: vec![ #(#reserved_names),* ],

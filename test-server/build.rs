@@ -3,13 +3,18 @@ use tonic_prost_build::Config;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   println!("cargo:rerun-if-changed=../testing/proto_test/");
 
+  let package = testing::proto_package();
+
   let mut config = Config::new();
-  config
-    .extern_path(".myapp.v1.Abc", "::testing::AbcProto")
-    .extern_path(".myapp.v1.Abc.Nested", "::testing::NestedProto")
+
+  let mut config_ref = config
     .extern_path(".google.protobuf", "::proto_types")
     .compile_well_known_types()
     .bytes(["."]);
+
+  for (item, path) in package.extern_paths() {
+    config_ref = config_ref.extern_path(&item, &path);
+  }
 
   let proto_include_paths = &["../testing/proto_test/", "proto_deps"];
 

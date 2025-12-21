@@ -10,5 +10,5 @@ fn main() {
     files: vec![proto_file()],
   };
 
-  package.render_files("proto_test").unwrap();
+  eprintln!("{:#?}", package.extern_paths());
 }

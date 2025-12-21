@@ -187,11 +187,21 @@ pub fn process_module_items(
     });
   }
 
-  let ModuleAttrs { file, package, .. } = module_attrs;
+  let ModuleAttrs {
+    file,
+    package,
+    module_path,
+    ..
+  } = module_attrs;
+
+  let module_path = module_path.map_or_else(
+    || quote! { std::module_path!() },
+    |path| path.to_token_stream(),
+  );
 
   let aggregator_fn: ItemFn = parse_quote! {
     pub fn proto_file() -> ::prelude::ProtoFile {
-      let mut file = ::prelude::ProtoFile::new(#file, #package);
+      let mut file = ::prelude::ProtoFile::new(#file, #package, #module_path);
 
       let extensions = vec![ #(#extensions::as_proto_extension()),* ];
 

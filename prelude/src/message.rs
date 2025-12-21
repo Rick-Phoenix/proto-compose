@@ -33,6 +33,7 @@ where
 #[derive(Debug, Default, Clone, PartialEq, Template)]
 #[template(path = "message.proto.j2")]
 pub struct Message {
+  pub rust_ident: &'static str,
   pub name: &'static str,
   pub full_name: &'static str,
   pub package: &'static str,
