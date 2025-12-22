@@ -7,13 +7,18 @@ enum {{+ name +}} {
   {{+ numbers ~}}
 {%~ endif %}
 
-{%~ if let Some(options) = self.render_options() ~%}
-{{+ options }}
-{% endif %}
+{%~ for option in self.options +%}
+  option {{+ option.name +}} = {{+ option.value | indent(2) }};
+{% endfor +%}
 
-{% filter indent(2) ~%}
-{% for variant in variants ~%}
-{{+ variant.render() ~}}
+{%~ for variant in variants ~%}
+  {{+ variant.name +}} = {{+ variant.tag }}
+  {% filter indent(2) ~%}
+  {% if !variant.options.is_empty() +%} [
+  {% for option in variant.options ~%}
+  {{+ option.name +}} = {{+ option.value | indent(2) +}}{% if !loop.last %},{% endif ~%}
+  {% endfor +%}
+] {%- endif -%};
+  {% endfilter +%}
 {% endfor ~%}
-{% endfilter ~%}
 }

@@ -1,14 +1,11 @@
 #[cfg(test)]
 mod tests;
 
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use prelude::*;
 use proc_macro_impls::Oneof;
 use proto_types::{Duration, Timestamp};
-
-proto_file!("abc.proto", package = "myapp.v1", rust_path = "testing");
-file_options!(vec![random_option()]);
 
 fn random_option() -> ProtoOption {
   ProtoOption {
@@ -21,13 +18,15 @@ pub fn collect_package() -> Package {
   prelude::collect_package("myapp.v1")
 }
 
-mod inner {
+pub mod inner {
   use bytes::Bytes;
   use proc_macro_impls::{
     Extension, proto_enum, proto_extension, proto_message, proto_oneof, proto_service,
   };
 
   use super::*;
+
+  proto_file!("abc.proto", package = "myapp.v1");
 
   #[proto_extension(target = MessageOptions)]
   pub struct SomeExt {
@@ -169,5 +168,3 @@ mod inner {
     reused_oneof: Option<PseudoOneof>,
   }
 }
-
-pub use inner::*;

@@ -9,9 +9,9 @@ message {{+ self.name +}} {
   {{+ numbers ~}}
 {%~ endif %}
 
-{%~ if let Some(options) = self.render_options() ~%}
-{{+ options }}
-{% endif %}
+  {%~ for option in self.options +%}
+  option {{+ option.name +}} = {{+ option.value | indent(2) }};
+  {% endfor +%}
 
 {% for enum_ in enums %}
 {%+ filter indent(2) ~%}
@@ -30,11 +30,13 @@ message {{+ self.name +}} {
   {%~ when MessageEntry::Oneof(oneof) +%}
 
   oneof {{+ oneof.name +}} {
+    {% filter indent(4) %}
     {% for option in oneof.options ~%}
-    {{+ option.render() }}
-    {% endfor +%}
+    option {{+ option.name +}} = {{+ option.value }};
+    {% endfor %}
+    {% endfilter ~%}
 
-    {% for field in oneof.fields ~%}
+    {%~ for field in oneof.fields ~%}
     {%+ call macros::render_field(field, self.package, 4) %}
     {% endfor +%}
   }

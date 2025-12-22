@@ -21,7 +21,7 @@ pub fn impl_message_cel_checks(ctx: MessageCelChecksCtx) -> (TokenStream2, Optio
     let static_ident = format_ident!("{}_CEL_RULES", ccase!(constant, item_ident.to_string()));
 
     let programs = quote! {
-      static #static_ident: LazyLock<Vec<&'static CelProgram>> = LazyLock::new(|| {
+      static #static_ident: std::sync::LazyLock<Vec<&'static ::prelude::CelProgram>> = std::sync::LazyLock::new(|| {
         vec![ #(&*#paths),* ]
       });
     };

@@ -144,23 +144,6 @@ impl ProtoFile {
   }
 }
 
-impl ProtoFile {
-  pub(crate) fn render_options(&self) -> Option<String> {
-    if self.options.is_empty() {
-      return None;
-    }
-
-    let mut options_str = String::new();
-
-    for option in &self.options {
-      render_option(option, &mut options_str, OptionKind::NormalOption);
-      options_str.push('\n');
-    }
-
-    Some(options_str)
-  }
-}
-
 #[derive(Debug, PartialEq)]
 pub struct Extension {
   pub target: &'static str,

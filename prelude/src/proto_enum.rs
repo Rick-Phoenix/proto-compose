@@ -27,22 +27,6 @@ pub struct EnumVariant {
   pub options: Vec<ProtoOption>,
 }
 
-impl EnumVariant {
-  pub(crate) fn render(&self) -> String {
-    let Self { tag, name, options } = self;
-
-    let mut variant_str = format!("{name} = {tag}");
-
-    if !options.is_empty() {
-      render_field_options(options.iter().enumerate(), options.len(), &mut variant_str);
-    }
-
-    variant_str.push(';');
-
-    variant_str
-  }
-}
-
 impl Enum {
   pub(crate) fn render_reserved_names(&self) -> Option<String> {
     render_reserved_names(&self.reserved_names)
@@ -50,13 +34,5 @@ impl Enum {
 
   pub(crate) fn render_reserved_numbers(&self) -> Option<String> {
     render_reserved_numbers(&self.reserved_numbers)
-  }
-
-  pub(crate) fn render_options(&self) -> Option<String> {
-    if self.options.is_empty() {
-      return None;
-    }
-
-    Some(render_normal_options(&self.options))
   }
 }

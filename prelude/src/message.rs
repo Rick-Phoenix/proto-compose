@@ -82,25 +82,6 @@ impl Message {
     render_reserved_numbers(&self.reserved_numbers)
   }
 
-  pub(crate) fn render_options(&self) -> Option<String> {
-    if self.cel_rules.is_empty() && self.options.is_empty() {
-      return None;
-    }
-
-    let cel_rules_options: Vec<ProtoOption> = self
-      .cel_rules
-      .iter()
-      .map(|&rule| rule.clone().into())
-      .collect();
-
-    let options = self
-      .options
-      .iter()
-      .chain(cel_rules_options.iter());
-
-    Some(render_normal_options(options))
-  }
-
   pub(crate) fn register_imports(&self, imports: &mut FileImports) {
     if !self.cel_rules.is_empty() {
       imports.set.insert("buf/validate/validate.proto");

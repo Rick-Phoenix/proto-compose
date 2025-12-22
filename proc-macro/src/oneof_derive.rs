@@ -150,7 +150,7 @@ pub(crate) fn process_oneof_derive_direct(
   } = item;
 
   // prost::Oneof already implements Debug
-  let prost_derive: Attribute = parse_quote!(#[derive(prost::Oneof, PartialEq, Clone)]);
+  let prost_derive: Attribute = parse_quote!(#[derive(prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)]);
   attrs.push(prost_derive);
 
   let mut variants_tokens: Vec<TokenStream2> = Vec::new();

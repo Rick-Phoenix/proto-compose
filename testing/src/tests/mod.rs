@@ -1,5 +1,6 @@
 mod cel_checks_tests;
 mod maps_tests;
+mod rendering_tests;
 mod repeated_tests;
 
 use std::collections::HashMap;

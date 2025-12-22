@@ -1,11 +1,11 @@
 {% match &self %}
 {% when Self::List with (val) %}
   {% if self.is_short() %}
-[ {%+ for item in val +%}{{+ item.render()? }}{% if !loop.last %}, {%+ endif %}
+[ {% for item in val +%}{{+ item.render()? }}{% if !loop.last %}, {%+ endif %}
   {% endfor %} ]
   {% else %}
 [ {% for item in val ~%}
-  {{+ item.render()? | indent(4) }}{% if !loop.last %}, {%+ endif ~%}
+  {{+ item.render()? | indent(2) }}{% if !loop.last %}, {%+ endif ~%}
   {% endfor ~%} 
   ]
   {% endif %}

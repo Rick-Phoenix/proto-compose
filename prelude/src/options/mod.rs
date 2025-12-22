@@ -12,20 +12,6 @@ pub struct ProtoOption {
   pub value: OptionValue,
 }
 
-impl ProtoOption {
-  pub(crate) fn render_as_field_option(&self) -> String {
-    let Self { name, value } = self;
-
-    format!("{name} = {value}")
-  }
-
-  pub(crate) fn render(&self) -> String {
-    let Self { name, value } = self;
-
-    format!("option {name} = {value};")
-  }
-}
-
 /// An enum representing values for protobuf options.
 #[derive(Clone, Debug, PartialEq, Template)]
 #[template(path = "option_value.proto.j2")]

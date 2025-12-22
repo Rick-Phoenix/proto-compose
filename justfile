@@ -1,3 +1,6 @@
+test-renders:
+    cargo test -p testing test_renders -- -q --nocapture
+
 [working-directory("testing")]
 build-protos:
     cargo run -p testing

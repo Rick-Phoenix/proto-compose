@@ -4,17 +4,17 @@
 
 package {{+ package }};
 
-{% set sorted_imports = self.imports.as_sorted_vec() ~%}
+{%~ set sorted_imports = self.imports.as_sorted_vec() ~%}
 
-{%~ for import in sorted_imports ~%}
+{% for import in sorted_imports ~%}
 import "{{ import }}";
 {% endfor ~%}
 
-{%~ if let Some(options) = self.render_options() +%}
-{{~ options }}
-{% endif +%}
+{%~ for option in self.options +%}
+option {{+ option.name +}} = {{+ option.value }};
+{% endfor +%}
 
-{% for extension in extensions ~%}
+{%~ for extension in extensions ~%}
 extend {{+ extension.target +}} {
   {% for field in extension.fields ~%}
   {%+ call macros::render_field(field, self.package, 2) %}
