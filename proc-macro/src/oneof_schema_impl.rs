@@ -4,6 +4,7 @@ pub fn oneof_schema_impl(
   oneof_attrs: &OneofAttrs,
   enum_ident: &Ident,
   variants_tokens: Vec<TokenStream2>,
+  manually_set_tags: &[ManuallySetTag],
 ) -> TokenStream2 {
   let OneofAttrs {
     options,
@@ -16,8 +17,18 @@ pub fn oneof_schema_impl(
   let required_option_tokens =
     required.then(|| quote! { options.push(::prelude::oneof_required()); });
 
+  let tags = manually_set_tags.iter().map(|m| m.tag);
+
   quote! {
     impl ::prelude::ProtoOneof for #enum_ident {
+      fn name() -> &'static str {
+        #proto_name
+      }
+
+      fn tags() -> &'static [i32] {
+        &[ #(#tags),* ]
+      }
+
       fn proto_schema() -> ::prelude::Oneof {
         Self::proto_schema()
       }

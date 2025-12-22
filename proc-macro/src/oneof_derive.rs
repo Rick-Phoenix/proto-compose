@@ -69,7 +69,7 @@ pub(crate) fn process_oneof_derive_shadow(
     fields_attrs.push(field_attrs);
   }
 
-  check_duplicate_tags(&mut manually_set_tags)?;
+  sort_and_check_duplicate_tags(&mut manually_set_tags)?;
 
   for (dst_variant, field_attrs) in shadow_enum_variants.zip(fields_attrs) {
     let field_tokens = process_field(ProcessFieldInput {
@@ -93,7 +93,12 @@ pub(crate) fn process_oneof_derive_shadow(
     .filter(|var| !ignored_variants.contains(&var.ident))
     .collect();
 
-  let oneof_schema_impl = oneof_schema_impl(&oneof_attrs, orig_enum_ident, variants_tokens);
+  let oneof_schema_impl = oneof_schema_impl(
+    &oneof_attrs,
+    orig_enum_ident,
+    variants_tokens,
+    &manually_set_tags,
+  );
 
   let shadow_enum_derives = oneof_attrs
     .shadow_derives
@@ -122,6 +127,14 @@ pub(crate) fn process_oneof_derive_shadow(
     #cel_checks_impl
 
     impl ::prelude::ProtoOneof for #shadow_enum_ident {
+      fn name() -> &'static str {
+        <#orig_enum_ident as ::prelude::ProtoOneof>::name()
+      }
+
+      fn tags() -> &'static [i32] {
+        <#orig_enum_ident as ::prelude::ProtoOneof>::tags()
+      }
+
       fn proto_schema() -> ::prelude::Oneof {
         <#orig_enum_ident as ::prelude::ProtoOneof>::proto_schema()
       }
@@ -201,7 +214,7 @@ pub(crate) fn process_oneof_derive_direct(
     fields_attrs.push(field_attrs);
   }
 
-  check_duplicate_tags(&mut manually_set_tags)?;
+  sort_and_check_duplicate_tags(&mut manually_set_tags)?;
 
   for (variant, field_attrs) in variants.iter_mut().zip(fields_attrs) {
     let field_tokens = process_field(ProcessFieldInput {
@@ -218,7 +231,12 @@ pub(crate) fn process_oneof_derive_direct(
 
   let oneof_ident = &item.ident;
 
-  let oneof_schema_impl = oneof_schema_impl(&oneof_attrs, oneof_ident, variants_tokens);
+  let oneof_schema_impl = oneof_schema_impl(
+    &oneof_attrs,
+    oneof_ident,
+    variants_tokens,
+    &manually_set_tags,
+  );
 
   let cel_checks_impl = impl_oneof_cel_checks(oneof_ident, cel_checks_tokens);
 

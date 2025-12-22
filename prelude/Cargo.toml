@@ -27,9 +27,10 @@ owo-colors = { version = "4.2", optional = true }
 inventory = "0.3.21"
 ordermap = "1.0.0"
 fxhash = "0.2.1"
+pretty_assertions = { version = "1.4", optional = true }
 
 [features]
 default = ["regex"]
 
-testing = ["dep:owo-colors"]
+testing = ["dep:owo-colors", "dep:pretty_assertions"]
 regex = ["dep:regex", "protocheck-core/regex"]

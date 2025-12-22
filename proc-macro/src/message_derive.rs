@@ -59,6 +59,7 @@ pub fn process_message_derive_shadow(
 
   let mut fields_attrs: Vec<FieldAttrData> = Vec::new();
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
+  let mut oneofs: Vec<OneofCheckCtx> = Vec::new();
 
   for src_field in orig_struct_fields {
     let src_field_ident = src_field.require_ident()?;
@@ -71,7 +72,7 @@ pub fn process_message_derive_shadow(
           tag,
           field_span: src_field.span(),
         });
-      } else if let ProtoField::Oneof { tags, .. } = &data.proto_field {
+      } else if let ProtoField::Oneof { tags, path, .. } = &data.proto_field {
         if tags.is_empty() {
           bail!(src_field, "Tags for oneofs must be set manually");
         }
@@ -82,6 +83,11 @@ pub fn process_message_derive_shadow(
             field_span: src_field.span(),
           });
         }
+
+        oneofs.push(OneofCheckCtx {
+          path: path.to_token_stream(),
+          tags: tags.clone(),
+        });
       }
     }
 
@@ -159,6 +165,8 @@ pub fn process_message_derive_shadow(
     validator_impl,
   ]);
 
+  let oneof_tags_check = generate_oneof_tags_check(shadow_struct_ident, oneofs);
+
   // prost::Message already implements Debug
   let output_tokens = quote! {
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -167,6 +175,7 @@ pub fn process_message_derive_shadow(
     #shadow_struct
 
     #wrapped_items
+    #oneof_tags_check
     #cel_check_impl
   };
 
@@ -198,6 +207,7 @@ pub fn process_message_derive_direct(
 
   let mut fields_attrs: Vec<FieldAttrData> = Vec::new();
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
+  let mut oneofs: Vec<OneofCheckCtx> = Vec::new();
 
   for src_field in &item.fields {
     let src_field_ident = src_field.require_ident()?;
@@ -241,7 +251,7 @@ pub fn process_message_derive_direct(
           tag,
           field_span: src_field.span(),
         });
-      } else if let ProtoField::Oneof { tags, .. } = &data.proto_field {
+      } else if let ProtoField::Oneof { tags, path, .. } = &data.proto_field {
         if tags.is_empty() {
           bail!(src_field, "Tags for oneofs must be set manually");
         }
@@ -252,6 +262,11 @@ pub fn process_message_derive_direct(
             field_span: src_field.span(),
           });
         }
+
+        oneofs.push(OneofCheckCtx {
+          path: path.to_token_stream(),
+          tags: tags.clone(),
+        });
       }
     }
 
@@ -307,10 +322,13 @@ pub fn process_message_derive_direct(
     top_level_programs_ident: top_level_programs_ident.as_ref(),
   });
 
+  let oneof_tags_check = generate_oneof_tags_check(struct_ident, oneofs);
+
   let wrapped_items = wrap_with_imports(vec![schema_impls, validator_impl]);
 
   let output_tokens = quote! {
     #wrapped_items
+    #oneof_tags_check
     #cel_check_impl
   };
 

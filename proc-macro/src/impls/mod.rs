@@ -1,3 +1,5 @@
+mod oneof_tags_check;
+pub use oneof_tags_check::*;
 mod oneof_validator_impl;
 pub use oneof_validator_impl::*;
 mod conversions;

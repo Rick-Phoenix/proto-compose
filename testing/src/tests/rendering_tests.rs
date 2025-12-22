@@ -125,7 +125,7 @@ pub enum OneofB {
   B(String),
 }
 
-static MSG_RULE: CachedProgram = cel_program!(id = "abc", msg = "abc", expr = "abc");
+static MSG_RULE: CachedProgram = cel_program!(id = "abc", msg = "abc", expr = "true == true");
 
 #[proto_message(direct)]
 #[proto(reserved_numbers(1, 2, 3..9))]
@@ -139,13 +139,13 @@ pub struct Abc {
   #[proto(bytes, validate = |v| v.min_len(45).max_len(128))]
   pub optional_field: Option<Bytes>,
 
-  #[proto(message, validate = |v| v.cel(inline_cel_program!(id = "abc", msg = "abc", expr = "abc")))]
+  #[proto(message, validate = |v| v.cel(inline_cel_program!(id = "abc", msg = "abc", expr = "true == true")))]
   pub msg_field: Option<Nested>,
 
   #[proto(map(sint32, sint32), validate = |v| v.min_pairs(5).max_pairs(15).keys(|k| k.gt(15)).values(|vals| vals.gt(56)))]
   pub map_field: HashMap<i32, i32>,
 
-  #[proto(oneof(tags(200, 201, 202)))]
+  #[proto(oneof(tags(200, 201)))]
   pub oneof_field: Option<OneofA>,
 }
 
@@ -164,7 +164,7 @@ pub struct Nested2 {
   #[proto(map(sint32, sint32), validate = |v| v.min_pairs(5).max_pairs(15).keys(|k| k.gt(15)).values(|vals| vals.gt(56)))]
   pub map_field: HashMap<i32, i32>,
 
-  #[proto(oneof(tags(200, 201, 202)))]
+  #[proto(oneof(tags(200, 201)))]
   reused_oneof: Option<OneofA>,
 
   #[proto(oneof(tags(1502, 1503)))]

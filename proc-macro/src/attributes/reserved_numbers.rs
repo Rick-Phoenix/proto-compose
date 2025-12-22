@@ -26,7 +26,7 @@ pub struct ManuallySetTag {
   pub field_span: Span,
 }
 
-pub fn check_duplicate_tags(tags: &mut [ManuallySetTag]) -> syn::Result<()> {
+pub fn sort_and_check_duplicate_tags(tags: &mut [ManuallySetTag]) -> syn::Result<()> {
   tags.sort_unstable_by_key(|mt| mt.tag);
 
   for i in 0..tags.len() {
