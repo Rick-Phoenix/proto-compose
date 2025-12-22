@@ -5,5 +5,7 @@ mod repeated_tests;
 use std::collections::HashMap;
 
 use bytes::Bytes;
-use prelude::{Package, ProtoFile, ProtoMessage};
+use prelude::*;
 use proc_macro_impls::{proto_enum, proto_message};
+
+proto_file!("testing", package = "testing");

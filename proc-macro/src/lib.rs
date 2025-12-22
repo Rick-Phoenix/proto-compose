@@ -24,8 +24,8 @@ use syn::{
   token,
 };
 use syn_utils::{
-  AsNamedField, CallOrClosure, ExprExt, IdentList, NumList, PathList, PathOrClosure, RustType,
-  StringList, TypeInfo, bail, bail_with_span, error, error_with_span, filter_attributes,
+  AsNamedField, CallOrClosure, ExprExt, NumList, PathList, PathOrClosure, RustType, StringList,
+  TypeInfo, bail, bail_with_span, error, error_with_span, filter_attributes,
 };
 
 use crate::{

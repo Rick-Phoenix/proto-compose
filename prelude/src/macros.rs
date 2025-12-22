@@ -1,11 +1,22 @@
 #[macro_export]
 macro_rules! proto_file {
-  ($path:literal, $package:literal) => {
+  ($path:literal, package = $package:expr, rust_path = $extern_path:literal) => {
     #[doc(hidden)]
     #[allow(unused)]
     const __PROTO_FILE: $crate::RegistryPath = $crate::RegistryPath {
       file: $path,
       package: $package,
+      extern_path: $extern_path,
+    };
+  };
+
+  ($path:literal, package = $package:expr) => {
+    #[doc(hidden)]
+    #[allow(unused)]
+    const __PROTO_FILE: $crate::RegistryPath = $crate::RegistryPath {
+      file: $path,
+      package: $package,
+      extern_path: std::module_path!(),
     };
   };
 }

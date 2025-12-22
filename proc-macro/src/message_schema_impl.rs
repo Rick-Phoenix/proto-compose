@@ -63,7 +63,7 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
     let rust_ident_str =
       shadow_struct_ident.map_or_else(|| orig_struct_ident.to_string(), |id| id.to_string());
 
-    quote! { format!("::{}::{}", std::module_path!(), #rust_ident_str) }
+    quote! { format!("::{}::{}", __PROTO_FILE.extern_path, #rust_ident_str) }
   };
 
   output.extend(quote! {

@@ -6,6 +6,7 @@ use crate::*;
 pub struct RegistryPath {
   pub file: &'static str,
   pub package: &'static str,
+  pub extern_path: &'static str,
 }
 
 type Map<K, V> = OrderMap<K, V, FxBuildHasher>;

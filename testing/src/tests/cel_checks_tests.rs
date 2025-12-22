@@ -1,10 +1,6 @@
-use prelude::proto_file;
-
 use super::*;
 
 // TODO: Check other cases for deep duplication search like in oneofs and top level messages mixed with fields
-
-proto_file!("testing", "testing");
 
 #[proto_message(direct)]
 struct DuplicateRules {
