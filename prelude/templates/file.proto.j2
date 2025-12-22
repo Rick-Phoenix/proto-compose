@@ -6,13 +6,13 @@ package {{+ package }};
 
 {%~ for import in sorted_imports ~%}
 import "{{ import }}";
-{% endfor %}
+{% endfor ~%}
 
-{% if let Some(options) = self.render_options() +%}
+{%~ if let Some(options) = self.render_options() +%}
 {{~ options }}
 {% endif +%}
 
-{%~ for extension in extensions ~%}
+{% for extension in extensions ~%}
 extend {{+ extension.target +}} {
   {% for field in extension.fields ~%}
   {{+ field.render(self.package) }}

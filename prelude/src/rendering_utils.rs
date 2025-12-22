@@ -20,10 +20,13 @@ pub(crate) fn render_option(
     OptionKind::NormalOption => option.render(),
   };
 
-  let mut lines = option_value_str.lines().peekable();
+  let mut lines = option_value_str.lines().enumerate().peekable();
 
-  while let Some(line) = lines.next() {
-    option_str.push_str("  ");
+  while let Some((i, line)) = lines.next() {
+    if i != 0 {
+      option_str.push_str("  ");
+    }
+
     option_str.push_str(line);
 
     if lines.peek().is_some() {
