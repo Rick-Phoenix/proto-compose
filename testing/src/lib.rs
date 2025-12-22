@@ -1,3 +1,5 @@
+#![allow(clippy::must_use_candidate)]
+
 #[cfg(test)]
 mod tests;
 
@@ -102,7 +104,7 @@ pub mod inner {
     duration: Option<Duration>,
 
     #[proto(message(AbcProto, boxed), validate = |v| v.required())]
-    boxed: Option<Box<Abc>>,
+    boxed: Option<Box<Self>>,
 
     #[proto(bytes, validate = |v| v.pattern(inline_bytes_regex!("abc", "abc")))]
     pub bytes: Bytes,

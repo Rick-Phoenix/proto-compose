@@ -7,7 +7,6 @@ pub struct OneofAttrs {
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
   pub shadow_derives: Option<MetaList>,
-  pub backend: Backend,
 }
 
 pub fn process_oneof_attrs(enum_ident: &Ident, attrs: &[Attribute]) -> Result<OneofAttrs, Error> {
@@ -17,7 +16,6 @@ pub fn process_oneof_attrs(enum_ident: &Ident, attrs: &[Attribute]) -> Result<On
   let mut from_proto: Option<PathOrClosure> = None;
   let mut into_proto: Option<PathOrClosure> = None;
   let mut shadow_derives: Option<MetaList> = None;
-  let mut backend = Backend::default();
 
   for arg in filter_attributes(attrs, &["proto"])? {
     match arg {
@@ -45,9 +43,6 @@ pub fn process_oneof_attrs(enum_ident: &Ident, attrs: &[Attribute]) -> Result<On
         let ident = nv.path.require_ident()?.to_string();
 
         match ident.as_str() {
-          "backend" => {
-            backend = Backend::from_expr(&nv.value)?;
-          }
           "options" => {
             options = Some(nv.value);
           }
@@ -71,6 +66,5 @@ pub fn process_oneof_attrs(enum_ident: &Ident, attrs: &[Attribute]) -> Result<On
     from_proto,
     into_proto,
     shadow_derives,
-    backend,
   })
 }

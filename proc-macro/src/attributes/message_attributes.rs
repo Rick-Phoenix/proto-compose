@@ -10,7 +10,6 @@ pub struct MessageAttrs {
   pub into_proto: Option<PathOrClosure>,
   pub shadow_derives: Option<MetaList>,
   pub cel_rules: Option<Vec<Path>>,
-  pub backend: Backend,
   pub is_direct: bool,
   pub no_auto_test: bool,
   pub extern_path: Option<String>,
@@ -29,7 +28,6 @@ pub fn process_derive_message_attrs(
   let mut into_proto: Option<PathOrClosure> = None;
   let mut shadow_derives: Option<MetaList> = None;
   let mut cel_rules: Option<Vec<Path>> = None;
-  let mut backend = Backend::default();
   let mut parent_message: Option<Ident> = None;
 
   for arg in filter_attributes(attrs, &["proto"])? {
@@ -61,9 +59,6 @@ pub fn process_derive_message_attrs(
         match ident.as_str() {
           "parent_message" => {
             parent_message = Some(nv.value.as_path()?.require_ident()?.clone());
-          }
-          "backend" => {
-            backend = Backend::from_expr(&nv.value)?;
           }
           "options" => {
             options = Some(nv.value);
@@ -105,7 +100,6 @@ pub fn process_derive_message_attrs(
     into_proto,
     shadow_derives,
     cel_rules,
-    backend,
     is_direct: macro_attrs.is_direct,
     no_auto_test: macro_attrs.no_auto_test,
     extern_path: macro_attrs.extern_path,

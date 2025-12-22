@@ -9,7 +9,6 @@ pub struct EnumAttrs {
   pub parent_message: Option<Ident>,
   pub name: String,
   pub no_prefix: bool,
-  pub backend: Backend,
 }
 
 pub fn process_derive_enum_attrs(
@@ -21,7 +20,6 @@ pub fn process_derive_enum_attrs(
   let mut options: Option<Expr> = None;
   let mut proto_name: Option<String> = None;
   let mut no_prefix = false;
-  let mut backend = Backend::default();
   let mut parent_message: Option<Ident> = None;
 
   for arg in filter_attributes(attrs, &["proto"])? {
@@ -51,9 +49,6 @@ pub fn process_derive_enum_attrs(
           "parent_message" => {
             parent_message = Some(nv.value.as_path()?.require_ident()?.clone());
           }
-          "backend" => {
-            backend = Backend::from_expr(&nv.value)?;
-          }
           "options" => {
             options = Some(nv.value);
           }
@@ -82,7 +77,6 @@ pub fn process_derive_enum_attrs(
     options,
     name,
     no_prefix,
-    backend,
     parent_message,
   })
 }

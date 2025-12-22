@@ -15,16 +15,6 @@ pub fn process_message_derive(
 ) -> Result<TokenStream2, Error> {
   let message_attrs = process_derive_message_attrs(&item.ident, macro_attrs, &item.attrs)?;
 
-  match message_attrs.backend {
-    Backend::Prost => process_message_derive_prost(item, message_attrs),
-    Backend::Protobuf => unimplemented!(),
-  }
-}
-
-pub fn process_message_derive_prost(
-  item: &mut ItemStruct,
-  message_attrs: MessageAttrs,
-) -> Result<TokenStream2, Error> {
   if message_attrs.is_direct {
     process_message_derive_direct(item, message_attrs)
   } else {
@@ -162,18 +152,16 @@ pub fn process_message_derive_shadow(
     top_level_programs_ident: top_level_programs_ident.as_ref(),
   });
 
-  let wrapped_items = wrap_with_imports(
-    orig_struct_ident,
-    vec![
-      schema_impls,
-      proto_conversion_impls,
-      validated_conversion_impls,
-      validator_impl,
-    ],
-  );
+  let wrapped_items = wrap_with_imports(vec![
+    schema_impls,
+    proto_conversion_impls,
+    validated_conversion_impls,
+    validator_impl,
+  ]);
 
   // prost::Message already implements Debug
   let output_tokens = quote! {
+    #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(::prost::Message, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCelValue)]
     #shadow_struct_derives
     #shadow_struct
@@ -189,6 +177,10 @@ pub fn process_message_derive_direct(
   item: &mut ItemStruct,
   message_attrs: MessageAttrs,
 ) -> Result<TokenStream2, Error> {
+  item
+    .attrs
+    .push(parse_quote!(#[allow(clippy::derive_partial_eq_without_eq)]));
+
   // prost::Message already implements Debug
   let prost_message_attr: Attribute = parse_quote!(#[derive(prost::Message, Clone, PartialEq, ::protocheck::macros::TryIntoCelValue)]);
   item.attrs.push(prost_message_attr);
@@ -315,7 +307,7 @@ pub fn process_message_derive_direct(
     top_level_programs_ident: top_level_programs_ident.as_ref(),
   });
 
-  let wrapped_items = wrap_with_imports(struct_ident, vec![schema_impls, validator_impl]);
+  let wrapped_items = wrap_with_imports(vec![schema_impls, validator_impl]);
 
   let output_tokens = quote! {
     #wrapped_items

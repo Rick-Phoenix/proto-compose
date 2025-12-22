@@ -2,26 +2,9 @@ use crate::*;
 
 pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   let ItemEnum {
-    attrs,
-    ident: enum_name,
-    ..
-  } = item;
-
-  let enum_attrs = process_derive_enum_attrs(enum_name, attrs)?;
-
-  match enum_attrs.backend {
-    Backend::Prost => process_enum_derive_prost(item, enum_attrs),
-    Backend::Protobuf => unimplemented!(),
-  }
-}
-
-pub fn process_enum_derive_prost(
-  item: &mut ItemEnum,
-  enum_attrs: EnumAttrs,
-) -> Result<TokenStream2, Error> {
-  let ItemEnum {
     ident: enum_name,
     variants,
+    attrs,
     ..
   } = item;
 
@@ -33,7 +16,7 @@ pub fn process_enum_derive_prost(
     no_prefix,
     parent_message,
     ..
-  } = enum_attrs;
+  } = process_derive_enum_attrs(enum_name, attrs)?;
 
   let mut variants_tokens: Vec<TokenStream2> = Vec::new();
   let mut from_str_tokens = TokenStream2::new();

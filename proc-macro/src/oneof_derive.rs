@@ -5,17 +5,6 @@ use crate::*;
 pub fn process_oneof_derive(item: &mut ItemEnum, is_direct: bool) -> Result<TokenStream2, Error> {
   let oneof_attrs = process_oneof_attrs(&item.ident, &item.attrs)?;
 
-  match oneof_attrs.backend {
-    Backend::Prost => process_oneof_derive_prost(item, oneof_attrs, is_direct),
-    Backend::Protobuf => unimplemented!(),
-  }
-}
-
-pub fn process_oneof_derive_prost(
-  item: &mut ItemEnum,
-  oneof_attrs: OneofAttrs,
-  is_direct: bool,
-) -> Result<TokenStream2, Error> {
   if is_direct {
     process_oneof_derive_direct(item, oneof_attrs)
   } else {
@@ -117,10 +106,11 @@ pub(crate) fn process_oneof_derive_shadow(
     validators_tokens,
   });
 
-  let wrapped_items = wrap_with_imports(
-    orig_enum_ident,
-    vec![oneof_schema_impl, proto_conversion_impls, validator_impl],
-  );
+  let wrapped_items = wrap_with_imports(vec![
+    oneof_schema_impl,
+    proto_conversion_impls,
+    validator_impl,
+  ]);
 
   // prost::Oneof already implements Debug
   output_tokens.extend(quote! {
@@ -237,7 +227,7 @@ pub(crate) fn process_oneof_derive_direct(
     validators_tokens,
   });
 
-  let wrapped_items = wrap_with_imports(oneof_ident, vec![oneof_schema_impl, validator_impl]);
+  let wrapped_items = wrap_with_imports(vec![oneof_schema_impl, validator_impl]);
 
   let output = quote! {
     #wrapped_items
