@@ -5,7 +5,7 @@
   {% endfor %} ]
   {% else %}
 [ {% for item in val ~%}
-  {{+ item.render()? | indent(2) }}{% if !loop.last %}, {%+ endif ~%}
+  {{+ item.render()? | indent(4) }}{% if !loop.last %}, {%+ endif ~%}
   {% endfor ~%} 
   ]
   {% endif %}

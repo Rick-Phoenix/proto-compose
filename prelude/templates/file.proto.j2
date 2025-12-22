@@ -1,3 +1,5 @@
+{% import "render_macros.j2" as macros %}
+
 {{ self.edition }};
 
 package {{+ package }};
@@ -15,7 +17,7 @@ import "{{ import }}";
 {% for extension in extensions ~%}
 extend {{+ extension.target +}} {
   {% for field in extension.fields ~%}
-  {{+ field.render(self.package) }}
+  {%+ call macros::render_field(field, self.package, 2) %}
   {% endfor ~%}
 }
 {%~ endfor %}

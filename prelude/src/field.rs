@@ -16,34 +16,11 @@ pub struct FieldValidator {
 }
 
 impl ProtoField {
-  pub(crate) fn render(&self, current_package: &'static str) -> String {
-    let Self {
-      tag,
-      type_,
-      name,
-      options,
-      validator,
-    } = self;
-
-    let mut field_str = format!("{} {} = {}", type_.render(current_package), name, tag);
-
-    let options_iter = options
+  pub(crate) fn options_with_validators(&self) -> impl Iterator<Item = &options::ProtoOption> {
+    self
+      .options
       .iter()
-      .chain(validator.iter().map(|v| &v.schema))
-      .enumerate();
-    let options_len = if validator.is_some() {
-      options.len() + 1
-    } else {
-      options.len()
-    };
-
-    if options_len != 0 {
-      render_field_options(options_iter, options_len, &mut field_str);
-    }
-
-    field_str.push(';');
-
-    field_str
+      .chain(self.validator.iter().map(|v| &v.schema))
   }
 
   pub(crate) fn register_type_import_path(&self, imports: &mut FileImports) {

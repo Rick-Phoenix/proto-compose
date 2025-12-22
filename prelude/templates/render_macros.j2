@@ -1,0 +1,10 @@
+{% macro render_field(field, package, indent) %}
+  {{+ field.type_.render(package) +}} {{+ field.name +}} = {{+ field.tag }}
+  {% filter indent(indent) %}
+  {%+ if !field.options.is_empty() || field.validator.is_some() +%} [
+  {% for option in field.options_with_validators() +%}
+  {{+ option.name +}} = {{+ option.value | indent(2) +}}{% if !loop.last %},{% endif ~%}
+  {% endfor +%}
+] {%- endif -%};
+  {% endfilter +%}
+{% endmacro %}

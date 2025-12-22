@@ -1,3 +1,5 @@
+{% import "render_macros.j2" as macros %}
+
 message {{+ self.name +}} {
 {% if let Some(names) = self.render_reserved_names() ~%}
   {{+ names ~}}
@@ -24,8 +26,20 @@ message {{+ self.name +}} {
 {% endfor %}
 
 {% for entry in self.entries %}
-{%~ filter indent(2) ~%}
-{{+ entry.render(self.package) ~}}
-{% endfilter %}
+{% match entry %}
+  {%~ when MessageEntry::Oneof(oneof) +%}
+
+  oneof {{+ oneof.name +}} {
+    {% for option in oneof.options ~%}
+    {{+ option.render() }}
+    {% endfor +%}
+
+    {% for field in oneof.fields ~%}
+    {%+ call macros::render_field(field, self.package, 4) %}
+    {% endfor +%}
+  }
+  {% when MessageEntry::Field(field) ~%}
+  {%+ call macros::render_field(field, self.package, 2) %}
+{% endmatch %}
 {% endfor +%}
 }

@@ -71,13 +71,6 @@ impl MessageEntry {
       .flat_map(|f| f.validator.iter())
       .flat_map(|v| v.cel_rules.iter().copied())
   }
-
-  pub(crate) fn render(&self, current_package: &'static str) -> String {
-    match self {
-      Self::Field(proto_field) => proto_field.render(current_package),
-      Self::Oneof(oneof) => oneof.render(current_package),
-    }
-  }
 }
 
 impl Message {

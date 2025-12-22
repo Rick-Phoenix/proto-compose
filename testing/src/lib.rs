@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use prelude::*;
 use proc_macro_impls::Oneof;
@@ -31,8 +31,12 @@ mod inner {
 
   #[proto_extension(target = MessageOptions)]
   pub struct SomeExt {
+    #[proto(options = vec![random_option()])]
     #[proto(tag = 5000)]
     name: String,
+
+    #[proto(tag = 5001)]
+    name2: String,
   }
 
   #[proto_service]
@@ -54,9 +58,9 @@ mod inner {
   #[proto(required)]
   #[derive(Clone, Debug)]
   pub enum PseudoOneof {
-    #[proto(tag = 200)]
+    #[proto(tag = 200, validate = |v| v.min_len(10).max_len(50))]
     A(String),
-    #[proto(tag = 201)]
+    #[proto(tag = 201, validate = |v| v.gt(0).lt(50))]
     B(i32),
     #[proto(tag = 202, message(proxied, boxed))]
     C(Box<Abc>),

@@ -42,6 +42,7 @@ where
   field_str.push_str(" [\n");
 
   for (i, option) in options {
+    field_str.push_str("    ");
     render_option(option, field_str, OptionKind::FieldOption);
 
     if i != options_len - 1 {
@@ -49,7 +50,7 @@ where
     }
   }
 
-  field_str.push_str("\n]");
+  field_str.push_str("\n    ]");
 }
 
 pub(crate) fn render_normal_options<'a, I>(options: I) -> String
