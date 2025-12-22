@@ -43,6 +43,7 @@ pub fn impl_message_validator(ctx: ValidatorImplCtx) -> TokenStream2 {
       }
     }
 
+    #[allow(clippy::ptr_arg)]
     impl #target_ident {
       #[doc(hidden)]
       fn __validate_internal(&self, field_context: Option<&FieldContext>, parent_elements: &mut Vec<FieldPathElement>) -> Result<(), Violations> {

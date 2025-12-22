@@ -12,6 +12,7 @@ pub fn impl_oneof_validator(ctx: OneofValidatorImplCtx) -> TokenStream2 {
   } = ctx;
 
   quote! {
+    #[allow(clippy::ptr_arg)]
     impl #oneof_ident {
       pub fn validate(&self, parent_elements: &mut Vec<FieldPathElement>) -> Result<(), Violations> {
         let mut violations = Violations::new();

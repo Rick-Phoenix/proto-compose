@@ -117,17 +117,19 @@ pub(crate) fn process_oneof_derive_shadow(
     validators_tokens,
   });
 
+  let wrapped_items = wrap_with_imports(
+    orig_enum_ident,
+    vec![oneof_schema_impl, proto_conversion_impls, validator_impl],
+  );
+
   // prost::Oneof already implements Debug
   output_tokens.extend(quote! {
-    #oneof_schema_impl
-
     #[derive(prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)]
     #shadow_enum_derives
     #shadow_enum
 
-    #proto_conversion_impls
+    #wrapped_items
     #cel_checks_impl
-    #validator_impl
 
     impl ::prelude::ProtoOneof for #shadow_enum_ident {
       fn proto_schema() -> ::prelude::Oneof {
@@ -136,7 +138,7 @@ pub(crate) fn process_oneof_derive_shadow(
     }
   });
 
-  Ok(wrap_with_imports(orig_enum_ident, output_tokens))
+  Ok(output_tokens)
 }
 
 pub(crate) fn process_oneof_derive_direct(
@@ -235,11 +237,12 @@ pub(crate) fn process_oneof_derive_direct(
     validators_tokens,
   });
 
+  let wrapped_items = wrap_with_imports(oneof_ident, vec![oneof_schema_impl, validator_impl]);
+
   let output = quote! {
-    #oneof_schema_impl
+    #wrapped_items
     #cel_checks_impl
-    #validator_impl
   };
 
-  Ok(wrap_with_imports(&item.ident, output))
+  Ok(output)
 }

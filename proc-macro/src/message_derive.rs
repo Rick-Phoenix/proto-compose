@@ -161,22 +161,27 @@ pub fn process_message_derive_shadow(
     top_level_programs_ident: top_level_programs_ident.as_ref(),
   });
 
+  let wrapped_items = wrap_with_imports(
+    orig_struct_ident,
+    vec![
+      schema_impls,
+      proto_conversion_impls,
+      validated_conversion_impls,
+      validator_impl,
+    ],
+  );
+
   // prost::Message already implements Debug
   let output_tokens = quote! {
-    #schema_impls
-
     #[derive(::prost::Message, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCelValue)]
     #shadow_struct_derives
     #shadow_struct
 
-    #proto_conversion_impls
-    #validated_conversion_impls
-
-    #validator_impl
+    #wrapped_items
     #cel_check_impl
   };
 
-  Ok(wrap_with_imports(orig_struct_ident, output_tokens))
+  Ok(output_tokens)
 }
 
 pub fn process_message_derive_direct(
@@ -309,11 +314,12 @@ pub fn process_message_derive_direct(
     top_level_programs_ident: top_level_programs_ident.as_ref(),
   });
 
+  let wrapped_items = wrap_with_imports(struct_ident, vec![schema_impls, validator_impl]);
+
   let output_tokens = quote! {
-    #schema_impls
-    #validator_impl
+    #wrapped_items
     #cel_check_impl
   };
 
-  Ok(wrap_with_imports(struct_ident, output_tokens))
+  Ok(output_tokens)
 }

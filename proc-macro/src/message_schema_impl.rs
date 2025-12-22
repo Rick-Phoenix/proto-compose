@@ -127,6 +127,7 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
 
   if let Some(shadow_struct_ident) = shadow_struct_ident {
     output.extend(quote! {
+      #[allow(clippy::ptr_arg)]
       impl ::prelude::ProtoMessage for #shadow_struct_ident {
         fn proto_path() -> ::prelude::ProtoPath {
           <#orig_struct_ident as ::prelude::ProtoMessage>::proto_path()
