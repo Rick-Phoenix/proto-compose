@@ -119,6 +119,7 @@ pub(crate) fn process_oneof_derive_shadow(
 
   // prost::Oneof already implements Debug
   output_tokens.extend(quote! {
+    #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)]
     #shadow_enum_derives
     #shadow_enum
@@ -151,6 +152,8 @@ pub(crate) fn process_oneof_derive_direct(
   let ItemEnum {
     attrs, variants, ..
   } = item;
+
+  attrs.push(parse_quote!(#[allow(clippy::derive_partial_eq_without_eq)]));
 
   // prost::Oneof already implements Debug
   let prost_derive: Attribute = parse_quote!(#[derive(prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)]);

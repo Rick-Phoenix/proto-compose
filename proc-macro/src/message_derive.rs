@@ -165,7 +165,8 @@ pub fn process_message_derive_shadow(
     validator_impl,
   ]);
 
-  let oneof_tags_check = generate_oneof_tags_check(shadow_struct_ident, oneofs);
+  let oneof_tags_check =
+    generate_oneof_tags_check(shadow_struct_ident, message_attrs.no_auto_test, oneofs);
 
   // prost::Message already implements Debug
   let output_tokens = quote! {
@@ -322,7 +323,8 @@ pub fn process_message_derive_direct(
     top_level_programs_ident: top_level_programs_ident.as_ref(),
   });
 
-  let oneof_tags_check = generate_oneof_tags_check(struct_ident, oneofs);
+  let oneof_tags_check =
+    generate_oneof_tags_check(struct_ident, message_attrs.no_auto_test, oneofs);
 
   let wrapped_items = wrap_with_imports(vec![schema_impls, validator_impl]);
 
