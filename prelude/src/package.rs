@@ -10,7 +10,7 @@ pub struct Package {
 
 fn insert_message_extern_path(message: &Message, entries: &mut Vec<(String, String)>) {
   let Message {
-    full_name,
+    name: full_name,
     package,
     rust_path,
     messages,

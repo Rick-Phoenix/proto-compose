@@ -66,12 +66,12 @@ pub fn collect_package(package: &'static str) -> Package {
         .entry(parent)
         .or_default()
         .messages
-        .push(msg.full_name);
+        .push(msg.name);
     } else {
-      root_messages.push(msg.full_name);
+      root_messages.push(msg.name);
     }
 
-    messages.insert(msg.full_name, msg);
+    messages.insert(msg.name, msg);
   }
 
   for enum_entry in inventory::iter::<RegistryEnum>().filter(|rm| rm.package == package) {

@@ -1,6 +1,6 @@
 {% import "render_macros.j2" as macros %}
 
-message {{+ self.name +}} {
+message {{+ self.short_name +}} {
 {% if let Some(names) = self.render_reserved_names() ~%}
   {{+ names ~}}
 {%~ endif %}

@@ -1,6 +1,8 @@
 use crate::{validators::CelRule, *};
 
 pub trait ProtoMessage {
+  const PACKAGE: &str;
+
   fn proto_path() -> ProtoPath;
   fn proto_schema() -> Message;
 
@@ -12,6 +14,8 @@ pub trait ProtoMessage {
   fn validate(&self) -> Result<(), Violations> {
     Ok(())
   }
+
+  fn name() -> &'static str;
 
   fn full_name() -> &'static str;
 
@@ -28,8 +32,14 @@ impl<T> ProtoMessage for Box<T>
 where
   T: ProtoMessage,
 {
+  const PACKAGE: &str = T::PACKAGE;
+
   fn full_name() -> &'static str {
     T::full_name()
+  }
+
+  fn name() -> &'static str {
+    T::name()
   }
 
   fn proto_path() -> ProtoPath {
@@ -44,8 +54,8 @@ where
 #[derive(Debug, Default, Clone, PartialEq, Template)]
 #[template(path = "message.proto.j2")]
 pub struct Message {
+  pub short_name: &'static str,
   pub name: &'static str,
-  pub full_name: &'static str,
   pub package: &'static str,
   pub file: &'static str,
   pub entries: Vec<MessageEntry>,

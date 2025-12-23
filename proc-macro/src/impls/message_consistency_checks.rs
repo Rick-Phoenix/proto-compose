@@ -4,7 +4,6 @@ pub struct MessageConsistencyChecksCtx<'a> {
   pub item_ident: &'a Ident,
   pub consistency_checks: Vec<TokenStream2>,
   pub no_auto_test: bool,
-  pub message_name: &'a str,
 }
 
 pub fn impl_message_consistency_checks(ctx: MessageConsistencyChecksCtx) -> TokenStream2 {
@@ -12,7 +11,6 @@ pub fn impl_message_consistency_checks(ctx: MessageConsistencyChecksCtx) -> Toke
     item_ident,
     consistency_checks,
     no_auto_test,
-    message_name,
   } = ctx;
 
   let test_module_ident = format_ident!(
@@ -63,7 +61,7 @@ pub fn impl_message_consistency_checks(ctx: MessageConsistencyChecksCtx) -> Toke
 
           if !field_errors.is_empty() || !cel_errors.is_empty() {
             return Err(::prelude::test_utils::MessageTestError {
-                message_name: #message_name,
+                message_full_name: #item_ident::full_name(),
                 field_errors,
                 cel_errors
               }

@@ -178,12 +178,12 @@ struct BadFieldRules {
 #[test]
 fn bad_field_rules() {
   let MessageTestError {
-    message_name,
+    message_full_name,
     field_errors,
     cel_errors,
   } = BadFieldRules::check_validators_consistency().unwrap_err();
 
-  assert_eq_pretty!(message_name, "BadFieldRules");
+  assert_eq_pretty!(message_full_name, "testing.BadFieldRules");
   assert_eq_pretty!(field_errors.len(), 1);
   // Top level rules, which don't apply here
   assert_eq_pretty!(cel_errors.len(), 0);
@@ -199,12 +199,12 @@ struct BadMsgRules {
 #[test]
 fn bad_msg_rules() {
   let MessageTestError {
-    message_name,
+    message_full_name,
     field_errors,
     cel_errors,
   } = BadMsgRules::check_validators_consistency().unwrap_err();
 
-  assert_eq_pretty!(message_name, "BadMsgRules");
+  assert_eq_pretty!(message_full_name, "testing.BadMsgRules");
   assert_eq_pretty!(field_errors.len(), 0);
   assert_eq_pretty!(cel_errors.len(), 1);
 }
@@ -226,12 +226,12 @@ struct BadOneofRules {
 #[test]
 fn bad_oneof_rules() {
   let MessageTestError {
-    message_name,
+    message_full_name,
     field_errors,
     cel_errors,
   } = BadOneofRules::check_validators_consistency().unwrap_err();
 
-  assert_eq_pretty!(message_name, "BadOneofRules");
+  assert_eq_pretty!(message_full_name, "testing.BadOneofRules");
   assert_eq_pretty!(field_errors.len(), 1);
   // Top level rules, which don't apply here
   assert_eq_pretty!(cel_errors.len(), 0);

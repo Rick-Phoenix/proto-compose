@@ -33,6 +33,7 @@ serde = { version = "1", features = ["derive"] }
 chrono = "0.4"
 protocheck-core = { path = "../protocheck/core" }
 itertools = "0.14"
+constcat = "0.6"
 
 [workspace.lints.clippy]
 vec_init_then_push = "allow"

@@ -128,7 +128,6 @@ pub fn process_message_derive_shadow(
           item_ident: shadow_struct_ident,
           consistency_checks,
           no_auto_test: message_attrs.no_auto_test,
-          message_name: &message_attrs.name,
         },
       ))
     } else {
@@ -290,7 +289,6 @@ pub fn process_message_derive_direct(
           item_ident: struct_ident,
           consistency_checks,
           no_auto_test: message_attrs.no_auto_test,
-          message_name: &message_attrs.name,
         },
       ))
     } else {

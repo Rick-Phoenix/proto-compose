@@ -29,20 +29,20 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
 
   let options_tokens = tokens_or_default!(options, quote! { vec![] });
 
-  let full_name_method = if let Some(parent) = parent_message {
+  let name_method = if let Some(parent) = parent_message {
     quote! {
-      static __FULL_NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
-        format!("{}.{}", #parent::full_name(), #proto_name).into()
+      static __NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+        format!("{}.{}", #parent::name(), #proto_name)
       });
 
-      &*__FULL_NAME
+      &*__NAME
     }
   } else {
     quote! { #proto_name }
   };
 
   let registry_parent_message = if let Some(parent) = parent_message {
-    quote! { Some(|| #parent::full_name()) }
+    quote! { Some(|| #parent::name()) }
   } else {
     quote! { None }
   };
@@ -82,6 +82,16 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
     }
 
     impl ::prelude::ProtoMessage for #orig_struct_ident {
+      const PACKAGE: &str = __PROTO_FILE.package;
+
+      fn full_name() -> &'static str {
+        static NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+          format!("{}.{}", #orig_struct_ident::PACKAGE, #orig_struct_ident::name())
+        });
+
+        &*NAME
+      }
+
       fn cel_rules() -> &'static [&'static CelProgram] {
         static PROGRAMS: std::sync::LazyLock<Vec<&'static ::prelude::CelProgram>> = std::sync::LazyLock::new(|| {
           #top_level_cel_rules_tokens
@@ -92,20 +102,20 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
 
       fn proto_path() -> ::prelude::ProtoPath {
         ::prelude::ProtoPath {
-          name: Self::full_name(),
+          name: Self::name(),
           file: __PROTO_FILE.file,
           package: __PROTO_FILE.package,
         }
       }
 
-      fn full_name() -> &'static str {
-        #full_name_method
+      fn name() -> &'static str {
+        #name_method
       }
 
       fn proto_schema() -> ::prelude::Message {
         let mut new_msg = ::prelude::Message {
-          name: #proto_name,
-          full_name: Self::full_name(),
+          short_name: #proto_name,
+          name: Self::name(),
           file: __PROTO_FILE.file,
           package: __PROTO_FILE.package,
           reserved_names: vec![ #(#reserved_names),* ],
@@ -127,6 +137,12 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
     output.extend(quote! {
       #[allow(clippy::ptr_arg)]
       impl ::prelude::ProtoMessage for #shadow_struct_ident {
+        const PACKAGE: &str = __PROTO_FILE.package;
+
+        fn full_name() -> &'static str {
+          <#orig_struct_ident as ::prelude::ProtoMessage>::full_name()
+        }
+
         fn cel_rules() -> &'static [&'static CelProgram] {
           <#orig_struct_ident as ::prelude::ProtoMessage>::cel_rules()
         }
@@ -135,8 +151,8 @@ pub fn message_schema_impls(ctx: MessageSchemaImplsCtx) -> TokenStream2 {
           <#orig_struct_ident as ::prelude::ProtoMessage>::proto_path()
         }
 
-        fn full_name() -> &'static str {
-          #orig_struct_ident::full_name()
+        fn name() -> &'static str {
+          #orig_struct_ident::name()
         }
 
         fn proto_schema() -> ::prelude::Message {

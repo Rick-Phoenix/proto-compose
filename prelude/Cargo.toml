@@ -29,6 +29,7 @@ ordermap = "1.0.0"
 fxhash = "0.2.1"
 prost = { workspace = true }
 similar-asserts = { version = "1.7", optional = true }
+constcat = { workspace = true }
 
 [features]
 default = ["regex"]

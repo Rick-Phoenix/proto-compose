@@ -29,7 +29,7 @@ pub fn format_oneof_errors(
 }
 
 pub struct MessageTestError {
-  pub message_name: &'static str,
+  pub message_full_name: &'static str,
   pub field_errors: Vec<(&'static str, Vec<String>)>,
   pub cel_errors: Vec<CelError>,
 }
@@ -37,7 +37,7 @@ pub struct MessageTestError {
 impl Display for MessageTestError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let Self {
-      message_name,
+      message_full_name,
       field_errors,
       cel_errors,
     } = self;
@@ -45,7 +45,7 @@ impl Display for MessageTestError {
     let _ = writeln!(
       f,
       "❌ Validator consistency check for message `{}` has failed:",
-      message_name.bright_yellow()
+      message_full_name.bright_yellow()
     );
 
     if !field_errors.is_empty() {
@@ -74,7 +74,7 @@ impl Display for MessageTestError {
 #[must_use]
 pub fn format_message_errors(errors: MessageTestError) -> String {
   let MessageTestError {
-    message_name,
+    message_full_name: message_name,
     field_errors,
     cel_errors,
   } = errors;
