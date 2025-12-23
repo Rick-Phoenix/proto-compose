@@ -122,6 +122,37 @@ where
 {
   type Target = HashMap<K::Target, V::Target>;
 
+  #[cfg(feature = "testing")]
+  fn check_consistency(&self) -> Result<(), Vec<String>> {
+    let mut errors = Vec::new();
+
+    if let Err(e) = check_length_rules(
+      None,
+      length_rule_value!("min_pairs", self.min_pairs),
+      length_rule_value!("max_pairs", self.max_pairs),
+    ) {
+      errors.push(e);
+    }
+
+    if let Some(keys_validator) = &self.keys
+      && let Err(e) = keys_validator.check_consistency()
+    {
+      errors.extend(e);
+    }
+
+    if let Some(values_validator) = &self.values
+      && let Err(e) = values_validator.check_consistency()
+    {
+      errors.extend(e);
+    }
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(errors)
+    }
+  }
+
   fn cel_rules(&self) -> Vec<&'static CelRule> {
     let mut rules = Vec::new();
 

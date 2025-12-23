@@ -17,6 +17,32 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
 
   impl_testing_methods!();
 
+  #[cfg(feature = "testing")]
+  fn check_consistency(&self) -> Result<(), Vec<String>> {
+    let mut errors = Vec::new();
+
+    if let Err(e) = check_list_rules(self.in_, self.not_in) {
+      errors.push(e);
+    }
+
+    if let Some(in_list) = self.in_ {
+      for num in in_list {
+        if T::try_from(*num).is_err() {
+          errors.push(format!(
+            "Number {num} is in the allowed list but it does not belong to the enum {}",
+            T::full_name()
+          ));
+        }
+      }
+    }
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(errors)
+    }
+  }
+
   fn validate(
     &self,
     field_context: &FieldContext,

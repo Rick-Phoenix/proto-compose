@@ -68,6 +68,31 @@ where
 {
   type Target = Vec<T::Target>;
 
+  #[cfg(feature = "testing")]
+  fn check_consistency(&self) -> Result<(), Vec<String>> {
+    let mut errors = Vec::new();
+
+    if let Err(e) = check_length_rules(
+      None,
+      length_rule_value!("min_items", self.min_items),
+      length_rule_value!("max_items", self.max_items),
+    ) {
+      errors.push(e);
+    }
+
+    if let Some(items_validator) = &self.items
+      && let Err(e) = items_validator.check_consistency()
+    {
+      errors.extend(e);
+    }
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(errors)
+    }
+  }
+
   fn cel_rules(&self) -> Vec<&'static CelRule> {
     let mut rules = Vec::new();
 

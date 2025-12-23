@@ -25,6 +25,25 @@ where
 
   impl_testing_methods!();
 
+  #[cfg(feature = "testing")]
+  fn check_consistency(&self) -> Result<(), Vec<String>> {
+    let mut errors = Vec::new();
+
+    if let Err(e) = check_list_rules(self.in_, self.not_in) {
+      errors.push(e);
+    }
+
+    if let Err(e) = check_comparable_rules(self.lt, self.lte, self.gt, self.gte) {
+      errors.push(e.to_string());
+    }
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(errors)
+    }
+  }
+
   fn validate(
     &self,
     field_context: &FieldContext,

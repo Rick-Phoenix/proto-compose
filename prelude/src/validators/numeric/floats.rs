@@ -21,6 +21,97 @@ pub(crate) fn format_list<T: Display, I: IntoIterator<Item = T>>(list: I) -> Str
   string
 }
 
+#[cfg(feature = "testing")]
+pub(crate) fn check_list_rules<T>(
+  in_list: Option<&'static ItemLookup<T>>,
+  not_in_list: Option<&'static ItemLookup<T>>,
+) -> Result<(), String>
+where
+  T: Debug + PartialEq + Eq + Hash,
+{
+  if let Some(in_list) = in_list
+    && let Some(not_in_list) = not_in_list
+  {
+    let mut overlapping: Vec<&T> = Vec::new();
+
+    for item in in_list {
+      let is_overlapping = match not_in_list {
+        ItemLookup::Slice(items) => items.contains(item),
+        ItemLookup::Set(hash_set) => hash_set.contains(item),
+      };
+
+      if is_overlapping {
+        overlapping.push(item);
+      }
+    }
+
+    if overlapping.is_empty() {
+      return Ok(());
+    } else {
+      let mut err = String::new();
+
+      err.push_str("The following values are both allowed and forbidden:\n");
+
+      for item in overlapping {
+        let _ = writeln!(err, "  - {item:#?}");
+      }
+
+      return Err(err);
+    }
+  }
+
+  Ok(())
+}
+
+#[cfg(feature = "testing")]
+pub(crate) fn check_comparable_rules<T>(
+  lt: Option<T>,
+  lte: Option<T>,
+  gt: Option<T>,
+  gte: Option<T>,
+) -> Result<(), &'static str>
+where
+  T: Display + PartialEq + PartialOrd + Copy,
+{
+  if lt.is_some() && lte.is_some() {
+    return Err("Lt and Lte cannot be used together.");
+  }
+
+  if gt.is_some() && gte.is_some() {
+    return Err("Gt and Gte cannot be used together.");
+  }
+
+  if let Some(lt) = lt {
+    if let Some(gt) = gt
+      && lt >= gt
+    {
+      return Err("Lt cannot be greater than or equal to Gt");
+    }
+
+    if let Some(gte) = gte
+      && lt >= gte
+    {
+      return Err("Lte cannot be greater than or equal to Gte");
+    }
+  }
+
+  if let Some(lte) = lte {
+    if let Some(gt) = gt
+      && lte >= gt
+    {
+      return Err("Lte cannot be greater than or equal to Gt");
+    }
+
+    if let Some(gte) = gte
+      && lte > gte
+    {
+      return Err("Lte cannot be greater than Gte");
+    }
+  }
+
+  Ok(())
+}
+
 impl<Num> Validator<Num> for FloatValidator<Num>
 where
   Num: FloatWrapper,
@@ -28,6 +119,25 @@ where
   type Target = Num::RustType;
 
   impl_testing_methods!();
+
+  #[cfg(feature = "testing")]
+  fn check_consistency(&self) -> Result<(), Vec<String>> {
+    let mut errors = Vec::new();
+
+    if let Err(e) = check_list_rules(self.in_, self.not_in) {
+      errors.push(e);
+    }
+
+    if let Err(e) = check_comparable_rules(self.lt, self.lte, self.gt, self.gte) {
+      errors.push(e.to_string());
+    }
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(errors)
+    }
+  }
 
   fn validate(
     &self,
@@ -295,6 +405,7 @@ pub trait FloatWrapper: AsProtoType {
     + Default
     + Into<::cel::Value>
     + ordered_float::FloatCore
+    + ordered_float::PrimitiveFloat
     + ListRules<LookupTarget = OrderedFloat<Self::RustType>>
     + 'static;
   const LT_VIOLATION: &'static LazyLock<ViolationData>;

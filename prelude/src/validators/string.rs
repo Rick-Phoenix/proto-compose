@@ -20,6 +20,41 @@ impl Validator<String> for StringValidator {
 
   impl_testing_methods!();
 
+  #[cfg(feature = "testing")]
+  fn check_consistency(&self) -> Result<(), Vec<String>> {
+    let mut errors = Vec::new();
+
+    if self.contains == self.not_contains {
+      errors.push("`contains` and `not_contains` have the same value".to_string());
+    }
+
+    if let Err(e) = check_list_rules(self.in_, self.not_in) {
+      errors.push(e);
+    }
+
+    if let Err(e) = check_length_rules(
+      Some(length_rule_value!("len", self.len)),
+      length_rule_value!("min_len", self.min_len),
+      length_rule_value!("max_len", self.max_len),
+    ) {
+      errors.push(e);
+    }
+
+    if let Err(e) = check_length_rules(
+      Some(length_rule_value!("len_bytes", self.len_bytes)),
+      length_rule_value!("min_bytes", self.min_bytes),
+      length_rule_value!("max_bytes", self.max_bytes),
+    ) {
+      errors.push(e);
+    }
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(errors)
+    }
+  }
+
   fn validate(
     &self,
     field_context: &FieldContext,

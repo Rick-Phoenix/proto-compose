@@ -1,3 +1,12 @@
+macro_rules! length_rule_value {
+  ($name:literal, $value:expr) => {
+    &LengthRuleValue {
+      name: $name,
+      value: $value,
+    }
+  };
+}
+
 #[macro_export]
 macro_rules! file_options {
   ($options:expr) => {

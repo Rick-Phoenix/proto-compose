@@ -12,6 +12,21 @@ impl Validator<Any> for AnyValidator {
 
   impl_testing_methods!();
 
+  #[cfg(feature = "testing")]
+  fn check_consistency(&self) -> Result<(), Vec<String>> {
+    let mut errors = Vec::new();
+
+    if let Err(e) = check_list_rules(self.in_, self.not_in) {
+      errors.push(e);
+    }
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(errors)
+    }
+  }
+
   fn validate(
     &self,
     field_context: &FieldContext,

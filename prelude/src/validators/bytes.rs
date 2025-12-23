@@ -12,6 +12,38 @@ impl_ignore!(BytesValidatorBuilder);
 impl_cel_method!(BytesValidatorBuilder);
 impl_proto_type!(Bytes, "bytes");
 
+#[cfg(feature = "testing")]
+pub(crate) struct LengthRuleValue {
+  pub name: &'static str,
+  pub value: Option<usize>,
+}
+
+#[cfg(feature = "testing")]
+pub(crate) fn check_length_rules(
+  exact: Option<&LengthRuleValue>,
+  min: &LengthRuleValue,
+  max: &LengthRuleValue,
+) -> Result<(), String> {
+  if let Some(exact) = exact {
+    if min.value.is_some() {
+      return Err(format!("{} cannot be used with {}", exact.name, min.name));
+    }
+
+    if max.value.is_some() {
+      return Err(format!("{} cannot be used with {}", exact.name, max.name));
+    }
+  }
+
+  if let Some(min_value) = min.value
+    && let Some(max_value) = max.value
+    && min_value > max_value
+  {
+    return Err(format!("{} cannot be greater than {}", min.name, max.name));
+  }
+
+  Ok(())
+}
+
 #[cfg(feature = "regex")]
 pub type CachedBytesRegex = LazyLock<Regex>;
 
@@ -32,6 +64,29 @@ pub(crate) fn format_bytes_list<'a, I: IntoIterator<Item = &'a [u8]>>(list: I) -
 
 impl Validator<Bytes> for BytesValidator {
   type Target = Bytes;
+
+  #[cfg(feature = "testing")]
+  fn check_consistency(&self) -> Result<(), Vec<String>> {
+    let mut errors = Vec::new();
+
+    if let Err(e) = check_list_rules(self.in_, self.not_in) {
+      errors.push(e);
+    }
+
+    if let Err(e) = check_length_rules(
+      Some(length_rule_value!("len", self.len)),
+      length_rule_value!("min_len", self.min_len),
+      length_rule_value!("max_len", self.max_len),
+    ) {
+      errors.push(e);
+    }
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(errors)
+    }
+  }
 
   fn cel_rules(&self) -> Vec<&'static CelRule> {
     self.cel.iter().map(|prog| &prog.rule).collect()

@@ -14,6 +14,29 @@ impl Validator<Timestamp> for TimestampValidator {
 
   impl_testing_methods!();
 
+  #[cfg(feature = "testing")]
+  fn check_consistency(&self) -> Result<(), Vec<String>> {
+    let mut errors = Vec::new();
+
+    if let Err(e) = check_comparable_rules(self.lt, self.lte, self.gt, self.gte) {
+      errors.push(e.to_string());
+    }
+
+    if self.gt_now && (self.gt.is_some() || self.gte.is_some()) {
+      errors.push("`gt_now` cannot be used with `gt` or `gte`".to_string());
+    }
+
+    if self.lt_now && (self.lt.is_some() || self.lte.is_some()) {
+      errors.push("`lt_now` cannot be used with `lt` or `lte`".to_string());
+    }
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(errors)
+    }
+  }
+
   fn validate(
     &self,
     field_context: &FieldContext,
