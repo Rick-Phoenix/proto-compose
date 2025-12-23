@@ -1,6 +1,6 @@
-use std::sync::{Arc, OnceLock};
+use std::sync::OnceLock;
 
-use ::cel::{Context, ExecutionError, Program, Value};
+use ::cel::{Context, ExecutionError, Program, Value, objects::ValueType};
 use cel_rule_builder::{IsComplete, State};
 use chrono::Utc;
 use proto_types::cel::CelConversionError;
@@ -24,23 +24,28 @@ impl PartialEq for CelProgram {
 }
 
 impl CelError {
+  #[must_use]
+  pub const fn rule_id(&self) -> Option<&'static str> {
+    match self {
+      Self::ConversionError(_) => None,
+      Self::NonBooleanResult { rule_id, .. } | Self::ExecutionError { rule_id, .. } => {
+        Some(rule_id)
+      }
+    }
+  }
+
   // This is for runtime errors. If we get a CEL error we log the actual error while
   // producing a generic error message
   #[must_use]
   pub fn into_violation(
     self,
-    rule: Option<&CelRule>,
     field_context: Option<&FieldContext>,
     parent_elements: &[FieldPathElement],
   ) -> Violation {
-    if let Some(rule) = rule {
-      log::error!("error with CEL rule with id `{}`: {self}", rule.id);
-    } else {
-      log::error!("{self}");
-    }
+    log::error!("{self}");
 
     create_violation_core(
-      rule.map(|r| r.id.as_ref()),
+      self.rule_id(),
       field_context,
       parent_elements,
       &CEL_VIOLATION,
@@ -49,14 +54,21 @@ impl CelError {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Error)]
+#[derive(Debug, Clone, Error)]
 pub enum CelError {
-  #[error("expected a boolean result, got {0:?}")]
-  NonBooleanResult(Value),
-  #[error("failed to initialize context: {0}")]
+  #[error("Expected CEL program with id `{rule_id}` to return a boolean result, got `{value:?}`")]
+  NonBooleanResult {
+    rule_id: &'static str,
+    value: ValueType,
+  },
+  // SHould use FieldPath here to at least get the context of the value
+  #[error("Failed to inject value in CEL program: {0}")]
   ConversionError(#[from] CelConversionError),
-  #[error("failed to execute program: {0}")]
-  ExecutionError(#[from] ExecutionError),
+  #[error("Failed to execute CEL program with id `{rule_id}`: {source}")]
+  ExecutionError {
+    rule_id: &'static str,
+    source: ExecutionError,
+  },
 }
 
 fn initialize_context<'a, T, E>(value: T) -> Result<Context<'a>, CelError>
@@ -102,7 +114,7 @@ where
     let ctx = match initialize_context(value) {
       Ok(ctx) => ctx,
       Err(e) => {
-        violations.push(e.into_violation(None, field_context, parent_elements));
+        violations.push(e.into_violation(field_context, parent_elements));
         return;
       }
     };
@@ -114,9 +126,7 @@ where
             violations.add_cel(&program.rule, field_context, parent_elements);
           }
         }
-        Err(e) => {
-          violations.push(e.into_violation(Some(&program.rule), field_context, parent_elements))
-        }
+        Err(e) => violations.push(e.into_violation(field_context, parent_elements)),
       };
     }
   }
@@ -160,11 +170,12 @@ impl CelProgram {
     }
   }
 
+  // Potentially making this a result too, even with the automated tests
   pub fn get_program(&self) -> &Program {
     self.program.get_or_init(|| {
-      Program::compile(self.rule.expression.as_ref()).unwrap_or_else(|e| {
+      Program::compile(self.rule.expression).unwrap_or_else(|e| {
         panic!(
-          "failed to compile CEL program for rule {}: {e}",
+          "Failed to compile CEL program with id `{}`: {e}",
           self.rule.id
         )
       })
@@ -174,25 +185,32 @@ impl CelProgram {
   pub fn execute(&self, ctx: &Context) -> Result<bool, CelError> {
     let program = self.get_program();
 
-    let result = program.execute(ctx)?;
+    let result = program
+      .execute(ctx)
+      .map_err(|e| CelError::ExecutionError {
+        rule_id: self.rule.id,
+        source: e,
+      })?;
 
     if let Value::Bool(result) = result {
       Ok(result)
     } else {
-      Err(CelError::NonBooleanResult(result))
+      Err(CelError::NonBooleanResult {
+        rule_id: self.rule.id,
+        value: result.type_of(),
+      })
     }
   }
 }
 
 #[derive(Debug, Clone, Builder, PartialEq, Eq)]
-#[builder(on(Arc<str>, into))]
 pub struct CelRule {
   /// The id of this specific rule.
-  pub id: Arc<str>,
+  pub id: &'static str,
   /// The error message to display in case the rule fails validation.
-  pub message: Arc<str>,
+  pub message: &'static str,
   /// The CEL expression that must be used to perform the validation check.
-  pub expression: Arc<str>,
+  pub expression: &'static str,
 }
 
 impl From<CelRule> for CelProgram {
@@ -223,9 +241,9 @@ impl From<CelRule> for OptionValue {
   fn from(value: CelRule) -> Self {
     Self::Message(
       vec![
-        (ID.clone(), Self::String(value.id)),
-        (MESSAGE.clone(), Self::String(value.message)),
-        (EXPRESSION.clone(), Self::String(value.expression)),
+        (ID.clone(), Self::String(value.id.into())),
+        (MESSAGE.clone(), Self::String(value.message.into())),
+        (EXPRESSION.clone(), Self::String(value.expression.into())),
       ]
       .into(),
     )

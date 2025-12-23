@@ -16,6 +16,10 @@ impl Validator<Any> for AnyValidator {
   fn check_consistency(&self) -> Result<(), Vec<String>> {
     let mut errors = Vec::new();
 
+    if let Err(e) = self.check_cel_programs() {
+      errors.extend(e.into_iter().map(|e| e.to_string()));
+    }
+
     if let Err(e) = check_list_rules(self.in_, self.not_in) {
       errors.push(e);
     }

@@ -1,7 +1,7 @@
 use crate::*;
 
-#[track_caller]
-pub fn cel_programs_error(message_name: &str, errors: Vec<CelError>) {
+#[must_use]
+pub fn cel_programs_error(message_name: &str, errors: Vec<CelError>) -> String {
   let mut error = String::new();
 
   writeln!(
@@ -15,5 +15,5 @@ pub fn cel_programs_error(message_name: &str, errors: Vec<CelError>) {
     writeln!(error, "  - {err}").unwrap();
   }
 
-  panic!("{error}")
+  error
 }

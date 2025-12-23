@@ -165,8 +165,8 @@ macro_rules! impl_testing_methods {
       }
     }
 
-    fn cel_rules(&self) -> Vec<&'static CelRule> {
-      self.cel.iter().map(|prog| &prog.rule).collect()
+    fn cel_programs(&self) -> Vec<&'static CelProgram> {
+      self.cel.clone()
     }
   };
 }

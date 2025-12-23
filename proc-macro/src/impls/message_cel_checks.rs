@@ -55,7 +55,9 @@ pub fn impl_message_cel_checks(ctx: MessageCelChecksCtx) -> TokenStream2 {
           }
 
           if !errors.is_empty() {
-            ::prelude::test_utils::cel_programs_error(#message_name, errors)
+            let err = ::prelude::test_utils::cel_programs_error(#message_name, errors);
+
+            panic!("{err}")
           }
         }
       }

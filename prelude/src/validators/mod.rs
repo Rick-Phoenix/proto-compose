@@ -13,6 +13,11 @@ use protocheck_core::{
   },
 };
 
+pub(crate) struct CelProgramsInternal<T: Default> {
+  pub programs: Vec<&'static CelProgram>,
+  pub _default_val: PhantomData<T>,
+}
+
 // Here we use a generic for the target of the validator
 // AND an assoc. type for the actual type being validated
 // so that it can be proxied by wrappers (like with Sint32, Fixed32, enums, etc...).
@@ -22,7 +27,15 @@ pub trait Validator<T>: Into<ProtoOption> {
 
   // This one cannot be testing only because it is used in the schema impl below
   fn cel_rules(&self) -> Vec<&'static CelRule> {
-    Vec::new()
+    self
+      .cel_programs()
+      .into_iter()
+      .map(|p| &p.rule)
+      .collect()
+  }
+
+  fn cel_programs(&self) -> Vec<&'static CelProgram> {
+    vec![]
   }
 
   fn into_schema(self) -> FieldValidator {

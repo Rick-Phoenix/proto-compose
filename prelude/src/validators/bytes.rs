@@ -69,6 +69,10 @@ impl Validator<Bytes> for BytesValidator {
   fn check_consistency(&self) -> Result<(), Vec<String>> {
     let mut errors = Vec::new();
 
+    if let Err(e) = self.check_cel_programs() {
+      errors.extend(e.into_iter().map(|e| e.to_string()));
+    }
+
     if let Some(regex) = self.pattern {
       // This checks if a cached regex panics at formation or not
       let _ = regex.is_match(b"abc");
@@ -93,8 +97,8 @@ impl Validator<Bytes> for BytesValidator {
     }
   }
 
-  fn cel_rules(&self) -> Vec<&'static CelRule> {
-    self.cel.iter().map(|prog| &prog.rule).collect()
+  fn cel_programs(&self) -> Vec<&'static CelProgram> {
+    self.cel.clone()
   }
 
   #[cfg(feature = "testing")]

@@ -153,13 +153,13 @@ where
     }
   }
 
-  fn cel_rules(&self) -> Vec<&'static CelRule> {
-    let mut rules = Vec::new();
+  fn cel_programs(&self) -> Vec<&'static CelProgram> {
+    let mut programs = Vec::new();
 
-    rules.extend(self.keys.iter().flat_map(|k| k.cel_rules()));
-    rules.extend(self.values.iter().flat_map(|v| v.cel_rules()));
+    programs.extend(self.keys.iter().flat_map(|k| k.cel_programs()));
+    programs.extend(self.values.iter().flat_map(|v| v.cel_programs()));
 
-    rules
+    programs
   }
 
   #[cfg(feature = "testing")]
