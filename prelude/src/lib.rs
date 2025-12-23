@@ -1,6 +1,8 @@
 #[macro_use]
 mod macros;
 
+pub use prost;
+
 use askama::Template;
 #[doc(hidden)]
 pub use inventory;

@@ -171,7 +171,7 @@ pub fn process_message_derive_shadow(
   // prost::Message already implements Debug
   let output_tokens = quote! {
     #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(::prost::Message, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCelValue)]
+    #[derive(::prelude::prost::Message, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCelValue)]
     #shadow_struct_derives
     #shadow_struct
 
@@ -192,7 +192,7 @@ pub fn process_message_derive_direct(
     .push(parse_quote!(#[allow(clippy::derive_partial_eq_without_eq)]));
 
   // prost::Message already implements Debug
-  let prost_message_attr: Attribute = parse_quote!(#[derive(prost::Message, Clone, PartialEq, ::protocheck::macros::TryIntoCelValue)]);
+  let prost_message_attr: Attribute = parse_quote!(#[derive(::prelude::prost::Message, Clone, PartialEq, ::protocheck::macros::TryIntoCelValue)]);
   item.attrs.push(prost_message_attr);
 
   let mut fields_tokens: Vec<TokenStream2> = Vec::new();

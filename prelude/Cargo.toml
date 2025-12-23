@@ -28,6 +28,7 @@ inventory = "0.3.21"
 ordermap = "1.0.0"
 fxhash = "0.2.1"
 pretty_assertions = { version = "1.4", optional = true }
+prost = { workspace = true }
 
 [features]
 default = ["regex"]

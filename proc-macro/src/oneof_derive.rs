@@ -120,7 +120,7 @@ pub(crate) fn process_oneof_derive_shadow(
   // prost::Oneof already implements Debug
   output_tokens.extend(quote! {
     #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)]
+    #[derive(::prelude::prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)]
     #shadow_enum_derives
     #shadow_enum
 
@@ -156,7 +156,7 @@ pub(crate) fn process_oneof_derive_direct(
   attrs.push(parse_quote!(#[allow(clippy::derive_partial_eq_without_eq)]));
 
   // prost::Oneof already implements Debug
-  let prost_derive: Attribute = parse_quote!(#[derive(prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)]);
+  let prost_derive: Attribute = parse_quote!(#[derive(::prelude::prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)]);
   attrs.push(prost_derive);
 
   let mut variants_tokens: Vec<TokenStream2> = Vec::new();

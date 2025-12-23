@@ -9,13 +9,6 @@ use prelude::*;
 use proc_macro_impls::Oneof;
 use proto_types::{Duration, Timestamp};
 
-fn random_option() -> ProtoOption {
-  ProtoOption {
-    name: "(hobbits.location)".into(),
-    value: OptionValue::String("isengard".into()),
-  }
-}
-
 pub fn collect_package() -> Package {
   prelude::collect_package("myapp.v1")
 }
@@ -32,7 +25,6 @@ pub mod inner {
 
   #[proto_extension(target = MessageOptions)]
   pub struct SomeExt {
-    #[proto(options = vec![random_option()])]
     #[proto(tag = 5000)]
     name: String,
 

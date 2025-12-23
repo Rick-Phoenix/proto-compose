@@ -18,6 +18,7 @@ pub struct Enum {
   pub reserved_numbers: Vec<Range<i32>>,
   pub reserved_names: Vec<&'static str>,
   pub options: Vec<ProtoOption>,
+  pub rust_path: String,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]

@@ -15,6 +15,7 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     name: proto_name,
     no_prefix,
     parent_message,
+    extern_path,
     ..
   } = process_derive_enum_attrs(enum_name, attrs)?;
 
@@ -115,6 +116,14 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     quote! { None }
   };
 
+  let rust_path_field = if let Some(extern_path) = extern_path {
+    quote! { #extern_path.to_string() }
+  } else {
+    let rust_ident_str = enum_name.to_string();
+
+    quote! { format!("::{}::{}", __PROTO_FILE.extern_path, #rust_ident_str) }
+  };
+
   let output_tokens = quote! {
     ::prelude::inventory::submit! {
       ::prelude::RegistryEnum {
@@ -190,6 +199,7 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
           reserved_names: vec![ #(#reserved_names),* ],
           reserved_numbers: vec![ #reserved_numbers ],
           options: #options_tokens,
+          rust_path: #rust_path_field
         }
       }
     }

@@ -14,6 +14,7 @@ fn insert_message_extern_path(message: &Message, entries: &mut Vec<(String, Stri
     package,
     rust_path,
     messages,
+    enums,
     ..
   } = message;
 
@@ -24,6 +25,23 @@ fn insert_message_extern_path(message: &Message, entries: &mut Vec<(String, Stri
   for nested_msg in messages {
     insert_message_extern_path(nested_msg, entries);
   }
+
+  for nested_enum in enums {
+    insert_enum_extern_path(nested_enum, entries);
+  }
+}
+
+fn insert_enum_extern_path(enum_: &Enum, entries: &mut Vec<(String, String)>) {
+  let Enum {
+    full_name,
+    rust_path,
+    package,
+    ..
+  } = enum_;
+
+  let enum_entry = format!(".{package}.{full_name}");
+
+  entries.push((enum_entry, rust_path.clone()));
 }
 
 impl Package {
@@ -31,8 +49,14 @@ impl Package {
   pub fn extern_paths(&self) -> Vec<(String, String)> {
     let mut entries = Vec::new();
 
-    for msg in self.files.iter().flat_map(|f| f.messages.iter()) {
-      insert_message_extern_path(msg, &mut entries);
+    for file in &self.files {
+      for message in &file.messages {
+        insert_message_extern_path(message, &mut entries);
+      }
+
+      for enum_ in &file.enums {
+        insert_enum_extern_path(enum_, &mut entries);
+      }
     }
 
     entries

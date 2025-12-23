@@ -1054,6 +1054,7 @@ dependencies = [
  "owo-colors",
  "paste",
  "pretty_assertions",
+ "prost",
  "proto-types",
  "protocheck-core",
  "regex",

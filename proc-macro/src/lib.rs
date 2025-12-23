@@ -156,7 +156,7 @@ pub fn proto_enum(_args: TokenStream, input: TokenStream) -> TokenStream {
 
   quote! {
     #[repr(i32)]
-    #[derive(::prost::Enumeration, ::proc_macro_impls::Enum, Debug, Clone, Copy)]
+    #[derive(::prelude::prost::Enumeration, ::proc_macro_impls::Enum, Debug, Clone, Copy)]
     #item
 
     #extra_tokens

@@ -9,6 +9,7 @@ pub struct EnumAttrs {
   pub parent_message: Option<Ident>,
   pub name: String,
   pub no_prefix: bool,
+  pub extern_path: Option<String>,
 }
 
 pub fn process_derive_enum_attrs(
@@ -21,6 +22,7 @@ pub fn process_derive_enum_attrs(
   let mut proto_name: Option<String> = None;
   let mut no_prefix = false;
   let mut parent_message: Option<Ident> = None;
+  let mut extern_path: Option<String> = None;
 
   for arg in filter_attributes(attrs, &["proto"])? {
     match arg {
@@ -46,6 +48,9 @@ pub fn process_derive_enum_attrs(
         let ident = nv.path.require_ident()?.to_string();
 
         match ident.as_str() {
+          "extern_path" => {
+            extern_path = Some(nv.value.as_string()?);
+          }
           "parent_message" => {
             parent_message = Some(nv.value.as_path()?.require_ident()?.clone());
           }
@@ -72,6 +77,7 @@ pub fn process_derive_enum_attrs(
   let name = proto_name.unwrap_or_else(|| ccase!(pascal, enum_ident.to_string()));
 
   Ok(EnumAttrs {
+    extern_path,
     reserved_names,
     reserved_numbers,
     options,
