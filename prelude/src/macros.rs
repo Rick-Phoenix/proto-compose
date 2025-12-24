@@ -49,12 +49,11 @@ macro_rules! cached_slice {
     use std::sync::LazyLock;
 
     LazyLock::new(|| {
-      ::prelude::ItemLookup::Slice(
-        $items
-          .into_iter()
-          .collect::<Vec<_>>()
-          .into_boxed_slice(),
-      )
+      let mut items: Vec<$typ> = $items.into_iter().collect::<Vec<$typ>>();
+
+      items.sort();
+
+      items.into_boxed_slice()
     })
   }};
 }
@@ -64,13 +63,12 @@ macro_rules! inline_cached_slice {
   ($typ:ty, $items:expr) => {{
     use std::sync::LazyLock;
 
-    static LIST: LazyLock<::prelude::ItemLookup<$typ>> = LazyLock::new(|| {
-      ::prelude::ItemLookup::Slice(
-        $items
-          .into_iter()
-          .collect::<Vec<$typ>>()
-          .into_boxed_slice(),
-      )
+    static LIST: LazyLock<Box<[$typ]>> = LazyLock::new(|| {
+      let mut items: Vec<$typ> = $items.into_iter().collect::<Vec<$typ>>();
+
+      items.sort();
+
+      items.into_boxed_slice()
     });
 
     &LIST

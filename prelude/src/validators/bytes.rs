@@ -81,7 +81,7 @@ impl Validator<Bytes> for BytesValidator {
     }
 
     if let Err(e) = check_list_rules(self.in_, self.not_in) {
-      errors.push(e);
+      errors.push(e.to_string());
     }
 
     if let Err(e) = check_length_rules(
@@ -218,7 +218,7 @@ impl Validator<Bytes> for BytesValidator {
       }
 
       if let Some(allowed_list) = &self.in_
-        && !<&Bytes>::is_in(allowed_list, val)
+        && !val.is_in(allowed_list)
       {
         violations.add(
           field_context,
@@ -232,7 +232,7 @@ impl Validator<Bytes> for BytesValidator {
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && <&Bytes>::is_in(forbidden_list, val)
+        && val.is_in(forbidden_list)
       {
         violations.add(
           field_context,
@@ -356,10 +356,10 @@ pub struct BytesValidator {
   pub contains: Option<Bytes>,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static ItemLookup<&'static [u8]>>,
+  pub in_: Option<&'static [&'static [u8]]>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static ItemLookup<&'static [u8]>>,
+  pub not_in: Option<&'static [&'static [u8]]>,
 
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<Bytes>,

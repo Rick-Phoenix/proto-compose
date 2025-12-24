@@ -168,8 +168,7 @@ where
           if let Some(processed_values) = processed_values.as_mut()
             && has_unique_values_so_far
           {
-            has_unique_values_so_far =
-              <T::Target as UniqueItem>::check_unique(processed_values, value);
+            has_unique_values_so_far = value.check_unique(processed_values);
           }
 
           if let Some((validator, ctx)) = &mut items_validator {

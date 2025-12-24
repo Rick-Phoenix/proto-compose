@@ -34,7 +34,7 @@ where
     }
 
     if let Err(e) = check_list_rules(self.in_, self.not_in) {
-      errors.push(e);
+      errors.push(e.to_string());
     }
 
     if let Err(e) = check_comparable_rules(self.lt, self.lte, self.gt, self.gte) {
@@ -117,7 +117,7 @@ where
       }
 
       if let Some(allowed_list) = &self.in_
-        && !Num::RustType::is_in(allowed_list, val)
+        && !val.is_in(allowed_list)
       {
         violations.add(
           field_context,
@@ -131,7 +131,7 @@ where
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && Num::RustType::is_in(forbidden_list, val)
+        && val.is_in(forbidden_list)
       {
         violations.add(
           field_context,
@@ -202,10 +202,10 @@ where
   pub gte: Option<Num::RustType>,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static ItemLookup<Num::RustType>>,
+  pub in_: Option<&'static [Num::RustType]>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static ItemLookup<Num::RustType>>,
+  pub not_in: Option<&'static [Num::RustType]>,
 }
 
 impl<S: State, N: IntWrapper> IntValidatorBuilder<N, S> {
@@ -292,6 +292,7 @@ pub trait IntWrapper: AsProtoType {
     + Eq
     + Default
     + ListRules<LookupTarget = Self::RustType>
+    + Ord
     + Into<::cel::Value>
     + 'static;
   const LT_VIOLATION: &'static LazyLock<ViolationData>;

@@ -37,7 +37,7 @@ impl Validator<String> for StringValidator {
     }
 
     if let Err(e) = check_list_rules(self.in_, self.not_in) {
-      errors.push(e);
+      errors.push(e.to_string());
     }
 
     if let Err(e) = check_length_rules(
@@ -210,7 +210,7 @@ impl Validator<String> for StringValidator {
       }
 
       if let Some(allowed_list) = &self.in_
-        && !<&str>::is_in(allowed_list, val)
+        && !<&str>::is_in(&val.as_str(), allowed_list)
       {
         violations.add(
           field_context,
@@ -224,7 +224,7 @@ impl Validator<String> for StringValidator {
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && <&str>::is_in(forbidden_list, val)
+        && <&str>::is_in(&val.as_str(), forbidden_list)
       {
         violations.add(
           field_context,
@@ -443,10 +443,10 @@ pub struct StringValidator {
   pub not_contains: Option<Arc<str>>,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static ItemLookup<&'static str>>,
+  pub in_: Option<&'static [&'static str]>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static ItemLookup<&'static str>>,
+  pub not_in: Option<&'static [&'static str]>,
 
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<Arc<str>>,

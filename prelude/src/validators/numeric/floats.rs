@@ -1,3 +1,5 @@
+use float_eq::FloatEq;
+use float_eq::float_eq;
 use std::{fmt::Display, marker::PhantomData};
 
 use bon::Builder;
@@ -21,46 +23,117 @@ pub(crate) fn format_list<T: Display, I: IntoIterator<Item = T>>(list: I) -> Str
   string
 }
 
-#[cfg(feature = "testing")]
-pub(crate) fn check_list_rules<T>(
-  in_list: Option<&'static ItemLookup<T>>,
-  not_in_list: Option<&'static ItemLookup<T>>,
-) -> Result<(), String>
+pub(crate) fn float_in_list<T>(target: T, list: &[OrderedFloat<T>], abs_tol: T, r2nd_tol: T) -> bool
 where
-  T: Debug + PartialEq + Eq + Hash,
+  T: FloatCore + FloatEq<Tol = T>,
+{
+  let wrapped_target: OrderedFloat<T> = target.into();
+
+  // 1. Perform Binary Search
+  // This is O(log n)
+  match list.binary_search(&wrapped_target) {
+    // Exact bit-for-bit match found
+    Ok(_) => true,
+
+    // No exact match. 'idx' is the insertion point.
+    Err(idx) => {
+      // 2. Check the neighbor immediately AFTER the insertion point
+      if let Some(above) = list.get(idx)
+        && float_eq!(above.0, target, abs <= abs_tol, r2nd <= r2nd_tol)
+      {
+        return true;
+      }
+
+      // 3. Check the neighbor immediately BEFORE the insertion point
+      if idx > 0
+        && let Some(below) = list.get(idx - 1)
+        && float_eq!(below.0, target, abs <= abs_tol, r2nd <= r2nd_tol)
+      {
+        return true;
+      }
+
+      false
+    }
+  }
+}
+
+pub(crate) fn check_float_list_rules<T>(
+  in_list: Option<&'static [OrderedFloat<T>]>,
+  not_in_list: Option<&'static [OrderedFloat<T>]>,
+  abs_tol: T,
+  r2nd_tol: T,
+) -> Result<(), OverlappingListsError<T>>
+where
+  T: FloatCore + Debug + FloatEq<Tol = T>,
 {
   if let Some(in_list) = in_list
     && let Some(not_in_list) = not_in_list
   {
-    let mut overlapping: Vec<&T> = Vec::new();
+    let mut overlapping: Vec<T> = Vec::with_capacity(in_list.len());
 
     for item in in_list {
-      let is_overlapping = match not_in_list {
-        ItemLookup::Slice(items) => items.contains(item),
-        ItemLookup::Set(hash_set) => hash_set.contains(item),
-      };
+      let is_overlapping = float_in_list(item.0, not_in_list, abs_tol, r2nd_tol);
 
       if is_overlapping {
-        overlapping.push(item);
+        overlapping.push(**item);
       }
     }
 
     if overlapping.is_empty() {
       return Ok(());
     } else {
-      let mut err = String::new();
-
-      err.push_str("The following values are both allowed and forbidden:\n");
-
-      for item in overlapping {
-        let _ = writeln!(err, "  - {item:#?}");
-      }
-
-      return Err(err);
+      return Err(OverlappingListsError { overlapping });
     }
   }
 
   Ok(())
+}
+
+#[cfg(feature = "testing")]
+pub(crate) fn check_list_rules<T>(
+  in_list: Option<&'static [T]>,
+  not_in_list: Option<&'static [T]>,
+) -> Result<(), OverlappingListsError<T>>
+where
+  T: Debug + PartialEq + Eq + Hash + Ord + Clone,
+{
+  if let Some(in_list) = in_list
+    && let Some(not_in_list) = not_in_list
+  {
+    let mut overlapping: Vec<T> = Vec::with_capacity(in_list.len());
+
+    for item in in_list {
+      let is_overlapping = not_in_list.binary_search(item).is_ok();
+
+      if is_overlapping {
+        overlapping.push(item.clone());
+      }
+    }
+
+    if overlapping.is_empty() {
+      return Ok(());
+    } else {
+      return Err(OverlappingListsError { overlapping });
+    }
+  }
+
+  Ok(())
+}
+
+pub(crate) struct OverlappingListsError<T: Debug> {
+  pub overlapping: Vec<T>,
+}
+
+impl<T: Debug> Display for OverlappingListsError<T> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    writeln!(f, "The following values are both allowed and forbidden:")?;
+
+    for item in &self.overlapping {
+      let _ = writeln!(f, "  - {item:#?}");
+    }
+
+    Ok(())
+  }
 }
 
 #[cfg(feature = "testing")]
@@ -128,8 +201,13 @@ where
       errors.extend(e.into_iter().map(|e| e.to_string()));
     }
 
-    if let Err(e) = check_list_rules(self.in_, self.not_in) {
-      errors.push(e);
+    if let Err(e) = check_float_list_rules(
+      self.in_,
+      self.not_in,
+      self.abs_tolerance,
+      self.rel_tolerance,
+    ) {
+      errors.push(e.to_string());
     }
 
     if let Err(e) = check_comparable_rules(self.lt, self.lte, self.gt, self.gte) {
@@ -166,7 +244,12 @@ where
       }
 
       if let Some(const_val) = self.const_
-        && val != const_val
+        && !float_eq!(
+          const_val,
+          val,
+          abs <= self.abs_tolerance,
+          r2nd <= self.rel_tolerance,
+        )
       {
         violations.add(
           field_context,
@@ -221,7 +304,7 @@ where
       }
 
       if let Some(allowed_list) = &self.in_
-        && !Num::RustType::is_in(allowed_list, val)
+        && !float_in_list(val, allowed_list, self.abs_tolerance, self.rel_tolerance)
       {
         violations.add(
           field_context,
@@ -235,7 +318,7 @@ where
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && Num::RustType::is_in(forbidden_list, val)
+        && float_in_list(val, forbidden_list, self.abs_tolerance, self.rel_tolerance)
       {
         violations.add(
           field_context,
@@ -290,6 +373,14 @@ where
   #[builder(default, with = || true)]
   pub required: bool,
 
+  /// The absolute tolerance to use for equality operations
+  #[builder(default)]
+  pub abs_tolerance: Num::RustType,
+
+  /// The relative tolerance to use for equality operations, scaled to the precision of the number being validated
+  #[builder(default)]
+  pub rel_tolerance: Num::RustType,
+
   /// Specifies that this field must be finite (i.e. it can't represent Infinity or NaN)
   #[builder(default, with = || true)]
   pub finite: bool,
@@ -310,10 +401,10 @@ where
   pub gte: Option<Num::RustType>,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static ItemLookup<OrderedFloat<Num::RustType>>>,
+  pub in_: Option<&'static [OrderedFloat<Num::RustType>]>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static ItemLookup<OrderedFloat<Num::RustType>>>,
+  pub not_in: Option<&'static [OrderedFloat<Num::RustType>]>,
 }
 
 impl<S: State, N: FloatWrapper> FloatValidatorBuilder<N, S> {
@@ -411,6 +502,7 @@ pub trait FloatWrapper: AsProtoType {
     + ordered_float::FloatCore
     + ordered_float::PrimitiveFloat
     + ListRules<LookupTarget = OrderedFloat<Self::RustType>>
+    + float_eq::FloatEq<Tol = Self::RustType>
     + 'static;
   const LT_VIOLATION: &'static LazyLock<ViolationData>;
   const LTE_VIOLATION: &'static LazyLock<ViolationData>;

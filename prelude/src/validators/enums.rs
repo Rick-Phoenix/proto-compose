@@ -22,7 +22,7 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
     let mut errors = Vec::new();
 
     if let Err(e) = check_list_rules(self.in_, self.not_in) {
-      errors.push(e);
+      errors.push(e.to_string());
     }
 
     if let Some(in_list) = self.in_ {
@@ -69,8 +69,8 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
 
       if let Some(allowed_list) = &self.in_
         && !protocheck_core::wrappers::EnumVariant::is_in(
+          &protocheck_core::wrappers::EnumVariant(val),
           allowed_list,
-          protocheck_core::wrappers::EnumVariant(val),
         )
       {
         violations.add(
@@ -86,8 +86,8 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
 
       if let Some(forbidden_list) = &self.not_in
         && protocheck_core::wrappers::EnumVariant::is_in(
+          &protocheck_core::wrappers::EnumVariant(val),
           forbidden_list,
-          protocheck_core::wrappers::EnumVariant(val),
         )
       {
         violations.add(
@@ -155,10 +155,10 @@ pub struct EnumValidator<T: ProtoEnum> {
   pub required: bool,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static ItemLookup<i32>>,
+  pub in_: Option<&'static [i32]>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static ItemLookup<i32>>,
+  pub not_in: Option<&'static [i32]>,
 
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<i32>,

@@ -21,13 +21,13 @@ pub fn impl_message_validator(ctx: ValidatorImplCtx) -> TokenStream2 {
         UniqueLookup::Vec(Vec::with_capacity(len))
       }
 
-      fn check_unique<'a>(container: &mut UniqueLookup<Self::LookupTarget<'a>>, item: &'a Self) -> bool {
+      fn check_unique<'a>(&'a self, container: &mut UniqueLookup<Self::LookupTarget<'a>>) -> bool {
         match container {
           UniqueLookup::Vec(vec) => {
-            if vec.contains(&item) {
+            if vec.contains(&self) {
               false
             } else {
-              vec.push(item);
+              vec.push(self);
               true
             }
           }

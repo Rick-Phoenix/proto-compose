@@ -6,11 +6,7 @@ use common_strings::*;
 use proto_types::protovalidate::*;
 use protocheck_core::{
   ordered_float::OrderedFloat,
-  validators::{
-    containing::{ItemLookup, ListRules},
-    repeated::UniqueItem,
-    well_known_strings::*,
-  },
+  validators::{containing::ListRules, repeated::UniqueItem, well_known_strings::*},
 };
 
 // Here we use a generic for the target of the validator
@@ -86,7 +82,7 @@ pub trait ProtoValidator: std::marker::Sized {
   }
 }
 
-pub type CachedList<T> = LazyLock<ItemLookup<T>>;
+pub type CachedList<T> = LazyLock<[T]>;
 
 type OptionValueList = Vec<(Arc<str>, OptionValue)>;
 

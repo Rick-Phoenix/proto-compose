@@ -13,6 +13,7 @@ use owo_colors::OwoColorize;
 #[doc(hidden)]
 pub use paste::paste;
 use proto_types::protovalidate::{FieldPathElement, Violations};
+use thiserror::Error;
 mod oneof;
 mod options;
 mod validators;
@@ -38,8 +39,8 @@ pub use options::*;
 pub use package::*;
 pub use proto_enum::*;
 pub use proto_type::*;
+pub use protocheck_core::field_data::FieldContext;
 use protocheck_core::field_data::FieldKind;
-pub use protocheck_core::{field_data::FieldContext, validators::containing::ItemLookup};
 use rendering_utils::*;
 pub use service::*;
 pub use validators::*;

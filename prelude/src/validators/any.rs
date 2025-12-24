@@ -21,7 +21,7 @@ impl Validator<Any> for AnyValidator {
     }
 
     if let Err(e) = check_list_rules(self.in_, self.not_in) {
-      errors.push(e);
+      errors.push(e.to_string());
     }
 
     if errors.is_empty() {
@@ -45,7 +45,7 @@ impl Validator<Any> for AnyValidator {
 
     if let Some(val) = val {
       if let Some(allowed_list) = &self.in_
-        && !<&Any>::is_in(allowed_list, val)
+        && !val.is_in(allowed_list)
       {
         violations.add(
           field_context,
@@ -59,7 +59,7 @@ impl Validator<Any> for AnyValidator {
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && <&Any>::is_in(forbidden_list, val)
+        && val.is_in(forbidden_list)
       {
         violations.add(
           field_context,
@@ -110,10 +110,10 @@ pub struct AnyValidator {
   pub required: bool,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static ItemLookup<&'static str>>,
+  pub in_: Option<&'static [&'static str]>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static ItemLookup<&'static str>>,
+  pub not_in: Option<&'static [&'static str]>,
 }
 
 impl<S: State> AnyValidatorBuilder<S> {

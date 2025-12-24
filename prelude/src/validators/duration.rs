@@ -23,7 +23,7 @@ impl Validator<Duration> for DurationValidator {
     }
 
     if let Err(e) = check_list_rules(self.in_, self.not_in) {
-      errors.push(e);
+      errors.push(e.to_string());
     }
 
     if let Err(e) = check_comparable_rules(self.lt, self.lte, self.gt, self.gte) {
@@ -105,7 +105,7 @@ impl Validator<Duration> for DurationValidator {
       }
 
       if let Some(allowed_list) = self.in_
-        && !Duration::is_in(allowed_list, val)
+        && !val.is_in(allowed_list)
       {
         violations.add(
           field_context,
@@ -119,7 +119,7 @@ impl Validator<Duration> for DurationValidator {
       }
 
       if let Some(forbidden_list) = self.not_in
-        && Duration::is_in(forbidden_list, val)
+        && val.is_in(forbidden_list)
       {
         violations.add(
           field_context,
@@ -170,10 +170,10 @@ pub struct DurationValidator {
   pub required: bool,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static ItemLookup<Duration>>,
+  pub in_: Option<&'static [Duration]>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static ItemLookup<Duration>>,
+  pub not_in: Option<&'static [Duration]>,
 
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<Duration>,
