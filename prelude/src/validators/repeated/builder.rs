@@ -11,14 +11,14 @@ where
   _inner_type: PhantomData<T>,
 
   /// Specifies the rules that will be applied to the individual items of this repeated field.
-  pub items: Option<T::Validator>,
+  items: Option<T::Validator>,
   /// The minimum amount of items that this field must contain in order to be valid.
-  pub min_items: Option<usize>,
+  min_items: Option<usize>,
   /// The maximum amount of items that this field must contain in order to be valid.
-  pub max_items: Option<usize>,
+  max_items: Option<usize>,
   /// Specifies that this field must contain only unique values (only applies to scalar fields).
-  pub unique: bool,
-  pub ignore: Option<Ignore>,
+  unique: bool,
+  ignore: Option<Ignore>,
 }
 
 impl<T> RepeatedValidator<T>

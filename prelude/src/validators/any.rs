@@ -1,11 +1,12 @@
-use any_validator_builder::{IsUnset, SetIgnore, State};
-use bon::Builder;
+pub mod builder;
+pub use builder::AnyValidatorBuilder;
+use builder::state::State;
+
 use proto_types::Any;
 
 use super::*;
 
 impl_validator!(AnyValidator, Any);
-impl_into_option!(AnyValidator);
 
 impl Validator<Any> for AnyValidator {
   type Target = Any;
@@ -103,18 +104,14 @@ impl Validator<Any> for AnyValidator {
   }
 }
 
-#[derive(Clone, Debug, Builder)]
-#[builder(derive(Clone))]
+#[derive(Clone, Debug)]
 pub struct AnyValidator {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
-  #[builder(field)]
   pub cel: Vec<&'static CelProgram>,
 
-  #[builder(setters(vis = "", name = ignore))]
   pub ignore: Option<Ignore>,
 
   /// Specifies that the field must be set in order to be valid.
-  #[builder(default, with = || true)]
   pub required: bool,
 
   /// Specifies that only the values in this list will be considered valid for this field.
@@ -122,23 +119,6 @@ pub struct AnyValidator {
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
   pub not_in: Option<&'static SortedList<&'static str>>,
-}
-
-impl<S: State> AnyValidatorBuilder<S> {
-  /// Adds a custom CEL rule to this validator.
-  /// Use the [`cel_program`] or [`inline_cel_program`] macros to build a static program.
-  pub fn cel(mut self, program: &'static CelProgram) -> Self {
-    self.cel.push(program);
-    self
-  }
-
-  /// Rules set for this field will always be ignored.
-  pub fn ignore_always(self) -> AnyValidatorBuilder<SetIgnore<S>>
-  where
-    S::Ignore: IsUnset,
-  {
-    self.ignore(Ignore::Always)
-  }
 }
 
 impl From<AnyValidator> for ProtoOption {
