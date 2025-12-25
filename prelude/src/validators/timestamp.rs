@@ -1,13 +1,12 @@
-use bon::Builder;
+pub mod builder;
+pub use builder::TimestampValidatorBuilder;
+use builder::state::State;
+
 use proto_types::{Duration, Timestamp};
-use timestamp_validator_builder::State;
 
 use super::*;
 
 impl_validator!(TimestampValidator, Timestamp);
-impl_into_option!(TimestampValidator);
-impl_cel_method!(TimestampValidatorBuilder);
-impl_ignore!(TimestampValidatorBuilder);
 
 impl Validator<Timestamp> for TimestampValidator {
   type Target = Timestamp;
@@ -164,25 +163,19 @@ impl Validator<Timestamp> for TimestampValidator {
   }
 }
 
-#[derive(Clone, Debug, Builder)]
-#[builder(derive(Clone))]
+#[derive(Clone, Debug)]
 pub struct TimestampValidator {
-  #[builder(field)]
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   pub cel: Vec<&'static CelProgram>,
 
-  #[builder(setters(vis = "", name = ignore))]
   pub ignore: Option<Ignore>,
 
-  #[builder(default, with = || true)]
   /// Specifies that this field's value will be valid only if it in the past.
   pub lt_now: bool,
 
-  #[builder(default, with = || true)]
   /// Specifies that this field's value will be valid only if it in the future.
   pub gt_now: bool,
 
-  #[builder(default, with = || true)]
   /// Specifies that the field must be set in order to be valid.
   pub required: bool,
 
@@ -235,5 +228,3 @@ impl From<TimestampValidator> for ProtoOption {
     }
   }
 }
-
-reusable_string!(TIMESTAMP);

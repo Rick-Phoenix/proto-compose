@@ -8,7 +8,7 @@ mod sealed {
   pub(super) struct Sealed;
 }
 
-pub trait State: ::core::marker::Sized {
+pub trait State: Sized {
   type Ignore;
   type Required;
   #[doc(hidden)]
@@ -19,12 +19,11 @@ pub trait State: ::core::marker::Sized {
 #[allow(non_camel_case_types)]
 mod members {
   pub struct ignore;
-  pub struct message;
   pub struct required;
 }
 
-pub struct SetIgnore<S: State = Empty>(::core::marker::PhantomData<fn() -> S>);
-pub struct SetRequired<S: State = Empty>(::core::marker::PhantomData<fn() -> S>);
+pub struct SetIgnore<S: State = Empty>(PhantomData<fn() -> S>);
+pub struct SetRequired<S: State = Empty>(PhantomData<fn() -> S>);
 #[doc(hidden)]
 impl State for Empty {
   type Ignore = Unset<members::ignore>;

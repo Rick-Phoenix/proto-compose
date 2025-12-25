@@ -1,3 +1,4 @@
+reusable_string!(TIMESTAMP);
 reusable_string!(INT64);
 reusable_string!(UINT64);
 reusable_string!(SINT64);
