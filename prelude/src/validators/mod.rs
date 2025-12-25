@@ -241,8 +241,8 @@ pub(crate) fn format_list<T: Display, I: IntoIterator<Item = T>>(list: I) -> Str
 
 #[cfg(feature = "testing")]
 pub(crate) fn check_list_rules<T>(
-  in_list: Option<&'static [T]>,
-  not_in_list: Option<&'static [T]>,
+  in_list: Option<&'static SortedList<T>>,
+  not_in_list: Option<&'static SortedList<T>>,
 ) -> Result<(), OverlappingListsError<T>>
 where
   T: Debug + PartialEq + Eq + Hash + Ord + Clone,
@@ -253,7 +253,7 @@ where
     let mut overlapping: Vec<T> = Vec::with_capacity(in_list.len());
 
     for item in in_list {
-      let is_overlapping = not_in_list.binary_search(item).is_ok();
+      let is_overlapping = not_in_list.contains(item);
 
       if is_overlapping {
         overlapping.push(item.clone());

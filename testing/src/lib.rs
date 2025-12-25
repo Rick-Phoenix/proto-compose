@@ -101,7 +101,7 @@ pub mod inner {
     #[proto(bytes, validate = |v| v.pattern(inline_bytes_regex!("abc", "abc")))]
     pub bytes: Bytes,
 
-    #[proto(tag = 35, validate = |v| v.pattern(inline_regex!("abc", "abc")).in_(inline_cached_slice!(&str, ["abc"])))]
+    #[proto(tag = 35, validate = |v| v.pattern(inline_regex!("abc", "abc")).in_(inline_cached_list!(&str, ["abc"])))]
     name: String,
 
     #[proto(validate = |v| v.min_pairs(0).keys(|k| k.min_len(25)).values(|v| v.lt(25)))]

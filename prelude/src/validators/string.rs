@@ -451,10 +451,10 @@ pub struct StringValidator {
   pub not_contains: Option<Arc<str>>,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static [&'static str]>,
+  pub in_: Option<&'static SortedList<&'static str>>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static [&'static str]>,
+  pub not_in: Option<&'static SortedList<&'static str>>,
 
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<Arc<str>>,

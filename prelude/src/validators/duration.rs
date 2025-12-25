@@ -178,10 +178,10 @@ pub struct DurationValidator {
   pub required: bool,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static [Duration]>,
+  pub in_: Option<&'static SortedList<Duration>>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static [Duration]>,
+  pub not_in: Option<&'static SortedList<Duration>>,
 
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<Duration>,

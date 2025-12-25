@@ -166,10 +166,10 @@ pub struct EnumValidator<T: ProtoEnum> {
   pub required: bool,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static [i32]>,
+  pub in_: Option<&'static SortedList<i32>>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static [i32]>,
+  pub not_in: Option<&'static SortedList<i32>>,
 
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<i32>,

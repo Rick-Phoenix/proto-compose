@@ -213,10 +213,10 @@ where
   pub gte: Option<Num::RustType>,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static [Num::RustType]>,
+  pub in_: Option<&'static SortedList<Num::RustType>>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static [Num::RustType]>,
+  pub not_in: Option<&'static SortedList<Num::RustType>>,
 }
 
 impl<S: State, N: IntWrapper> IntValidatorBuilder<N, S> {

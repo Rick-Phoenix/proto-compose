@@ -101,8 +101,8 @@ where
     }
 
     if let Err(e) = check_float_list_rules(
-      self.in_,
-      self.not_in,
+      self.in_.map(|l| l.as_slice()),
+      self.not_in.map(|l| l.as_slice()),
       self.abs_tolerance,
       self.rel_tolerance,
     ) {
@@ -143,12 +143,7 @@ where
       }
 
       if let Some(const_val) = self.const_
-        && !float_eq!(
-          const_val,
-          val,
-          abs <= self.abs_tolerance,
-          r2nd <= self.rel_tolerance,
-        )
+        && !self.float_is_eq(const_val, val)
       {
         violations.add(
           field_context,
@@ -159,7 +154,7 @@ where
       }
 
       if let Some(gt) = self.gt
-        && val <= gt
+        && (val.is_nan() || self.float_is_eq(gt, val) || val < gt)
       {
         violations.add(
           field_context,
@@ -170,7 +165,7 @@ where
       }
 
       if let Some(gte) = self.gte
-        && val < gte
+        && (val.is_nan() || !self.float_is_eq(gte, val) && val < gte)
       {
         violations.add(
           field_context,
@@ -181,7 +176,7 @@ where
       }
 
       if let Some(lt) = self.lt
-        && val >= lt
+        && (val.is_nan() || self.float_is_eq(lt, val) || val > lt)
       {
         violations.add(
           field_context,
@@ -192,7 +187,7 @@ where
       }
 
       if let Some(lte) = self.lte
-        && val > lte
+        && (val.is_nan() || !self.float_is_eq(lte, val) && val > lte)
       {
         violations.add(
           field_context,
@@ -300,10 +295,24 @@ where
   pub gte: Option<Num::RustType>,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static [OrderedFloat<Num::RustType>]>,
+  pub in_: Option<&'static SortedList<OrderedFloat<Num::RustType>>>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static [OrderedFloat<Num::RustType>]>,
+  pub not_in: Option<&'static SortedList<OrderedFloat<Num::RustType>>>,
+}
+
+impl<Num> FloatValidator<Num>
+where
+  Num: FloatWrapper,
+{
+  fn float_is_eq(&self, first: Num::RustType, second: Num::RustType) -> bool {
+    float_eq!(
+      first,
+      second,
+      abs <= self.abs_tolerance,
+      r2nd <= self.rel_tolerance
+    )
+  }
 }
 
 impl<S: State, N: FloatWrapper> FloatValidatorBuilder<N, S> {

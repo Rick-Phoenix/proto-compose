@@ -44,53 +44,22 @@ macro_rules! proto_file {
 }
 
 #[macro_export]
-macro_rules! cached_slice {
+macro_rules! cached_list {
   ($items:expr) => {{
+    use ::prelude::SortedList;
     use std::sync::LazyLock;
 
-    LazyLock::new(|| {
-      let mut items: Vec<$typ> = $items.into_iter().collect::<Vec<$typ>>();
-
-      items.sort();
-
-      items.into_boxed_slice()
-    })
+    LazyLock::new(|| SortedList::new($items))
   }};
 }
 
 #[macro_export]
-macro_rules! inline_cached_slice {
+macro_rules! inline_cached_list {
   ($typ:ty, $items:expr) => {{
+    use ::prelude::SortedList;
     use std::sync::LazyLock;
 
-    static LIST: LazyLock<Box<[$typ]>> = LazyLock::new(|| {
-      let mut items: Vec<$typ> = $items.into_iter().collect::<Vec<$typ>>();
-
-      items.sort();
-
-      items.into_boxed_slice()
-    });
-
-    &LIST
-  }};
-}
-
-#[macro_export]
-macro_rules! cached_set {
-  ($items:expr) => {{
-    use std::{collections::HashSet, sync::LazyLock};
-
-    LazyLock::new(|| ::prelude::ItemLookup::Set($items.into_iter().collect()))
-  }};
-}
-
-#[macro_export]
-macro_rules! inline_cached_set {
-  ($typ:ty, $items:expr) => {{
-    use std::{collections::HashSet, sync::LazyLock};
-
-    static LIST: LazyLock<::prelude::ItemLookup<$typ>> =
-      LazyLock::new(|| ::prelude::ItemLookup::Set($items.into_iter().collect()));
+    static LIST: LazyLock<SortedList<$typ>> = LazyLock::new(|| SortedList::new($items));
 
     &LIST
   }};
