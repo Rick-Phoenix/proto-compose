@@ -8,7 +8,7 @@ mod sealed {
   pub(super) struct Sealed;
 }
 
-pub trait State: ::core::marker::Sized {
+pub trait State: Sized {
   type Ignore;
   type Required;
   type In;
@@ -36,15 +36,15 @@ mod members {
   pub struct gte;
 }
 
-pub struct SetIgnore<S: State = Empty>(::core::marker::PhantomData<fn() -> S>);
-pub struct SetRequired<S: State = Empty>(::core::marker::PhantomData<fn() -> S>);
-pub struct SetIn<S: State = Empty>(::core::marker::PhantomData<fn() -> S>);
-pub struct SetNotIn<S: State = Empty>(::core::marker::PhantomData<fn() -> S>);
-pub struct SetConst<S: State = Empty>(::core::marker::PhantomData<fn() -> S>);
-pub struct SetLt<S: State = Empty>(::core::marker::PhantomData<fn() -> S>);
-pub struct SetLte<S: State = Empty>(::core::marker::PhantomData<fn() -> S>);
-pub struct SetGt<S: State = Empty>(::core::marker::PhantomData<fn() -> S>);
-pub struct SetGte<S: State = Empty>(::core::marker::PhantomData<fn() -> S>);
+pub struct SetIgnore<S: State = Empty>(PhantomData<fn() -> S>);
+pub struct SetRequired<S: State = Empty>(PhantomData<fn() -> S>);
+pub struct SetIn<S: State = Empty>(PhantomData<fn() -> S>);
+pub struct SetNotIn<S: State = Empty>(PhantomData<fn() -> S>);
+pub struct SetConst<S: State = Empty>(PhantomData<fn() -> S>);
+pub struct SetLt<S: State = Empty>(PhantomData<fn() -> S>);
+pub struct SetLte<S: State = Empty>(PhantomData<fn() -> S>);
+pub struct SetGt<S: State = Empty>(PhantomData<fn() -> S>);
+pub struct SetGte<S: State = Empty>(PhantomData<fn() -> S>);
 #[doc(hidden)]
 impl State for Empty {
   type Ignore = Unset<members::ignore>;

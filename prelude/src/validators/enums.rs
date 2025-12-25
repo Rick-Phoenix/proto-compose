@@ -1,5 +1,6 @@
-use bon::Builder;
-use enum_validator_builder::{IsUnset, SetIgnore, State};
+pub mod builder;
+pub use builder::EnumValidatorBuilder;
+use builder::state::State;
 
 use super::*;
 
@@ -144,24 +145,18 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
   }
 }
 
-#[derive(Clone, Debug, Builder)]
-#[builder(derive(Clone))]
+#[derive(Clone, Debug)]
 pub struct EnumValidator<T: ProtoEnum> {
-  #[builder(field)]
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   pub cel: Vec<&'static CelProgram>,
 
-  #[builder(setters(vis = "", name = ignore))]
   pub ignore: Option<Ignore>,
 
-  #[builder(default, setters(vis = ""))]
   _enum: PhantomData<T>,
 
-  #[builder(default, with = || true)]
   /// Marks that this field will only accept values that are defined in the enum that it's referring to.
   pub defined_only: bool,
 
-  #[builder(default, with = || true)]
   /// Specifies that the field must be set in order to be valid.
   pub required: bool,
 
@@ -173,37 +168,6 @@ pub struct EnumValidator<T: ProtoEnum> {
 
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<i32>,
-}
-
-impl<T: ProtoEnum, S: State> EnumValidatorBuilder<T, S> {
-  /// Adds a custom CEL rule to this validator.
-  /// Use the [`cel_program`] or [`inline_cel_program`] macros to build a static program.
-  pub fn cel(mut self, program: &'static CelProgram) -> Self {
-    self.cel.push(program);
-    self
-  }
-
-  /// Rules defined for this field will be ignored if the field is set to its protobuf zero value.
-  pub fn ignore_if_zero_value(self) -> EnumValidatorBuilder<T, SetIgnore<S>>
-  where
-    S::Ignore: IsUnset,
-  {
-    self.ignore(Ignore::IfZeroValue)
-  }
-
-  /// Rules set for this field will always be ignored.
-  pub fn ignore_always(self) -> EnumValidatorBuilder<T, SetIgnore<S>>
-  where
-    S::Ignore: IsUnset,
-  {
-    self.ignore(Ignore::Always)
-  }
-}
-
-impl<T: ProtoEnum, S: State> From<EnumValidatorBuilder<T, S>> for ProtoOption {
-  fn from(value: EnumValidatorBuilder<T, S>) -> Self {
-    value.build().into()
-  }
 }
 
 impl<T: ProtoEnum> From<EnumValidator<T>> for ProtoOption {

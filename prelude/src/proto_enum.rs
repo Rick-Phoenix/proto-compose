@@ -1,6 +1,6 @@
 use crate::*;
 
-pub trait ProtoEnum: TryFrom<i32> {
+pub trait ProtoEnum: TryFrom<i32> + Default {
   fn proto_path() -> ProtoPath;
   fn proto_schema() -> Enum;
 
