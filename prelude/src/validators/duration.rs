@@ -1,13 +1,12 @@
-use bon::Builder;
-use duration_validator_builder::State;
+pub mod builder;
+pub use builder::DurationValidatorBuilder;
+use builder::state::State;
+
 use proto_types::Duration;
 
 use super::*;
 
 impl_validator!(DurationValidator, Duration);
-impl_into_option!(DurationValidator);
-impl_ignore!(DurationValidatorBuilder);
-impl_cel_method!(DurationValidatorBuilder);
 
 impl Validator<Duration> for DurationValidator {
   type Target = Duration;
@@ -163,17 +162,13 @@ impl Validator<Duration> for DurationValidator {
   }
 }
 
-#[derive(Clone, Debug, Builder)]
-#[builder(derive(Clone))]
+#[derive(Clone, Debug)]
 pub struct DurationValidator {
-  #[builder(field)]
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   pub cel: Vec<&'static CelProgram>,
 
-  #[builder(setters(vis = "", name = ignore))]
   pub ignore: Option<Ignore>,
 
-  #[builder(default, with = || true)]
   /// Specifies that the field must be set in order to be valid.
   pub required: bool,
 
