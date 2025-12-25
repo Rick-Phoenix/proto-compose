@@ -1,5 +1,7 @@
-use bon::Builder;
-use message_validator_builder::{IsComplete, IsUnset, SetIgnore, State};
+pub mod builder;
+pub use builder::MessageValidatorBuilder;
+use builder::state::State;
+
 use proto_types::cel::CelConversionError;
 
 use super::*;
@@ -73,46 +75,17 @@ where
   }
 }
 
-#[derive(Debug, Clone, Builder)]
-#[builder(derive(Clone))]
+#[derive(Debug, Clone)]
 pub struct MessageValidator<T: ProtoMessage> {
-  #[builder(field)]
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   pub cel: Vec<&'static CelProgram>,
 
-  #[builder(setters(vis = "", name = ignore))]
   pub ignore: Option<Ignore>,
 
-  #[builder(default, setters(vis = ""))]
   _message: PhantomData<T>,
 
-  #[builder(default, with = || true)]
   /// Specifies that the field must be set in order to be valid.
   pub required: bool,
-}
-
-impl<T: ProtoMessage, S: State> MessageValidatorBuilder<T, S> {
-  /// Adds a custom CEL rule to this validator.
-  /// Use the [`cel_program`] or [`inline_cel_program`] macros to build a static program.
-  pub fn cel(mut self, program: &'static CelProgram) -> Self {
-    self.cel.push(program);
-    self
-  }
-
-  /// Rules set for this field will always be ignored.
-  pub fn ignore_always(self) -> MessageValidatorBuilder<T, SetIgnore<S>>
-  where
-    S::Ignore: IsUnset,
-  {
-    self.ignore(Ignore::Always)
-  }
-}
-
-impl<T: ProtoMessage, S: IsComplete> From<MessageValidatorBuilder<T, S>> for ProtoOption {
-  fn from(value: MessageValidatorBuilder<T, S>) -> Self {
-    let validator = value.build();
-    validator.into()
-  }
 }
 
 impl<T: ProtoMessage> From<MessageValidator<T>> for ProtoOption {
