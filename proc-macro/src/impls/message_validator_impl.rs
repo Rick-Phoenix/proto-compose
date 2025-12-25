@@ -12,33 +12,6 @@ pub fn impl_message_validator(ctx: ValidatorImplCtx) -> TokenStream2 {
   } = ctx;
 
   quote! {
-    use protocheck::validators::repeated::{UniqueItem, UniqueLookup};
-    impl UniqueItem for #target_ident {
-      type LookupTarget<'a> = &'a Self
-        where Self: 'a;
-
-      fn new_container<'a>(len: usize) -> UniqueLookup<Self::LookupTarget<'a>> {
-        UniqueLookup::Vec(Vec::with_capacity(len))
-      }
-
-      fn check_unique<'a>(&'a self, container: &mut UniqueLookup<Self::LookupTarget<'a>>) -> bool {
-        match container {
-          UniqueLookup::Vec(vec) => {
-            if vec.contains(&self) {
-              false
-            } else {
-              vec.push(self);
-              true
-            }
-          }
-          UniqueLookup::Set(_) => {
-            eprintln!("Set lookup cannot be used with messages");
-            true
-          },
-        }
-      }
-    }
-
     #[allow(clippy::ptr_arg)]
     impl #target_ident {
       #[doc(hidden)]
