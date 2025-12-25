@@ -1,10 +1,10 @@
-use bon::Builder;
-use bool_validator_builder::State;
+pub mod builder;
+pub use builder::BoolValidatorBuilder;
+use builder::state::State;
 
 use super::*;
 
 impl_validator!(BoolValidator, bool);
-impl_into_option!(BoolValidator);
 
 impl Validator<bool> for BoolValidator {
   type Target = bool;
@@ -60,16 +60,12 @@ impl Validator<bool> for BoolValidator {
   }
 }
 
-impl_ignore!(BoolValidatorBuilder);
-
-#[derive(Clone, Debug, Builder)]
+#[derive(Clone, Debug)]
 pub struct BoolValidator {
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<bool>,
-  #[builder(default, with = || true)]
   /// Specifies that the field must be set in order to be valid.
   pub required: bool,
-  #[builder(setters(vis = "", name = ignore))]
   pub ignore: Option<Ignore>,
 }
 
