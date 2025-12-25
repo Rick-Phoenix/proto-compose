@@ -646,16 +646,16 @@ mod repeated_validator_builder {
 
   use crate::validators::builder_internals::*;
 
+  mod sealed {
+    pub(super) struct Sealed;
+  }
+
   mod members {
     pub struct Items;
     pub struct MinItems;
     pub struct MaxItems;
     pub struct Unique;
     pub struct Ignore;
-  }
-
-  mod sealed {
-    pub(super) struct Sealed;
   }
 
   pub trait State<S = Empty> {

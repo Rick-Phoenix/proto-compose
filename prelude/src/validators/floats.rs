@@ -1,9 +1,11 @@
+pub mod builder;
+pub use builder::FloatValidatorBuilder;
+use builder::state::State;
+
 use float_eq::FloatEq;
 use float_eq::float_eq;
 use std::{fmt::Display, marker::PhantomData};
 
-use bon::Builder;
-use float_validator_builder::{IsComplete, IsUnset, SetIgnore, State};
 use protocheck_core::ordered_float::{self, FloatCore};
 
 use super::*;
@@ -248,35 +250,28 @@ where
   }
 }
 
-#[derive(Clone, Debug, Builder)]
+#[derive(Clone, Debug)]
 pub struct FloatValidator<Num>
 where
   Num: FloatWrapper,
 {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
-  #[builder(field)]
   pub cel: Vec<&'static CelProgram>,
 
-  #[builder(setters(vis = "", name = ignore))]
-  pub ignore: Option<Ignore>,
+  ignore: Option<Ignore>,
 
-  #[builder(default)]
   _wrapper: PhantomData<Num>,
 
   /// Specifies that the field must be set in order to be valid.
-  #[builder(default, with = || true)]
   pub required: bool,
 
   /// The absolute tolerance to use for equality operations
-  #[builder(default)]
   pub abs_tolerance: Num::RustType,
 
   /// The relative tolerance to use for equality operations, scaled to the precision of the number being validated
-  #[builder(default)]
   pub rel_tolerance: Num::RustType,
 
   /// Specifies that this field must be finite (i.e. it can't represent Infinity or NaN)
-  #[builder(default, with = || true)]
   pub finite: bool,
 
   /// Specifies that only this specific value will be considered valid for this field.
@@ -305,6 +300,11 @@ impl<Num> FloatValidator<Num>
 where
   Num: FloatWrapper,
 {
+  #[must_use]
+  pub fn builder() -> FloatValidatorBuilder<Num> {
+    FloatValidatorBuilder::default()
+  }
+
   fn float_is_eq(&self, first: Num::RustType, second: Num::RustType) -> bool {
     float_eq!(
       first,
@@ -312,41 +312,6 @@ where
       abs <= self.abs_tolerance,
       r2nd <= self.rel_tolerance
     )
-  }
-}
-
-impl<S: State, N: FloatWrapper> FloatValidatorBuilder<N, S> {
-  /// Adds a custom CEL rule to this validator.
-  /// Use the [`cel_program`] or [`inline_cel_program`] macros to build a static program.
-  pub fn cel(mut self, program: &'static CelProgram) -> Self {
-    self.cel.push(program);
-    self
-  }
-
-  /// Rules defined for this field will be ignored if the field is set to its protobuf zero value.
-  pub fn ignore_if_zero_value(self) -> FloatValidatorBuilder<N, SetIgnore<S>>
-  where
-    S::Ignore: IsUnset,
-  {
-    self.ignore(Ignore::IfZeroValue)
-  }
-
-  /// Rules set for this field will always be ignored.
-  pub fn ignore_always(self) -> FloatValidatorBuilder<N, SetIgnore<S>>
-  where
-    S::Ignore: IsUnset,
-  {
-    self.ignore(Ignore::Always)
-  }
-}
-
-impl<S, N> From<FloatValidatorBuilder<N, S>> for ProtoOption
-where
-  S: State + IsComplete,
-  N: FloatWrapper,
-{
-  fn from(value: FloatValidatorBuilder<N, S>) -> Self {
-    value.build().into()
   }
 }
 
@@ -398,7 +363,7 @@ where
 impl_proto_type!(f32, "float");
 impl_proto_type!(f64, "double");
 
-pub trait FloatWrapper: AsProtoType {
+pub trait FloatWrapper: AsProtoType + Default {
   type RustType: PartialOrd
     + PartialEq
     + Copy

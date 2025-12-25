@@ -202,11 +202,15 @@ mod enums;
 pub mod field_context;
 mod map;
 mod message;
-mod numeric;
 mod oneof;
 mod repeated;
 mod string;
 mod timestamp;
+
+mod floats;
+pub use floats::*;
+mod integers;
+pub use integers::*;
 
 pub use any::*;
 pub use bool::*;
@@ -218,7 +222,6 @@ pub use enums::*;
 pub use field_context::*;
 pub use map::*;
 pub use message::*;
-pub use numeric::*;
 pub use oneof::*;
 pub use repeated::*;
 pub use string::*;
