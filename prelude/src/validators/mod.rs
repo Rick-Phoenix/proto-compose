@@ -46,10 +46,10 @@ pub trait Validator<T>: Into<ProtoOption> {
     Ok(())
   }
 
-  #[cfg(feature = "testing")]
+  #[cfg(all(feature = "testing", feature = "cel"))]
   fn check_cel_programs_with(&self, _val: Self::Target) -> Result<(), Vec<CelError>>;
 
-  #[cfg(feature = "testing")]
+  #[cfg(all(feature = "testing", feature = "cel"))]
   fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
     self.check_cel_programs_with(Self::Target::default())
   }
@@ -300,3 +300,13 @@ where
 
   Ok(())
 }
+
+#[cfg(feature = "cel")]
+pub trait IntoCel: Into<::cel::Value> {}
+#[cfg(feature = "cel")]
+impl<T: Into<::cel::Value>> IntoCel for T {}
+
+#[cfg(not(feature = "cel"))]
+pub trait IntoCel {}
+#[cfg(not(feature = "cel"))]
+impl<T> IntoCel for T {}

@@ -42,6 +42,7 @@ where
   fn check_consistency(&self) -> Result<(), Vec<String>> {
     let mut errors = Vec::new();
 
+    #[cfg(feature = "cel")]
     if let Err(e) = self.check_cel_programs() {
       errors.extend(e.into_iter().map(|e| e.to_string()));
     }
@@ -157,6 +158,7 @@ where
         );
       }
 
+      #[cfg(feature = "cel")]
       if !self.cel.is_empty() {
         let ctx = ProgramsExecutionCtx {
           programs: &self.cel,
@@ -277,7 +279,7 @@ pub trait IntWrapper: AsProtoType + Default {
     + Default
     + ListRules<LookupTarget = Self::RustType>
     + Ord
-    + Into<::cel::Value>
+    + IntoCel
     + 'static;
   const LT_VIOLATION: &'static LazyLock<ViolationData>;
   const LTE_VIOLATION: &'static LazyLock<ViolationData>;

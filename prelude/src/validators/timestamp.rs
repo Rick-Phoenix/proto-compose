@@ -25,6 +25,11 @@ impl Validator<Timestamp> for TimestampValidator {
   fn check_consistency(&self) -> Result<(), Vec<String>> {
     let mut errors = Vec::new();
 
+    #[cfg(feature = "cel")]
+    if let Err(e) = self.check_cel_programs() {
+      errors.extend(e.into_iter().map(|e| e.to_string()));
+    }
+
     if let Err(e) = check_comparable_rules(self.lt, self.lte, self.gt, self.gte) {
       errors.push(e.to_string());
     }
@@ -140,6 +145,7 @@ impl Validator<Timestamp> for TimestampValidator {
         );
       }
 
+      #[cfg(feature = "cel")]
       if !self.cel.is_empty() {
         let ctx = ProgramsExecutionCtx {
           programs: &self.cel,

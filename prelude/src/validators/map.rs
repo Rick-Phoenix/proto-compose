@@ -176,7 +176,7 @@ where
     programs
   }
 
-  #[cfg(feature = "testing")]
+  #[cfg(all(feature = "testing", feature = "cel"))]
   fn check_cel_programs_with(&self, _val: Self::Target) -> Result<(), Vec<CelError>> {
     let mut errors: Vec<CelError> = Vec::new();
 

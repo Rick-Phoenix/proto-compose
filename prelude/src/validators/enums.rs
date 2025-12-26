@@ -33,6 +33,11 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
   fn check_consistency(&self) -> Result<(), Vec<String>> {
     let mut errors = Vec::new();
 
+    #[cfg(feature = "cel")]
+    if let Err(e) = self.check_cel_programs() {
+      errors.extend(e.into_iter().map(|e| e.to_string()));
+    }
+
     if let Err(e) = check_list_rules(self.in_, self.not_in) {
       errors.push(e.to_string());
     }
@@ -122,6 +127,7 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
         );
       }
 
+      #[cfg(feature = "cel")]
       if !self.cel.is_empty() {
         let ctx = ProgramsExecutionCtx {
           programs: &self.cel,

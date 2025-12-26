@@ -65,6 +65,7 @@ macro_rules! inline_cached_list {
   }};
 }
 
+#[cfg(feature = "regex")]
 #[macro_export]
 macro_rules! regex {
   ($id:literal, $content:expr) => {
@@ -74,6 +75,7 @@ macro_rules! regex {
   };
 }
 
+#[cfg(feature = "regex")]
 #[macro_export]
 macro_rules! inline_regex {
   ($id:literal, $content:expr) => {{
@@ -85,6 +87,7 @@ macro_rules! inline_regex {
   }};
 }
 
+#[cfg(feature = "regex")]
 #[macro_export]
 macro_rules! bytes_regex {
   ($id:literal, $content:expr) => {
@@ -94,6 +97,7 @@ macro_rules! bytes_regex {
   };
 }
 
+#[cfg(feature = "regex")]
 #[macro_export]
 macro_rules! inline_bytes_regex {
   ($id:literal, $content:expr) => {{
@@ -123,7 +127,7 @@ macro_rules! handle_ignore_if_zero_value {
 
 macro_rules! impl_testing_methods {
   () => {
-    #[cfg(feature = "testing")]
+    #[cfg(all(feature = "testing", feature = "cel"))]
     fn check_cel_programs_with(&self, val: Self::Target) -> Result<(), Vec<CelError>> {
       if !self.cel.is_empty() {
         test_programs(&self.cel, val)

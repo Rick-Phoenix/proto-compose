@@ -160,10 +160,16 @@ pub fn process_message_derive_shadow(
   let oneof_tags_check =
     generate_oneof_tags_check(shadow_struct_ident, message_attrs.no_auto_test, oneofs);
 
+  let derives = if cfg!(feature = "cel") {
+    quote! { #[derive(::prelude::prost::Message, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCelValue)] }
+  } else {
+    quote! { #[derive(::prelude::prost::Message, Clone, PartialEq)] }
+  };
+
   // prost::Message already implements Debug
   let output_tokens = quote! {
     #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(::prelude::prost::Message, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCelValue)]
+    #derives
     #shadow_struct_derives
     #shadow_struct
 
@@ -184,7 +190,12 @@ pub fn process_message_derive_direct(
     .push(parse_quote!(#[allow(clippy::derive_partial_eq_without_eq)]));
 
   // prost::Message already implements Debug
-  let prost_message_attr: Attribute = parse_quote!(#[derive(::prelude::prost::Message, Clone, PartialEq, ::protocheck::macros::TryIntoCelValue)]);
+  let prost_message_attr: Attribute = if cfg!(feature = "cel") {
+    parse_quote!(#[derive(::prelude::prost::Message, Clone, PartialEq, ::protocheck::macros::TryIntoCelValue)])
+  } else {
+    parse_quote!(#[derive(::prelude::prost::Message, Clone, PartialEq)])
+  };
+
   item.attrs.push(prost_message_attr);
 
   let mut fields_tokens: Vec<TokenStream2> = Vec::new();

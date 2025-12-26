@@ -118,10 +118,16 @@ pub(crate) fn process_oneof_derive_shadow(
     validator_impl,
   ]);
 
+  let derives = if cfg!(feature = "cel") {
+    quote! { #[derive(::prelude::prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)] }
+  } else {
+    quote! { #[derive(::prelude::prost::Oneof, PartialEq, Clone)] }
+  };
+
   // prost::Oneof already implements Debug
   output_tokens.extend(quote! {
     #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(::prelude::prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)]
+    #derives
     #shadow_enum_derives
     #shadow_enum
 
@@ -157,7 +163,12 @@ pub(crate) fn process_oneof_derive_direct(
   attrs.push(parse_quote!(#[allow(clippy::derive_partial_eq_without_eq)]));
 
   // prost::Oneof already implements Debug
-  let prost_derive: Attribute = parse_quote!(#[derive(::prelude::prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)]);
+  let prost_derive: Attribute = if cfg!(feature = "cel") {
+    parse_quote!(#[derive(::prelude::prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)])
+  } else {
+    parse_quote!(#[derive(::prelude::prost::Oneof, PartialEq, Clone)])
+  };
+
   attrs.push(prost_derive);
 
   let mut variants_tokens: Vec<TokenStream2> = Vec::new();

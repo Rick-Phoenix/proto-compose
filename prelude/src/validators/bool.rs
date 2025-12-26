@@ -19,7 +19,7 @@ impl Validator<bool> for BoolValidator {
     CopyHybridStore::default_with_capacity(2)
   }
 
-  #[cfg(feature = "testing")]
+  #[cfg(all(feature = "testing", feature = "cel"))]
   fn check_cel_programs_with(&self, _val: Self::Target) -> Result<(), Vec<CelError>> {
     // No CEL rules in this one
     Ok(())

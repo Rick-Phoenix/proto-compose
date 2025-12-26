@@ -2,14 +2,25 @@ pub mod builder;
 pub use builder::MessageValidatorBuilder;
 use builder::state::State;
 
+#[cfg(feature = "cel")]
 use proto_types::cel::CelConversionError;
 
 use super::*;
 use crate::field_context::ViolationsExt;
 
+#[cfg(feature = "cel")]
+pub trait TryIntoCel: TryInto<::cel::Value, Error = CelConversionError> {}
+#[cfg(feature = "cel")]
+impl<T: TryInto<::cel::Value, Error = CelConversionError>> TryIntoCel for T {}
+
+#[cfg(not(feature = "cel"))]
+pub trait TryIntoCel {}
+#[cfg(not(feature = "cel"))]
+impl<T> TryIntoCel for T {}
+
 impl<T, S: State> ValidatorBuilderFor<T> for MessageValidatorBuilder<T, S>
 where
-  T: ProtoMessage + PartialEq + Clone + Default + TryInto<::cel::Value, Error = CelConversionError>,
+  T: ProtoMessage + PartialEq + Clone + Default + TryIntoCel,
 {
   type Target = T;
   type Validator = MessageValidator<T>;
@@ -21,7 +32,7 @@ where
 
 impl<T> Validator<T> for MessageValidator<T>
 where
-  T: ProtoMessage + PartialEq + Clone + Default + TryInto<::cel::Value, Error = CelConversionError>,
+  T: ProtoMessage + PartialEq + Clone + Default + TryIntoCel,
 {
   type Target = T;
   type UniqueStore<'a>
@@ -52,6 +63,7 @@ where
         .nested_validate(field_context, parent_elements)
         .ok_or_push_violations(violations);
 
+      #[cfg(feature = "cel")]
       if !self.cel.is_empty() {
         let ctx = ProgramsExecutionCtx {
           programs: &self.cel,

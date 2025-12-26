@@ -348,7 +348,7 @@ where
     programs
   }
 
-  #[cfg(feature = "testing")]
+  #[cfg(all(feature = "testing", feature = "cel"))]
   fn check_cel_programs_with(&self, _val: Self::Target) -> Result<(), Vec<CelError>> {
     if let Some(items_validator) = &self.items {
       items_validator.check_cel_programs()

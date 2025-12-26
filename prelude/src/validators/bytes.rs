@@ -122,6 +122,7 @@ impl Validator<Bytes> for BytesValidator {
   fn check_consistency(&self) -> Result<(), Vec<String>> {
     let mut errors = Vec::new();
 
+    #[cfg(feature = "cel")]
     if let Err(e) = self.check_cel_programs() {
       errors.extend(e.into_iter().map(|e| e.to_string()));
     }
@@ -155,7 +156,7 @@ impl Validator<Bytes> for BytesValidator {
     self.cel.clone()
   }
 
-  #[cfg(feature = "testing")]
+  #[cfg(all(feature = "testing", feature = "cel"))]
   fn check_cel_programs_with(&self, val: Self::Target) -> Result<(), Vec<CelError>> {
     if self.cel.is_empty() {
       Ok(())
@@ -334,6 +335,7 @@ impl Validator<Bytes> for BytesValidator {
         };
       }
 
+      #[cfg(feature = "cel")]
       if !self.cel.is_empty() {
         let ctx = ProgramsExecutionCtx {
           programs: &self.cel,
