@@ -89,6 +89,7 @@ pub mod inner {
   pub struct Abc {
     #[proto(repeated(float), validate = |v| v.unique())]
     pub repeated_float: Vec<f32>,
+
     #[proto(timestamp, validate = |v| v.lt_now())]
     pub timestamp: Option<Timestamp>,
 

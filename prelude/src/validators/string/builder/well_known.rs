@@ -53,6 +53,7 @@ macro_rules! well_known_impl {
             len_bytes: self.len_bytes,
             min_bytes: self.min_bytes,
             max_bytes: self.max_bytes,
+            #[cfg(feature = "regex")]
             pattern: self.pattern,
             prefix: self.prefix,
             suffix: self.suffix,

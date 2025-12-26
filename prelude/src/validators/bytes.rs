@@ -11,6 +11,50 @@ use super::*;
 impl_validator!(BytesValidator, Bytes);
 impl_proto_type!(Bytes, "bytes");
 
+#[derive(Clone, Debug)]
+pub struct BytesValidator {
+  /// Adds custom validation using one or more [`CelRule`]s to this field.
+  pub cel: Vec<&'static CelProgram>,
+
+  pub ignore: Option<Ignore>,
+
+  pub well_known: Option<WellKnownBytes>,
+
+  /// Specifies that the field must be set in order to be valid.
+  pub required: bool,
+
+  /// Specifies that the given `bytes` field must be of this exact length.
+  pub len: Option<usize>,
+
+  /// Specifies that the given `bytes` field must have a length that is equal to or higher than the given value.
+  pub min_len: Option<usize>,
+
+  /// Specifies that the given `bytes` field must have a length that is equal to or lower than the given value.
+  pub max_len: Option<usize>,
+
+  #[cfg(feature = "regex")]
+  /// Specifies a regex pattern that must be matches by the value to pass validation.
+  pub pattern: Option<&'static Regex>,
+
+  /// Specifies a prefix that the value must start with in order to pass validation.
+  pub prefix: Option<Bytes>,
+
+  /// Specifies a suffix that the value must end with in order to pass validation.
+  pub suffix: Option<Bytes>,
+
+  /// Specifies a subset of bytes that the value must contain in order to pass validation.
+  pub contains: Option<Bytes>,
+
+  /// Specifies that only the values in this list will be considered valid for this field.
+  pub in_: Option<&'static SortedList<&'static [u8]>>,
+
+  /// Specifies that the values in this list will be considered NOT valid for this field.
+  pub not_in: Option<&'static SortedList<&'static [u8]>>,
+
+  /// Specifies that only this specific value will be considered valid for this field.
+  pub const_: Option<Bytes>,
+}
+
 #[cfg(feature = "testing")]
 pub(crate) struct LengthRuleValue {
   pub name: &'static str,
@@ -82,6 +126,7 @@ impl Validator<Bytes> for BytesValidator {
       errors.extend(e.into_iter().map(|e| e.to_string()));
     }
 
+    #[cfg(feature = "regex")]
     if let Some(regex) = self.pattern {
       // This checks if a cached regex panics at formation or not
       let _ = regex.is_match(b"abc");
@@ -321,50 +366,6 @@ macro_rules! insert_bytes_option {
       ))
     })
   };
-}
-
-#[derive(Clone, Debug)]
-pub struct BytesValidator {
-  /// Adds custom validation using one or more [`CelRule`]s to this field.
-  pub cel: Vec<&'static CelProgram>,
-
-  pub ignore: Option<Ignore>,
-
-  pub well_known: Option<WellKnownBytes>,
-
-  /// Specifies that the field must be set in order to be valid.
-  pub required: bool,
-
-  /// Specifies that the given `bytes` field must be of this exact length.
-  pub len: Option<usize>,
-
-  /// Specifies that the given `bytes` field must have a length that is equal to or higher than the given value.
-  pub min_len: Option<usize>,
-
-  /// Specifies that the given `bytes` field must have a length that is equal to or lower than the given value.
-  pub max_len: Option<usize>,
-
-  #[cfg(feature = "regex")]
-  /// Specifies a regex pattern that must be matches by the value to pass validation.
-  pub pattern: Option<&'static Regex>,
-
-  /// Specifies a prefix that the value must start with in order to pass validation.
-  pub prefix: Option<Bytes>,
-
-  /// Specifies a suffix that the value must end with in order to pass validation.
-  pub suffix: Option<Bytes>,
-
-  /// Specifies a subset of bytes that the value must contain in order to pass validation.
-  pub contains: Option<Bytes>,
-
-  /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static SortedList<&'static [u8]>>,
-
-  /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static SortedList<&'static [u8]>>,
-
-  /// Specifies that only this specific value will be considered valid for this field.
-  pub const_: Option<Bytes>,
 }
 
 impl From<BytesValidator> for ProtoOption {

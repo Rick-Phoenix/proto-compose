@@ -82,6 +82,7 @@ macro_rules! well_known_impl {
             len: self.len,
             min_len: self.min_len,
             max_len: self.max_len,
+            #[cfg(feature = "regex")]
             pattern: self.pattern,
             prefix: self.prefix,
             suffix: self.suffix,
@@ -129,6 +130,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: self.min_len,
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -152,6 +154,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: self.min_len,
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -174,6 +177,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: self.min_len,
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -197,6 +201,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: Some(val),
       min_len: self.min_len,
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -220,6 +225,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: Some(val),
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -243,6 +249,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: self.min_len,
       max_len: Some(val),
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -253,6 +260,7 @@ impl<S: State> BytesValidatorBuilder<S> {
     }
   }
 
+  #[cfg(feature = "regex")]
   pub fn pattern(self, val: &'static Regex) -> BytesValidatorBuilder<SetPattern<S>>
   where
     S::Pattern: IsUnset,
@@ -289,6 +297,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: self.min_len,
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: Some(val.into()),
       suffix: self.suffix,
@@ -312,6 +321,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: self.min_len,
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: Some(val.into()),
@@ -335,6 +345,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: self.min_len,
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -361,6 +372,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: self.min_len,
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -384,6 +396,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: self.min_len,
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -407,6 +420,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: self.min_len,
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -430,6 +444,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: self.min_len,
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -449,6 +464,7 @@ impl<S: State> BytesValidatorBuilder<S> {
       len: self.len,
       min_len: self.min_len,
       max_len: self.max_len,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,

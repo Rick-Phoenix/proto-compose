@@ -98,6 +98,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -125,6 +126,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -152,6 +154,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -179,6 +182,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -206,6 +210,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -233,6 +238,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -260,6 +266,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -287,6 +294,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: Some(val),
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -314,6 +322,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: Some(val),
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -341,6 +350,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: Some(val),
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -352,6 +362,7 @@ impl<S: State> StringValidatorBuilder<S> {
     }
   }
 
+  #[cfg(feature = "regex")]
   pub fn pattern(self, val: &'static Regex) -> StringValidatorBuilder<SetPattern<S>>
   where
     S::Pattern: IsUnset,
@@ -395,6 +406,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: Some(val.into()),
       suffix: self.suffix,
@@ -422,6 +434,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: Some(val.into()),
@@ -449,6 +462,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -476,6 +490,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -503,6 +518,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -530,6 +546,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,
@@ -538,6 +555,34 @@ impl<S: State> StringValidatorBuilder<S> {
       in_: self.in_,
       not_in: Some(val),
       const_: self.const_,
+    }
+  }
+
+  pub fn const_<T: Into<Arc<str>>>(self, val: T) -> StringValidatorBuilder<SetConst<S>>
+  where
+    S::Const: IsUnset,
+  {
+    StringValidatorBuilder {
+      _state: PhantomData,
+      cel: self.cel,
+      well_known: self.well_known,
+      ignore: self.ignore,
+      required: self.required,
+      len: self.len,
+      min_len: self.min_len,
+      max_len: self.max_len,
+      len_bytes: self.len_bytes,
+      min_bytes: self.min_bytes,
+      max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
+      pattern: self.pattern,
+      prefix: self.prefix,
+      suffix: self.suffix,
+      contains: self.contains,
+      not_contains: self.not_contains,
+      in_: self.in_,
+      not_in: self.not_in,
+      const_: Some(val.into()),
     }
   }
 
@@ -553,6 +598,7 @@ impl<S: State> StringValidatorBuilder<S> {
       len_bytes: self.len_bytes,
       min_bytes: self.min_bytes,
       max_bytes: self.max_bytes,
+      #[cfg(feature = "regex")]
       pattern: self.pattern,
       prefix: self.prefix,
       suffix: self.suffix,

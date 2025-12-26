@@ -13,7 +13,7 @@ workspace = true
 [dependencies]
 bon = "3.8"
 regex = { version = "1", optional = true }
-proto-types = { workspace = true }
+proto-types = { workspace = true, features = ["cel"] }
 paste = "1"
 bytes = "1"
 askama = { workspace = true }
