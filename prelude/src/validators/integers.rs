@@ -10,6 +10,43 @@ pub use protocheck_core::wrappers::{Fixed32, Fixed64, Sfixed32, Sfixed64, Sint32
 use super::*;
 use crate::field_context::ViolationsExt;
 
+#[derive(Clone, Debug)]
+pub struct IntValidator<Num>
+where
+  Num: IntWrapper,
+{
+  /// Adds custom validation using one or more [`CelRule`]s to this field.
+  pub cel: Vec<&'static CelProgram>,
+
+  pub ignore: Ignore,
+
+  _wrapper: PhantomData<Num>,
+
+  /// Specifies that the field must be set in order to be valid.
+  pub required: bool,
+
+  /// Specifies that only this specific value will be considered valid for this field.
+  pub const_: Option<Num::RustType>,
+
+  /// Specifies that this field's value will be valid only if it is smaller than the specified amount
+  pub lt: Option<Num::RustType>,
+
+  /// Specifies that this field's value will be valid only if it is smaller than, or equal to, the specified amount
+  pub lte: Option<Num::RustType>,
+
+  /// Specifies that this field's value will be valid only if it is greater than the specified amount
+  pub gt: Option<Num::RustType>,
+
+  /// Specifies that this field's value will be valid only if it is smaller than, or equal to, the specified amount
+  pub gte: Option<Num::RustType>,
+
+  /// Specifies that only the values in this list will be considered valid for this field.
+  pub in_: Option<&'static StaticLookup<Num::RustType>>,
+
+  /// Specifies that the values in this list will be considered NOT valid for this field.
+  pub not_in: Option<&'static StaticLookup<Num::RustType>>,
+}
+
 impl<S: State, Num: IntWrapper> ValidatorBuilderFor<Num> for IntValidatorBuilder<Num, S> {
   type Target = Num::RustType;
   type Validator = IntValidator<Num>;
@@ -131,31 +168,19 @@ where
       }
 
       if let Some(allowed_list) = &self.in_
-        && !val.is_in(allowed_list)
+        && !val.is_in(&allowed_list.items)
       {
-        violations.add(
-          field_context,
-          parent_elements,
-          Num::IN_VIOLATION,
-          &format!(
-            "must be one of these values: {}",
-            format_list(allowed_list.iter())
-          ),
-        );
+        let err = ["must be one of these values: ", &allowed_list.items_str].concat();
+
+        violations.add(field_context, parent_elements, Num::IN_VIOLATION, &err);
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && val.is_in(forbidden_list)
+        && val.is_in(&forbidden_list.items)
       {
-        violations.add(
-          field_context,
-          parent_elements,
-          Num::NOT_IN_VIOLATION,
-          &format!(
-            "cannot be one of these values: {}",
-            format_list(forbidden_list.iter())
-          ),
-        );
+        let err = ["cannot be one of these values: ", &forbidden_list.items_str].concat();
+
+        violations.add(field_context, parent_elements, Num::NOT_IN_VIOLATION, &err);
       }
 
       #[cfg(feature = "cel")]
@@ -180,43 +205,6 @@ where
       Err(violations_agg)
     }
   }
-}
-
-#[derive(Clone, Debug)]
-pub struct IntValidator<Num>
-where
-  Num: IntWrapper,
-{
-  /// Adds custom validation using one or more [`CelRule`]s to this field.
-  pub cel: Vec<&'static CelProgram>,
-
-  pub ignore: Ignore,
-
-  _wrapper: PhantomData<Num>,
-
-  /// Specifies that the field must be set in order to be valid.
-  pub required: bool,
-
-  /// Specifies that only this specific value will be considered valid for this field.
-  pub const_: Option<Num::RustType>,
-
-  /// Specifies that this field's value will be valid only if it is smaller than the specified amount
-  pub lt: Option<Num::RustType>,
-
-  /// Specifies that this field's value will be valid only if it is smaller than, or equal to, the specified amount
-  pub lte: Option<Num::RustType>,
-
-  /// Specifies that this field's value will be valid only if it is greater than the specified amount
-  pub gt: Option<Num::RustType>,
-
-  /// Specifies that this field's value will be valid only if it is smaller than, or equal to, the specified amount
-  pub gte: Option<Num::RustType>,
-
-  /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static SortedList<Num::RustType>>,
-
-  /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static SortedList<Num::RustType>>,
 }
 
 impl<Num> IntValidator<Num>
@@ -246,11 +234,17 @@ where
     insert_option!(validator, values, gte);
 
     if let Some(allowed_list) = &validator.in_ {
-      values.push((IN_.clone(), OptionValue::new_list(allowed_list.iter())));
+      values.push((
+        IN_.clone(),
+        OptionValue::new_list(allowed_list.items.iter()),
+      ));
     }
 
     if let Some(forbidden_list) = &validator.not_in {
-      values.push((NOT_IN.clone(), OptionValue::new_list(forbidden_list.iter())));
+      values.push((
+        NOT_IN.clone(),
+        OptionValue::new_list(forbidden_list.items.iter()),
+      ));
     }
 
     let mut outer_rules: OptionValueList =
@@ -283,6 +277,7 @@ pub trait IntWrapper: AsProtoType + Default {
     + ListRules<LookupTarget = Self::RustType>
     + Ord
     + IntoCel
+    + ListFormatter
     + 'static;
   const LT_VIOLATION: &'static LazyLock<ViolationData>;
   const LTE_VIOLATION: &'static LazyLock<ViolationData>;

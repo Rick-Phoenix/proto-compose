@@ -15,13 +15,13 @@ pub struct FieldMaskValidatorBuilder<S: State = Empty> {
   required: bool,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  in_: Option<&'static SortedList<&'static str>>,
+  in_: Option<&'static StaticLookup<&'static str>>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  not_in: Option<&'static SortedList<&'static str>>,
+  not_in: Option<&'static StaticLookup<&'static str>>,
 
   /// Specifies that only this specific value will be considered valid for this field.
-  pub const_: Option<&'static SortedList<&'static str>>,
+  const_: Option<&'static StaticLookup<&'static str>>,
 }
 
 impl<S: State> From<FieldMaskValidatorBuilder<S>> for ProtoOption {
@@ -87,7 +87,7 @@ impl<S: State> FieldMaskValidatorBuilder<S> {
     }
   }
 
-  pub fn in_(self, val: &'static SortedList<&'static str>) -> FieldMaskValidatorBuilder<SetIn<S>>
+  pub fn in_(self, val: &'static StaticLookup<&'static str>) -> FieldMaskValidatorBuilder<SetIn<S>>
   where
     S::In: IsUnset,
   {
@@ -104,7 +104,7 @@ impl<S: State> FieldMaskValidatorBuilder<S> {
 
   pub fn not_in(
     self,
-    val: &'static SortedList<&'static str>,
+    val: &'static StaticLookup<&'static str>,
   ) -> FieldMaskValidatorBuilder<SetNotIn<S>>
   where
     S::NotIn: IsUnset,
@@ -122,7 +122,7 @@ impl<S: State> FieldMaskValidatorBuilder<S> {
 
   pub fn const_(
     self,
-    val: &'static SortedList<&'static str>,
+    val: &'static StaticLookup<&'static str>,
   ) -> FieldMaskValidatorBuilder<SetConst<S>>
   where
     S::Const: IsUnset,

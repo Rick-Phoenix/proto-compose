@@ -10,6 +10,52 @@ use protocheck_core::ordered_float::{self, FloatCore};
 
 use super::*;
 
+#[derive(Clone, Debug)]
+pub struct FloatValidator<Num>
+where
+  Num: FloatWrapper,
+{
+  /// Adds custom validation using one or more [`CelRule`]s to this field.
+  pub cel: Vec<&'static CelProgram>,
+
+  pub ignore: Ignore,
+
+  _wrapper: PhantomData<Num>,
+
+  /// Specifies that the field must be set in order to be valid.
+  pub required: bool,
+
+  /// The absolute tolerance to use for equality operations
+  pub abs_tolerance: Num::RustType,
+
+  /// The relative tolerance to use for equality operations, scaled to the precision of the number being validated
+  pub rel_tolerance: Num::RustType,
+
+  /// Specifies that this field must be finite (i.e. it can't represent Infinity or NaN)
+  pub finite: bool,
+
+  /// Specifies that only this specific value will be considered valid for this field.
+  pub const_: Option<Num::RustType>,
+
+  /// Specifies that this field's value will be valid only if it is smaller than the specified amount
+  pub lt: Option<Num::RustType>,
+
+  /// Specifies that this field's value will be valid only if it is smaller than, or equal to, the specified amount
+  pub lte: Option<Num::RustType>,
+
+  /// Specifies that this field's value will be valid only if it is greater than the specified amount
+  pub gt: Option<Num::RustType>,
+
+  /// Specifies that this field's value will be valid only if it is smaller than, or equal to, the specified amount
+  pub gte: Option<Num::RustType>,
+
+  /// Specifies that only the values in this list will be considered valid for this field.
+  pub in_: Option<&'static StaticLookup<OrderedFloat<Num::RustType>>>,
+
+  /// Specifies that the values in this list will be considered NOT valid for this field.
+  pub not_in: Option<&'static StaticLookup<OrderedFloat<Num::RustType>>>,
+}
+
 pub(crate) fn float_in_list<T>(target: T, list: &[OrderedFloat<T>], abs_tol: T, r2nd_tol: T) -> bool
 where
   T: FloatCore + FloatEq<Tol = T>,
@@ -104,8 +150,8 @@ where
     }
 
     if let Err(e) = check_float_list_rules(
-      self.in_.map(|l| l.as_slice()),
-      self.not_in.map(|l| l.as_slice()),
+      self.in_.map(|l| l.items.as_slice()),
+      self.not_in.map(|l| l.items.as_slice()),
       self.abs_tolerance,
       self.rel_tolerance,
     ) {
@@ -201,31 +247,29 @@ where
       }
 
       if let Some(allowed_list) = &self.in_
-        && !float_in_list(val, allowed_list, self.abs_tolerance, self.rel_tolerance)
+        && !float_in_list(
+          val,
+          &allowed_list.items,
+          self.abs_tolerance,
+          self.rel_tolerance,
+        )
       {
-        violations.add(
-          field_context,
-          parent_elements,
-          Num::IN_VIOLATION,
-          &format!(
-            "must be one of these values: {}",
-            format_list(allowed_list.iter())
-          ),
-        );
+        let err = ["must be one of these values: ", &allowed_list.items_str].concat();
+
+        violations.add(field_context, parent_elements, Num::IN_VIOLATION, &err);
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && float_in_list(val, forbidden_list, self.abs_tolerance, self.rel_tolerance)
+        && float_in_list(
+          val,
+          &forbidden_list.items,
+          self.abs_tolerance,
+          self.rel_tolerance,
+        )
       {
-        violations.add(
-          field_context,
-          parent_elements,
-          Num::NOT_IN_VIOLATION,
-          &format!(
-            "cannot be one of these values: {}",
-            format_list(forbidden_list.iter())
-          ),
-        );
+        let err = ["cannot be one of these values: ", &forbidden_list.items_str].concat();
+
+        violations.add(field_context, parent_elements, Num::NOT_IN_VIOLATION, &err);
       }
 
       #[cfg(feature = "cel")]
@@ -250,52 +294,6 @@ where
       Err(violations_agg)
     }
   }
-}
-
-#[derive(Clone, Debug)]
-pub struct FloatValidator<Num>
-where
-  Num: FloatWrapper,
-{
-  /// Adds custom validation using one or more [`CelRule`]s to this field.
-  pub cel: Vec<&'static CelProgram>,
-
-  pub ignore: Ignore,
-
-  _wrapper: PhantomData<Num>,
-
-  /// Specifies that the field must be set in order to be valid.
-  pub required: bool,
-
-  /// The absolute tolerance to use for equality operations
-  pub abs_tolerance: Num::RustType,
-
-  /// The relative tolerance to use for equality operations, scaled to the precision of the number being validated
-  pub rel_tolerance: Num::RustType,
-
-  /// Specifies that this field must be finite (i.e. it can't represent Infinity or NaN)
-  pub finite: bool,
-
-  /// Specifies that only this specific value will be considered valid for this field.
-  pub const_: Option<Num::RustType>,
-
-  /// Specifies that this field's value will be valid only if it is smaller than the specified amount
-  pub lt: Option<Num::RustType>,
-
-  /// Specifies that this field's value will be valid only if it is smaller than, or equal to, the specified amount
-  pub lte: Option<Num::RustType>,
-
-  /// Specifies that this field's value will be valid only if it is greater than the specified amount
-  pub gt: Option<Num::RustType>,
-
-  /// Specifies that this field's value will be valid only if it is smaller than, or equal to, the specified amount
-  pub gte: Option<Num::RustType>,
-
-  /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static SortedList<OrderedFloat<Num::RustType>>>,
-
-  /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static SortedList<OrderedFloat<Num::RustType>>>,
 }
 
 impl<Num> FloatValidator<Num>
@@ -337,14 +335,14 @@ where
     if let Some(allowed_list) = &validator.in_ {
       values.push((
         IN_.clone(),
-        OptionValue::new_list(allowed_list.iter().map(|of| of.0)),
+        OptionValue::new_list(allowed_list.items.iter().map(|of| of.0)),
       ));
     }
 
     if let Some(forbidden_list) = &validator.not_in {
       values.push((
         NOT_IN.clone(),
-        OptionValue::new_list(forbidden_list.iter().map(|of| of.0)),
+        OptionValue::new_list(forbidden_list.items.iter().map(|of| of.0)),
       ));
     }
 

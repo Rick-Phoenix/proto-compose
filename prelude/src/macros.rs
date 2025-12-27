@@ -46,20 +46,20 @@ macro_rules! proto_file {
 #[macro_export]
 macro_rules! cached_list {
   ($items:expr) => {{
-    use ::prelude::SortedList;
+    use ::prelude::StaticLookup;
     use std::sync::LazyLock;
 
-    LazyLock::new(|| SortedList::new($items))
+    LazyLock::new(|| StaticLookup::new($items))
   }};
 }
 
 #[macro_export]
 macro_rules! inline_cached_list {
   ($typ:ty, $items:expr) => {{
-    use ::prelude::SortedList;
+    use ::prelude::StaticLookup;
     use std::sync::LazyLock;
 
-    static LIST: LazyLock<SortedList<$typ>> = LazyLock::new(|| SortedList::new($items));
+    static LIST: LazyLock<StaticLookup<$typ>> = $crate::cached_list!($items);
 
     &LIST
   }};

@@ -46,10 +46,10 @@ pub struct BytesValidator {
   pub contains: Option<Bytes>,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static SortedList<&'static [u8]>>,
+  pub in_: Option<&'static StaticLookup<&'static [u8]>>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static SortedList<&'static [u8]>>,
+  pub not_in: Option<&'static StaticLookup<&'static [u8]>>,
 
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<Bytes>,
@@ -271,31 +271,19 @@ impl Validator<Bytes> for BytesValidator {
       }
 
       if let Some(allowed_list) = &self.in_
-        && !val.is_in(allowed_list)
+        && !val.is_in(&allowed_list.items)
       {
-        violations.add(
-          field_context,
-          parent_elements,
-          &BYTES_IN_VIOLATION,
-          &format!(
-            "must be one of these values: {}",
-            format_bytes_list(allowed_list.iter().map(|b| b.as_ref()))
-          ),
-        );
+        let err = ["must be one of these values: ", &allowed_list.items_str].concat();
+
+        violations.add(field_context, parent_elements, &BYTES_IN_VIOLATION, &err);
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && val.is_in(forbidden_list)
+        && val.is_in(&forbidden_list.items)
       {
-        violations.add(
-          field_context,
-          parent_elements,
-          &BYTES_IN_VIOLATION,
-          &format!(
-            "cannot be one of these values: {}",
-            format_bytes_list(forbidden_list.iter().map(|b| b.as_ref()))
-          ),
-        );
+        let err = ["cannot be one of these values: ", &forbidden_list.items_str].concat();
+
+        violations.add(field_context, parent_elements, &BYTES_IN_VIOLATION, &err);
       }
 
       if let Some(well_known) = &self.well_known {
@@ -416,6 +404,7 @@ impl From<BytesValidator> for ProtoOption {
         IN_.clone(),
         OptionValue::new_list(
           allowed_list
+            .items
             .iter()
             .map(|b| OptionValue::String(format_bytes_as_proto_string_literal(b).into())),
         ),
@@ -427,6 +416,7 @@ impl From<BytesValidator> for ProtoOption {
         NOT_IN.clone(),
         OptionValue::new_list(
           forbidden_list
+            .items
             .iter()
             .map(|b| OptionValue::String(format_bytes_as_proto_string_literal(b).into())),
         ),

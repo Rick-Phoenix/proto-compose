@@ -15,10 +15,10 @@ pub struct AnyValidatorBuilder<S: State = Empty> {
   required: bool,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  in_: Option<&'static SortedList<&'static str>>,
+  in_: Option<&'static StaticLookup<&'static str>>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  not_in: Option<&'static SortedList<&'static str>>,
+  not_in: Option<&'static StaticLookup<&'static str>>,
 }
 
 impl AnyValidator {
@@ -75,7 +75,7 @@ impl<S: State> AnyValidatorBuilder<S> {
     }
   }
 
-  pub fn in_(self, list: &'static SortedList<&'static str>) -> AnyValidatorBuilder<SetIn<S>>
+  pub fn in_(self, list: &'static StaticLookup<&'static str>) -> AnyValidatorBuilder<SetIn<S>>
   where
     S::In: IsUnset,
   {
@@ -89,7 +89,7 @@ impl<S: State> AnyValidatorBuilder<S> {
     }
   }
 
-  pub fn not_in(self, list: &'static SortedList<&'static str>) -> AnyValidatorBuilder<SetNotIn<S>>
+  pub fn not_in(self, list: &'static StaticLookup<&'static str>) -> AnyValidatorBuilder<SetNotIn<S>>
   where
     S::NotIn: IsUnset,
   {

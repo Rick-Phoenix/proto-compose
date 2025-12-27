@@ -10,7 +10,7 @@ repository = "https://github.com/Rick-Phoenix/protoschema"
 keywords = ["protobuf", "validation", "schema"]
 
 [workspace.dependencies]
-cel = { version = "0", path = "../cel-rust/cel" }
+cel = { version = "0", path = "../cel-rust/cel", features = ["bytes"] }
 paste = "1"
 askama = { version = "0.14.0", default-features = false, features = [
   "config",

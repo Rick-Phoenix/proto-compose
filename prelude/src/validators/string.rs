@@ -54,10 +54,10 @@ pub struct StringValidator {
   pub not_contains: Option<Arc<str>>,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static SortedList<&'static str>>,
+  pub in_: Option<&'static StaticLookup<&'static str>>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static SortedList<&'static str>>,
+  pub not_in: Option<&'static StaticLookup<&'static str>>,
 
   /// Specifies that only this specific value will be considered valid for this field.
   pub const_: Option<Arc<str>>,
@@ -279,30 +279,23 @@ impl Validator<String> for StringValidator {
       }
 
       if let Some(allowed_list) = &self.in_
-        && !<&str>::is_in(&val.as_str(), allowed_list)
+        && !<&str>::is_in(&val.as_str(), &allowed_list.items)
       {
-        violations.add(
-          field_context,
-          parent_elements,
-          &STRING_IN_VIOLATION,
-          &format!(
-            "must be one of these values: {}",
-            format_list(allowed_list.iter())
-          ),
-        );
+        let err = ["must be one of these values: ", &allowed_list.items_str].concat();
+
+        violations.add(field_context, parent_elements, &STRING_IN_VIOLATION, &err);
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && <&str>::is_in(&val.as_str(), forbidden_list)
+        && <&str>::is_in(&val.as_str(), &forbidden_list.items)
       {
+        let err = ["cannot be one of these values: ", &forbidden_list.items_str].concat();
+
         violations.add(
           field_context,
           parent_elements,
           &STRING_NOT_IN_VIOLATION,
-          &format!(
-            "cannot be one of these values: {}",
-            format_list(forbidden_list.iter())
-          ),
+          &err,
         );
       }
 
@@ -500,11 +493,17 @@ impl From<StringValidator> for ProtoOption {
     insert_option!(validator, rules, not_contains);
 
     if let Some(allowed_list) = &validator.in_ {
-      rules.push((IN_.clone(), OptionValue::new_list(allowed_list.iter())));
+      rules.push((
+        IN_.clone(),
+        OptionValue::new_list(allowed_list.items.iter()),
+      ));
     }
 
     if let Some(forbidden_list) = &validator.not_in {
-      rules.push((NOT_IN.clone(), OptionValue::new_list(forbidden_list.iter())));
+      rules.push((
+        NOT_IN.clone(),
+        OptionValue::new_list(forbidden_list.items.iter()),
+      ));
     }
 
     if let Some(v) = validator.well_known {

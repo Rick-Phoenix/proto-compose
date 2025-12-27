@@ -174,6 +174,8 @@ mod integers;
 pub use integers::*;
 mod field_mask;
 pub use field_mask::*;
+mod lookup;
+pub use lookup::*;
 
 pub use any::*;
 pub use bool::*;
@@ -207,19 +209,19 @@ pub(crate) fn format_list<T: Display, I: IntoIterator<Item = T>>(list: I) -> Str
 
 #[cfg(feature = "testing")]
 pub(crate) fn check_list_rules<T>(
-  in_list: Option<&'static SortedList<T>>,
-  not_in_list: Option<&'static SortedList<T>>,
+  in_list: Option<&'static StaticLookup<T>>,
+  not_in_list: Option<&'static StaticLookup<T>>,
 ) -> Result<(), OverlappingListsError<T>>
 where
-  T: Debug + PartialEq + Eq + Hash + Ord + Clone,
+  T: Debug + PartialEq + Eq + Hash + Ord + Clone + ListFormatter,
 {
   if let Some(in_list) = in_list
     && let Some(not_in_list) = not_in_list
   {
-    let mut overlapping: Vec<T> = Vec::with_capacity(in_list.len());
+    let mut overlapping: Vec<T> = Vec::with_capacity(in_list.items.len());
 
-    for item in in_list {
-      let is_overlapping = not_in_list.contains(item);
+    for item in &in_list.items {
+      let is_overlapping = not_in_list.items.contains(item);
 
       if is_overlapping {
         overlapping.push(item.clone());

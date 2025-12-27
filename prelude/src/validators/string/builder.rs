@@ -55,10 +55,10 @@ pub struct StringValidatorBuilder<S: State = Empty> {
   not_contains: Option<Arc<str>>,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  in_: Option<&'static SortedList<&'static str>>,
+  in_: Option<&'static StaticLookup<&'static str>>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  not_in: Option<&'static SortedList<&'static str>>,
+  not_in: Option<&'static StaticLookup<&'static str>>,
 
   /// Specifies that only this specific value will be considered valid for this field.
   const_: Option<Arc<str>>,
@@ -502,7 +502,7 @@ impl<S: State> StringValidatorBuilder<S> {
     }
   }
 
-  pub fn in_(self, val: &'static SortedList<&'static str>) -> StringValidatorBuilder<SetIn<S>>
+  pub fn in_(self, val: &'static StaticLookup<&'static str>) -> StringValidatorBuilder<SetIn<S>>
   where
     S::In: IsUnset,
   {
@@ -530,7 +530,10 @@ impl<S: State> StringValidatorBuilder<S> {
     }
   }
 
-  pub fn not_in(self, val: &'static SortedList<&'static str>) -> StringValidatorBuilder<SetNotIn<S>>
+  pub fn not_in(
+    self,
+    val: &'static StaticLookup<&'static str>,
+  ) -> StringValidatorBuilder<SetNotIn<S>>
   where
     S::NotIn: IsUnset,
   {

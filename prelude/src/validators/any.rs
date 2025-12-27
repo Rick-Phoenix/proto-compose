@@ -8,6 +8,23 @@ use super::*;
 
 impl_validator!(AnyValidator, Any);
 
+#[derive(Clone, Debug)]
+pub struct AnyValidator {
+  /// Adds custom validation using one or more [`CelRule`]s to this field.
+  pub cel: Vec<&'static CelProgram>,
+
+  pub ignore: Ignore,
+
+  /// Specifies that the field must be set in order to be valid.
+  pub required: bool,
+
+  /// Specifies that only the values in this list will be considered valid for this field.
+  pub in_: Option<&'static StaticLookup<&'static str>>,
+
+  /// Specifies that the values in this list will be considered NOT valid for this field.
+  pub not_in: Option<&'static StaticLookup<&'static str>>,
+}
+
 impl Validator<Any> for AnyValidator {
   type Target = Any;
   type UniqueStore<'a>
@@ -55,31 +72,27 @@ impl Validator<Any> for AnyValidator {
 
     if let Some(val) = val {
       if let Some(allowed_list) = &self.in_
-        && !val.is_in(allowed_list)
+        && !val.is_in(&allowed_list.items)
       {
-        violations.add(
-          field_context,
-          parent_elements,
-          &ANY_IN_VIOLATION,
-          &format!(
-            "must have one of these type URLs: {}",
-            format_list(allowed_list.iter())
-          ),
-        );
+        let err = [
+          "must have one of these type URLs: ",
+          &allowed_list.items_str,
+        ]
+        .concat();
+
+        violations.add(field_context, parent_elements, &ANY_IN_VIOLATION, &err);
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && val.is_in(forbidden_list)
+        && val.is_in(&forbidden_list.items)
       {
-        violations.add(
-          field_context,
-          parent_elements,
-          &ANY_NOT_IN_VIOLATION,
-          &format!(
-            "cannot have one of these type URLs: {}",
-            format_list(forbidden_list.iter())
-          ),
-        );
+        let err = [
+          "cannot have one of these type URLs: ",
+          &forbidden_list.items_str,
+        ]
+        .concat();
+
+        violations.add(field_context, parent_elements, &ANY_NOT_IN_VIOLATION, &err);
       }
 
       #[cfg(feature = "cel")]
@@ -106,33 +119,22 @@ impl Validator<Any> for AnyValidator {
   }
 }
 
-#[derive(Clone, Debug)]
-pub struct AnyValidator {
-  /// Adds custom validation using one or more [`CelRule`]s to this field.
-  pub cel: Vec<&'static CelProgram>,
-
-  pub ignore: Ignore,
-
-  /// Specifies that the field must be set in order to be valid.
-  pub required: bool,
-
-  /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static SortedList<&'static str>>,
-
-  /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static SortedList<&'static str>>,
-}
-
 impl From<AnyValidator> for ProtoOption {
   fn from(validator: AnyValidator) -> Self {
     let mut rules: OptionValueList = Vec::new();
 
     if let Some(allowed_list) = &validator.in_ {
-      rules.push((IN_.clone(), OptionValue::new_list(allowed_list.iter())));
+      rules.push((
+        IN_.clone(),
+        OptionValue::new_list(allowed_list.items.iter()),
+      ));
     }
 
     if let Some(forbidden_list) = &validator.not_in {
-      rules.push((NOT_IN.clone(), OptionValue::new_list(forbidden_list.iter())));
+      rules.push((
+        NOT_IN.clone(),
+        OptionValue::new_list(forbidden_list.items.iter()),
+      ));
     }
 
     let mut outer_rules: OptionValueList = vec![];

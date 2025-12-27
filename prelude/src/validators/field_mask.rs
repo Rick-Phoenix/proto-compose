@@ -5,6 +5,26 @@ use proto_types::FieldMask;
 
 use super::*;
 
+#[derive(Clone, Debug)]
+pub struct FieldMaskValidator {
+  /// Adds custom validation using one or more [`CelRule`]s to this field.
+  pub cel: Vec<&'static CelProgram>,
+
+  pub ignore: Ignore,
+
+  /// Specifies that the field must be set in order to be valid.
+  pub required: bool,
+
+  /// Specifies that only the values in this list will be considered valid for this field.
+  pub in_: Option<&'static StaticLookup<&'static str>>,
+
+  /// Specifies that the values in this list will be considered NOT valid for this field.
+  pub not_in: Option<&'static StaticLookup<&'static str>>,
+
+  /// Specifies that only this specific value will be considered valid for this field.
+  pub const_: Option<&'static StaticLookup<&'static str>>,
+}
+
 impl<S: State> ValidatorBuilderFor<FieldMask> for FieldMaskValidatorBuilder<S> {
   type Target = FieldMask;
   type Validator = FieldMaskValidator;
@@ -60,14 +80,14 @@ impl Validator<FieldMask> for FieldMaskValidator {
 
     if let Some(val) = val {
       if let Some(const_val) = self.const_ {
-        let const_val_len = const_val.len();
+        let const_val_len = const_val.items.len();
 
         let is_valid = if const_val_len != val.paths.len() {
           false
         } else if const_val_len <= 64 {
-          Self::validate_exact_small(const_val, &val.paths)
+          Self::validate_exact_small(&const_val.items, &val.paths)
         } else {
-          Self::validate_exact_large(const_val, &val.paths, const_val_len)
+          Self::validate_exact_large(&const_val.items, &val.paths, const_val_len)
         };
 
         if !is_valid {
@@ -85,15 +105,14 @@ impl Validator<FieldMask> for FieldMaskValidator {
 
       if let Some(allowed_paths) = self.in_ {
         for path in &val.paths {
-          if !allowed_paths.contains(&path.as_str()) {
+          if !allowed_paths.items.contains(&path.as_str()) {
+            let err = ["can only contain these paths: ", &allowed_paths.items_str].concat();
+
             violations.add(
               field_context,
               parent_elements,
               &FIELD_MASK_IN_VIOLATION,
-              &format!(
-                "can only contain these paths: [ {} ]",
-                allowed_paths.join(", ")
-              ),
+              &err,
             );
 
             break;
@@ -103,15 +122,18 @@ impl Validator<FieldMask> for FieldMaskValidator {
 
       if let Some(forbidden_paths) = self.not_in {
         for path in &val.paths {
-          if forbidden_paths.contains(&path.as_str()) {
+          if forbidden_paths.items.contains(&path.as_str()) {
+            let err = [
+              "cannot contain one of these paths: ",
+              &forbidden_paths.items_str,
+            ]
+            .concat();
+
             violations.add(
               field_context,
               parent_elements,
               &FIELD_MASK_NOT_IN_VIOLATION,
-              &format!(
-                "cannot contain one of these paths: [ {} ]",
-                forbidden_paths.join(", ")
-              ),
+              &err,
             );
 
             break;
@@ -141,26 +163,6 @@ impl Validator<FieldMask> for FieldMaskValidator {
       Err(violations_agg)
     }
   }
-}
-
-#[derive(Clone, Debug)]
-pub struct FieldMaskValidator {
-  /// Adds custom validation using one or more [`CelRule`]s to this field.
-  pub cel: Vec<&'static CelProgram>,
-
-  pub ignore: Ignore,
-
-  /// Specifies that the field must be set in order to be valid.
-  pub required: bool,
-
-  /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static SortedList<&'static str>>,
-
-  /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static SortedList<&'static str>>,
-
-  /// Specifies that only this specific value will be considered valid for this field.
-  pub const_: Option<&'static SortedList<&'static str>>,
 }
 
 impl FieldMaskValidator {
@@ -221,17 +223,23 @@ impl From<FieldMaskValidator> for ProtoOption {
     if let Some(const_val) = validator.const_ {
       let mut msg_val: OptionValueList = Vec::new();
 
-      msg_val.push((PATHS.clone(), OptionValue::new_list(const_val.iter())));
+      msg_val.push((PATHS.clone(), OptionValue::new_list(const_val.items.iter())));
 
       rules.push((CONST_.clone(), OptionValue::Message(msg_val.into())));
     }
 
     if let Some(allowed_list) = &validator.in_ {
-      rules.push((IN_.clone(), OptionValue::new_list(allowed_list.iter())));
+      rules.push((
+        IN_.clone(),
+        OptionValue::new_list(allowed_list.items.iter()),
+      ));
     }
 
     if let Some(forbidden_list) = &validator.not_in {
-      rules.push((NOT_IN.clone(), OptionValue::new_list(forbidden_list.iter())));
+      rules.push((
+        NOT_IN.clone(),
+        OptionValue::new_list(forbidden_list.items.iter()),
+      ));
     }
 
     let mut outer_rules: OptionValueList = vec![];

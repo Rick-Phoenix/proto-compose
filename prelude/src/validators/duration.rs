@@ -8,6 +8,38 @@ use super::*;
 
 impl_validator!(DurationValidator, Duration);
 
+#[derive(Clone, Debug)]
+pub struct DurationValidator {
+  /// Adds custom validation using one or more [`CelRule`]s to this field.
+  pub cel: Vec<&'static CelProgram>,
+
+  pub ignore: Ignore,
+
+  /// Specifies that the field must be set in order to be valid.
+  pub required: bool,
+
+  /// Specifies that only the values in this list will be considered valid for this field.
+  pub in_: Option<&'static StaticLookup<Duration>>,
+
+  /// Specifies that the values in this list will be considered NOT valid for this field.
+  pub not_in: Option<&'static StaticLookup<Duration>>,
+
+  /// Specifies that only this specific value will be considered valid for this field.
+  pub const_: Option<Duration>,
+
+  /// Specifies that the value must be smaller than the indicated amount in order to pass validation.
+  pub lt: Option<Duration>,
+
+  /// Specifies that the value must be equal to or smaller than the indicated amount in order to pass validation.
+  pub lte: Option<Duration>,
+
+  /// Specifies that the value must be greater than the indicated amount in order to pass validation.
+  pub gt: Option<Duration>,
+
+  /// Specifies that the value must be equal to or greater than the indicated amount in order to pass validation.
+  pub gte: Option<Duration>,
+}
+
 impl Validator<Duration> for DurationValidator {
   type Target = Duration;
   type UniqueStore<'a>
@@ -113,30 +145,23 @@ impl Validator<Duration> for DurationValidator {
       }
 
       if let Some(allowed_list) = self.in_
-        && !val.is_in(allowed_list)
+        && !val.is_in(&allowed_list.items)
       {
-        violations.add(
-          field_context,
-          parent_elements,
-          &DURATION_IN_VIOLATION,
-          &format!(
-            "must be one of these values: {}",
-            format_list(allowed_list.iter())
-          ),
-        );
+        let err = ["must be one of these values: ", &allowed_list.items_str].concat();
+
+        violations.add(field_context, parent_elements, &DURATION_IN_VIOLATION, &err);
       }
 
       if let Some(forbidden_list) = self.not_in
-        && val.is_in(forbidden_list)
+        && val.is_in(&forbidden_list.items)
       {
+        let err = ["cannot be one of these values: ", &forbidden_list.items_str].concat();
+
         violations.add(
           field_context,
           parent_elements,
           &DURATION_NOT_IN_VIOLATION,
-          &format!(
-            "cannot be one of these values: {}",
-            format_list(forbidden_list.iter())
-          ),
+          &err,
         );
       }
 
@@ -164,38 +189,6 @@ impl Validator<Duration> for DurationValidator {
   }
 }
 
-#[derive(Clone, Debug)]
-pub struct DurationValidator {
-  /// Adds custom validation using one or more [`CelRule`]s to this field.
-  pub cel: Vec<&'static CelProgram>,
-
-  pub ignore: Ignore,
-
-  /// Specifies that the field must be set in order to be valid.
-  pub required: bool,
-
-  /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<&'static SortedList<Duration>>,
-
-  /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<&'static SortedList<Duration>>,
-
-  /// Specifies that only this specific value will be considered valid for this field.
-  pub const_: Option<Duration>,
-
-  /// Specifies that the value must be smaller than the indicated amount in order to pass validation.
-  pub lt: Option<Duration>,
-
-  /// Specifies that the value must be equal to or smaller than the indicated amount in order to pass validation.
-  pub lte: Option<Duration>,
-
-  /// Specifies that the value must be greater than the indicated amount in order to pass validation.
-  pub gt: Option<Duration>,
-
-  /// Specifies that the value must be equal to or greater than the indicated amount in order to pass validation.
-  pub gte: Option<Duration>,
-}
-
 impl From<DurationValidator> for ProtoOption {
   fn from(validator: DurationValidator) -> Self {
     let mut rules: OptionValueList = Vec::new();
@@ -210,11 +203,17 @@ impl From<DurationValidator> for ProtoOption {
     insert_option!(validator, rules, gte);
 
     if let Some(allowed_list) = &validator.in_ {
-      rules.push((IN_.clone(), OptionValue::new_list(allowed_list.iter())));
+      rules.push((
+        IN_.clone(),
+        OptionValue::new_list(allowed_list.items.iter()),
+      ));
     }
 
     if let Some(forbidden_list) = &validator.not_in {
-      rules.push((NOT_IN.clone(), OptionValue::new_list(forbidden_list.iter())));
+      rules.push((
+        NOT_IN.clone(),
+        OptionValue::new_list(forbidden_list.items.iter()),
+      ));
     }
 
     let mut outer_rules: OptionValueList = vec![];

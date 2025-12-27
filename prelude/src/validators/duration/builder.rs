@@ -16,10 +16,10 @@ pub struct DurationValidatorBuilder<S: State = Empty> {
   required: bool,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  in_: Option<&'static SortedList<Duration>>,
+  in_: Option<&'static StaticLookup<Duration>>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  not_in: Option<&'static SortedList<Duration>>,
+  not_in: Option<&'static StaticLookup<Duration>>,
 
   /// Specifies that only this specific value will be considered valid for this field.
   const_: Option<Duration>,
@@ -112,7 +112,7 @@ impl<S: State> DurationValidatorBuilder<S> {
     }
   }
 
-  pub fn in_(self, val: &'static SortedList<Duration>) -> DurationValidatorBuilder<SetIn<S>>
+  pub fn in_(self, val: &'static StaticLookup<Duration>) -> DurationValidatorBuilder<SetIn<S>>
   where
     S::In: IsUnset,
   {
@@ -131,7 +131,7 @@ impl<S: State> DurationValidatorBuilder<S> {
     }
   }
 
-  pub fn not_in(self, val: &'static SortedList<Duration>) -> DurationValidatorBuilder<SetNotIn<S>>
+  pub fn not_in(self, val: &'static StaticLookup<Duration>) -> DurationValidatorBuilder<SetNotIn<S>>
   where
     S::NotIn: IsUnset,
   {
