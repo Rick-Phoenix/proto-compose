@@ -125,7 +125,7 @@ pub struct MessageValidator<T: ProtoMessage> {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   pub cel: Vec<&'static CelProgram>,
 
-  pub ignore: Option<Ignore>,
+  pub ignore: Ignore,
 
   _message: PhantomData<T>,
 
@@ -139,6 +139,10 @@ impl<T: ProtoMessage> From<MessageValidator<T>> for ProtoOption {
 
     insert_cel_rules!(validator, rules);
     insert_boolean_option!(validator, rules, required);
+
+    if !validator.ignore.is_default() {
+      rules.push((IGNORE.clone(), validator.ignore.into()))
+    }
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

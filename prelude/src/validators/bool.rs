@@ -71,7 +71,7 @@ pub struct BoolValidator {
   pub const_: Option<bool>,
   /// Specifies that the field must be set in order to be valid.
   pub required: bool,
-  pub ignore: Option<Ignore>,
+  pub ignore: Ignore,
 }
 
 impl From<BoolValidator> for ProtoOption {
@@ -85,7 +85,10 @@ impl From<BoolValidator> for ProtoOption {
     outer_rules.push((BOOL.clone(), OptionValue::Message(rules.into())));
 
     insert_boolean_option!(validator, outer_rules, required);
-    insert_option!(validator, outer_rules, ignore);
+
+    if !validator.ignore.is_default() {
+      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
+    }
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

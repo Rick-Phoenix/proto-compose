@@ -9,7 +9,7 @@ pub struct MessageValidatorBuilder<T: ProtoMessage, S: State = Empty> {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   cel: Vec<&'static CelProgram>,
 
-  ignore: Option<Ignore>,
+  ignore: Ignore,
 
   _message: PhantomData<T>,
 
@@ -23,7 +23,7 @@ impl<T: ProtoMessage> MessageValidator<T> {
     MessageValidatorBuilder {
       _state: PhantomData,
       cel: vec![],
-      ignore: None,
+      ignore: Ignore::Unspecified,
       _message: PhantomData,
       required: false,
     }
@@ -61,7 +61,7 @@ impl<T: ProtoMessage, S: State> MessageValidatorBuilder<T, S> {
     MessageValidatorBuilder {
       _state: PhantomData,
       cel: self.cel,
-      ignore: Some(Ignore::Always),
+      ignore: Ignore::Always,
       _message: self._message,
       required: self.required,
     }

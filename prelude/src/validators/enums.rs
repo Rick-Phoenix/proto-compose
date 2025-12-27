@@ -156,7 +156,7 @@ pub struct EnumValidator<T: ProtoEnum> {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   pub cel: Vec<&'static CelProgram>,
 
-  pub ignore: Option<Ignore>,
+  pub ignore: Ignore,
 
   _enum: PhantomData<T>,
 
@@ -200,7 +200,10 @@ impl<T: ProtoEnum> From<EnumValidator<T>> for ProtoOption {
 
     insert_cel_rules!(validator, outer_rules);
     insert_boolean_option!(validator, outer_rules, required);
-    insert_option!(validator, outer_rules, ignore);
+
+    if !validator.ignore.is_default() {
+      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
+    }
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

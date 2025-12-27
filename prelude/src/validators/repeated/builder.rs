@@ -19,7 +19,7 @@ where
   max_items: Option<usize>,
   /// Specifies that this field must contain only unique values (only applies to scalar fields).
   unique: bool,
-  ignore: Option<Ignore>,
+  ignore: Ignore,
 }
 
 impl<T> RepeatedValidator<T>
@@ -36,7 +36,7 @@ where
       min_items: None,
       max_items: None,
       unique: false,
-      ignore: None,
+      ignore: Ignore::Unspecified,
     }
   }
 }
@@ -121,7 +121,7 @@ where
       min_items: self.min_items,
       max_items: self.max_items,
       unique: self.unique,
-      ignore: Some(Ignore::Always),
+      ignore: Ignore::Always,
     }
   }
 

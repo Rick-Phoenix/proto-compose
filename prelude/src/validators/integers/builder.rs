@@ -14,7 +14,7 @@ where
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   cel: Vec<&'static CelProgram>,
 
-  ignore: Option<Ignore>,
+  ignore: Ignore,
 
   /// Specifies that the field must be set in order to be valid.
   required: bool,
@@ -64,7 +64,7 @@ where
       _state: PhantomData,
       _wrapper: self._wrapper,
       cel: self.cel,
-      ignore: Some(Ignore::Always),
+      ignore: Ignore::Always,
       required: self.required,
       const_: self.const_,
       lt: self.lt,
@@ -84,7 +84,7 @@ where
       _state: PhantomData,
       _wrapper: self._wrapper,
       cel: self.cel,
-      ignore: Some(Ignore::IfZeroValue),
+      ignore: Ignore::IfZeroValue,
       required: self.required,
       const_: self.const_,
       lt: self.lt,

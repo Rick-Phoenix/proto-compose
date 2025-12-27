@@ -18,7 +18,7 @@ where
   values: Option<V::Validator>,
   min_pairs: Option<usize>,
   max_pairs: Option<usize>,
-  ignore: Option<Ignore>,
+  ignore: Ignore,
 }
 
 impl<K, V> MapValidator<K, V>
@@ -37,7 +37,7 @@ where
       keys: None,
       min_pairs: None,
       max_pairs: None,
-      ignore: None,
+      ignore: Ignore::Unspecified,
     }
   }
 }
@@ -149,7 +149,7 @@ where
       values: self.values,
       min_pairs: self.min_pairs,
       max_pairs: self.max_pairs,
-      ignore: Some(Ignore::Always),
+      ignore: Ignore::Always,
     }
   }
 

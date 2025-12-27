@@ -8,7 +8,7 @@ pub struct EnumValidatorBuilder<T: ProtoEnum, S: State = Empty> {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   cel: Vec<&'static CelProgram>,
 
-  ignore: Option<Ignore>,
+  ignore: Ignore,
 
   _enum: PhantomData<T>,
 
@@ -71,7 +71,7 @@ impl<T: ProtoEnum, S: State> EnumValidatorBuilder<T, S> {
       _state: PhantomData,
       _enum: self._enum,
       cel: self.cel,
-      ignore: Some(Ignore::Always),
+      ignore: Ignore::Always,
       defined_only: self.defined_only,
       required: self.required,
       in_: self.in_,
@@ -88,7 +88,7 @@ impl<T: ProtoEnum, S: State> EnumValidatorBuilder<T, S> {
       _state: PhantomData,
       _enum: self._enum,
       cel: self.cel,
-      ignore: Some(Ignore::IfZeroValue),
+      ignore: Ignore::IfZeroValue,
       defined_only: self.defined_only,
       required: self.required,
       in_: self.in_,

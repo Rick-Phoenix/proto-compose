@@ -201,7 +201,7 @@ where
   pub max_items: Option<usize>,
   /// Specifies that this field must contain only unique values (only applies to scalar fields).
   pub unique: bool,
-  pub ignore: Option<Ignore>,
+  pub ignore: Ignore,
 }
 
 pub struct UnsupportedStore<T> {
@@ -536,7 +536,9 @@ where
 
     outer_rules.push((REPEATED.clone(), OptionValue::Message(rules.into())));
 
-    insert_option!(validator, outer_rules, ignore);
+    if !validator.ignore.is_default() {
+      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
+    }
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

@@ -16,7 +16,7 @@ pub struct BytesValidator {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   pub cel: Vec<&'static CelProgram>,
 
-  pub ignore: Option<Ignore>,
+  pub ignore: Ignore,
 
   pub well_known: Option<WellKnownBytes>,
 
@@ -432,7 +432,10 @@ impl From<BytesValidator> for ProtoOption {
 
     insert_cel_rules!(validator, outer_rules);
     insert_boolean_option!(validator, outer_rules, required);
-    insert_option!(validator, outer_rules, ignore);
+
+    if !validator.ignore.is_default() {
+      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
+    }
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),
@@ -441,7 +444,6 @@ impl From<BytesValidator> for ProtoOption {
   }
 }
 
-#[doc(hidden)]
 #[derive(Clone, Debug, Copy)]
 pub enum WellKnownBytes {
   Ip,

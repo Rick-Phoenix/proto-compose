@@ -11,7 +11,7 @@ pub struct TimestampValidatorBuilder<S: State = Empty> {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   cel: Vec<&'static CelProgram>,
 
-  ignore: Option<Ignore>,
+  ignore: Ignore,
 
   /// Specifies that this field's value will be valid only if it in the past.
   lt_now: bool,
@@ -66,7 +66,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
     TimestampValidatorBuilder {
       _state: PhantomData,
       cel: self.cel,
-      ignore: Some(Ignore::Always),
+      ignore: self.ignore,
       lt_now: self.lt_now,
       gt_now: self.gt_now,
       required: self.required,
@@ -86,7 +86,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
     TimestampValidatorBuilder {
       _state: PhantomData,
       cel: self.cel,
-      ignore: Some(Ignore::Always),
+      ignore: Ignore::Always,
       lt_now: self.lt_now,
       gt_now: self.gt_now,
       required: self.required,

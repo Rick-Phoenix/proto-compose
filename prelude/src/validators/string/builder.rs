@@ -15,7 +15,7 @@ pub struct StringValidatorBuilder<S: State = Empty> {
 
   pub(crate) well_known: Option<WellKnownStrings>,
 
-  ignore: Option<Ignore>,
+  ignore: Ignore,
 
   /// Specifies that the field must be set in order to be valid.
   required: bool,
@@ -118,7 +118,7 @@ impl<S: State> StringValidatorBuilder<S> {
       _state: PhantomData,
       cel: self.cel,
       well_known: self.well_known,
-      ignore: Some(Ignore::Always),
+      ignore: Ignore::Always,
       required: self.required,
       len: self.len,
       min_len: self.min_len,
@@ -146,7 +146,7 @@ impl<S: State> StringValidatorBuilder<S> {
       _state: PhantomData,
       cel: self.cel,
       well_known: self.well_known,
-      ignore: Some(Ignore::IfZeroValue),
+      ignore: Ignore::IfZeroValue,
       required: self.required,
       len: self.len,
       min_len: self.min_len,

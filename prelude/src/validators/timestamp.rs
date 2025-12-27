@@ -174,7 +174,7 @@ pub struct TimestampValidator {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   pub cel: Vec<&'static CelProgram>,
 
-  pub ignore: Option<Ignore>,
+  pub ignore: Ignore,
 
   /// Specifies that this field's value will be valid only if it in the past.
   pub lt_now: bool,
@@ -226,7 +226,10 @@ impl From<TimestampValidator> for ProtoOption {
 
     insert_cel_rules!(validator, outer_rules);
     insert_boolean_option!(validator, outer_rules, required);
-    insert_option!(validator, outer_rules, ignore);
+
+    if !validator.ignore.is_default() {
+      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
+    }
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

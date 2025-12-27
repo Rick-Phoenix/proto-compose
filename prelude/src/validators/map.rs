@@ -115,7 +115,7 @@ where
   pub min_pairs: Option<usize>,
   /// The maximum amount of key-value pairs that this field should have in order to be valid.
   pub max_pairs: Option<usize>,
-  pub ignore: Option<Ignore>,
+  pub ignore: Ignore,
 }
 
 #[cfg(feature = "cel")]
@@ -367,7 +367,9 @@ where
 
     outer_rules.push((MAP.clone(), OptionValue::Message(rules.into())));
 
-    insert_option!(validator, outer_rules, ignore);
+    if !validator.ignore.is_default() {
+      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
+    }
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

@@ -9,7 +9,7 @@ pub struct AnyValidatorBuilder<S: State = Empty> {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   cel: Vec<&'static CelProgram>,
 
-  ignore: Option<Ignore>,
+  ignore: Ignore,
 
   /// Specifies that the field must be set in order to be valid.
   required: bool,
@@ -54,7 +54,7 @@ impl<S: State> AnyValidatorBuilder<S> {
     AnyValidatorBuilder {
       _state: PhantomData,
       cel: self.cel,
-      ignore: Some(Ignore::Always),
+      ignore: Ignore::Always,
       required: self.required,
       in_: self.in_,
       not_in: self.not_in,

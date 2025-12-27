@@ -111,7 +111,7 @@ macro_rules! inline_bytes_regex {
 
 macro_rules! handle_ignore_always {
   ($ignore:expr) => {
-    if matches!($ignore, Some(Ignore::Always)) {
+    if matches!($ignore, Ignore::Always) {
       return Ok(());
     }
   };
@@ -119,7 +119,7 @@ macro_rules! handle_ignore_always {
 
 macro_rules! handle_ignore_if_zero_value {
   ($ignore:expr, $condition:expr) => {
-    if matches!($ignore, Some(Ignore::IfZeroValue)) && $condition {
+    if matches!($ignore, Ignore::IfZeroValue) && $condition {
       return Ok(());
     }
   };

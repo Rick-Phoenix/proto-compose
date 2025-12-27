@@ -14,7 +14,7 @@ pub struct StringValidator {
 
   pub well_known: Option<WellKnownStrings>,
 
-  pub ignore: Option<Ignore>,
+  pub ignore: Ignore,
 
   /// Specifies that the field must be set in order to be valid.
   pub required: bool,
@@ -516,7 +516,10 @@ impl From<StringValidator> for ProtoOption {
     // It's (buf.validate.field).required, NOT (buf.validate.field).string.required
     insert_cel_rules!(validator, outer_rules);
     insert_boolean_option!(validator, outer_rules, required);
-    insert_option!(validator, outer_rules, ignore);
+
+    if !validator.ignore.is_default() {
+      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
+    }
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

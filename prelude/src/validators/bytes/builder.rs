@@ -13,7 +13,7 @@ pub struct BytesValidatorBuilder<S: State = Empty> {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   cel: Vec<&'static CelProgram>,
 
-  ignore: Option<Ignore>,
+  ignore: Ignore,
 
   well_known: Option<WellKnownBytes>,
 
@@ -124,7 +124,7 @@ impl<S: State> BytesValidatorBuilder<S> {
     BytesValidatorBuilder {
       _state: PhantomData,
       cel: self.cel,
-      ignore: Some(Ignore::Always),
+      ignore: Ignore::Always,
       well_known: self.well_known,
       required: self.required,
       len: self.len,
@@ -148,7 +148,7 @@ impl<S: State> BytesValidatorBuilder<S> {
     BytesValidatorBuilder {
       _state: PhantomData,
       cel: self.cel,
-      ignore: Some(Ignore::IfZeroValue),
+      ignore: Ignore::IfZeroValue,
       well_known: self.well_known,
       required: self.required,
       len: self.len,

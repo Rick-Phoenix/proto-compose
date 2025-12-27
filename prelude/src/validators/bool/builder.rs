@@ -9,7 +9,7 @@ pub struct BoolValidatorBuilder<S: State = Empty> {
   const_: Option<bool>,
   /// Specifies that the field must be set in order to be valid.
   required: bool,
-  ignore: Option<Ignore>,
+  ignore: Ignore,
 }
 
 impl BoolValidator {
@@ -39,7 +39,7 @@ impl<S: State> BoolValidatorBuilder<S> {
       _state: PhantomData,
       const_: self.const_,
       required: self.required,
-      ignore: Some(Ignore::Always),
+      ignore: Ignore::Always,
     }
   }
 
@@ -51,7 +51,7 @@ impl<S: State> BoolValidatorBuilder<S> {
       _state: PhantomData,
       const_: self.const_,
       required: self.required,
-      ignore: Some(Ignore::IfZeroValue),
+      ignore: Ignore::IfZeroValue,
     }
   }
 

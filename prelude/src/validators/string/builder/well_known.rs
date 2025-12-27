@@ -1,6 +1,5 @@
 use super::*;
 
-#[doc(hidden)]
 #[derive(Clone, Debug, Copy)]
 pub enum WellKnownStrings {
   #[cfg(feature = "regex")]
