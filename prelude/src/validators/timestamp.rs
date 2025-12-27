@@ -34,6 +34,10 @@ impl Validator<Timestamp> for TimestampValidator {
       errors.push(e.to_string());
     }
 
+    if self.gt_now && self.lt_now {
+      errors.push("`lt_now` and `gt_now` cannot be used together".to_string())
+    }
+
     if self.gt_now && (self.gt.is_some() || self.gte.is_some()) {
       errors.push("`gt_now` cannot be used with `gt` or `gte`".to_string());
     }
@@ -72,7 +76,7 @@ impl Validator<Timestamp> for TimestampValidator {
         );
       }
 
-      if self.gt_now && !val.is_future() {
+      if self.gt_now && !(val - self.now_tolerance).is_future() {
         violations.add(
           field_context,
           parent_elements,
@@ -202,6 +206,8 @@ pub struct TimestampValidator {
 
   /// Specifies that this field's value will be valid only if it is within the specified Duration (either in the past or future) from the moment when it's being validated.
   pub within: Option<Duration>,
+
+  pub now_tolerance: Duration,
 }
 
 impl From<TimestampValidator> for ProtoOption {

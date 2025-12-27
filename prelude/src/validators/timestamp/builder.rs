@@ -39,6 +39,8 @@ pub struct TimestampValidatorBuilder<S: State = Empty> {
 
   /// Specifies that this field's value will be valid only if it is within the specified Duration (either in the past or future) from the moment when it's being validated.
   within: Option<Duration>,
+
+  now_tolerance: Duration,
 }
 
 impl TimestampValidator {
@@ -76,6 +78,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
       gt: self.gt,
       gte: self.gte,
       within: self.within,
+      now_tolerance: self.now_tolerance,
     }
   }
 
@@ -96,6 +99,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
       gt: self.gt,
       gte: self.gte,
       within: self.within,
+      now_tolerance: self.now_tolerance,
     }
   }
 
@@ -116,6 +120,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
       gt: self.gt,
       gte: self.gte,
       within: self.within,
+      now_tolerance: self.now_tolerance,
     }
   }
 
@@ -136,6 +141,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
       gt: self.gt,
       gte: self.gte,
       within: self.within,
+      now_tolerance: self.now_tolerance,
     }
   }
 
@@ -156,6 +162,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
       gt: self.gt,
       gte: self.gte,
       within: self.within,
+      now_tolerance: self.now_tolerance,
     }
   }
 
@@ -176,6 +183,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
       gt: self.gt,
       gte: self.gte,
       within: self.within,
+      now_tolerance: self.now_tolerance,
     }
   }
 
@@ -196,6 +204,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
       gt: self.gt,
       gte: self.gte,
       within: self.within,
+      now_tolerance: self.now_tolerance,
     }
   }
 
@@ -216,6 +225,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
       gt: self.gt,
       gte: self.gte,
       within: self.within,
+      now_tolerance: self.now_tolerance,
     }
   }
 
@@ -236,6 +246,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
       gt: Some(val),
       gte: self.gte,
       within: self.within,
+      now_tolerance: self.now_tolerance,
     }
   }
 
@@ -256,6 +267,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
       gt: self.gt,
       gte: Some(val),
       within: self.within,
+      now_tolerance: self.now_tolerance,
     }
   }
 
@@ -276,6 +288,28 @@ impl<S: State> TimestampValidatorBuilder<S> {
       gt: self.gt,
       gte: self.gte,
       within: Some(val),
+      now_tolerance: self.now_tolerance,
+    }
+  }
+
+  pub fn now_tolerance(self, val: Duration) -> TimestampValidatorBuilder<SetNowTolerance<S>>
+  where
+    S::NowTolerance: IsUnset,
+  {
+    TimestampValidatorBuilder {
+      _state: PhantomData,
+      cel: self.cel,
+      ignore: self.ignore,
+      lt_now: self.lt_now,
+      gt_now: self.gt_now,
+      required: self.required,
+      const_: self.const_,
+      lt: self.lt,
+      lte: self.lte,
+      gt: self.gt,
+      gte: self.gte,
+      within: self.within,
+      now_tolerance: val,
     }
   }
 
@@ -292,6 +326,7 @@ impl<S: State> TimestampValidatorBuilder<S> {
       gt: self.gt,
       gte: self.gte,
       within: self.within,
+      now_tolerance: self.now_tolerance,
     }
   }
 }

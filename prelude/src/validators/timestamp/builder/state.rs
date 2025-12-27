@@ -19,6 +19,7 @@ pub trait State: Sized {
   type Gt;
   type Gte;
   type Within;
+  type NowTolerance;
   #[doc(hidden)]
   const SEALED: sealed::Sealed;
 }
@@ -36,6 +37,7 @@ mod members {
   pub struct gt;
   pub struct gte;
   pub struct within;
+  pub struct now_tolerance;
 }
 
 pub struct SetIgnore<S: State = Empty>(PhantomData<fn() -> S>);
@@ -48,6 +50,7 @@ pub struct SetLte<S: State = Empty>(PhantomData<fn() -> S>);
 pub struct SetGt<S: State = Empty>(PhantomData<fn() -> S>);
 pub struct SetGte<S: State = Empty>(PhantomData<fn() -> S>);
 pub struct SetWithin<S: State = Empty>(PhantomData<fn() -> S>);
+pub struct SetNowTolerance<S: State = Empty>(PhantomData<fn() -> S>);
 #[doc(hidden)]
 impl State for Empty {
   type Ignore = Unset<members::ignore>;
@@ -60,6 +63,7 @@ impl State for Empty {
   type Gt = Unset<members::gt>;
   type Gte = Unset<members::gte>;
   type Within = Unset<members::within>;
+  type NowTolerance = Unset<members::now_tolerance>;
   const SEALED: sealed::Sealed = sealed::Sealed;
 }
 #[doc(hidden)]
@@ -74,6 +78,7 @@ impl<S: State> State for SetIgnore<S> {
   type Gt = S::Gt;
   type Gte = S::Gte;
   type Within = S::Within;
+  type NowTolerance = S::NowTolerance;
   const SEALED: sealed::Sealed = sealed::Sealed;
 }
 #[doc(hidden)]
@@ -88,6 +93,7 @@ impl<S: State> State for SetLtNow<S> {
   type Gt = S::Gt;
   type Gte = S::Gte;
   type Within = S::Within;
+  type NowTolerance = S::NowTolerance;
   const SEALED: sealed::Sealed = sealed::Sealed;
 }
 #[doc(hidden)]
@@ -102,6 +108,7 @@ impl<S: State> State for SetGtNow<S> {
   type Gt = S::Gt;
   type Gte = S::Gte;
   type Within = S::Within;
+  type NowTolerance = S::NowTolerance;
   const SEALED: sealed::Sealed = sealed::Sealed;
 }
 #[doc(hidden)]
@@ -116,6 +123,7 @@ impl<S: State> State for SetRequired<S> {
   type Gt = S::Gt;
   type Gte = S::Gte;
   type Within = S::Within;
+  type NowTolerance = S::NowTolerance;
   const SEALED: sealed::Sealed = sealed::Sealed;
 }
 #[doc(hidden)]
@@ -130,6 +138,7 @@ impl<S: State> State for SetConst<S> {
   type Gt = S::Gt;
   type Gte = S::Gte;
   type Within = S::Within;
+  type NowTolerance = S::NowTolerance;
   const SEALED: sealed::Sealed = sealed::Sealed;
 }
 #[doc(hidden)]
@@ -144,6 +153,7 @@ impl<S: State> State for SetLt<S> {
   type Gt = S::Gt;
   type Gte = S::Gte;
   type Within = S::Within;
+  type NowTolerance = S::NowTolerance;
   const SEALED: sealed::Sealed = sealed::Sealed;
 }
 #[doc(hidden)]
@@ -158,6 +168,7 @@ impl<S: State> State for SetLte<S> {
   type Gt = S::Gt;
   type Gte = S::Gte;
   type Within = S::Within;
+  type NowTolerance = S::NowTolerance;
   const SEALED: sealed::Sealed = sealed::Sealed;
 }
 #[doc(hidden)]
@@ -172,6 +183,7 @@ impl<S: State> State for SetGt<S> {
   type Gt = Set<members::gt>;
   type Gte = S::Gte;
   type Within = S::Within;
+  type NowTolerance = S::NowTolerance;
   const SEALED: sealed::Sealed = sealed::Sealed;
 }
 #[doc(hidden)]
@@ -186,6 +198,7 @@ impl<S: State> State for SetGte<S> {
   type Gt = S::Gt;
   type Gte = Set<members::gte>;
   type Within = S::Within;
+  type NowTolerance = S::NowTolerance;
   const SEALED: sealed::Sealed = sealed::Sealed;
 }
 #[doc(hidden)]
@@ -200,5 +213,22 @@ impl<S: State> State for SetWithin<S> {
   type Gt = S::Gt;
   type Gte = S::Gte;
   type Within = Set<members::within>;
+  type NowTolerance = S::NowTolerance;
+  const SEALED: sealed::Sealed = sealed::Sealed;
+}
+
+#[doc(hidden)]
+impl<S: State> State for SetNowTolerance<S> {
+  type Ignore = S::Ignore;
+  type LtNow = S::LtNow;
+  type GtNow = S::GtNow;
+  type Required = S::Required;
+  type Const = S::Const;
+  type Lt = S::Lt;
+  type Lte = S::Lte;
+  type Gt = S::Gt;
+  type Gte = S::Gte;
+  type Within = S::Within;
+  type NowTolerance = Set<members::now_tolerance>;
   const SEALED: sealed::Sealed = sealed::Sealed;
 }
