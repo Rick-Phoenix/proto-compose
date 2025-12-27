@@ -323,6 +323,10 @@ impl Validator<String> for StringValidator {
 
       if let Some(well_known) = &self.well_known {
         match well_known {
+          #[cfg(feature = "regex")]
+          WellKnownStrings::Ulid => {
+            impl_well_known_check!(is_valid_ulid, ULID, "ULID");
+          }
           WellKnownStrings::Ip => {
             impl_well_known_check!(is_valid_ip, IP, "ip address");
           }

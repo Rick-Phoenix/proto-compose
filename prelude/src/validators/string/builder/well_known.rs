@@ -12,6 +12,8 @@ pub enum WellKnownStrings {
   UriRef,
   Address,
   #[cfg(feature = "regex")]
+  Ulid,
+  #[cfg(feature = "regex")]
   Uuid,
   #[cfg(feature = "regex")]
   Tuuid,
@@ -272,6 +274,8 @@ impl<S: State> StringValidatorBuilder<S> {
 impl WellKnownStrings {
   pub(crate) fn to_option(self, option_values: &mut OptionValueList) {
     let name = match self {
+      #[cfg(feature = "regex")]
+      Self::Ulid => ULID.clone(),
       #[cfg(feature = "regex")]
       Self::Email => EMAIL.clone(),
       Self::Hostname => HOSTNAME.clone(),
