@@ -78,12 +78,23 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
     let validator_schema_tokens = if let Some(validator) = validator {
       let validator_target_type = proto_field.validator_target_type();
 
+      let validator_static_ident =
+        format_ident!("{}_VALIDATOR", ccase!(constant, &field_ident_str));
+
       let validator_expr = match validator {
         CallOrClosure::Call(call) => quote! { #call.build_validator() },
 
         CallOrClosure::Closure(closure) => {
           quote! { <#validator_target_type as ::prelude::ProtoValidator>::validator_from_closure(#closure) }
         }
+      };
+
+      let validator_name = proto_field.validator_name();
+
+      let validator_static = quote! {
+        static #validator_static_ident: LazyLock<#validator_name> = LazyLock::new(|| {
+          #validator_expr
+        });
       };
 
       let field_type = proto_field.descriptor_type_tokens();
@@ -105,7 +116,8 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
         is_oneof_variant,
         field_ident,
         field_context_tokens,
-        &validator_expr,
+        &validator_static_ident,
+        validator_static,
       );
 
       validators_tokens.push(field_validator_tokens);

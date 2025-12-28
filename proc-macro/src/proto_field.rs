@@ -139,6 +139,25 @@ impl ProtoField {
     }
   }
 
+  pub fn validator_name(&self) -> TokenStream2 {
+    match self {
+      Self::Map(map) => {
+        let keys = map.keys.validator_target_type();
+        let values = map.values.validator_target_type();
+
+        quote! { MapValidator<#keys, #values> }
+      }
+      ProtoField::Oneof { .. } => quote! {},
+      ProtoField::Repeated(proto_type) => {
+        let inner = proto_type.validator_target_type();
+
+        quote! { RepeatedValidator<#inner> }
+      }
+      ProtoField::Optional(proto_type) => proto_type.validator_name(),
+      ProtoField::Single(proto_type) => proto_type.validator_name(),
+    }
+  }
+
   pub fn field_proto_type_tokens(&self) -> TokenStream2 {
     let target_type = match self {
       ProtoField::Map(proto_map) => {

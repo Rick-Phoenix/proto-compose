@@ -36,7 +36,7 @@ pub fn impl_message_validator(ctx: ValidatorImplCtx) -> TokenStream2 {
           ctx.execute_programs();
         }
 
-        #(#validators_tokens;)*
+        #(#validators_tokens)*
 
         if field_context.is_some() {
           parent_elements.pop();

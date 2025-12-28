@@ -197,8 +197,8 @@ impl ProtoType {
         return Err(error!(
           path,
           "Type {} does not correspond to a prost-supported primitive. Please set the protobuf type manually",
-            path.to_token_stream()
-        ))
+          path.to_token_stream()
+        ));
       }
     };
 
@@ -245,6 +245,30 @@ impl ProtoType {
       ProtoType::Fixed64 => quote! { prelude::Fixed64  },
       ProtoType::Sfixed32 => quote! { prelude::Sfixed32  },
       ProtoType::Sfixed64 => quote! { prelude::Sfixed64  },
+    }
+  }
+
+  pub fn validator_name(&self) -> TokenStream2 {
+    match self {
+      ProtoType::String => quote! { StringValidator },
+      ProtoType::Bool => quote! { BoolValidator },
+      ProtoType::Bytes => quote! { BytesValidator },
+      ProtoType::Enum(path) => quote! { EnumValidator<#path> },
+      ProtoType::Message { path, .. } => quote! { MessageValidator<#path> },
+      ProtoType::Int32 => quote! { IntValidator<i32> },
+      ProtoType::Sint32 => quote! { IntValidator<::prelude::Sint32> },
+      ProtoType::Duration => quote! { DurationValidator },
+      ProtoType::Timestamp => quote! { TimestampValidator },
+      ProtoType::Uint32 => quote! { IntValidator<u32> },
+      ProtoType::Float => quote! { FloatValidator<f32> },
+      ProtoType::Double => quote! { DoubleValidator<f64> },
+      ProtoType::Int64 => quote! { IntValidator<i64> },
+      ProtoType::Uint64 => quote! { IntValidator<u64> },
+      ProtoType::Sint64 => quote! { IntValidator<prelude::Sint64>  },
+      ProtoType::Fixed32 => quote! { IntValidator<prelude::Fixed32>  },
+      ProtoType::Fixed64 => quote! { IntValidator<prelude::Fixed64>  },
+      ProtoType::Sfixed32 => quote! { IntValidator<prelude::Sfixed32>  },
+      ProtoType::Sfixed64 => quote! { IntValidator<prelude::Sfixed64>  },
     }
   }
 
