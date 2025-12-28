@@ -82,16 +82,17 @@ pub enum MessageEntry {
 }
 
 impl MessageEntry {
-  pub(crate) fn cel_rules(&self) -> impl Iterator<Item = CelRule> {
-    let fields_slice = match self {
-      Self::Field(f) => std::slice::from_ref(f),
-      Self::Oneof(o) => o.fields.as_slice(),
+  pub(crate) fn cel_rules(self) -> impl Iterator<Item = CelRule> {
+    let (field_opt, oneof_vec) = match self {
+      Self::Field(f) => (Some(f), None),
+      Self::Oneof(o) => (None, Some(o.fields)),
     };
 
-    fields_slice
-      .iter()
-      .flat_map(|f| f.validator.iter())
-      .flat_map(|v| v.cel_rules.iter().cloned())
+    field_opt
+      .into_iter()
+      .chain(oneof_vec.into_iter().flatten())
+      .filter_map(|f| f.validator)
+      .flat_map(|v| v.cel_rules)
   }
 }
 

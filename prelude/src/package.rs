@@ -94,19 +94,19 @@ impl Package {
   }
 
   #[cfg(feature = "testing")]
-  pub fn check_unique_cel_rules(&self) -> Result<(), String> {
+  pub fn check_unique_cel_rules(self) -> Result<(), String> {
     let mut rules: FxHashMap<&str, CelRule> = FxHashMap::default();
     let mut duplicates: FxHashMap<&str, Vec<CelRule>> = FxHashMap::default();
 
     for rule in self
       .files
-      .iter()
-      .flat_map(|f| f.messages.iter())
+      .into_iter()
+      .flat_map(|f| f.messages.into_iter())
       .flat_map(|message| {
-        message.cel_rules.iter().cloned().chain(
+        message.cel_rules.into_iter().chain(
           message
             .entries
-            .iter()
+            .into_iter()
             .flat_map(|entry| entry.cel_rules()),
         )
       })
