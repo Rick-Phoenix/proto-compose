@@ -76,14 +76,14 @@ pub struct Message {
 #[derive(Debug, Clone, PartialEq)]
 pub enum MessageEntry {
   Field(ProtoField),
-  Oneof(Oneof),
+  Oneof { oneof: Oneof, required: bool },
 }
 
 impl MessageEntry {
   pub(crate) fn cel_rules(self) -> impl Iterator<Item = CelRule> {
     let (field_opt, oneof_vec) = match self {
       Self::Field(f) => (Some(f), None),
-      Self::Oneof(o) => (None, Some(o.fields)),
+      Self::Oneof { oneof, .. } => (None, Some(oneof.fields)),
     };
 
     field_opt
@@ -111,7 +111,13 @@ impl Message {
     for entry in &self.entries {
       match entry {
         MessageEntry::Field(field) => field.register_type_import_path(imports),
-        MessageEntry::Oneof(oneof) => {
+        MessageEntry::Oneof {
+          oneof, required, ..
+        } => {
+          if *required {
+            imports.set.insert("buf/validate/validate.proto");
+          }
+
           for field in &oneof.fields {
             field.register_type_import_path(imports)
           }

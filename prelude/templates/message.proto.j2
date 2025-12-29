@@ -27,7 +27,7 @@ message {{+ self.short_name +}} {
 
 {% for entry in self.entries %}
 {% match entry %}
-  {%~ when MessageEntry::Oneof(oneof) +%}
+  {%~ when MessageEntry::Oneof { oneof, required } +%}
 
   oneof {{+ oneof.name +}} {
     {% filter indent(4) %}
@@ -35,6 +35,9 @@ message {{+ self.short_name +}} {
     option {{+ option.name +}} = {{+ option.value }};
     {% endfor %}
     {% endfilter ~%}
+    {% if required +%}
+    option (buf.validate.oneof).required = true;
+    {% endif %}
 
     {%~ for field in oneof.fields ~%}
     {%+ call macros::render_field(field, self.package, 4) %}

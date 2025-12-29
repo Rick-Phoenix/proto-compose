@@ -30,9 +30,12 @@ where
       ..
     } = data.borrow();
 
-    if let ProtoField::Oneof { path, .. } = proto_field {
+    if let ProtoField::Oneof { path, required, .. } = proto_field {
       quote! {
-        ::prelude::MessageEntry::Oneof(<#path as ::prelude::ProtoOneof>::proto_schema())
+        ::prelude::MessageEntry::Oneof {
+          oneof: <#path as ::prelude::ProtoOneof>::proto_schema(),
+          required: #required
+        }
       }
     } else {
       let field_type_tokens = proto_field.field_proto_type_tokens();

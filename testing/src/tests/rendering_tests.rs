@@ -108,7 +108,6 @@ pub enum TestEnum {
 }
 
 #[proto_oneof(direct)]
-#[proto(required)]
 #[proto(options = test_options())]
 pub enum OneofA {
   #[proto(tag = 200, validate = |v| v.min_len(10).max_len(50))]
@@ -147,7 +146,7 @@ pub struct Abc {
   #[proto(map(sint32, sint32), validate = |v| v.min_pairs(5).max_pairs(15).keys(|k| k.gt(15)).values(|vals| vals.gt(56)))]
   pub map_field: HashMap<i32, i32>,
 
-  #[proto(oneof(tags(200, 201)))]
+  #[proto(oneof(required, tags(200, 201)))]
   pub oneof_field: Option<OneofA>,
 }
 

@@ -42,13 +42,10 @@ where
   let OneofAttrs {
     options,
     name: proto_name,
-    required,
     ..
   } = oneof_attrs;
 
   let options_tokens = tokens_or_default!(options, quote! { vec![] });
-  let required_option_tokens =
-    required.then(|| quote! { options.push(::prelude::oneof_required()); });
 
   let tags = manually_set_tags.iter().map(|m| m.tag);
 
@@ -74,8 +71,6 @@ where
     impl #enum_ident {
       pub fn proto_schema() -> ::prelude::Oneof {
         let mut options: Vec<::prelude::ProtoOption> = #options_tokens;
-
-        #required_option_tokens
 
         ::prelude::Oneof {
           name: #proto_name,
