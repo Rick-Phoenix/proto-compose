@@ -7,6 +7,7 @@ pub enum ProtoField {
     path: Path,
     tags: Vec<i32>,
     default: bool,
+    required: bool,
   },
   Repeated(ProtoType),
   Optional(ProtoType),

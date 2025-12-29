@@ -1,6 +1,6 @@
 use crate::*;
 
-pub fn impl_oneof_validator2<T>(oneof_ident: &Ident, variants: &[T]) -> TokenStream2
+pub fn impl_oneof_validator<T>(oneof_ident: &Ident, variants: &[T]) -> TokenStream2
 where
   T: Borrow<FieldData>,
 {

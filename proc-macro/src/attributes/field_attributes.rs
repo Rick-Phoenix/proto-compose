@@ -96,6 +96,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
               path,
               tags,
               default,
+              required,
             } = list.parse_args::<OneofInfo>()?;
 
             if tags.is_empty() {
@@ -116,6 +117,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
               path: oneof_path,
               tags,
               default,
+              required,
             })
           }
 

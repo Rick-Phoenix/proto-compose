@@ -16,10 +16,19 @@ where
       ..
     } = data.borrow();
 
-    if let ProtoField::Oneof { .. } = proto_field {
-      Some(quote! {
-        if let Some(oneof) = self.#ident.as_ref() {
-          oneof.validate(parent_elements, violations);
+    if let ProtoField::Oneof { required, .. } = proto_field {
+      Some(if *required {
+        quote! {
+          match self.#ident.as_ref() {
+            Some(oneof) => oneof.validate(parent_elements, violations),
+            None => violations.add_oneof_required(parent_elements)
+          };
+        }
+      } else {
+        quote! {
+          if let Some(oneof) = self.#ident.as_ref() {
+            oneof.validate(parent_elements, violations);
+          }
         }
       })
     } else {

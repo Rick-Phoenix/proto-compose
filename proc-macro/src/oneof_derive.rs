@@ -103,7 +103,7 @@ pub(crate) fn process_oneof_derive_shadow(
   let consistency_checks_impl =
     impl_oneof_consistency_checks(shadow_enum_ident, &non_ignored_variants);
 
-  let validator_impl = impl_oneof_validator2(shadow_enum_ident, &non_ignored_variants);
+  let validator_impl = impl_oneof_validator(shadow_enum_ident, &non_ignored_variants);
 
   let wrapped_items = wrap_with_imports(vec![
     oneof_schema_impl,
@@ -232,7 +232,7 @@ pub(crate) fn process_oneof_derive_direct(
 
   let consistency_checks_impl = impl_oneof_consistency_checks(oneof_ident, &fields_attrs);
 
-  let validator_impl = impl_oneof_validator2(oneof_ident, &fields_attrs);
+  let validator_impl = impl_oneof_validator(oneof_ident, &fields_attrs);
 
   let wrapped_items = wrap_with_imports(vec![oneof_schema_impl, validator_impl]);
 

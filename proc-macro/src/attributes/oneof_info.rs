@@ -1,3 +1,5 @@
+use syn_utils::parse_comma_separated;
+
 use crate::*;
 
 #[derive(Debug, Clone, Default)]
@@ -5,6 +7,7 @@ pub struct OneofInfo {
   pub path: ItemPathEntry,
   pub tags: Vec<i32>,
   pub default: bool,
+  pub required: bool,
 }
 
 pub fn tags_to_str(tags: &[i32]) -> String {
@@ -23,41 +26,52 @@ pub fn tags_to_str(tags: &[i32]) -> String {
 
 impl Parse for OneofInfo {
   fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-    let metas = Punctuated::<Meta, Token![,]>::parse_terminated(input)?;
-
     let mut oneof_path = ItemPathEntry::default();
     let mut tags: Vec<i32> = Vec::new();
     let mut default = false;
+    let mut required = false;
+    let input_span = input.span();
 
-    for meta in metas {
+    parse_comma_separated(input, |meta| {
       match meta {
         Meta::Path(path) => {
-          let ident = get_ident_or_continue!(path);
+          if let Some(ident) = path.get_ident() {
+            let ident_str = ident.to_string();
 
-          match ident.as_str() {
-            "default" => default = true,
-            "proxied" => oneof_path = ItemPathEntry::Proxied,
-            _ => oneof_path = ItemPathEntry::Path(path),
-          };
+            match ident_str.as_str() {
+              "default" => default = true,
+              "proxied" => oneof_path = ItemPathEntry::Proxied,
+              "required" => required = true,
+              _ => {}
+            };
+          } else {
+            oneof_path = ItemPathEntry::Path(path);
+          }
         }
         Meta::List(list) => {
-          let ident = get_ident_or_continue!(list.path);
-
-          match ident.as_str() {
-            "tags" => {
-              tags = list.parse_args::<NumList>()?.list;
-            }
-            _ => {}
-          };
+          let ident = list.path.require_ident()?;
+          if ident == "tags" {
+            tags = list.parse_args::<NumList>()?.list;
+          }
         }
-        Meta::NameValue(_) => {}
-      }
+        _ => {}
+      };
+
+      Ok(())
+    })?;
+
+    if default && required {
+      bail_with_span!(
+        input_span,
+        "`default` and `required` cannot be used together"
+      );
     }
 
     Ok(Self {
       path: oneof_path,
       tags,
       default,
+      required,
     })
   }
 }

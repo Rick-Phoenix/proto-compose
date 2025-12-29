@@ -53,6 +53,18 @@ pub struct ViolationsAcc {
 }
 
 impl ViolationsAcc {
+  pub fn add_oneof_required(&mut self, parent_elements: &[FieldPathElement]) {
+    let violation = new_violation_with_custom_id(
+      ONEOF_REQUIRED_VIOLATION.name,
+      None,
+      parent_elements,
+      &ONEOF_REQUIRED_VIOLATION,
+      "at least one value must be set",
+    );
+
+    self.inner.push(violation);
+  }
+
   pub fn add_cel(
     &mut self,
     rule: &CelRule,
