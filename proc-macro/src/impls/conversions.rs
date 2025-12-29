@@ -175,6 +175,27 @@ impl<'a> ProtoConversionImpl<'a> {
     create_from_impl(&switched)
   }
 
+  pub fn handle_field_conversions(&mut self, field_attr_data: &FieldDataKind) {
+    match field_attr_data {
+      FieldDataKind::Ignored { from_proto, ident } => {
+        self.add_field_from_proto_impl(from_proto, None, ident);
+      }
+      FieldDataKind::Normal(field_attrs) => {
+        self.add_field_from_proto_impl(
+          &field_attrs.from_proto,
+          Some(&field_attrs.proto_field),
+          &field_attrs.ident,
+        );
+
+        self.add_field_into_proto_impl(
+          &field_attrs.into_proto,
+          &field_attrs.proto_field,
+          &field_attrs.ident,
+        );
+      }
+    }
+  }
+
   pub fn add_field_into_proto_impl(
     &mut self,
     custom_expression: &Option<PathOrClosure>,

@@ -76,21 +76,16 @@ pub fn process_extension_derive(
   let target = target.ok_or(error!(&ident, "Missing target attribute"))?;
 
   for field in fields {
-    let field_ident = field.require_ident()?;
+    let field_data = process_field_data(FieldOrVariant::Field(field))?;
 
-    let type_info = TypeInfo::from_type(&field.ty)?;
-
-    let field_data = process_derive_field_attrs(field_ident, &type_info, &field.attrs)?;
-
-    let FieldAttrs {
+    let FieldDataKind::Normal(FieldData {
       tag,
       options,
-      name,
+      proto_name: name,
       proto_field,
       ..
-    } = if let FieldAttrData::Normal(data) = field_data {
-      *data
-    } else {
+    }) = field_data
+    else {
       bail!(&field, "Cannot ignore fields in extensions");
     };
 

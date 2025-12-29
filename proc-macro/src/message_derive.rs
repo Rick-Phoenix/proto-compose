@@ -48,46 +48,43 @@ pub fn process_message_derive_shadow(
     from_proto: ConversionData::new(&message_attrs.from_proto),
   };
 
-  let mut input_item = InputItem {
-    impl_kind: ImplKind::Shadow {
-      ignored_fields: &mut ignored_fields,
-      proto_conversion_data: &mut proto_conversion_data,
-    },
-    validators_tokens: &mut validators_tokens,
-    consistency_checks: &mut consistency_checks,
-  };
-
-  let mut fields_attrs: Vec<FieldAttrData> = Vec::new();
+  let mut fields_with_ctx: Vec<FieldDataKind> = Vec::new();
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
   let mut oneofs: Vec<OneofCheckCtx> = Vec::new();
 
-  for src_field in orig_struct_fields {
-    let src_field_ident = src_field.require_ident()?;
-    let type_info = TypeInfo::from_type(&src_field.ty)?;
-    let field_attrs = process_derive_field_attrs(src_field_ident, &type_info, &src_field.attrs)?;
+  for field in orig_struct_fields {
+    let field_data_kind = process_field_data(FieldOrVariant::Field(field))?;
 
-    if let FieldAttrData::Normal(data) = &field_attrs {
-      if let Some(tag) = data.tag {
-        manually_set_tags.push(ManuallySetTag {
-          tag,
-          field_span: src_field.span(),
-        });
-      } else if let ProtoField::Oneof { tags, path, .. } = &data.proto_field {
-        for tag in tags.iter().copied() {
+    proto_conversion_data.handle_field_conversions(&field_data_kind);
+
+    match &field_data_kind {
+      FieldDataKind::Ignored { .. } => {
+        ignored_fields.push(field.require_ident()?.clone());
+      }
+
+      FieldDataKind::Normal(data) => {
+        if let Some(tag) = data.tag {
           manually_set_tags.push(ManuallySetTag {
             tag,
-            field_span: src_field.span(),
+            field_span: field.span(),
+          });
+        } else if let ProtoField::Oneof { tags, path, .. } = &data.proto_field {
+          for tag in tags.iter().copied() {
+            manually_set_tags.push(ManuallySetTag {
+              tag,
+              field_span: field.span(),
+            });
+          }
+
+          oneofs.push(OneofCheckCtx {
+            path: path.to_token_stream(),
+            tags: tags.clone(),
           });
         }
-
-        oneofs.push(OneofCheckCtx {
-          path: path.to_token_stream(),
-          tags: tags.clone(),
-        });
       }
-    }
+    };
 
-    fields_attrs.push(field_attrs);
+    fields_with_ctx.push(field_data_kind);
   }
 
   let used_ranges =
@@ -95,13 +92,17 @@ pub fn process_message_derive_shadow(
 
   let mut tag_allocator = TagAllocator::new(&used_ranges);
 
-  for (dst_field, field_attrs) in shadow_struct_fields.zip(fields_attrs) {
-    let field_tokens = process_field(ProcessFieldInput {
-      field_or_variant: FieldOrVariant::Field(dst_field),
-      input_item: &mut input_item,
-      field_attrs,
-      tag_allocator: Some(&mut tag_allocator),
-    })?;
+  for (dst_field, field_attrs) in shadow_struct_fields.zip(fields_with_ctx) {
+    let FieldDataKind::Normal(field_attrs) = field_attrs else {
+      continue;
+    };
+
+    let field_tokens = field_attrs.generate_proto_impls(
+      FieldOrVariant::Field(dst_field),
+      &mut validators_tokens,
+      &mut consistency_checks,
+      Some(&mut tag_allocator),
+    )?;
 
     if !field_tokens.is_empty() {
       fields_tokens.push(field_tokens);
@@ -203,23 +204,15 @@ pub fn process_message_derive_direct(
   let mut validators_tokens: Vec<TokenStream2> = Vec::new();
   let mut consistency_checks: Vec<TokenStream2> = Vec::new();
 
-  let mut input_item = InputItem {
-    impl_kind: ImplKind::Direct,
-    validators_tokens: &mut validators_tokens,
-    consistency_checks: &mut consistency_checks,
-  };
-
-  let mut fields_attrs: Vec<FieldAttrData> = Vec::new();
+  let mut fields_attrs: Vec<FieldData> = Vec::new();
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
   let mut oneofs: Vec<OneofCheckCtx> = Vec::new();
 
-  for src_field in &item.fields {
-    let src_field_ident = src_field.require_ident()?;
-    let type_info = TypeInfo::from_type(&src_field.ty)?;
-    let field_attrs = process_derive_field_attrs(src_field_ident, &type_info, &src_field.attrs)?;
+  for field in item.fields.iter_mut() {
+    let field_attrs = process_field_data(FieldOrVariant::Field(field))?;
 
-    if let FieldAttrData::Normal(data) = &field_attrs {
-      match type_info.type_.as_ref() {
+    if let FieldDataKind::Normal(data) = field_attrs {
+      match data.type_info.type_.as_ref() {
         RustType::Box(inner) => {
           bail!(inner, "Boxed messages must be optional in a direct impl")
         }
@@ -253,13 +246,13 @@ pub fn process_message_derive_direct(
       if let Some(tag) = data.tag {
         manually_set_tags.push(ManuallySetTag {
           tag,
-          field_span: src_field.span(),
+          field_span: field.span(),
         });
       } else if let ProtoField::Oneof { tags, path, .. } = &data.proto_field {
         for tag in tags.iter().copied() {
           manually_set_tags.push(ManuallySetTag {
             tag,
-            field_span: src_field.span(),
+            field_span: field.span(),
           });
         }
 
@@ -268,9 +261,11 @@ pub fn process_message_derive_direct(
           tags: tags.clone(),
         });
       }
-    }
 
-    fields_attrs.push(field_attrs);
+      fields_attrs.push(data);
+    } else {
+      bail!(field, "Cannot use `ignore` in a direct impl");
+    }
   }
 
   let used_ranges =
@@ -278,17 +273,15 @@ pub fn process_message_derive_direct(
 
   let mut tag_allocator = TagAllocator::new(&used_ranges);
 
-  for (src_field, field_attrs) in item.fields.iter_mut().zip(fields_attrs) {
-    let field_tokens = process_field(ProcessFieldInput {
-      field_or_variant: FieldOrVariant::Field(src_field),
-      input_item: &mut input_item,
-      field_attrs,
-      tag_allocator: Some(&mut tag_allocator),
-    })?;
+  for (field, field_attrs) in item.fields.iter_mut().zip(fields_attrs) {
+    let field_tokens = field_attrs.generate_proto_impls(
+      FieldOrVariant::Field(field),
+      &mut validators_tokens,
+      &mut consistency_checks,
+      Some(&mut tag_allocator),
+    )?;
 
-    if !field_tokens.is_empty() {
-      fields_tokens.push(field_tokens);
-    }
+    fields_tokens.push(field_tokens);
   }
 
   let struct_ident = &item.ident;

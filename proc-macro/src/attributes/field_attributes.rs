@@ -1,27 +1,30 @@
 use crate::*;
 
 #[derive(Clone)]
-pub struct FieldAttrs {
+pub struct FieldData {
+  pub span: Span,
+  pub ident: Ident,
+  pub type_info: TypeInfo,
+  pub ident_str: String,
+  pub is_variant: bool,
   pub tag: Option<i32>,
   pub validator: Option<CallOrClosure>,
   pub options: Option<Expr>,
-  pub name: String,
+  pub proto_name: String,
   pub proto_field: ProtoField,
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
 }
 
-#[derive(Clone)]
-pub enum FieldAttrData {
-  Ignored { from_proto: Option<PathOrClosure> },
-  Normal(Box<FieldAttrs>),
+pub enum FieldDataKind {
+  Ignored {
+    ident: Ident,
+    from_proto: Option<PathOrClosure>,
+  },
+  Normal(FieldData),
 }
 
-pub fn process_derive_field_attrs(
-  field_ident: &Ident,
-  type_info: &TypeInfo,
-  attrs: &[Attribute],
-) -> Result<FieldAttrData, Error> {
+pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error> {
   let mut validator: Option<CallOrClosure> = None;
   let mut tag: Option<i32> = None;
   let mut options: Option<Expr> = None;
@@ -30,8 +33,10 @@ pub fn process_derive_field_attrs(
   let mut is_ignored = false;
   let mut from_proto: Option<PathOrClosure> = None;
   let mut into_proto: Option<PathOrClosure> = None;
+  let field_ident = field.ident()?.clone();
+  let type_info = TypeInfo::from_type(field.get_type()?)?;
 
-  for arg in filter_attributes(attrs, &["proto"])? {
+  for arg in filter_attributes(field.attributes(), &["proto"])? {
     match arg {
       Meta::NameValue(nv) => {
         let ident = nv.path.require_ident()?.to_string();
@@ -151,7 +156,10 @@ pub fn process_derive_field_attrs(
             is_ignored = true;
 
             if from_proto.is_some() {
-              return Ok(FieldAttrData::Ignored { from_proto });
+              return Ok(FieldDataKind::Ignored {
+                from_proto,
+                ident: field_ident,
+              });
             }
           }
 
@@ -171,7 +179,10 @@ pub fn process_derive_field_attrs(
   }
 
   if is_ignored {
-    return Ok(FieldAttrData::Ignored { from_proto });
+    return Ok(FieldDataKind::Ignored {
+      from_proto,
+      ident: field_ident,
+    });
   }
 
   let proto_field = if let Some(mut field) = proto_field {
@@ -223,15 +234,18 @@ pub fn process_derive_field_attrs(
     }
   };
 
-  let name = name.unwrap_or_else(|| ccase!(snake, field_ident.to_string()));
-
-  Ok(FieldAttrData::Normal(Box::new(FieldAttrs {
+  Ok(FieldDataKind::Normal(FieldData {
     validator,
     tag,
     options,
-    name,
+    proto_name: name.unwrap_or_else(|| ccase!(snake, field_ident.to_string())),
     proto_field,
     from_proto,
     into_proto,
-  })))
+    span: field.span(),
+    ident_str: field_ident.to_string(),
+    ident: field_ident,
+    is_variant: field.is_variant(),
+    type_info,
+  }))
 }

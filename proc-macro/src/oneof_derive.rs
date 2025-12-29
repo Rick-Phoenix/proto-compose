@@ -39,32 +39,24 @@ pub(crate) fn process_oneof_derive_shadow(
     from_proto: ConversionData::new(&oneof_attrs.from_proto),
   };
 
-  let mut input_item = InputItem {
-    impl_kind: ImplKind::Shadow {
-      ignored_fields: &mut ignored_variants,
-      proto_conversion_data: &mut proto_conversion_data,
-    },
-    validators_tokens: &mut validators_tokens,
-    consistency_checks: &mut consistency_checks,
-  };
-
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
-  let mut fields_attrs: Vec<FieldAttrData> = Vec::new();
+  let mut fields_attrs: Vec<FieldDataKind> = Vec::new();
 
   for src_variant in orig_enum_variants {
-    let src_variant_ident = &src_variant.ident;
-    let type_info = TypeInfo::from_type(src_variant.type_()?)?;
-    let field_attrs =
-      process_derive_field_attrs(src_variant_ident, &type_info, &src_variant.attrs)?;
+    let field_attrs = process_field_data(FieldOrVariant::Variant(src_variant))?;
+    proto_conversion_data.handle_field_conversions(&field_attrs);
 
-    if let FieldAttrData::Normal(data) = &field_attrs
-      && let Some(tag) = data.tag
-    {
-      manually_set_tags.push(ManuallySetTag {
-        tag,
-        field_span: src_variant.span(),
-      });
-    }
+    match &field_attrs {
+      FieldDataKind::Ignored { ident, .. } => ignored_variants.push(ident.clone()),
+      FieldDataKind::Normal(data) => {
+        if let Some(tag) = data.tag {
+          manually_set_tags.push(ManuallySetTag {
+            tag,
+            field_span: src_variant.span(),
+          });
+        }
+      }
+    };
 
     fields_attrs.push(field_attrs);
   }
@@ -72,16 +64,18 @@ pub(crate) fn process_oneof_derive_shadow(
   sort_and_check_duplicate_tags(&mut manually_set_tags)?;
 
   for (dst_variant, field_attrs) in shadow_enum_variants.zip(fields_attrs) {
-    let field_tokens = process_field(ProcessFieldInput {
-      field_or_variant: FieldOrVariant::Variant(dst_variant),
-      input_item: &mut input_item,
-      field_attrs,
-      tag_allocator: None,
-    })?;
+    let FieldDataKind::Normal(field_attrs) = field_attrs else {
+      continue;
+    };
 
-    if !field_tokens.is_empty() {
-      variants_tokens.push(field_tokens);
-    }
+    let field_tokens = field_attrs.generate_proto_impls(
+      FieldOrVariant::Variant(dst_variant),
+      &mut validators_tokens,
+      &mut consistency_checks,
+      None,
+    )?;
+
+    variants_tokens.push(field_tokens);
   }
 
   let proto_conversion_impls = proto_conversion_data.generate_conversion_impls();
@@ -176,22 +170,14 @@ pub(crate) fn process_oneof_derive_direct(
   let mut validators_tokens: Vec<TokenStream2> = Vec::new();
   let mut consistency_checks: Vec<TokenStream2> = Vec::new();
 
-  let mut input_item = InputItem {
-    impl_kind: ImplKind::Direct,
-    validators_tokens: &mut validators_tokens,
-    consistency_checks: &mut consistency_checks,
-  };
-
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
-  let mut fields_attrs: Vec<FieldAttrData> = Vec::new();
+  let mut fields_attrs: Vec<FieldData> = Vec::new();
 
-  for variant in variants.iter() {
-    let variant_ident = &variant.ident;
+  for variant in variants.iter_mut() {
+    let field_attrs = process_field_data(FieldOrVariant::Variant(variant))?;
     let variant_type = variant.type_()?;
-    let type_info = TypeInfo::from_type(variant_type)?;
-    let field_attrs = process_derive_field_attrs(variant_ident, &type_info, &variant.attrs)?;
 
-    if let FieldAttrData::Normal(data) = &field_attrs {
+    if let FieldDataKind::Normal(data) = field_attrs {
       if let Some(tag) = data.tag {
         manually_set_tags.push(ManuallySetTag {
           tag,
@@ -199,7 +185,7 @@ pub(crate) fn process_oneof_derive_direct(
         });
       }
 
-      match type_info.type_.as_ref() {
+      match data.type_info.type_.as_ref() {
         RustType::Box(_) => {
           if !matches!(
             data.proto_field,
@@ -216,7 +202,7 @@ pub(crate) fn process_oneof_derive_direct(
         RustType::Other(_) => {}
 
         _ => {
-          if !type_info.type_.is_primitive() && !type_info.type_.is_bytes() {
+          if !data.type_info.type_.is_primitive() && !data.type_info.type_.is_bytes() {
             bail!(
               variant_type,
               "Unsupported Oneof variant type. If you want to use a custom type, you must use a proxied oneof with custom conversions"
@@ -224,24 +210,24 @@ pub(crate) fn process_oneof_derive_direct(
           }
         }
       };
-    }
 
-    fields_attrs.push(field_attrs);
+      fields_attrs.push(data);
+    } else {
+      bail!(variant, "Cannot use `ignore` in direct impls");
+    }
   }
 
   sort_and_check_duplicate_tags(&mut manually_set_tags)?;
 
   for (variant, field_attrs) in variants.iter_mut().zip(fields_attrs) {
-    let field_tokens = process_field(ProcessFieldInput {
-      field_or_variant: FieldOrVariant::Variant(variant),
-      input_item: &mut input_item,
-      field_attrs,
-      tag_allocator: None,
-    })?;
+    let field_tokens = field_attrs.generate_proto_impls(
+      FieldOrVariant::Variant(variant),
+      &mut validators_tokens,
+      &mut consistency_checks,
+      None,
+    )?;
 
-    if !field_tokens.is_empty() {
-      variants_tokens.push(field_tokens);
-    }
+    variants_tokens.push(field_tokens);
   }
 
   let oneof_ident = &item.ident;

@@ -7,7 +7,26 @@ pub enum FieldOrVariant<'a> {
   Variant(&'a mut Variant),
 }
 
+impl<'a> From<&'a mut Field> for FieldOrVariant<'a> {
+  fn from(value: &'a mut Field) -> Self {
+    Self::Field(value)
+  }
+}
+
+impl<'a> From<&'a mut Variant> for FieldOrVariant<'a> {
+  fn from(value: &'a mut Variant) -> Self {
+    Self::Variant(value)
+  }
+}
+
 impl<'a> FieldOrVariant<'a> {
+  pub fn attributes(&self) -> &[Attribute] {
+    match self {
+      FieldOrVariant::Field(field) => &field.attrs,
+      FieldOrVariant::Variant(variant) => &variant.attrs,
+    }
+  }
+
   pub fn span(&self) -> Span {
     match self {
       FieldOrVariant::Field(field) => field.span(),

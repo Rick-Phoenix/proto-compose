@@ -1,31 +1,25 @@
 use crate::*;
 
-pub struct FieldCtx<'a, 'field> {
-  pub field: FieldOrVariant<'field>,
-  pub field_attrs: FieldAttrs,
-  pub type_info: TypeInfo,
-  pub validators_tokens: &'a mut Vec<TokenStream2>,
-  pub consistency_checks: &'a mut Vec<TokenStream2>,
-  pub tag_allocator: Option<&'a mut TagAllocator<'field>>,
-}
-
-impl<'a, 'field> FieldCtx<'a, 'field> {
-  pub fn generate_proto_impls(self) -> syn::Result<TokenStream2> {
-    let FieldCtx {
-      mut field,
-      field_attrs:
-        FieldAttrs {
-          tag,
-          validator,
-          options,
-          name,
-          proto_field,
-          ..
-        },
+impl FieldData {
+  pub fn generate_proto_impls(
+    &self,
+    mut field: FieldOrVariant,
+    validators_tokens: &mut Vec<TokenStream2>,
+    consistency_checks: &mut Vec<TokenStream2>,
+    tag_allocator: Option<&mut TagAllocator>,
+  ) -> syn::Result<TokenStream2> {
+    let FieldData {
       type_info,
-      validators_tokens,
-      consistency_checks,
-      tag_allocator,
+      span: field_span,
+      ident: field_ident,
+      ident_str: field_ident_str,
+      is_variant,
+      tag,
+      validator,
+      options,
+      proto_name,
+      proto_field,
+      ..
     } = self;
 
     let proto_output_type = proto_field.output_proto_type();
@@ -33,24 +27,19 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
 
     field.change_type(proto_output_type_outer)?;
 
-    let field_span = field.span();
-
     let tag = if let Some(tag) = tag {
-      tag
+      *tag
     } else if let Some(tag_allocator) = tag_allocator {
       tag_allocator
         .next_tag()
-        .map_err(|e| error_with_span!(field_span, "{e}"))?
+        .map_err(|e| error_with_span!(*field_span, "{e}"))?
     } else {
-      bail_with_span!(field_span, "Missing tag");
+      bail_with_span!(*field_span, "Missing tag");
     };
 
     let prost_attr = proto_field.as_prost_attr(tag);
     let field_prost_attr: Attribute = parse_quote!(#prost_attr);
     field.inject_attr(field_prost_attr);
-
-    let field_ident = field.ident()?;
-    let field_ident_str = field_ident.to_string();
 
     if let ProtoField::Oneof {
       path: oneof_path, ..
@@ -72,8 +61,6 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
         ::prelude::MessageEntry::Oneof(<#oneof_path as ::prelude::ProtoOneof>::proto_schema())
       });
     }
-
-    let is_oneof_variant = field.is_variant();
 
     let validator_schema_tokens = if let Some(validator) = validator {
       let validator_target_type = proto_field.validator_target_type();
@@ -101,7 +88,7 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
 
       let field_context_tokens = quote! {
         ::prelude::FieldContext {
-          proto_name: #name,
+          proto_name: #proto_name,
           tag: #tag,
           field_type: #field_type,
           key_type: None,
@@ -113,7 +100,7 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
 
       let field_validator_tokens = generate_validator_tokens(
         &type_info.type_,
-        is_oneof_variant,
+        *is_variant,
         field_ident,
         field_context_tokens,
         &validator_static_ident,
@@ -139,7 +126,7 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
         quote! {
           ::prelude::MessageEntry::Field(
             ::prelude::ProtoField {
-              name: #name.to_string(),
+              name: #proto_name.to_string(),
               tag: #tag,
               options: #options_tokens,
               type_: #field_type_tokens,
@@ -151,7 +138,7 @@ impl<'a, 'field> FieldCtx<'a, 'field> {
       FieldOrVariant::Variant(_) => {
         quote! {
           ::prelude::ProtoField {
-            name: #name.to_string(),
+            name: #proto_name.to_string(),
             tag: #tag,
             options: #options_tokens,
             type_: #field_type_tokens,
