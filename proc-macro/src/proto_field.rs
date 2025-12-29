@@ -14,6 +14,41 @@ pub enum ProtoField {
 }
 
 impl ProtoField {
+  pub fn default_validator_expr(&self) -> Option<TokenStream2> {
+    match self {
+      Self::Map(map) => {
+        if let ProtoType::Message { path, .. } = &map.values {
+          let keys_type = map.keys.validator_target_type();
+
+          Some(quote! {
+            MapValidator::<#keys_type, #path>::default()
+          })
+        } else {
+          None
+        }
+      }
+      Self::Repeated(inner) => {
+        if let ProtoType::Message { path, .. } = inner {
+          Some(quote! {
+            RepeatedValidator::<#path>::default()
+          })
+        } else {
+          None
+        }
+      }
+      Self::Optional(inner) | Self::Single(inner) => {
+        if let ProtoType::Message { path, .. } = inner {
+          Some(quote! {
+            MessageValidator::<#path>::default()
+          })
+        } else {
+          None
+        }
+      }
+      _ => None,
+    }
+  }
+
   pub fn descriptor_type_tokens(&self) -> TokenStream2 {
     match self {
       ProtoField::Map(_) => quote! { ::proto_types::field_descriptor_proto::Type::Message },

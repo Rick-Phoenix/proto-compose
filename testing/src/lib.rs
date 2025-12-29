@@ -96,7 +96,7 @@ pub mod inner {
     #[proto(duration, validate = |v| v.lt(Duration { seconds: 2000, nanos: 0 }))]
     duration: Option<Duration>,
 
-    #[proto(message(AbcProto, boxed), validate = |v| v.required())]
+    #[proto(message(AbcProto, boxed))]
     boxed: Option<Box<Self>>,
 
     #[proto(bytes, validate = |v| v.pattern(inline_bytes_regex!("abc", "abc")))]
@@ -111,7 +111,7 @@ pub mod inner {
     #[proto(map(string, enum_), validate = |v| v.min_pairs(20).values(|val| val.defined_only()))]
     enum_map: HashMap<String, PseudoEnum>,
 
-    #[proto(map(string, message(proxied)), validate = |v| v.values(|val| val.ignore_always()))]
+    #[proto(map(string, message(proxied)))]
     message_map: HashMap<String, Nested>,
 
     #[proto(enum_, validate = |v| v.defined_only())]
@@ -126,7 +126,7 @@ pub mod inner {
     #[proto(message(proxied))]
     nested: Option<Nested>,
 
-    #[proto(repeated(message(proxied)), validate = |v| v.min_items(1))]
+    #[proto(repeated(message(proxied)))]
     repeated_message: Vec<Nested>,
 
     #[proto(oneof(default, proxied, tags(200, 201, 202)))]

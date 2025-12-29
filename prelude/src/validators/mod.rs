@@ -54,8 +54,13 @@ pub trait ValidatorBuilderFor<T> {
 
 pub trait ProtoValidator: std::marker::Sized {
   type Target;
-  type Validator: Validator<Self, Target = Self::Target>;
+  type Validator: Validator<Self, Target = Self::Target> + Clone;
   type Builder: ValidatorBuilderFor<Self, Validator = Self::Validator>;
+
+  #[must_use]
+  fn default_validator() -> Option<Self::Validator> {
+    None
+  }
 
   fn validator_builder() -> Self::Builder;
 

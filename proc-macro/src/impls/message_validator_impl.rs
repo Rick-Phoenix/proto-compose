@@ -55,6 +55,10 @@ pub fn impl_message_validator(ctx: ValidatorImplCtx) -> TokenStream2 {
       type Validator = ::prelude::MessageValidator<Self>;
       type Builder = ::prelude::MessageValidatorBuilder<Self>;
 
+      fn default_validator() -> Option<Self::Validator> {
+        Some(MessageValidator::default())
+      }
+
       fn validator_builder() -> Self::Builder {
         ::prelude::MessageValidator::builder()
       }

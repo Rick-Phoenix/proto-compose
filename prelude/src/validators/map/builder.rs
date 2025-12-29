@@ -75,7 +75,7 @@ where
       _key_type,
       _value_type,
       cel,
-      values,
+      values: values.or_else(|| V::default_validator()),
       min_pairs,
       max_pairs,
       ignore,

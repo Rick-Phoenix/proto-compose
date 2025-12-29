@@ -14,6 +14,7 @@ use owo_colors::OwoColorize;
 pub use paste::paste;
 use proto_types::protovalidate::{FieldPathElement, Violations};
 pub use protocheck_core::validators::containing::SortedList;
+use std::borrow::Cow;
 use thiserror::Error;
 mod oneof;
 mod options;

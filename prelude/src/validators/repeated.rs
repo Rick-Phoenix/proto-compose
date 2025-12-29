@@ -11,7 +11,7 @@ use protocheck_core::ordered_float::FloatCore;
 
 use super::*;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct RepeatedValidator<T>
 where
   T: AsProtoType + ProtoValidator,
@@ -27,6 +27,40 @@ where
   /// Specifies that this field must contain only unique values (only applies to scalar fields).
   pub unique: bool,
   pub ignore: Ignore,
+}
+
+impl<T> Clone for RepeatedValidator<T>
+where
+  T: AsProtoType + ProtoValidator,
+{
+  fn clone(&self) -> Self {
+    Self {
+      _inner_type: PhantomData,
+      cel: self.cel.clone(),
+      items: self.items.clone(),
+      min_items: self.min_items,
+      max_items: self.max_items,
+      unique: self.unique,
+      ignore: self.ignore,
+    }
+  }
+}
+
+impl<T> Default for RepeatedValidator<T>
+where
+  T: AsProtoType + ProtoValidator,
+{
+  fn default() -> Self {
+    Self {
+      _inner_type: PhantomData,
+      cel: vec![],
+      items: T::default_validator(),
+      min_items: None,
+      max_items: None,
+      unique: false,
+      ignore: Ignore::Unspecified,
+    }
+  }
 }
 
 impl<T: AsProtoField> AsProtoField for Vec<T> {

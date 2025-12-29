@@ -94,7 +94,7 @@ where
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct MapValidator<K, V>
 where
   K: ProtoValidator,
@@ -115,6 +115,73 @@ where
   /// The maximum amount of key-value pairs that this field should have in order to be valid.
   pub max_pairs: Option<usize>,
   pub ignore: Ignore,
+}
+
+impl<K, V> Default for MapValidator<K, V>
+where
+  K: ProtoValidator,
+  V: ProtoValidator,
+{
+  fn default() -> Self {
+    Self {
+      keys: None,
+      _key_type: PhantomData,
+      _value_type: PhantomData,
+      cel: vec![],
+      values: V::default_validator(),
+      min_pairs: None,
+      max_pairs: None,
+      ignore: Ignore::Unspecified,
+    }
+  }
+}
+
+impl<K, V> Clone for MapValidator<K, V>
+where
+  K: ProtoValidator,
+  V: ProtoValidator,
+{
+  fn clone(&self) -> Self {
+    Self {
+      keys: self.keys.clone(),
+      _key_type: PhantomData,
+      _value_type: PhantomData,
+      cel: self.cel.clone(),
+      values: self.values.clone(),
+      min_pairs: self.min_pairs,
+      max_pairs: self.max_pairs,
+      ignore: self.ignore,
+    }
+  }
+}
+
+impl<K, V> MapValidator<K, V>
+where
+  K: ProtoValidator,
+  V: ProtoValidator + ProtoMessage,
+{
+  #[must_use]
+  pub fn default_message_validator() -> Self {
+    Self {
+      values: Some(V::validator_builder().build_validator()),
+      cel: vec![],
+      ignore: Ignore::Unspecified,
+      keys: None,
+      max_pairs: None,
+      min_pairs: None,
+      _key_type: PhantomData,
+      _value_type: PhantomData,
+    }
+  }
+
+  #[must_use]
+  pub fn with_default_message_validator(mut self) -> Self {
+    if self.values.is_none() {
+      self.values = Some(V::validator_builder().build_validator());
+    }
+
+    self
+  }
 }
 
 #[cfg(feature = "cel")]

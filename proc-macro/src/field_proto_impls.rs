@@ -62,19 +62,29 @@ impl FieldData {
       });
     }
 
-    let validator_schema_tokens = if let Some(validator) = validator {
+    let mut validator_expr = validator.as_ref().map(|validator|  {
       let validator_target_type = proto_field.validator_target_type();
 
-      let validator_static_ident =
-        format_ident!("{}_VALIDATOR", ccase!(constant, &field_ident_str));
-
-      let validator_expr = match validator {
+      match validator {
         CallOrClosure::Call(call) => quote! { #call.build_validator() },
 
         CallOrClosure::Closure(closure) => {
           quote! { <#validator_target_type as ::prelude::ProtoValidator>::validator_from_closure(#closure) }
         }
-      };
+      }
+    });
+
+    // We grab the schema impl early because we don't want it in case of
+    // a default validator fallback
+    let validator_schema_tokens = validator_expr
+      .as_ref()
+      .map_or_else(|| quote! { None }, |e| quote! { Some(#e.into_schema()) });
+
+    validator_expr = validator_expr.or_else(|| proto_field.default_validator_expr());
+
+    if let Some(validator_expr) = validator_expr.as_ref() {
+      let validator_static_ident =
+        format_ident!("{}_VALIDATOR", ccase!(constant, &field_ident_str));
 
       let validator_name = proto_field.validator_name();
 
@@ -112,11 +122,7 @@ impl FieldData {
       consistency_checks.push(quote! {
         (#field_ident_str, #validator_expr.check_consistency())
       });
-
-      quote! { Some(#validator_expr.into_schema()) }
-    } else {
-      quote! { None }
-    };
+    }
 
     let field_type_tokens = proto_field.field_proto_type_tokens();
     let options_tokens = tokens_or_default!(options, quote! { vec![] });

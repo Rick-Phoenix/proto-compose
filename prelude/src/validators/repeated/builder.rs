@@ -60,7 +60,7 @@ where
     RepeatedValidator {
       _inner_type,
       cel,
-      items,
+      items: items.or_else(|| T::default_validator()),
       min_items,
       max_items,
       unique,
