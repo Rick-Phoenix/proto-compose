@@ -61,7 +61,7 @@ impl ProtoField {
     }
   }
 
-  pub fn as_prost_attr(&self, tag: i32) -> TokenStream2 {
+  pub fn as_prost_attr(&self, tag: i32) -> Attribute {
     let inner = match self {
       ProtoField::Oneof { path, tags, .. } => {
         let oneof_path_str = path.to_token_stream().to_string();
@@ -69,7 +69,7 @@ impl ProtoField {
 
         // We don't need to add the tag for oneofs,
         // so we return early
-        return quote! { #[prost(oneof = #oneof_path_str, tags = #tags_str)] };
+        return parse_quote! { #[prost(oneof = #oneof_path_str, tags = #tags_str)] };
       }
       Self::Map(map) => {
         let map_attr = format!("{}, {}", map.keys, map.values.as_prost_map_value());
@@ -92,7 +92,7 @@ impl ProtoField {
 
     let tag_as_str = tag.to_string();
 
-    quote! { #[prost(#inner, tag = #tag_as_str)] }
+    parse_quote! { #[prost(#inner, tag = #tag_as_str)] }
   }
 
   pub fn default_into_proto(&self, base_ident: &TokenStream2) -> TokenStream2 {
@@ -218,26 +218,30 @@ impl ProtoField {
     quote! { <#target_type as ::prelude::AsProtoField>::as_proto_field() }
   }
 
-  pub fn output_proto_type(&self) -> TokenStream2 {
+  pub fn output_proto_type(&self) -> Type {
     match self {
       Self::Map(map) => {
         let keys = map.keys.output_proto_type();
         let values = map.values.output_proto_type();
 
-        quote! { std::collections::HashMap<#keys, #values> }
+        parse_quote! { std::collections::HashMap<#keys, #values> }
       }
-      Self::Oneof { path, .. } => quote! { Option<#path> },
+      Self::Oneof { path, .. } => parse_quote! { Option<#path> },
       ProtoField::Repeated(inner) => {
         let inner_type = inner.output_proto_type();
 
-        quote! { Vec<#inner_type> }
+        parse_quote! { Vec<#inner_type> }
       }
       ProtoField::Optional(inner) => {
         let inner_type = inner.output_proto_type();
 
-        quote! { Option<#inner_type> }
+        parse_quote! { Option<#inner_type> }
       }
-      ProtoField::Single(inner) => inner.output_proto_type(),
+      ProtoField::Single(inner) => {
+        let inner = inner.output_proto_type();
+
+        parse_quote! { #inner }
+      }
     }
   }
 }

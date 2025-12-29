@@ -7,6 +7,7 @@
 #[macro_use]
 mod macros;
 
+use std::borrow::Borrow;
 use std::{borrow::Cow, fmt::Display, ops::Range};
 
 use attributes::*;

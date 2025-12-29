@@ -1,6 +1,18 @@
 use crate::*;
 
 #[derive(Clone)]
+pub struct ValidatorTokens {
+  pub expr: TokenStream2,
+  pub is_fallback: bool,
+}
+
+impl ToTokens for ValidatorTokens {
+  fn to_tokens(&self, tokens: &mut TokenStream2) {
+    tokens.extend(self.expr.to_token_stream());
+  }
+}
+
+#[derive(Clone)]
 pub struct FieldData {
   pub span: Span,
   pub ident: Ident,
@@ -8,7 +20,7 @@ pub struct FieldData {
   pub ident_str: String,
   pub is_variant: bool,
   pub tag: Option<i32>,
-  pub validator: Option<CallOrClosure>,
+  pub validator: Option<ValidatorTokens>,
   pub options: Option<Expr>,
   pub proto_name: String,
   pub proto_field: ProtoField,
@@ -16,6 +28,8 @@ pub struct FieldData {
   pub into_proto: Option<PathOrClosure>,
 }
 
+// No sense in boxing since it's the most common path
+#[allow(clippy::large_enum_variant)]
 pub enum FieldDataKind {
   Ignored {
     ident: Ident,
@@ -24,7 +38,17 @@ pub enum FieldDataKind {
   Normal(FieldData),
 }
 
-pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error> {
+impl FieldDataKind {
+  pub fn as_normal(&self) -> Option<&FieldData> {
+    if let Self::Normal(v) = self {
+      Some(v)
+    } else {
+      None
+    }
+  }
+}
+
+pub fn process_field_data(mut field: FieldOrVariant) -> Result<FieldDataKind, Error> {
   let mut validator: Option<CallOrClosure> = None;
   let mut tag: Option<i32> = None;
   let mut options: Option<Expr> = None;
@@ -232,6 +256,34 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
         ProtoField::Single(ProtoType::from_primitive(&path)?)
       }
     }
+  };
+
+  let validator_expr = validator.as_ref().map(|validator|  {
+      let validator_target_type = proto_field.validator_target_type();
+
+      match validator {
+        CallOrClosure::Call(call) => quote! { #call.build_validator() },
+
+        CallOrClosure::Closure(closure) => {
+          quote! { <#validator_target_type as ::prelude::ProtoValidator>::validator_from_closure(#closure) }
+        }
+      }
+    });
+
+  // I think it's clearer this way
+  #[allow(clippy::manual_map)]
+  let validator = if let Some(expr) = validator_expr {
+    Some(ValidatorTokens {
+      expr,
+      is_fallback: false,
+    })
+  } else if let Some(expr) = proto_field.default_validator_expr() {
+    Some(ValidatorTokens {
+      expr,
+      is_fallback: true,
+    })
+  } else {
+    None
   };
 
   Ok(FieldDataKind::Normal(FieldData {

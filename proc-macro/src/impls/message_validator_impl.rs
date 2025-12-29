@@ -1,15 +1,75 @@
 use crate::*;
 
-pub struct ValidatorImplCtx<'a> {
-  pub target_ident: &'a Ident,
-  pub validators_tokens: Vec<TokenStream2>,
-}
+pub fn impl_message_validator<T>(target_ident: &Ident, fields: &[T]) -> TokenStream2
+where
+  T: Borrow<FieldData>,
+{
+  let validators_tokens = fields.iter().flat_map(|data| {
+    let FieldData {
+      ident,
+      type_info,
+      ident_str,
+      is_variant,
+      tag,
+      validator,
+      proto_name,
+      proto_field,
+      ..
+    } = data.borrow();
 
-pub fn impl_message_validator(ctx: ValidatorImplCtx) -> TokenStream2 {
-  let ValidatorImplCtx {
-    target_ident,
-    validators_tokens,
-  } = ctx;
+    if let ProtoField::Oneof { .. } = proto_field {
+      let field_ident = ident;
+
+      Some(quote! {
+        if let Some(oneof) = self.#field_ident.as_ref() {
+          oneof.validate(parent_elements, violations);
+        }
+      })
+    } else {
+      if let Some(ValidatorTokens {
+        expr: validator_expr,
+        ..
+      }) = validator.as_ref()
+      {
+        let validator_static_ident = format_ident!("{}_VALIDATOR", ccase!(constant, &ident_str));
+
+        let validator_name = proto_field.validator_name();
+
+        let validator_static = quote! {
+          static #validator_static_ident: LazyLock<#validator_name> = LazyLock::new(|| {
+            #validator_expr
+          });
+        };
+
+        let field_type = proto_field.descriptor_type_tokens();
+
+        let field_context_tokens = quote! {
+          ::prelude::FieldContext {
+            proto_name: #proto_name,
+            tag: #tag,
+            field_type: #field_type,
+            key_type: None,
+            value_type: None,
+            subscript: None,
+            field_kind: Default::default(),
+          }
+        };
+
+        let validator_tokens = generate_validator_tokens(
+          &type_info.type_,
+          *is_variant,
+          ident,
+          field_context_tokens,
+          &validator_static_ident,
+          validator_static,
+        );
+
+        Some(validator_tokens)
+      } else {
+        None
+      }
+    }
+  });
 
   quote! {
     #[allow(clippy::ptr_arg)]

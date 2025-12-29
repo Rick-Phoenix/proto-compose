@@ -4,6 +4,7 @@
   clippy::struct_field_names
 )]
 
+use bytes::Bytes;
 use std::sync::Arc;
 
 use crate::*;

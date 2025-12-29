@@ -31,14 +31,9 @@ pub fn process_message_derive_shadow(
   let orig_struct_ident = &item.ident;
   let shadow_struct_ident = &shadow_struct.ident;
 
-  let mut fields_tokens: Vec<TokenStream2> = Vec::new();
-
   let orig_struct_fields = item.fields.iter_mut();
   let shadow_struct_fields = shadow_struct.fields.iter_mut();
   let mut ignored_fields: Vec<Ident> = Vec::new();
-
-  let mut validators_tokens: Vec<TokenStream2> = Vec::new();
-  let mut consistency_checks: Vec<TokenStream2> = Vec::new();
 
   let mut proto_conversion_data = ProtoConversionImpl {
     source_ident: orig_struct_ident,
@@ -92,21 +87,28 @@ pub fn process_message_derive_shadow(
 
   let mut tag_allocator = TagAllocator::new(&used_ranges);
 
-  for (dst_field, field_attrs) in shadow_struct_fields.zip(fields_with_ctx) {
+  for (dst_field, field_attrs) in shadow_struct_fields.zip(fields_with_ctx.iter_mut()) {
     let FieldDataKind::Normal(field_attrs) = field_attrs else {
       continue;
     };
 
-    let field_tokens = field_attrs.generate_proto_impls(
-      FieldOrVariant::Field(dst_field),
-      &mut validators_tokens,
-      &mut consistency_checks,
-      Some(&mut tag_allocator),
-    )?;
+    let prost_compatible_type = field_attrs.proto_field.output_proto_type();
+    dst_field.ty = prost_compatible_type;
 
-    if !field_tokens.is_empty() {
-      fields_tokens.push(field_tokens);
-    }
+    let tag = match field_attrs.tag {
+      Some(tag) => tag,
+      None => {
+        let new_tag = tag_allocator
+          .next_tag()
+          .map_err(|e| error_with_span!(field_attrs.span, "{e}"))?;
+
+        field_attrs.tag = Some(new_tag);
+        new_tag
+      }
+    };
+
+    let prost_attr = field_attrs.proto_field.as_prost_attr(tag);
+    dst_field.attrs.push(prost_attr);
   }
 
   let proto_conversion_impls = proto_conversion_data.generate_conversion_impls();
@@ -122,34 +124,29 @@ pub fn process_message_derive_shadow(
       .collect();
   }
 
-  let consistency_checks_impl =
-    if message_attrs.cel_rules.is_some() || !consistency_checks.is_empty() {
-      Some(impl_message_consistency_checks(
-        MessageConsistencyChecksCtx {
-          item_ident: shadow_struct_ident,
-          consistency_checks,
-          no_auto_test: message_attrs.no_auto_test,
-        },
-      ))
-    } else {
-      None
-    };
+  let non_ignored_fields: Vec<&FieldData> = fields_with_ctx
+    .iter()
+    .filter_map(|f| f.as_normal())
+    .collect();
 
-  let schema_impls = message_schema_impls(MessageSchemaImplsCtx {
+  let consistency_checks_impl = impl_message_consistency_checks(
+    shadow_struct_ident,
+    &non_ignored_fields,
+    message_attrs.no_auto_test,
+  );
+
+  let validator_impl = impl_message_validator(shadow_struct_ident, &non_ignored_fields);
+
+  let schema_impls = message_schema_impls2(
     orig_struct_ident,
-    shadow_struct_ident: Some(shadow_struct_ident),
-    message_attrs: &message_attrs,
-    entries_tokens: fields_tokens,
-  });
+    Some(shadow_struct_ident),
+    &message_attrs,
+    &non_ignored_fields,
+  );
 
   let shadow_struct_derives = message_attrs
     .shadow_derives
     .map(|list| quote! { #[#list] });
-
-  let validator_impl = impl_message_validator(ValidatorImplCtx {
-    target_ident: shadow_struct_ident,
-    validators_tokens,
-  });
 
   let wrapped_items = wrap_with_imports(vec![
     schema_impls,
@@ -198,11 +195,6 @@ pub fn process_message_derive_direct(
   };
 
   item.attrs.push(prost_message_attr);
-
-  let mut fields_tokens: Vec<TokenStream2> = Vec::new();
-
-  let mut validators_tokens: Vec<TokenStream2> = Vec::new();
-  let mut consistency_checks: Vec<TokenStream2> = Vec::new();
 
   let mut fields_attrs: Vec<FieldData> = Vec::new();
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
@@ -273,43 +265,38 @@ pub fn process_message_derive_direct(
 
   let mut tag_allocator = TagAllocator::new(&used_ranges);
 
-  for (field, field_attrs) in item.fields.iter_mut().zip(fields_attrs) {
-    let field_tokens = field_attrs.generate_proto_impls(
-      FieldOrVariant::Field(field),
-      &mut validators_tokens,
-      &mut consistency_checks,
-      Some(&mut tag_allocator),
-    )?;
+  for (field, field_attrs) in item
+    .fields
+    .iter_mut()
+    .zip(fields_attrs.iter_mut())
+  {
+    let tag = match field_attrs.tag {
+      Some(tag) => tag,
+      None => {
+        let new_tag = tag_allocator
+          .next_tag()
+          .map_err(|e| error_with_span!(field_attrs.span, "{e}"))?;
 
-    fields_tokens.push(field_tokens);
+        field_attrs.tag = Some(new_tag);
+        new_tag
+      }
+    };
+
+    let prost_compatible_type = field_attrs.proto_field.output_proto_type();
+    field.ty = prost_compatible_type;
+
+    let prost_attr = field_attrs.proto_field.as_prost_attr(tag);
+    field.attrs.push(prost_attr);
   }
 
   let struct_ident = &item.ident;
 
   let consistency_checks_impl =
-    if message_attrs.cel_rules.is_some() || !consistency_checks.is_empty() {
-      Some(impl_message_consistency_checks(
-        MessageConsistencyChecksCtx {
-          item_ident: struct_ident,
-          consistency_checks,
-          no_auto_test: message_attrs.no_auto_test,
-        },
-      ))
-    } else {
-      None
-    };
+    impl_message_consistency_checks(struct_ident, &fields_attrs, message_attrs.no_auto_test);
 
-  let schema_impls = message_schema_impls(MessageSchemaImplsCtx {
-    orig_struct_ident: struct_ident,
-    shadow_struct_ident: None,
-    message_attrs: &message_attrs,
-    entries_tokens: fields_tokens,
-  });
+  let schema_impls = message_schema_impls2(struct_ident, None, &message_attrs, &fields_attrs);
 
-  let validator_impl = impl_message_validator(ValidatorImplCtx {
-    target_ident: struct_ident,
-    validators_tokens,
-  });
+  let validator_impl = impl_message_validator(struct_ident, &fields_attrs);
 
   let oneof_tags_check =
     generate_oneof_tags_check(struct_ident, message_attrs.no_auto_test, oneofs);

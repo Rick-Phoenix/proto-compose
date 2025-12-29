@@ -62,25 +62,14 @@ impl FieldData {
       });
     }
 
-    let mut validator_expr = validator.as_ref().map(|validator|  {
-      let validator_target_type = proto_field.validator_target_type();
+    let validator_expr = validator.as_ref();
 
-      match validator {
-        CallOrClosure::Call(call) => quote! { #call.build_validator() },
-
-        CallOrClosure::Closure(closure) => {
-          quote! { <#validator_target_type as ::prelude::ProtoValidator>::validator_from_closure(#closure) }
-        }
-      }
-    });
-
-    // We grab the schema impl early because we don't want it in case of
+    // We don't want it in case of
     // a default validator fallback
     let validator_schema_tokens = validator_expr
       .as_ref()
+      .filter(|v| !v.is_fallback)
       .map_or_else(|| quote! { None }, |e| quote! { Some(#e.into_schema()) });
-
-    validator_expr = validator_expr.or_else(|| proto_field.default_validator_expr());
 
     if let Some(validator_expr) = validator_expr.as_ref() {
       let validator_static_ident =

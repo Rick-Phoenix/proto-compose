@@ -1,17 +1,39 @@
+use std::borrow::Borrow;
+
 use crate::*;
 
-pub struct MessageConsistencyChecksCtx<'a> {
-  pub item_ident: &'a Ident,
-  pub consistency_checks: Vec<TokenStream2>,
-  pub no_auto_test: bool,
-}
+pub fn impl_message_consistency_checks<T>(
+  item_ident: &Ident,
+  fields: &[T],
+  no_auto_test: bool,
+) -> TokenStream2
+where
+  T: Borrow<FieldData>,
+{
+  let consistency_checks = fields.iter().filter_map(|data| {
+    let FieldData {
+      ident_str,
+      validator,
+      proto_field,
+      ..
+    } = data.borrow();
 
-pub fn impl_message_consistency_checks(ctx: MessageConsistencyChecksCtx) -> TokenStream2 {
-  let MessageConsistencyChecksCtx {
-    item_ident,
-    consistency_checks,
-    no_auto_test,
-  } = ctx;
+    if let ProtoField::Oneof { path, .. } = proto_field {
+      Some(quote! {
+        (#ident_str, #path::check_validators_consistency())
+      })
+    } else {
+      validator
+        .as_ref()
+        // Useless to check consistency for default validators
+        .filter(|v| !v.is_fallback)
+        .map(|validator| {
+          quote! {
+            (#ident_str, #validator.check_consistency())
+          }
+        })
+    }
+  });
 
   let test_module_ident = format_ident!(
     "__{}_consistency_test",

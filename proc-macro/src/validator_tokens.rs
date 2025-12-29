@@ -1,13 +1,5 @@
 use crate::*;
 
-pub struct ValidatorTokens {
-  pub argument: TokenStream2,
-  pub field_ident: Ident,
-  pub field_context_tokens: TokenStream2,
-  pub validator_static_ident: Ident,
-  pub validator_static_tokens: TokenStream2,
-}
-
 pub fn generate_validator_tokens(
   rust_type: &RustType,
   is_variant: bool,
