@@ -59,149 +59,39 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
   let field_ident = field.ident()?.clone();
   let type_info = TypeInfo::from_type(field.get_type()?)?;
 
-  for arg in filter_attributes(field.attributes(), &["proto"])? {
-    match arg {
-      Meta::NameValue(nv) => {
-        let ident = nv.path.require_ident()?.to_string();
+  parse_filtered_attrs(field.attributes(), &["proto"], |meta| {
+    let ident = meta.path.require_ident()?.to_string();
 
-        match ident.as_str() {
-          "options" => {
-            options = Some(nv.value);
-          }
-
-          "validate" => {
-            validator = Some(nv.value.as_call_or_closure()?);
-          }
-          "from_proto" => {
-            from_proto = Some(nv.value.as_path_or_closure()?);
-          }
-          "into_proto" => {
-            into_proto = Some(nv.value.as_path_or_closure()?);
-          }
-          "tag" => {
-            tag = Some(nv.value.as_int::<i32>()?);
-          }
-          "name" => {
-            name = Some(nv.value.as_string()?);
-          }
-          _ => bail!(nv.path, "Unknown attribute `{ident}`"),
-        };
+    match ident.as_str() {
+      "options" => {
+        options = Some(meta.expr_value()?);
       }
-      Meta::List(list) => {
-        let ident = list.path.require_ident()?.to_string();
-
-        match ident.as_str() {
-          "oneof" => {
-            let OneofInfo {
-              path,
-              tags,
-              default,
-              required,
-            } = list.parse_args::<OneofInfo>()?;
-
-            if tags.is_empty() {
-              bail!(
-                list,
-                "Tags for oneofs must be set manually. You can set them with `#[proto(oneof(tags(1, 2, 3)))]`"
-              );
-            }
-
-            let oneof_path = path
-              .get_path_or_fallback(type_info.inner().as_path().as_ref())
-              .ok_or(error!(
-                list,
-                "Failed to infer the path to the oneof. If this is a proxied oneof, use `oneof(proxied)`, otherwise set the path manually with `oneof(MyOneofPath)`"
-              ))?;
-
-            proto_field = Some(ProtoField::Oneof {
-              path: oneof_path,
-              tags,
-              default,
-              required,
-            })
-          }
-
-          "repeated" => {
-            let args = list.parse_args::<Meta>()?;
-            let span = args.span();
-
-            let fallback = if let RustType::Vec(inner) = type_info.type_.as_ref() {
-              inner.as_path()
-            } else {
-              None
-            };
-
-            let inner = ProtoType::from_meta(args, fallback.as_ref())?
-              .ok_or(error_with_span!(span, "Missing inner type"))?;
-
-            proto_field = Some(ProtoField::Repeated(inner));
-          }
-
-          "optional" => {
-            let args = list.parse_args::<Meta>()?;
-            let span = args.span();
-
-            let fallback = if let RustType::Option(inner) = type_info.type_.as_ref() {
-              inner.as_path()
-            } else {
-              None
-            };
-
-            let inner = ProtoType::from_meta(args, fallback.as_ref())?
-              .ok_or(error_with_span!(span, "Missing inner type"))?;
-
-            proto_field = Some(ProtoField::Optional(inner));
-          }
-
-          "map" => {
-            let parser = |input: ParseStream| parse_map_with_context(input, &type_info.type_);
-
-            let map = parser.parse2(list.tokens)?;
-
-            proto_field = Some(ProtoField::Map(map));
-          }
-
-          _ => {
-            let list_span = list.span();
-            let fallback = type_info.inner().as_path();
-
-            if let Some(field_info) = ProtoType::from_meta_list(&ident, list, fallback.as_ref())? {
-              proto_field = Some(ProtoField::Single(field_info));
-            } else {
-              return Err(error_with_span!(list_span, "Unknown attribute `{ident}`"));
-            }
-          }
-        };
+      "tag" => {
+        tag = Some(meta.expr_value()?.as_int::<i32>()?);
       }
-      Meta::Path(path) => {
-        let ident = path.require_ident()?.to_string();
+      "name" => {
+        name = Some(meta.expr_value()?.as_string()?);
+      }
+      "validate" => {
+        validator = Some(meta.expr_value()?.as_call_or_closure()?);
+      }
+      "from_proto" => {
+        from_proto = Some(meta.expr_value()?.as_path_or_closure()?);
+      }
+      "into_proto" => {
+        into_proto = Some(meta.expr_value()?.as_path_or_closure()?);
+      }
+      "ignore" => {
+        is_ignored = true;
+      }
 
-        match ident.as_str() {
-          "ignore" => {
-            is_ignored = true;
-
-            if from_proto.is_some() {
-              return Ok(FieldDataKind::Ignored {
-                from_proto,
-                ident: field_ident,
-              });
-            }
-          }
-
-          _ => {
-            let fallback = type_info.inner().as_path();
-            let span = path.span();
-
-            if let Some(parsed_kind) = ProtoType::from_ident(&ident, span, fallback.as_ref())? {
-              proto_field = Some(ProtoField::Single(parsed_kind));
-            } else {
-              return Err(error_with_span!(span, "Unknown attribute `{ident}`"));
-            }
-          }
-        };
+      _ => {
+        proto_field = Some(ProtoField::from_meta(&ident, meta, &type_info)?);
       }
     };
-  }
+
+    Ok(())
+  })?;
 
   if is_ignored {
     return Ok(FieldDataKind::Ignored {

@@ -56,20 +56,19 @@ impl ProtoType {
     }
   }
 
-  pub fn from_meta(meta: Meta, fallback: Option<&Path>) -> Result<Option<Self>, Error> {
-    let output = match meta {
-      Meta::List(list) => {
-        let ident_str = list.path.require_ident()?.to_string();
+  pub fn from_nested_meta(
+    ident_str: &str,
+    meta: ParseNestedMeta,
+    fallback: Option<&Path>,
+  ) -> Result<Self, Error> {
+    let output = match meta.meta_type() {
+      MetaType::Path => {
+        let span = meta.path.span();
 
-        Self::from_meta_list(&ident_str, list, fallback)?
+        Self::from_ident(ident_str, span, fallback)?
       }
-      Meta::Path(path) => {
-        let ident_str = path.require_ident()?.to_string();
-        let span = path.span();
-
-        Self::from_ident(&ident_str, span, fallback)?
-      }
-      _ => return Err(error!(meta, "Expected a path or a metalist")),
+      MetaType::List => Self::from_meta_list(ident_str, meta, fallback)?,
+      MetaType::NameValue => return Err(meta.error("Expected a path or a metalist")),
     };
 
     Ok(output)
@@ -77,17 +76,16 @@ impl ProtoType {
 
   pub fn from_meta_list(
     ident_str: &str,
-    list: MetaList,
+    meta: ParseNestedMeta,
     fallback: Option<&Path>,
-  ) -> Result<Option<Self>, Error> {
+  ) -> Result<Self, Error> {
     let output = match ident_str {
       "message" => {
-        let MessageInfo { path, boxed } = list.parse_args::<MessageInfo>()?;
+        let MessageInfo { path, boxed } = meta.parse_list::<MessageInfo>()?;
 
-        let path = path.get_path_or_fallback(fallback).ok_or(error!(
-          list,
-          "Failed to infer the message path. Please set it manually"
-        ))?;
+        let path = path
+          .get_path_or_fallback(fallback)
+          .ok_or(meta.error("Failed to infer the message path. Please set it manually"))?;
 
         Self::Message {
           path,
@@ -95,21 +93,17 @@ impl ProtoType {
         }
       }
       "enum_" => {
-        let path = list.parse_args::<Path>()?;
+        let path = meta.parse_list::<Path>()?;
 
         Self::Enum(path)
       }
-      _ => return Ok(None),
+      _ => return Err(meta.error("Unknown protobuf type")),
     };
 
-    Ok(Some(output))
+    Ok(output)
   }
 
-  pub fn from_ident(
-    ident_str: &str,
-    span: Span,
-    fallback: Option<&Path>,
-  ) -> Result<Option<Self>, Error> {
+  pub fn from_ident(ident_str: &str, span: Span, fallback: Option<&Path>) -> Result<Self, Error> {
     let output = match ident_str {
       "string" => Self::String,
       "int32" => Self::Int32,
@@ -151,10 +145,10 @@ impl ProtoType {
 
         Self::Enum(path)
       }
-      _ => return Ok(None),
+      _ => return Err(error_with_span!(span, "Unknown protobuf type {ident_str}")),
     };
 
-    Ok(Some(output))
+    Ok(output)
   }
 
   pub fn field_proto_type_tokens(&self) -> TokenStream2 {

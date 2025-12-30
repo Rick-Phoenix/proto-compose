@@ -18,6 +18,7 @@ use quote::{ToTokens, format_ident, quote};
 use syn::{
   Attribute, Error, Expr, Field, Fields, Ident, ItemEnum, ItemStruct, Lit, LitStr, Meta, MetaList,
   MetaNameValue, Path, RangeLimits, Token, Type, Variant, Visibility,
+  meta::ParseNestedMeta,
   parse::{Parse, ParseStream, Parser},
   parse_macro_input, parse_quote,
   punctuated::Punctuated,
@@ -25,8 +26,9 @@ use syn::{
   token,
 };
 use syn_utils::{
-  AsNamedField, CallOrClosure, ExprExt, NumList, PathOrClosure, RustType, StringList, TypeInfo,
-  bail, bail_with_span, error, error_with_span, filter_attributes,
+  AsNamedField, CallOrClosure, ExprExt, MetaType, NumList, ParseNestedMetaExt, PathOrClosure,
+  RustType, StringList, TypeInfo, bail, bail_with_span, error, error_with_span,
+  parse_filtered_attrs,
 };
 
 use crate::{

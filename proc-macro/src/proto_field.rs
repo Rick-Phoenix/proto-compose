@@ -15,6 +15,87 @@ pub enum ProtoField {
 }
 
 impl ProtoField {
+  pub fn from_meta(
+    ident_str: &str,
+    meta: ParseNestedMeta,
+    type_info: &TypeInfo,
+  ) -> syn::Result<Self> {
+    let output = match ident_str {
+      "repeated" => {
+        let fallback = if let RustType::Vec(inner) = type_info.type_.as_ref() {
+          inner.as_path()
+        } else {
+          None
+        };
+
+        let inner = meta
+          .parse_inner_value(|meta| {
+            let inner_ident = meta.path.require_ident()?.to_string();
+
+            ProtoType::from_nested_meta(&inner_ident, meta, fallback.as_ref())
+          })?
+          .ok_or_else(|| meta.error("Expected a path or list"))?;
+
+        Self::Repeated(inner)
+      }
+      "optional" => {
+        let fallback = if let RustType::Option(inner) = type_info.type_.as_ref() {
+          inner.as_path()
+        } else {
+          None
+        };
+
+        let inner = meta
+          .parse_inner_value(|meta| {
+            let inner_ident = meta.path.require_ident()?.to_string();
+
+            ProtoType::from_nested_meta(&inner_ident, meta, fallback.as_ref())
+          })?
+          .ok_or_else(|| meta.error("Expected a path or list"))?;
+
+        Self::Optional(inner)
+      }
+      "map" => {
+        let map = parse_map_with_context(meta, &type_info.type_)?;
+
+        Self::Map(map)
+      }
+      "oneof" => {
+        let OneofInfo {
+          path,
+          tags,
+          default,
+          required,
+        } = meta.parse_list::<OneofInfo>()?;
+
+        if tags.is_empty() {
+          return Err(meta.error("Tags for oneofs must be set manually. You can set them with `#[proto(oneof(tags(1, 2, 3)))]`"));
+        }
+
+        let oneof_path = path
+          .get_path_or_fallback(type_info.inner().as_path().as_ref())
+          .ok_or_else(|| meta.error(
+            "Failed to infer the path to the oneof. If this is a proxied oneof, use `oneof(proxied)`, otherwise set the path manually with `oneof(MyOneofPath)`"
+          ))?;
+
+        Self::Oneof {
+          path: oneof_path,
+          tags,
+          default,
+          required,
+        }
+      }
+      _ => {
+        let inner =
+          ProtoType::from_nested_meta(ident_str, meta, type_info.inner().as_path().as_ref())?;
+
+        Self::Single(inner)
+      }
+    };
+
+    Ok(output)
+  }
+
   pub fn default_validator_expr(&self) -> Option<TokenStream2> {
     match self {
       Self::Map(map) => {

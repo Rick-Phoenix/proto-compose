@@ -1,5 +1,6 @@
-use crate::*;
 use syn_utils::PunctuatedItems;
+
+use crate::*;
 
 pub struct MessageAttrs {
   pub reserved_names: Vec<String>,
@@ -31,64 +32,59 @@ pub fn process_derive_message_attrs(
   let mut cel_rules: Option<Vec<Expr>> = None;
   let mut parent_message: Option<Ident> = None;
 
-  for arg in filter_attributes(attrs, &["proto"])? {
-    match arg {
-      Meta::List(list) => {
-        let ident = list.path.require_ident()?.to_string();
+  parse_filtered_attrs(attrs, &["proto"], |meta| {
+    let ident = meta.path.require_ident()?.to_string();
 
-        match ident.as_str() {
-          "cel_rules" => {
-            cel_rules = Some(list.parse_args::<PunctuatedItems<Expr>>()?.list);
-          }
-          "reserved_names" => {
-            let names = list.parse_args::<StringList>()?;
-
-            reserved_names = names.list;
-          }
-          "reserved_numbers" => {
-            let numbers = list.parse_args::<ReservedNumbers>()?;
-
-            reserved_numbers = numbers;
-          }
-          "derive" => shadow_derives = Some(list),
-          _ => bail!(list, "Unknown attribute `{ident}`"),
-        };
+    match ident.as_str() {
+      "cel_rules" => {
+        cel_rules = Some(meta.parse_list::<PunctuatedItems<Expr>>()?.list);
       }
-      Meta::NameValue(nv) => {
-        let ident = nv.path.require_ident()?.to_string();
+      "reserved_names" => {
+        let names = meta.parse_list::<StringList>()?;
 
-        match ident.as_str() {
-          "parent_message" => {
-            parent_message = Some(nv.value.as_path()?.require_ident()?.clone());
-          }
-          "options" => {
-            options = Some(nv.value);
-          }
-          "from_proto" => {
-            from_proto = Some(nv.value.as_path_or_closure()?);
-          }
-          "into_proto" => {
-            into_proto = Some(nv.value.as_path_or_closure()?);
-          }
-          "name" => {
-            proto_name = Some(nv.value.as_string()?);
-          }
-          _ => bail!(nv.path, "Unknown attribute `{ident}`"),
-        };
+        reserved_names = names.list;
       }
-      Meta::Path(path) => {
-        let ident = path.require_ident()?.to_string();
+      "reserved_numbers" => {
+        let numbers = meta.parse_list::<ReservedNumbers>()?;
 
-        match ident.as_str() {
-          "direct" => bail!(
-            path,
-            "`direct` must be set as a proc macro argument, not as an attribute"
-          ),
-          _ => bail!(path, "Unknown attribute `{ident}`"),
-        };
+        reserved_numbers = numbers;
       }
-    }
-  }
+      "derive" => {
+        let list = meta.parse_list::<MetaList>()?;
+
+        shadow_derives = Some(list);
+      }
+      "parent_message" => {
+        parent_message = Some(
+          meta
+            .expr_value()?
+            .as_path()?
+            .require_ident()?
+            .clone(),
+        );
+      }
+      "options" => {
+        options = Some(meta.expr_value()?);
+      }
+      "from_proto" => {
+        from_proto = Some(meta.expr_value()?.as_path_or_closure()?);
+      }
+      "into_proto" => {
+        into_proto = Some(meta.expr_value()?.as_path_or_closure()?);
+      }
+      "name" => {
+        proto_name = Some(meta.expr_value()?.as_string()?);
+      }
+      "direct" => {
+        return Err(
+          meta.error("`direct` must be set as a proc macro argument, not as an attribute"),
+        );
+      }
+      _ => return Err(meta.error("Unknown attribute")),
+    };
+
+    Ok(())
+  })?;
 
   let name = proto_name.unwrap_or_else(|| ccase!(pascal, rust_name.to_string()));
 

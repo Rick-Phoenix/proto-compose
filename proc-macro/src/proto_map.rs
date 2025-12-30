@@ -1,5 +1,3 @@
-use syn::spanned::Spanned;
-
 use crate::*;
 
 #[derive(Debug, Clone, Copy)]
@@ -98,51 +96,42 @@ pub struct ProtoMap {
 }
 
 pub fn parse_map_with_context(
-  input: syn::parse::ParseStream,
+  meta: ParseNestedMeta,
   rust_type: &RustType,
 ) -> syn::Result<ProtoMap> {
-  let mut metas = Punctuated::<Meta, Token![,]>::parse_terminated(input)?;
+  let mut values: Option<ProtoType> = None;
+  let mut keys: Option<ProtoMapKeys> = None;
 
-  if metas.len() != 2 {
-    bail!(
-      metas,
-      "Expected a list of two items indicating the types of keys and values"
-    );
+  let mut idx = 0;
+
+  meta.parse_nested_meta(|meta| {
+    match idx {
+      0 => keys = Some(ProtoMapKeys::from_path(&meta.path)?),
+      1 => {
+        let fallback = if let RustType::HashMap((_, v)) = rust_type {
+          v.as_path()
+        } else {
+          None
+        };
+
+        values = Some(ProtoType::from_nested_meta(
+          &meta.path.require_ident()?.to_string(),
+          meta,
+          fallback.as_ref(),
+        )?);
+      }
+      _ => return Err(meta.error("Expected only 2 arguments for keys and values")),
+    }
+    idx += 1;
+    Ok(())
+  })?;
+
+  if idx < 2 {
+    return Err(meta.error("Expected 2 arguments, for keys and values"));
   }
 
-  let values = match metas.pop().unwrap().into_value() {
-    Meta::Path(path) => {
-      let ident = path.require_ident()?.to_string();
-      let span = path.span();
-
-      let fallback = if let RustType::HashMap((_, v)) = rust_type {
-        v.as_path()
-      } else {
-        None
-      };
-
-      ProtoType::from_ident(&ident, span, fallback.as_ref())?
-        .ok_or(error_with_span!(span, "Unrecognized map keys type"))?
-    }
-    Meta::List(list) => {
-      let list_ident = ident_string!(list.path);
-      let span = list.span();
-
-      let fallback = if let RustType::HashMap((_, v)) = rust_type {
-        v.as_path()
-      } else {
-        None
-      };
-
-      ProtoType::from_meta_list(&list_ident, list, fallback.as_ref())
-        .map_err(|e| input.error(e))?
-        .ok_or(error_with_span!(span, "Unrecognized map values type"))?
-    }
-    Meta::NameValue(nv) => bail!(nv, "Expected the values to be a list or path"),
-  };
-
-  let keys_input = metas.pop().unwrap().into_value();
-  let keys = ProtoMapKeys::from_path(keys_input.require_path_only()?)?;
+  let keys = keys.ok_or_else(|| meta.error("Missing key type"))?;
+  let values = values.ok_or_else(|| meta.error("Missing values type"))?;
 
   Ok(ProtoMap { keys, values })
 }

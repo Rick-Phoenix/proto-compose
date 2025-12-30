@@ -1,5 +1,3 @@
-use syn_utils::filter_attributes;
-
 use crate::*;
 
 pub struct EnumAttrs {
@@ -24,55 +22,44 @@ pub fn process_derive_enum_attrs(
   let mut parent_message: Option<Ident> = None;
   let mut extern_path: Option<String> = None;
 
-  for arg in filter_attributes(attrs, &["proto"])? {
-    match arg {
-      Meta::List(list) => {
-        let ident = list.path.require_ident()?.to_string();
+  parse_filtered_attrs(attrs, &["proto"], |meta| {
+    let ident = meta.path.require_ident()?.to_string();
 
-        match ident.as_str() {
-          "reserved_names" => {
-            let names = list.parse_args::<StringList>()?;
+    match ident.as_str() {
+      "reserved_names" => {
+        let names = meta.parse_list::<StringList>()?;
 
-            reserved_names = names.list;
-          }
-          "reserved_numbers" => {
-            let numbers = list.parse_args::<ReservedNumbers>()?;
-
-            reserved_numbers = numbers;
-          }
-
-          _ => bail!(list, "Unknown attribute `{ident}`"),
-        };
+        reserved_names = names.list;
       }
-      Meta::NameValue(nv) => {
-        let ident = nv.path.require_ident()?.to_string();
+      "reserved_numbers" => {
+        let numbers = meta.parse_list::<ReservedNumbers>()?;
 
-        match ident.as_str() {
-          "extern_path" => {
-            extern_path = Some(nv.value.as_string()?);
-          }
-          "parent_message" => {
-            parent_message = Some(nv.value.as_path()?.require_ident()?.clone());
-          }
-          "options" => {
-            options = Some(nv.value);
-          }
-          "name" => {
-            proto_name = Some(nv.value.as_string()?);
-          }
-          _ => bail!(nv.path, "Unknown attribute `{ident}`"),
-        };
+        reserved_numbers = numbers;
       }
-      Meta::Path(path) => {
-        let ident = path.require_ident()?.to_string();
+      "extern_path" => {
+        extern_path = Some(meta.expr_value()?.as_string()?);
+      }
+      "parent_message" => {
+        parent_message = Some(
+          meta
+            .expr_value()?
+            .as_path()?
+            .require_ident()?
+            .clone(),
+        );
+      }
+      "options" => {
+        options = Some(meta.expr_value()?);
+      }
+      "name" => {
+        proto_name = Some(meta.expr_value()?.as_string()?);
+      }
+      "no_prefix" => no_prefix = true,
+      _ => return Err(meta.error("Unknown attribute")),
+    };
 
-        match ident.as_str() {
-          "no_prefix" => no_prefix = true,
-          _ => bail!(path, "Unknown attribute `{ident}`"),
-        };
-      }
-    }
-  }
+    Ok(())
+  })?;
 
   let name = proto_name.unwrap_or_else(|| ccase!(pascal, enum_ident.to_string()));
 
