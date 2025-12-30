@@ -115,13 +115,16 @@ where
     handle_ignore_if_zero_value!(&self.ignore, val.is_none_or(|v| v.is_default()));
 
     if let Some(&val) = val {
-      if let Some(const_val) = self.const_
-        && val != const_val
-      {
-        ctx.add_violation(
-          Num::CONST_VIOLATION,
-          &format!("must be equal to {const_val}"),
-        );
+      if let Some(const_val) = self.const_ {
+        if val != const_val {
+          ctx.add_violation(
+            Num::CONST_VIOLATION,
+            &format!("must be equal to {const_val}"),
+          );
+        }
+
+        // Using `const` implies no other rules
+        return;
       }
 
       if let Some(gt) = self.gt

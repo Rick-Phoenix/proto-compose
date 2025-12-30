@@ -93,13 +93,16 @@ impl Validator<Duration> for DurationValidator {
     handle_ignore_always!(&self.ignore);
 
     if let Some(&val) = val {
-      if let Some(const_val) = self.const_
-        && val != const_val
-      {
-        ctx.add_violation(
-          &DURATION_CONST_VIOLATION,
-          &format!("must be equal to {const_val}"),
-        );
+      if let Some(const_val) = self.const_ {
+        if val != const_val {
+          ctx.add_violation(
+            &DURATION_CONST_VIOLATION,
+            &format!("must be equal to {const_val}"),
+          );
+        }
+
+        // Using `const` implies no other rules
+        return;
       }
 
       if let Some(gt) = self.gt

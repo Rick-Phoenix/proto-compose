@@ -101,6 +101,9 @@ impl Validator<FieldMask> for FieldMaskValidator {
             ),
           );
         }
+
+        // Using `const` implies no other rules
+        return;
       }
 
       if let Some(allowed_paths) = &self.in_ {

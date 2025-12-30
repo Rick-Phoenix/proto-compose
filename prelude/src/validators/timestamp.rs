@@ -115,13 +115,16 @@ impl Validator<Timestamp> for TimestampValidator {
     handle_ignore_always!(&self.ignore);
 
     if let Some(&val) = val {
-      if let Some(const_val) = self.const_
-        && val != const_val
-      {
-        ctx.add_violation(
-          &TIMESTAMP_CONST_VIOLATION,
-          &format!("must be equal to {const_val}"),
-        );
+      if let Some(const_val) = self.const_ {
+        if val != const_val {
+          ctx.add_violation(
+            &TIMESTAMP_CONST_VIOLATION,
+            &format!("must be equal to {const_val}"),
+          );
+        }
+
+        // Using `const` implies no other rules
+        return;
       }
 
       if self.gt_now && !(val - self.now_tolerance).is_future() {
