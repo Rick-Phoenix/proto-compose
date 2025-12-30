@@ -47,7 +47,6 @@ impl Validator<FieldMask> for FieldMaskValidator {
     LinearRefStore::default_with_capacity(cap)
   }
 
-  #[cfg(feature = "testing")]
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
     let mut errors = Vec::new();
 

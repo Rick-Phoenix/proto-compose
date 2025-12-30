@@ -221,7 +221,6 @@ where
     UnsupportedStore::default()
   }
 
-  #[cfg(feature = "testing")]
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
     let mut errors = Vec::new();
 
@@ -266,7 +265,7 @@ where
     rules
   }
 
-  #[cfg(all(feature = "testing", feature = "cel"))]
+  #[cfg(feature = "cel")]
   fn check_cel_programs_with(&self, val: Self::Target) -> Result<(), Vec<CelError>> {
     let mut errors: Vec<CelError> = Vec::new();
 

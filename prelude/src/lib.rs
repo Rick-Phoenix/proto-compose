@@ -8,7 +8,6 @@ use askama::Template;
 use fxhash::FxHashMap;
 #[doc(hidden)]
 pub use inventory;
-#[cfg(feature = "testing")]
 use owo_colors::OwoColorize;
 #[doc(hidden)]
 pub use paste::paste;
@@ -28,7 +27,6 @@ mod proto_enum;
 mod proto_type;
 mod rendering_utils;
 mod service;
-#[cfg(feature = "testing")]
 pub mod test_utils;
 mod well_known_types;
 use bon::Builder;

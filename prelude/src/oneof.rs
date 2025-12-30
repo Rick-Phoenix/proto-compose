@@ -7,7 +7,6 @@ pub trait ProtoOneof {
 
   fn tags() -> &'static [i32];
 
-  #[cfg(feature = "testing")]
   fn check_tags(message: &str, found_tags: &mut [i32]) -> Result<(), String> {
     use similar_asserts::SimpleDiff;
 

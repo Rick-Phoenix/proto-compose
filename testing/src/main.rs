@@ -1,7 +1,4 @@
-use testing::{
-  collect_package,
-  inner::{Abc, AbcProto},
-};
+use testing::collect_package;
 
 fn main() {
   let pkg = collect_package();

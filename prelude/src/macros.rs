@@ -61,7 +61,7 @@ macro_rules! handle_ignore_if_zero_value {
 
 macro_rules! impl_testing_methods {
   () => {
-    #[cfg(all(feature = "testing", feature = "cel"))]
+    #[cfg(feature = "cel")]
     fn check_cel_programs_with(&self, val: Self::Target) -> Result<(), Vec<CelError>> {
       if !self.cel.is_empty() {
         test_programs(&self.cel, val)

@@ -93,7 +93,6 @@ impl Package {
     self.files.extend(files);
   }
 
-  #[cfg(feature = "testing")]
   pub fn check_unique_cel_rules(self) -> Result<(), String> {
     let mut rules: FxHashMap<&str, CelRule> = FxHashMap::default();
     let mut duplicates: FxHashMap<&str, Vec<CelRule>> = FxHashMap::default();

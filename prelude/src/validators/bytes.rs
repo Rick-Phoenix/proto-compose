@@ -68,13 +68,11 @@ impl BytesValidator {
   }
 }
 
-#[cfg(feature = "testing")]
 pub(crate) struct LengthRuleValue {
   pub name: &'static str,
   pub value: Option<usize>,
 }
 
-#[cfg(feature = "testing")]
 pub(crate) fn check_length_rules(
   exact: Option<&LengthRuleValue>,
   min: &LengthRuleValue,
@@ -125,7 +123,6 @@ impl Validator<Bytes> for BytesValidator {
     RefHybridStore::default_with_capacity(cap)
   }
 
-  #[cfg(feature = "testing")]
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
     let mut errors = Vec::new();
 
@@ -173,7 +170,7 @@ impl Validator<Bytes> for BytesValidator {
     self.cel.iter().map(|p| p.rule.clone()).collect()
   }
 
-  #[cfg(all(feature = "testing", feature = "cel"))]
+  #[cfg(feature = "cel")]
   fn check_cel_programs_with(&self, val: Self::Target) -> Result<(), Vec<CelError>> {
     if self.cel.is_empty() {
       Ok(())

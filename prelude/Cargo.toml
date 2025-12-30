@@ -23,12 +23,12 @@ thiserror = { workspace = true }
 chrono = { workspace = true }
 log = "0.4"
 protocheck-core = { workspace = true }
-owo-colors = { version = "4.2", optional = true }
+owo-colors = { version = "4.2" }
 inventory = "0.3.21"
 ordermap = "1.0.0"
 fxhash = "0.2.1"
 prost = { workspace = true }
-similar-asserts = { version = "1.7", optional = true }
+similar-asserts = { version = "1.7" }
 constcat = { workspace = true }
 float_eq = { workspace = true }
 smallvec = "1.15.1"
@@ -37,5 +37,4 @@ smallvec = "1.15.1"
 default = ["regex", "cel"]
 
 cel = ["dep:cel", "protocheck-core/cel", "proto-types/cel"]
-testing = ["dep:owo-colors", "dep:similar-asserts"]
 regex = ["dep:regex", "protocheck-core/regex"]

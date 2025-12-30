@@ -96,7 +96,6 @@ impl Validator<String> for StringValidator {
 
   impl_testing_methods!();
 
-  #[cfg(feature = "testing")]
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
     let mut errors = Vec::new();
 

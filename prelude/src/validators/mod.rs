@@ -21,7 +21,6 @@ pub trait Validator<T>: Into<ProtoOption> {
 
   fn make_unique_store<'a>(&self, cap: usize) -> Self::UniqueStore<'a>;
 
-  // This one cannot be testing only because it is used in the schema impl below
   fn cel_rules(&self) -> Vec<CelRule>;
 
   fn into_schema(self) -> FieldValidator {
@@ -31,13 +30,12 @@ pub trait Validator<T>: Into<ProtoOption> {
     }
   }
 
-  #[cfg(feature = "testing")]
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>>;
 
-  #[cfg(all(feature = "testing", feature = "cel"))]
+  #[cfg(feature = "cel")]
   fn check_cel_programs_with(&self, _val: Self::Target) -> Result<(), Vec<CelError>>;
 
-  #[cfg(all(feature = "testing", feature = "cel"))]
+  #[cfg(feature = "cel")]
   fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
     self.check_cel_programs_with(Self::Target::default())
   }
@@ -182,7 +180,6 @@ pub use repeated::*;
 pub use string::*;
 pub use timestamp::*;
 
-#[cfg(feature = "testing")]
 pub(crate) fn check_list_rules<T>(
   in_list: Option<&StaticLookup<T>>,
   not_in_list: Option<&StaticLookup<T>>,
@@ -238,7 +235,6 @@ impl Display for OverlappingListsError {
 }
 
 #[allow(clippy::useless_let_if_seq)]
-#[cfg(feature = "testing")]
 pub(crate) fn check_comparable_rules<T>(
   lt: Option<T>,
   lte: Option<T>,

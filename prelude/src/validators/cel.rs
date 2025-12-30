@@ -219,7 +219,6 @@ mod cel_impls {
     }
   }
 
-  #[cfg(feature = "testing")]
   pub fn test_programs<T>(programs: &[CelProgram], value: T) -> Result<(), Vec<CelError>>
   where
     T: TryIntoCel,

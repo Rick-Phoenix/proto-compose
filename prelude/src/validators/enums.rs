@@ -54,7 +54,6 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
     CopyHybridStore::default_with_capacity(cap)
   }
 
-  #[cfg(feature = "testing")]
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
     let mut errors = Vec::new();
 
