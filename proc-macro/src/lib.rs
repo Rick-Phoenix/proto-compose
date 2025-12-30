@@ -17,7 +17,7 @@ use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{ToTokens, format_ident, quote};
 use syn::{
   Attribute, Error, Expr, Field, Fields, Ident, ItemEnum, ItemStruct, Lit, LitStr, Meta, MetaList,
-  MetaNameValue, Path, RangeLimits, Token, Type, Variant, Visibility,
+  Path, RangeLimits, Token, Type, Variant, Visibility,
   meta::ParseNestedMeta,
   parse::{Parse, Parser},
   parse_macro_input, parse_quote,
@@ -113,7 +113,7 @@ pub fn message_derive(_input: TokenStream) -> TokenStream {
 pub fn proto_extension(args: TokenStream, input: TokenStream) -> TokenStream {
   let mut item = parse_macro_input!(input as ItemStruct);
 
-  let extra_tokens = match process_extension_derive(args, &mut item) {
+  let extra_tokens = match process_extension_derive(args.into(), &mut item) {
     Ok(output) => output,
     Err(e) => return e.to_compile_error().into(),
   };

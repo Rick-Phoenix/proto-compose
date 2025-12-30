@@ -50,30 +50,34 @@ impl ToTokens for ExtendTarget {
 }
 
 pub fn process_extension_derive(
-  args: TokenStream,
+  args: TokenStream2,
   item: &mut ItemStruct,
 ) -> Result<TokenStream2, Error> {
-  let parser = Punctuated::<MetaNameValue, Token![,]>::parse_terminated;
-  let args = parser.parse(args)?;
-
   let ItemStruct { ident, fields, .. } = item;
+
+  let args_span = args.span();
 
   let mut target: Option<ExtendTarget> = None;
   let mut fields_tokens: Vec<TokenStream2> = Vec::new();
 
-  for arg in args {
-    let ident = arg.path.require_ident()?.to_string();
+  let parser = syn::meta::parser(|meta| {
+    let ident = meta.ident_str()?;
 
     match ident.as_str() {
       "target" => {
-        let path = arg.value.as_path()?;
-        target = Some(ExtendTarget::from_ident(path.require_ident()?)?);
-      }
-      _ => bail!(arg, "Unknown attribute `{ident}`"),
-    };
-  }
+        let target_ident = meta.parse_value::<Ident>()?;
 
-  let target = target.ok_or(error!(&ident, "Missing target attribute"))?;
+        target = Some(ExtendTarget::from_ident(&target_ident)?);
+      }
+      _ => return Err(meta.error("Unknown attribute")),
+    };
+
+    Ok(())
+  });
+
+  parser.parse2(args)?;
+
+  let target = target.ok_or_else(|| error_with_span!(args_span, "Missing target attribute"))?;
 
   for field in fields {
     let ExtensionFieldAttrs {

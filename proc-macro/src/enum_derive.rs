@@ -88,11 +88,11 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
       next_tag
     };
 
-    let options_tokens = tokens_or_default!(options, quote! { vec![] });
+    let variant_options = tokens_or_default!(options, quote! { vec![] });
 
     variants_data.push(EnumVariantCtx {
       name,
-      options: options_tokens,
+      options: variant_options,
       tag,
       ident: variant_ident.clone(),
     });
