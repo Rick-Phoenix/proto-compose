@@ -1,5 +1,12 @@
 use crate::*;
 
+struct EnumVariantCtx {
+  name: String,
+  options: TokenStream2,
+  tag: i32,
+  ident: Ident,
+}
+
 pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   let ItemEnum {
     ident: enum_name,
@@ -19,9 +26,7 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     ..
   } = process_derive_enum_attrs(enum_name, attrs)?;
 
-  let mut variants_tokens: Vec<TokenStream2> = Vec::new();
-  let mut from_str_tokens = TokenStream2::new();
-  let mut as_str_tokens = TokenStream2::new();
+  let mut variants_data: Vec<EnumVariantCtx> = Vec::new();
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
 
   for variant in variants.iter() {
@@ -52,14 +57,6 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     if reserved_names.contains(&name) {
       bail!(&variant, "Name `{name}` is reserved");
     }
-
-    from_str_tokens.extend(quote! {
-      #name => Some(Self::#variant_ident),
-    });
-
-    as_str_tokens.extend(quote! {
-      Self::#variant_ident => #name,
-    });
 
     let tag = if let Some((_, expr)) = &variant.discriminant {
       let tag = expr.as_int::<i32>()?;
@@ -93,8 +90,11 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
 
     let options_tokens = tokens_or_default!(options, quote! { vec![] });
 
-    variants_tokens.push(quote! {
-      ::prelude::EnumVariant { name: #name, options: #options_tokens, tag: #tag, }
+    variants_data.push(EnumVariantCtx {
+      name,
+      options: options_tokens,
+      tag,
+      ident: variant_ident.clone(),
     });
   }
 
@@ -125,6 +125,32 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
 
     quote! { format!("::{}::{}", __PROTO_FILE.extern_path, #rust_ident_str) }
   };
+
+  let variants_tokens = variants_data.iter().map(|var| {
+    let EnumVariantCtx {
+      name, options, tag, ..
+    } = var;
+
+    quote! {
+      ::prelude::EnumVariant { name: #name, options: #options, tag: #tag, }
+    }
+  });
+
+  let from_str_impl = variants_data.iter().map(|var| {
+    let EnumVariantCtx { name, ident, .. } = var;
+
+    quote! {
+      #name => Some(Self::#ident)
+    }
+  });
+
+  let as_str_impl = variants_data.iter().map(|var| {
+    let EnumVariantCtx { name, ident, .. } = var;
+
+    quote! {
+      Self::#ident => #name
+    }
+  });
 
   let output_tokens = quote! {
     ::prelude::inventory::submit! {
@@ -180,13 +206,13 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     impl #enum_name {
       pub fn as_proto_name(&self) -> &'static str {
         match self {
-          #as_str_tokens
+          #(#as_str_impl),*
         }
       }
 
       pub fn from_proto_name(name: &str) -> Option<Self> {
         match name {
-          #from_str_tokens
+          #(#from_str_impl,)*
           _ => None
         }
       }
