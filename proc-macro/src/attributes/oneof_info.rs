@@ -1,10 +1,8 @@
-use syn_utils::parse_comma_separated;
-
 use crate::*;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct OneofInfo {
-  pub path: ItemPathEntry,
+  pub path: Path,
   pub tags: Vec<i32>,
   pub default: bool,
   pub required: bool,
@@ -24,48 +22,44 @@ pub fn tags_to_str(tags: &[i32]) -> String {
   tags_str
 }
 
-impl Parse for OneofInfo {
-  fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+impl OneofInfo {
+  pub fn parse(meta: ParseNestedMeta, type_info: &TypeInfo) -> syn::Result<Self> {
     let mut oneof_path = ItemPathEntry::default();
     let mut tags: Vec<i32> = Vec::new();
     let mut default = false;
     let mut required = false;
-    let input_span = input.span();
 
-    parse_comma_separated(input, |meta| {
-      match meta {
-        Meta::Path(path) => {
-          if let Some(ident) = path.get_ident() {
-            let ident_str = ident.to_string();
+    meta.parse_nested_meta(|meta| {
+      let ident_str = meta.ident_str()?;
 
-            match ident_str.as_str() {
-              "default" => default = true,
-              "proxied" => oneof_path = ItemPathEntry::Proxied,
-              "required" => required = true,
-              _ => {}
-            };
-          } else {
-            oneof_path = ItemPathEntry::Path(path);
-          }
+      match ident_str.as_str() {
+        "default" => default = true,
+        "proxied" => oneof_path = ItemPathEntry::Proxied,
+        "required" => required = true,
+        "tags" => {
+          tags = meta.parse_list::<NumList>()?.list;
         }
-        Meta::List(list) => {
-          let ident = list.path.require_ident()?;
-          if ident == "tags" {
-            tags = list.parse_args::<NumList>()?.list;
-          }
+        _ => {
+          oneof_path = ItemPathEntry::Path(meta.path);
         }
-        _ => {}
       };
 
       Ok(())
     })?;
 
     if default && required {
-      bail_with_span!(
-        input_span,
-        "`default` and `required` cannot be used together"
-      );
+      return Err(meta.error("`default` and `required` cannot be used together"));
     }
+
+    if tags.is_empty() {
+      return Err(meta.error("Tags for oneofs must be set manually. You can set them with `#[proto(oneof(tags(1, 2, 3)))]`"));
+    }
+
+    let oneof_path = oneof_path
+      .get_path_or_fallback(type_info.inner().as_path().as_ref())
+      .ok_or_else(|| meta.error(
+        "Failed to infer the path to the oneof. If this is a proxied oneof, use `oneof(proxied)`, otherwise set the path manually with `oneof(MyOneofPath)`"
+    ))?;
 
     Ok(Self {
       path: oneof_path,

@@ -221,7 +221,7 @@ impl<'a> ProtoConversionImpl<'a> {
 
     let conversion_expr = if let Some(expr) = custom_expression {
       process_custom_expression(expr, &base_ident)
-    } else if let ProtoField::Oneof { default: true, .. } = &proto_field {
+    } else if let ProtoField::Oneof(OneofInfo { default: true, .. }) = &proto_field {
       quote! { Some(#base_ident.into()) }
     } else {
       proto_field.default_into_proto(&base_ident)

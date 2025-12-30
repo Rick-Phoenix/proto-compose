@@ -18,7 +18,7 @@ where
       ..
     } = data.borrow();
 
-    if let ProtoField::Oneof { path, .. } = proto_field {
+    if let ProtoField::Oneof(OneofInfo { path, .. }) = proto_field {
       Some(quote! {
         (#ident_str, #path::check_validators_consistency())
       })

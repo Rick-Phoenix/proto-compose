@@ -30,7 +30,7 @@ where
       ..
     } = data.borrow();
 
-    if let ProtoField::Oneof { path, required, .. } = proto_field {
+    if let ProtoField::Oneof(OneofInfo { path, required, .. }) = proto_field {
       quote! {
         ::prelude::MessageEntry::Oneof {
           oneof: <#path as ::prelude::ProtoOneof>::proto_schema(),

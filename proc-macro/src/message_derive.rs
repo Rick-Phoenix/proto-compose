@@ -63,7 +63,7 @@ pub fn process_message_derive_shadow(
             tag,
             field_span: field.span(),
           });
-        } else if let ProtoField::Oneof { tags, path, .. } = &data.proto_field {
+        } else if let ProtoField::Oneof(OneofInfo { tags, path, .. }) = &data.proto_field {
           for tag in tags.iter().copied() {
             manually_set_tags.push(ManuallySetTag {
               tag,
@@ -240,7 +240,7 @@ pub fn process_message_derive_direct(
           tag,
           field_span: field.span(),
         });
-      } else if let ProtoField::Oneof { tags, path, .. } = &data.proto_field {
+      } else if let ProtoField::Oneof(OneofInfo { tags, path, .. }) = &data.proto_field {
         for tag in tags.iter().copied() {
           manually_set_tags.push(ManuallySetTag {
             tag,

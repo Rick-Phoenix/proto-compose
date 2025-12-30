@@ -3,12 +3,7 @@ use crate::*;
 #[derive(Clone)]
 pub enum ProtoField {
   Map(ProtoMap),
-  Oneof {
-    path: Path,
-    tags: Vec<i32>,
-    default: bool,
-    required: bool,
-  },
+  Oneof(OneofInfo),
   Repeated(ProtoType),
   Optional(ProtoType),
   Single(ProtoType),
@@ -60,31 +55,7 @@ impl ProtoField {
 
         Self::Map(map)
       }
-      "oneof" => {
-        let OneofInfo {
-          path,
-          tags,
-          default,
-          required,
-        } = meta.parse_list::<OneofInfo>()?;
-
-        if tags.is_empty() {
-          return Err(meta.error("Tags for oneofs must be set manually. You can set them with `#[proto(oneof(tags(1, 2, 3)))]`"));
-        }
-
-        let oneof_path = path
-          .get_path_or_fallback(type_info.inner().as_path().as_ref())
-          .ok_or_else(|| meta.error(
-            "Failed to infer the path to the oneof. If this is a proxied oneof, use `oneof(proxied)`, otherwise set the path manually with `oneof(MyOneofPath)`"
-          ))?;
-
-        Self::Oneof {
-          path: oneof_path,
-          tags,
-          default,
-          required,
-        }
-      }
+      "oneof" => Self::Oneof(OneofInfo::parse(meta, type_info)?),
       _ => {
         let inner =
           ProtoType::from_nested_meta(ident_str, meta, type_info.inner().as_path().as_ref())?;
@@ -145,7 +116,7 @@ impl ProtoField {
 
   pub fn as_prost_attr(&self, tag: i32) -> Attribute {
     let inner = match self {
-      ProtoField::Oneof { path, tags, .. } => {
+      ProtoField::Oneof(OneofInfo { path, tags, .. }) => {
         let oneof_path_str = path.to_token_stream().to_string();
         let tags_str = tags_to_str(tags);
 
@@ -179,7 +150,7 @@ impl ProtoField {
 
   pub fn default_into_proto(&self, base_ident: &TokenStream2) -> TokenStream2 {
     match self {
-      Self::Oneof { default, .. } => {
+      Self::Oneof(OneofInfo { default, .. }) => {
         if *default {
           quote! { Some(#base_ident.into()) }
         } else {
@@ -208,7 +179,7 @@ impl ProtoField {
 
   pub fn default_from_proto(&self, base_ident: &TokenStream2) -> TokenStream2 {
     match self {
-      Self::Oneof { default, .. } => {
+      Self::Oneof(OneofInfo { default, .. }) => {
         if *default {
           quote! { #base_ident.unwrap_or_default().into() }
         } else {
@@ -308,7 +279,7 @@ impl ProtoField {
 
         parse_quote! { std::collections::HashMap<#keys, #values> }
       }
-      Self::Oneof { path, .. } => parse_quote! { Option<#path> },
+      Self::Oneof(OneofInfo { path, .. }) => parse_quote! { Option<#path> },
       ProtoField::Repeated(inner) => {
         let inner_type = inner.output_proto_type();
 

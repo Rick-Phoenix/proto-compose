@@ -16,7 +16,7 @@ where
       ..
     } = data.borrow();
 
-    if let ProtoField::Oneof { required, .. } = proto_field {
+    if let ProtoField::Oneof(OneofInfo { required, .. }) = proto_field {
       Some(if *required {
         quote! {
           match self.#ident.as_ref() {
