@@ -1,10 +1,8 @@
-use syn_utils::filter_attributes;
-
 use crate::*;
 
 pub struct EnumVariantAttrs {
   pub name: String,
-  pub options: Option<Expr>,
+  pub options: Option<TokenStream2>,
 }
 
 pub fn process_derive_enum_variants_attrs(
@@ -13,28 +11,24 @@ pub fn process_derive_enum_variants_attrs(
   attrs: &[Attribute],
   no_prefix: bool,
 ) -> Result<EnumVariantAttrs, Error> {
-  let mut options: Option<Expr> = None;
+  let mut options: Option<TokenStream2> = None;
   let mut name: Option<String> = None;
 
-  for arg in filter_attributes(attrs, &["proto"])? {
-    match arg {
-      Meta::NameValue(nv) => {
-        let ident = nv.path.require_ident()?.to_string();
+  parse_filtered_attrs(attrs, &["proto"], |meta| {
+    let ident_str = meta.ident_str()?;
 
-        match ident.as_str() {
-          "name" => {
-            name = Some(nv.value.as_string()?);
-          }
-          "options" => {
-            options = Some(nv.value);
-          }
-          _ => bail!(nv.path, "Unknown attribute `{ident}`"),
-        };
+    match ident_str.as_str() {
+      "options" => {
+        options = Some(meta.expr_value()?.into_token_stream());
       }
-      Meta::List(_) => {}
-      Meta::Path(_) => {}
+      "name" => {
+        name = Some(meta.parse_value::<LitStr>()?.value());
+      }
+      _ => return Err(meta.error("Unknown attribute")),
     };
-  }
+
+    Ok(())
+  })?;
 
   let name = if let Some(name) = name {
     name

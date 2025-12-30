@@ -1,5 +1,12 @@
 use crate::*;
 
+struct HandlerCtx {
+  name: String,
+  request: TokenStream2,
+  response: TokenStream2,
+  options: TokenStream2,
+}
+
 pub fn process_service_derive(item: ItemEnum) -> Result<TokenStream2, Error> {
   let ItemEnum {
     attrs,
@@ -9,7 +16,7 @@ pub fn process_service_derive(item: ItemEnum) -> Result<TokenStream2, Error> {
     ..
   } = item;
 
-  let mut handlers_tokens: Vec<TokenStream2> = Vec::new();
+  let mut handlers_data: Vec<HandlerCtx> = Vec::new();
 
   let ServiceOrHandlerAttrs {
     options: service_options,
@@ -40,7 +47,7 @@ pub fn process_service_derive(item: ItemEnum) -> Result<TokenStream2, Error> {
       let field_ident = field
         .ident
         .as_ref()
-        .ok_or(error!(field, "Expected a named field"))?
+        .ok_or_else(|| error!(field, "Expected a named field"))?
         .to_string();
 
       let field_type = match &field.ty {
@@ -58,22 +65,42 @@ pub fn process_service_derive(item: ItemEnum) -> Result<TokenStream2, Error> {
       };
     }
 
-    let request = request.ok_or(error!(&variant, "Missing request type"))?;
-    let response = response.ok_or(error!(&variant, "Missing response type"))?;
+    let request = request
+      .ok_or_else(|| error!(&variant, "Missing request type"))?
+      .to_token_stream();
+    let response = response
+      .ok_or_else(|| error!(&variant, "Missing response type"))?
+      .to_token_stream();
 
     let handler_options = tokens_or_default!(handler_options, quote! { vec![] });
 
-    handlers_tokens.push(quote! {
-      ::prelude::ServiceHandler {
-        name: #handler_name,
-        request: <#request as ::prelude::ProtoMessage>::proto_path(),
-        response: <#response as ::prelude::ProtoMessage>::proto_path(),
-        options: #handler_options
-      }
+    handlers_data.push(HandlerCtx {
+      name: handler_name,
+      request,
+      response,
+      options: handler_options,
     });
   }
 
   let service_options = tokens_or_default!(service_options, quote! { vec![] });
+
+  let handlers_tokens = handlers_data.iter().map(|data| {
+    let HandlerCtx {
+      name,
+      request,
+      response,
+      options,
+    } = data;
+
+    quote! {
+      ::prelude::ServiceHandler {
+        name: #name,
+        request: <#request as ::prelude::ProtoMessage>::proto_path(),
+        response: <#response as ::prelude::ProtoMessage>::proto_path(),
+        options: #options
+      }
+    }
+  });
 
   Ok(quote! {
     #[derive(::proc_macro_impls::Service)]

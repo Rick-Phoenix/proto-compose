@@ -1,32 +1,26 @@
-use syn_utils::filter_attributes;
-
 use crate::*;
 
 pub struct ServiceOrHandlerAttrs {
-  pub options: Option<Expr>,
+  pub options: Option<TokenStream2>,
 }
 
 pub fn process_service_or_handler_attrs(
   attrs: &[Attribute],
 ) -> Result<ServiceOrHandlerAttrs, Error> {
-  let mut options: Option<Expr> = None;
+  let mut options: Option<TokenStream2> = None;
 
-  for arg in filter_attributes(attrs, &["proto"])? {
-    match arg {
-      Meta::NameValue(nv) => {
-        let ident = nv.path.require_ident()?.to_string();
+  parse_filtered_attrs(attrs, &["proto"], |meta| {
+    let ident_str = meta.ident_str()?;
 
-        match ident.as_str() {
-          "options" => {
-            options = Some(nv.value);
-          }
-          _ => bail!(nv.path, "Unknown attribute `{ident}`"),
-        };
+    match ident_str.as_str() {
+      "options" => {
+        options = Some(meta.expr_value()?.into_token_stream());
       }
-      Meta::List(_) => {}
-      Meta::Path(_) => {}
-    }
-  }
+      _ => return Err(meta.error("Unknown attribute")),
+    };
+
+    Ok(())
+  })?;
 
   Ok(ServiceOrHandlerAttrs { options })
 }

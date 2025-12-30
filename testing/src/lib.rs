@@ -7,7 +7,6 @@ use proc_macro_impls::package;
 use std::collections::HashMap;
 
 use prelude::*;
-use proc_macro_impls::Oneof;
 use proto_types::{Duration, Timestamp};
 
 pub fn collect_package() -> Package {
@@ -18,9 +17,7 @@ package!(name = "myapp.v1");
 
 pub mod inner {
   use bytes::Bytes;
-  use proc_macro_impls::{
-    Extension, proto_enum, proto_extension, proto_message, proto_oneof, proto_service,
-  };
+  use proc_macro_impls::{proto_enum, proto_extension, proto_message, proto_oneof, proto_service};
 
   use super::*;
 
