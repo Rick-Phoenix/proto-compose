@@ -3,6 +3,7 @@
 #[cfg(test)]
 mod tests;
 
+use proc_macro_impls::package;
 use std::collections::HashMap;
 
 use prelude::*;
@@ -12,6 +13,8 @@ use proto_types::{Duration, Timestamp};
 pub fn collect_package() -> Package {
   prelude::collect_package("myapp.v1")
 }
+
+package!("myapp.v1");
 
 pub mod inner {
   use bytes::Bytes;

@@ -54,6 +54,36 @@ mod service_derive;
 
 mod attributes;
 
+#[proc_macro]
+pub fn package(input: TokenStream) -> TokenStream {
+  let input = parse_macro_input!(input as LitStr);
+
+  let pkg_name = input.value();
+
+  let converted_name = ccase!(snake, pkg_name.replace(".", "_"));
+
+  let fn_ident = format_ident!("collect_{converted_name}");
+  let test_fn_ident = format_ident!("check_unique_cel_rules_{converted_name}");
+
+  let output = quote! {
+    pub fn #fn_ident() -> ::prelude::Package {
+      ::prelude::collect_package(#pkg_name)
+    }
+
+    #[cfg(test)]
+    #[test]
+    fn #test_fn_ident() {
+      let pkg = #fn_ident();
+
+      if let Err(e) = pkg.check_unique_cel_rules() {
+        panic!("{e}");
+      }
+    }
+  };
+
+  output.into()
+}
+
 #[proc_macro_attribute]
 pub fn proto_message(args: TokenStream, input: TokenStream) -> TokenStream {
   let mut item = parse_macro_input!(input as ItemStruct);
