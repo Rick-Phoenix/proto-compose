@@ -22,19 +22,21 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   let mut variants_tokens: Vec<TokenStream2> = Vec::new();
   let mut from_str_tokens = TokenStream2::new();
   let mut as_str_tokens = TokenStream2::new();
+  let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
 
-  let mut used_tags: Vec<i32> = Vec::new();
   for variant in variants.iter() {
     if let Some((_, expr)) = &variant.discriminant {
       let num = expr.as_int::<i32>()?;
 
-      used_tags.push(num);
+      manually_set_tags.push(ManuallySetTag {
+        tag: num,
+        field_span: variant.span(),
+      });
     }
   }
 
-  let unavailable_ranges = reserved_numbers
-    .clone()
-    .build_unavailable_ranges(&used_tags);
+  let unavailable_ranges = build_unavailable_ranges(&reserved_numbers, &mut manually_set_tags)?;
+
   let mut tag_allocator = TagAllocator::new(&unavailable_ranges);
 
   for (i, variant) in variants.iter_mut().enumerate() {

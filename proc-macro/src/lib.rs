@@ -71,7 +71,7 @@ pub fn proto_message(args: TokenStream, input: TokenStream) -> TokenStream {
       match ident.as_str() {
         "direct" => macro_attrs.is_direct = true,
         "no_auto_test" => macro_attrs.no_auto_test = true,
-        "extern_path" => macro_attrs.extern_path = Some(meta.value()?.parse::<LitStr>()?.value()),
+        "extern_path" => macro_attrs.extern_path = Some(meta.parse_value::<LitStr>()?.value()),
         _ => {}
       };
     }
@@ -119,7 +119,7 @@ pub fn proto_extension(args: TokenStream, input: TokenStream) -> TokenStream {
   };
 
   quote! {
-    #[derive(Extension)]
+    #[derive(::proc_macro_impls::Extension)]
     #item
 
     #extra_tokens
@@ -160,7 +160,7 @@ pub fn proto_enum(_args: TokenStream, input: TokenStream) -> TokenStream {
 
   quote! {
     #[repr(i32)]
-    #[derive(::prelude::prost::Enumeration, ::proc_macro_impls::Enum, Debug, Clone, Copy)]
+    #[derive(::prelude::prost::Enumeration, ::proc_macro_impls::Enum, Hash, PartialEq, Eq, Debug, Clone, Copy)]
     #item
 
     #extra_tokens
@@ -195,7 +195,7 @@ pub fn proto_oneof(args: TokenStream, input: TokenStream) -> TokenStream {
   };
 
   quote! {
-    #[derive(Oneof)]
+    #[derive(::proc_macro_impls::Oneof)]
     #item
 
     #extra_tokens
@@ -207,17 +207,3 @@ pub fn proto_oneof(args: TokenStream, input: TokenStream) -> TokenStream {
 pub fn oneof_derive(_input: TokenStream) -> TokenStream {
   TokenStream::new()
 }
-
-// Deprecated, leaving it here in case I change my mind
-// mod module_processing;
-// #[proc_macro_attribute]
-// pub fn proto_module(attrs: TokenStream, input: TokenStream) -> TokenStream {
-//   let module = parse_macro_input!(input as ItemMod);
-//
-//   let module_attrs = parse_macro_input!(attrs as ModuleAttrs);
-//
-//   match process_module_items(module_attrs, module) {
-//     Ok(processed_module) => processed_module.into_token_stream().into(),
-//     Err(e) => e.to_compile_error().into(),
-//   }
-// }

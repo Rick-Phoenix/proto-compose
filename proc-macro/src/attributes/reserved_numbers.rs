@@ -40,7 +40,7 @@ pub fn sort_and_check_duplicate_tags(tags: &mut [ManuallySetTag]) -> syn::Result
   Ok(())
 }
 
-pub fn build_unavailable_ranges2(
+pub fn build_unavailable_ranges(
   reserved_numbers: &ReservedNumbers,
   manual_tags: &mut [ManuallySetTag],
 ) -> syn::Result<Vec<Range<i32>>> {
@@ -102,38 +102,6 @@ pub fn build_unavailable_ranges2(
 impl ReservedNumbers {
   pub fn contains(&self, tag: i32) -> bool {
     is_reserved(tag, &self.0)
-  }
-
-  pub fn build_unavailable_ranges(self, manual_tags: &[i32]) -> Vec<Range<i32>> {
-    if manual_tags.is_empty() {
-      return self.0;
-    }
-
-    let mut ranges = self.0;
-
-    for tag in manual_tags {
-      ranges.push(*tag..(*tag + 1));
-    }
-
-    ranges.sort_by_key(|r| r.start);
-
-    // Coalesce
-    let mut merged: Vec<Range<i32>> = Vec::new();
-    let mut current = ranges[0].clone();
-
-    for next in ranges.into_iter().skip(1) {
-      if next.start <= current.end {
-        // Extend current to the max end
-        current.end = std::cmp::max(current.end, next.end);
-      } else {
-        // Gap found, push current and start new
-        merged.push(current);
-        current = next;
-      }
-    }
-    merged.push(current);
-
-    merged
   }
 }
 

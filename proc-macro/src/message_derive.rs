@@ -43,7 +43,7 @@ pub fn process_message_derive_shadow(
 
   let mut fields_with_ctx: Vec<FieldDataKind> = Vec::new();
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
-  let mut oneofs: Vec<OneofCheckCtx> = Vec::new();
+  let mut oneofs_checks: Vec<OneofCheckCtx> = Vec::new();
 
   for field in orig_struct_fields {
     let field_data_kind = process_field_data(FieldOrVariant::Field(field))?;
@@ -69,7 +69,7 @@ pub fn process_message_derive_shadow(
             });
           }
 
-          oneofs.push(OneofCheckCtx {
+          oneofs_checks.push(OneofCheckCtx {
             path: path.to_token_stream(),
             tags: tags.clone(),
           });
@@ -81,7 +81,7 @@ pub fn process_message_derive_shadow(
   }
 
   let used_ranges =
-    build_unavailable_ranges2(&message_attrs.reserved_numbers, &mut manually_set_tags)?;
+    build_unavailable_ranges(&message_attrs.reserved_numbers, &mut manually_set_tags)?;
 
   let mut tag_allocator = TagAllocator::new(&used_ranges);
 
@@ -153,8 +153,11 @@ pub fn process_message_derive_shadow(
     validator_impl,
   ]);
 
-  let oneof_tags_check =
-    generate_oneof_tags_check(shadow_struct_ident, message_attrs.no_auto_test, oneofs);
+  let oneof_tags_check = generate_oneof_tags_check(
+    shadow_struct_ident,
+    message_attrs.no_auto_test,
+    oneofs_checks,
+  );
 
   let derives = if cfg!(feature = "cel") {
     quote! { #[derive(::prelude::prost::Message, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCelValue)] }
@@ -259,7 +262,7 @@ pub fn process_message_derive_direct(
   }
 
   let used_ranges =
-    build_unavailable_ranges2(&message_attrs.reserved_numbers, &mut manually_set_tags)?;
+    build_unavailable_ranges(&message_attrs.reserved_numbers, &mut manually_set_tags)?;
 
   let mut tag_allocator = TagAllocator::new(&used_ranges);
 

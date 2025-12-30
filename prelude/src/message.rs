@@ -70,6 +70,8 @@ pub struct Message {
   pub reserved_names: Vec<&'static str>,
   pub reserved_numbers: Vec<Range<i32>>,
   pub cel_rules: Vec<CelRule>,
+  // Not a static str because we compose this
+  // by default with module_path!() + ident
   pub rust_path: String,
 }
 

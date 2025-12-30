@@ -18,6 +18,8 @@ pub struct Enum {
   pub reserved_numbers: Vec<Range<i32>>,
   pub reserved_names: Vec<&'static str>,
   pub options: Vec<ProtoOption>,
+  // Not a static str because we compose this
+  // by default with module_path!() + ident
   pub rust_path: String,
 }
 

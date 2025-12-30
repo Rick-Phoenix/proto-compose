@@ -38,7 +38,7 @@ pub fn generate_oneof_tags_check(
   };
 
   let auto_generated_test = (!no_auto_test).then(|| {
-    let test_fn_name = format_ident!("{}_oneof_tags_check", ccase!(snake, &ident_str));
+    let test_fn_name = format_ident!("{}_oneofs_tags", ccase!(snake, &ident_str));
 
     quote! {
       #[cfg(test)]
