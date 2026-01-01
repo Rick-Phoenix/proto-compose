@@ -46,31 +46,20 @@ where
 
   quote! {
     impl ::prelude::ProtoOneof for #enum_ident {
-      fn name() -> &'static str {
-        #proto_name
-      }
-
-      fn tags() -> &'static [i32] {
-        &[ #(#manually_set_tags),* ]
-      }
+      const NAME: &str = #proto_name;
+      const TAGS: &[i32] = &[ #(#manually_set_tags),* ];
 
       fn proto_schema() -> ::prelude::Oneof {
         Self::proto_schema()
-      }
-
-      fn validate(&self, parent_elements: &mut Vec<FieldPathElement>, violations: &mut ViolationsAcc) {
-        self.validate(parent_elements, violations)
       }
     }
 
     impl #enum_ident {
       pub fn proto_schema() -> ::prelude::Oneof {
-        let mut options: Vec<::prelude::ProtoOption> = #options_tokens;
-
         ::prelude::Oneof {
           name: #proto_name,
           fields: vec![ #(#variants_tokens,)* ],
-          options,
+          options: #options_tokens,
         }
       }
     }

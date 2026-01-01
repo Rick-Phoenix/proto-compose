@@ -65,5 +65,11 @@ where
         }
       }
     }
+
+    impl ::prelude::ValidatedOneof for #oneof_ident {
+      fn validate(&self, parent_elements: &mut Vec<FieldPathElement>, violations: &mut ViolationsAcc) {
+        self.validate(parent_elements, violations)
+      }
+    }
   }
 }

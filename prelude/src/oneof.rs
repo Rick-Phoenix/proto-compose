@@ -13,31 +13,26 @@ pub trait IntoOneof: From<Self::Oneof> + Into<Self::Oneof> {
 }
 
 impl<T: IntoOneof> ProtoOneof for T {
+  const NAME: &str = T::Oneof::NAME;
+  const TAGS: &[i32] = T::Oneof::TAGS;
+
   fn proto_schema() -> Oneof {
     T::Oneof::proto_schema()
-  }
-
-  fn name() -> &'static str {
-    T::Oneof::name()
-  }
-
-  fn tags() -> &'static [i32] {
-    T::Oneof::tags()
   }
 }
 
 pub trait ProtoOneof {
+  const NAME: &str;
+  const TAGS: &[i32];
+
   fn proto_schema() -> Oneof;
 
-  fn name() -> &'static str;
-
-  fn tags() -> &'static [i32];
-
+  #[doc(hidden)]
   fn check_tags(message: &str, found_tags: &mut [i32]) -> Result<(), String> {
     use similar_asserts::SimpleDiff;
 
-    let expected = Self::tags();
-    let oneof_name = Self::name();
+    let expected = Self::TAGS;
+    let oneof_name = Self::NAME;
 
     found_tags.sort_unstable();
 
@@ -55,13 +50,10 @@ pub trait ProtoOneof {
 
     Ok(())
   }
+}
 
-  fn validate(
-    &self,
-    _parent_messages: &mut Vec<FieldPathElement>,
-    _violations: &mut ViolationsAcc,
-  ) {
-  }
+pub trait ValidatedOneof {
+  fn validate(&self, parent_messages: &mut Vec<FieldPathElement>, violations: &mut ViolationsAcc);
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
