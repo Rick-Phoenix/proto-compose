@@ -21,16 +21,14 @@ pub fn process_message_derive(
 }
 
 pub fn process_message_derive_shadow(
-  item: &mut ItemStruct,
+  orig_struct: &mut ItemStruct,
   message_attrs: MessageAttrs,
 ) -> Result<TokenStream2, Error> {
-  let mut shadow_struct = create_shadow_struct(item);
+  let mut shadow_struct = create_shadow_struct(orig_struct);
 
-  let orig_struct_ident = &item.ident;
+  let orig_struct_ident = &orig_struct.ident;
   let shadow_struct_ident = &shadow_struct.ident;
 
-  let orig_struct_fields = item.fields.iter_mut();
-  let shadow_struct_fields = shadow_struct.fields.iter_mut();
   let mut ignored_fields: Vec<Ident> = Vec::new();
 
   let mut proto_conversion_data = ProtoConversionImpl {
@@ -41,11 +39,11 @@ pub fn process_message_derive_shadow(
     from_proto: ConversionData::new(&message_attrs.from_proto),
   };
 
-  let mut fields_with_ctx: Vec<FieldDataKind> = Vec::new();
+  let mut fields_data: Vec<FieldDataKind> = Vec::new();
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
-  let mut oneofs_checks: Vec<OneofCheckCtx> = Vec::new();
+  let mut oneofs_tags_checks: Vec<OneofCheckCtx> = Vec::new();
 
-  for field in orig_struct_fields {
+  for field in orig_struct.fields.iter_mut() {
     let field_data_kind = process_field_data(FieldOrVariant::Field(field))?;
 
     proto_conversion_data.handle_field_conversions(&field_data_kind);
@@ -69,7 +67,7 @@ pub fn process_message_derive_shadow(
             });
           }
 
-          oneofs_checks.push(OneofCheckCtx {
+          oneofs_tags_checks.push(OneofCheckCtx {
             path: path.to_token_stream(),
             tags: tags.clone(),
           });
@@ -77,7 +75,7 @@ pub fn process_message_derive_shadow(
       }
     };
 
-    fields_with_ctx.push(field_data_kind);
+    fields_data.push(field_data_kind);
   }
 
   let used_ranges =
@@ -85,7 +83,11 @@ pub fn process_message_derive_shadow(
 
   let mut tag_allocator = TagAllocator::new(&used_ranges);
 
-  for (dst_field, field_attrs) in shadow_struct_fields.zip(fields_with_ctx.iter_mut()) {
+  for (dst_field, field_attrs) in shadow_struct
+    .fields
+    .iter_mut()
+    .zip(fields_data.iter_mut())
+  {
     let FieldDataKind::Normal(field_attrs) = field_attrs else {
       continue;
     };
@@ -122,7 +124,7 @@ pub fn process_message_derive_shadow(
       .collect();
   }
 
-  let non_ignored_fields: Vec<&FieldData> = fields_with_ctx
+  let non_ignored_fields: Vec<&FieldData> = fields_data
     .iter()
     .filter_map(|f| f.as_normal())
     .collect();
@@ -146,6 +148,12 @@ pub fn process_message_derive_shadow(
     .shadow_derives
     .map(|list| quote! { #[#list] });
 
+  let oneof_tags_check = generate_oneof_tags_check(
+    shadow_struct_ident,
+    message_attrs.no_auto_test,
+    oneofs_tags_checks,
+  );
+
   let wrapped_items = wrap_with_imports(vec![
     schema_impls,
     proto_conversion_impls,
@@ -153,19 +161,13 @@ pub fn process_message_derive_shadow(
     validator_impl,
   ]);
 
-  let oneof_tags_check = generate_oneof_tags_check(
-    shadow_struct_ident,
-    message_attrs.no_auto_test,
-    oneofs_checks,
-  );
-
+  // prost::Message already implements Debug and Default
   let derives = if cfg!(feature = "cel") {
     quote! { #[derive(::prelude::prost::Message, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCelValue)] }
   } else {
     quote! { #[derive(::prelude::prost::Message, Clone, PartialEq)] }
   };
 
-  // prost::Message already implements Debug
   let output_tokens = quote! {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #derives
@@ -188,7 +190,7 @@ pub fn process_message_derive_direct(
     .attrs
     .push(parse_quote!(#[allow(clippy::derive_partial_eq_without_eq)]));
 
-  // prost::Message already implements Debug
+  // prost::Message already implements Debug and Default
   let prost_message_attr: Attribute = if cfg!(feature = "cel") {
     parse_quote!(#[derive(::prelude::prost::Message, Clone, PartialEq, ::protocheck::macros::TryIntoCelValue)])
   } else {
@@ -197,9 +199,9 @@ pub fn process_message_derive_direct(
 
   item.attrs.push(prost_message_attr);
 
-  let mut fields_attrs: Vec<FieldData> = Vec::new();
+  let mut fields_data: Vec<FieldData> = Vec::new();
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
-  let mut oneofs: Vec<OneofCheckCtx> = Vec::new();
+  let mut oneofs_tags_checks: Vec<OneofCheckCtx> = Vec::new();
 
   for field in item.fields.iter_mut() {
     let field_attrs = process_field_data(FieldOrVariant::Field(field))?;
@@ -249,13 +251,13 @@ pub fn process_message_derive_direct(
           });
         }
 
-        oneofs.push(OneofCheckCtx {
+        oneofs_tags_checks.push(OneofCheckCtx {
           path: path.to_token_stream(),
           tags: tags.clone(),
         });
       }
 
-      fields_attrs.push(data);
+      fields_data.push(data);
     } else {
       bail!(field, "Cannot use `ignore` in a direct impl");
     }
@@ -266,11 +268,7 @@ pub fn process_message_derive_direct(
 
   let mut tag_allocator = TagAllocator::new(&used_ranges);
 
-  for (field, field_attrs) in item
-    .fields
-    .iter_mut()
-    .zip(fields_attrs.iter_mut())
-  {
+  for (field, field_attrs) in item.fields.iter_mut().zip(fields_data.iter_mut()) {
     let tag = match field_attrs.tag {
       Some(tag) => tag,
       None => {
@@ -283,6 +281,9 @@ pub fn process_message_derive_direct(
       }
     };
 
+    // We change the type in direct impls as well,
+    // mostly just to be able to use the real enum names
+    // as opposed to just an opaque `i32`
     let prost_compatible_type = field_attrs.proto_field.output_proto_type();
     field.ty = prost_compatible_type;
 
@@ -293,14 +294,14 @@ pub fn process_message_derive_direct(
   let struct_ident = &item.ident;
 
   let consistency_checks_impl =
-    impl_message_consistency_checks(struct_ident, &fields_attrs, message_attrs.no_auto_test);
+    impl_message_consistency_checks(struct_ident, &fields_data, message_attrs.no_auto_test);
 
-  let schema_impls = message_schema_impls(struct_ident, None, &message_attrs, &fields_attrs);
+  let schema_impls = message_schema_impls(struct_ident, None, &message_attrs, &fields_data);
 
-  let validator_impl = impl_message_validator(struct_ident, &fields_attrs);
+  let validator_impl = impl_message_validator(struct_ident, &fields_data);
 
   let oneof_tags_check =
-    generate_oneof_tags_check(struct_ident, message_attrs.no_auto_test, oneofs);
+    generate_oneof_tags_check(struct_ident, message_attrs.no_auto_test, oneofs_tags_checks);
 
   let wrapped_items = wrap_with_imports(vec![schema_impls, validator_impl]);
 

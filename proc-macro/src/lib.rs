@@ -33,6 +33,7 @@ use crate::{
   proto_field::*, proto_map::*, proto_types::*, service_derive::*,
 };
 
+mod attributes;
 mod common_impls;
 mod enum_derive;
 mod extension_derive;
@@ -48,10 +49,8 @@ mod proto_map;
 mod proto_types;
 mod service_derive;
 
-mod attributes;
-
 #[proc_macro]
-pub fn package(input: TokenStream) -> TokenStream {
+pub fn proto_package(input: TokenStream) -> TokenStream {
   match package_macro_impl(input.into()) {
     Ok(output) => output.into(),
     Err(e) => e.into_compile_error().into(),

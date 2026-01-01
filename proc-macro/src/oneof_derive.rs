@@ -216,6 +216,9 @@ pub(crate) fn process_oneof_derive_direct(
       bail!(variant, "Tag has not been set");
     };
 
+    // We change the type in direct impls as well,
+    // mostly just to be able to use the real enum names
+    // as opposed to just an opaque `i32`
     let prost_compatible_type = field_attrs.proto_field.output_proto_type();
     *variant.type_mut()? = prost_compatible_type;
 

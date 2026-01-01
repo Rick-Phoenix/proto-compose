@@ -26,6 +26,7 @@ pub struct ManuallySetTag {
   pub field_span: Span,
 }
 
+/// This is just for oneofs, messages get the same check in the [`build_unavailable_ranges`] function
 pub fn sort_and_check_duplicate_tags(tags: &mut [ManuallySetTag]) -> syn::Result<()> {
   tags.sort_unstable_by_key(|mt| mt.tag);
 
@@ -44,8 +45,6 @@ pub fn build_unavailable_ranges(
   reserved_numbers: &ReservedNumbers,
   manual_tags: &mut [ManuallySetTag],
 ) -> syn::Result<Vec<Range<i32>>> {
-  manual_tags.sort_unstable_by_key(|mt| mt.tag);
-
   for i in 0..manual_tags.len() {
     let ManuallySetTag { tag, field_span } = manual_tags[i];
 

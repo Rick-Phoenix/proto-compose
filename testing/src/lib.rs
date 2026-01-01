@@ -13,7 +13,7 @@ pub fn collect_package() -> Package {
   prelude::collect_package("myapp.v1")
 }
 
-package!(name = "myapp.v1");
+proto_package!(name = "myapp.v1");
 
 pub mod inner {
   use bytes::Bytes;
