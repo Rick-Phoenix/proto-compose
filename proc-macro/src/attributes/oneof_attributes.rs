@@ -1,7 +1,7 @@
 use crate::*;
 
 pub struct OneofAttrs {
-  pub options: Option<Expr>,
+  pub options: TokensOr<TokenStream2>,
   pub name: String,
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
@@ -9,7 +9,7 @@ pub struct OneofAttrs {
 }
 
 pub fn process_oneof_attrs(enum_ident: &Ident, attrs: &[Attribute]) -> Result<OneofAttrs, Error> {
-  let mut options: Option<Expr> = None;
+  let mut options = TokensOr::<TokenStream2>::new(|| quote! { vec![] });
   let mut name: Option<String> = None;
   let mut from_proto: Option<PathOrClosure> = None;
   let mut into_proto: Option<PathOrClosure> = None;
@@ -25,7 +25,7 @@ pub fn process_oneof_attrs(enum_ident: &Ident, attrs: &[Attribute]) -> Result<On
         shadow_derives = Some(list);
       }
       "options" => {
-        options = Some(meta.expr_value()?);
+        options.set(meta.expr_value()?.into_token_stream());
       }
       "from_proto" => {
         from_proto = Some(meta.expr_value()?.as_path_or_closure()?);

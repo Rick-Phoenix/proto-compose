@@ -26,18 +26,6 @@ where
 
       let field_type = proto_field.descriptor_type_tokens();
 
-      let field_context_tokens = quote! {
-        ::prelude::FieldContext {
-          proto_name: #proto_name,
-          tag: #tag,
-          field_type: #field_type,
-          key_type: None,
-          value_type: None,
-          subscript: None,
-          field_kind: Default::default(),
-        }
-      };
-
       Some(quote! {
         Self::#ident(v) => {
           static #validator_static_ident: LazyLock<#validator_name> = LazyLock::new(|| {
@@ -46,7 +34,15 @@ where
 
           #validator_static_ident.validate(
             &mut ::prelude::ValidationCtx {
-              field_context: #field_context_tokens,
+              field_context: ::prelude::FieldContext {
+                proto_name: #proto_name,
+                tag: #tag,
+                field_type: #field_type,
+                key_type: None,
+                value_type: None,
+                subscript: None,
+                field_kind: Default::default(),
+              },
               parent_elements,
               violations
             },

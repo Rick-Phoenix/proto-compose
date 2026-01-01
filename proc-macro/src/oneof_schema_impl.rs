@@ -20,7 +20,6 @@ where
     } = data.borrow();
 
     let field_type_tokens = proto_field.field_proto_type_tokens();
-    let options_tokens = tokens_or_default!(options, quote! { vec![] });
 
     let validator_schema_tokens = validator
       .as_ref()
@@ -32,7 +31,7 @@ where
       ::prelude::ProtoField {
         name: #proto_name.to_string(),
         tag: #tag,
-        options: #options_tokens,
+        options: #options,
         type_: #field_type_tokens,
         validator: #validator_schema_tokens,
       }
@@ -40,14 +39,10 @@ where
   });
 
   let OneofAttrs {
-    options,
+    options: options_tokens,
     name: proto_name,
     ..
   } = oneof_attrs;
-
-  let options_tokens = tokens_or_default!(options, quote! { vec![] });
-
-  let tags = manually_set_tags.iter().map(|m| m.tag);
 
   quote! {
     impl ::prelude::ProtoOneof for #enum_ident {
@@ -56,7 +51,7 @@ where
       }
 
       fn tags() -> &'static [i32] {
-        &[ #(#tags),* ]
+        &[ #(#manually_set_tags),* ]
       }
 
       fn proto_schema() -> ::prelude::Oneof {

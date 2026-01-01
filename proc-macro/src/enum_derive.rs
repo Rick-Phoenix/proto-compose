@@ -2,7 +2,7 @@ use crate::*;
 
 struct EnumVariantCtx {
   name: String,
-  options: TokenStream2,
+  options: TokensOr<TokenStream2>,
   tag: i32,
   ident: Ident,
 }
@@ -18,7 +18,7 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   let EnumAttrs {
     reserved_names,
     reserved_numbers,
-    options,
+    options: enum_options,
     name: proto_name,
     no_prefix,
     parent_message,
@@ -68,10 +68,6 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
         );
       }
 
-      if reserved_numbers.contains(tag) {
-        bail!(&variant, "Tag {tag} is reserved");
-      }
-
       tag
     } else {
       let next_tag = if i == 0 {
@@ -88,17 +84,13 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
       next_tag
     };
 
-    let variant_options = tokens_or_default!(options, quote! { vec![] });
-
     variants_data.push(EnumVariantCtx {
       name,
-      options: variant_options,
+      options,
       tag,
       ident: variant_ident.clone(),
     });
   }
-
-  let options_tokens = tokens_or_default!(options, quote! { vec![] });
 
   let full_name_method = if let Some(parent) = &parent_message {
     quote! {
@@ -226,7 +218,7 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
           variants: vec! [ #(#variants_tokens,)* ],
           reserved_names: vec![ #(#reserved_names),* ],
           reserved_numbers: vec![ #reserved_numbers ],
-          options: #options_tokens,
+          options: #enum_options,
           rust_path: #rust_path_field
         }
       }

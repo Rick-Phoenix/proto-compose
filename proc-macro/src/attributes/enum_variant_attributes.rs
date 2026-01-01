@@ -2,7 +2,7 @@ use crate::*;
 
 pub struct EnumVariantAttrs {
   pub name: String,
-  pub options: Option<TokenStream2>,
+  pub options: TokensOr<TokenStream2>,
 }
 
 pub fn process_derive_enum_variants_attrs(
@@ -11,7 +11,7 @@ pub fn process_derive_enum_variants_attrs(
   attrs: &[Attribute],
   no_prefix: bool,
 ) -> Result<EnumVariantAttrs, Error> {
-  let mut options: Option<TokenStream2> = None;
+  let mut options = TokensOr::<TokenStream2>::new(|| quote! { vec![] });
   let mut name: Option<String> = None;
 
   parse_filtered_attrs(attrs, &["proto"], |meta| {
@@ -19,7 +19,7 @@ pub fn process_derive_enum_variants_attrs(
 
     match ident_str.as_str() {
       "options" => {
-        options = Some(meta.expr_value()?.into_token_stream());
+        options.set(meta.expr_value()?.into_token_stream());
       }
       "name" => {
         name = Some(meta.parse_value::<LitStr>()?.value());

@@ -26,8 +26,18 @@ pub struct ManuallySetTag {
   pub field_span: Span,
 }
 
-/// This is just for oneofs, messages get the same check in the [`build_unavailable_ranges`] function
-pub fn sort_and_check_duplicate_tags(tags: &mut [ManuallySetTag]) -> syn::Result<()> {
+impl ToTokens for ManuallySetTag {
+  fn to_tokens(&self, tokens: &mut TokenStream2) {
+    let tag = self.tag;
+
+    tokens.extend(quote_spanned! (self.field_span=> #tag));
+  }
+}
+
+pub fn sort_and_check_invalid_tags(
+  tags: &mut [ManuallySetTag],
+  reserved_numbers: &ReservedNumbers,
+) -> syn::Result<()> {
   tags.sort_unstable_by_key(|mt| mt.tag);
 
   for i in 0..tags.len() {
@@ -35,6 +45,10 @@ pub fn sort_and_check_duplicate_tags(tags: &mut [ManuallySetTag]) -> syn::Result
 
     if i > 0 && tag == tags[i - 1].tag {
       bail_with_span!(field_span, "Tag {tag} is used multiple times");
+    }
+
+    if reserved_numbers.contains(tag) {
+      bail_with_span!(field_span, "Tag {tag} conflicts with a reserved range");
     }
   }
 
@@ -45,17 +59,7 @@ pub fn build_unavailable_ranges(
   reserved_numbers: &ReservedNumbers,
   manual_tags: &mut [ManuallySetTag],
 ) -> syn::Result<Vec<Range<i32>>> {
-  for i in 0..manual_tags.len() {
-    let ManuallySetTag { tag, field_span } = manual_tags[i];
-
-    if i > 0 && tag == manual_tags[i - 1].tag {
-      bail_with_span!(field_span, "Tag {tag} is used multiple times");
-    }
-
-    if reserved_numbers.contains(tag) {
-      bail_with_span!(field_span, "Tag {tag} conflicts with a reserved range");
-    }
-  }
+  sort_and_check_invalid_tags(manual_tags, reserved_numbers)?;
 
   let mut reserved_iter = reserved_numbers.0.iter().cloned().peekable();
 

@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests;
 
-use proc_macro_impls::package;
+use proc_macro_impls::proto_package;
 use std::collections::HashMap;
 
 use prelude::*;

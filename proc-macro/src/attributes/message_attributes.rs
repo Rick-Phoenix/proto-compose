@@ -5,7 +5,7 @@ use crate::*;
 pub struct MessageAttrs {
   pub reserved_names: Vec<String>,
   pub reserved_numbers: ReservedNumbers,
-  pub options: Option<Expr>,
+  pub options: TokensOr<TokenStream2>,
   pub name: String,
   pub parent_message: Option<Ident>,
   pub from_proto: Option<PathOrClosure>,
@@ -24,7 +24,7 @@ pub fn process_derive_message_attrs(
 ) -> Result<MessageAttrs, Error> {
   let mut reserved_names: Vec<String> = Vec::new();
   let mut reserved_numbers = ReservedNumbers::default();
-  let mut options: Option<Expr> = None;
+  let mut options = TokensOr::<TokenStream2>::new(|| quote! { vec![] });
   let mut proto_name: Option<String> = None;
   let mut from_proto: Option<PathOrClosure> = None;
   let mut into_proto: Option<PathOrClosure> = None;
@@ -64,7 +64,7 @@ pub fn process_derive_message_attrs(
         );
       }
       "options" => {
-        options = Some(meta.expr_value()?);
+        options.set(meta.expr_value()?.into_token_stream());
       }
       "from_proto" => {
         from_proto = Some(meta.expr_value()?.as_path_or_closure()?);

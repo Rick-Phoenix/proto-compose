@@ -4,7 +4,7 @@ struct HandlerCtx {
   name: String,
   request: TokenStream2,
   response: TokenStream2,
-  options: TokenStream2,
+  options: TokensOr<TokenStream2>,
 }
 
 pub fn process_service_derive(item: ItemEnum) -> Result<TokenStream2, Error> {
@@ -72,8 +72,6 @@ pub fn process_service_derive(item: ItemEnum) -> Result<TokenStream2, Error> {
       .ok_or_else(|| error!(&variant, "Missing response type"))?
       .to_token_stream();
 
-    let handler_options = tokens_or_default!(handler_options, quote! { vec![] });
-
     handlers_data.push(HandlerCtx {
       name: handler_name,
       request,
@@ -81,8 +79,6 @@ pub fn process_service_derive(item: ItemEnum) -> Result<TokenStream2, Error> {
       options: handler_options,
     });
   }
-
-  let service_options = tokens_or_default!(service_options, quote! { vec![] });
 
   let handlers_tokens = handlers_data.iter().map(|data| {
     let HandlerCtx {

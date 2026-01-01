@@ -83,34 +83,40 @@ pub fn process_message_derive_shadow(
 
   let mut tag_allocator = TagAllocator::new(&used_ranges);
 
-  for (dst_field, field_attrs) in shadow_struct
+  for (dst_field, field_data) in shadow_struct
     .fields
     .iter_mut()
     .zip(fields_data.iter_mut())
   {
-    let FieldDataKind::Normal(field_attrs) = field_attrs else {
+    let FieldDataKind::Normal(field_data) = field_data else {
       continue;
     };
 
-    let prost_compatible_type = field_attrs.proto_field.output_proto_type();
+    let prost_compatible_type = field_data.proto_field.output_proto_type();
     dst_field.ty = prost_compatible_type;
 
-    let tag = match field_attrs.tag {
+    let tag = match field_data.tag {
       Some(tag) => tag,
       None => {
-        let new_tag = tag_allocator
-          .next_tag()
-          .map_err(|e| error_with_span!(field_attrs.span, "{e}"))?;
+        if field_data.proto_field.is_oneof() {
+          // We don't need an actual tag for oneofs
+          0
+        } else {
+          let new_tag = tag_allocator
+            .next_tag()
+            .map_err(|e| error_with_span!(field_data.span, "{e}"))?;
 
-        field_attrs.tag = Some(new_tag);
-        new_tag
+          field_data.tag = Some(new_tag);
+          new_tag
+        }
       }
     };
 
-    let prost_attr = field_attrs.proto_field.as_prost_attr(tag);
+    let prost_attr = field_data.proto_field.as_prost_attr(tag);
     dst_field.attrs.push(prost_attr);
   }
 
+  // Into/From proto impls
   let proto_conversion_impls = proto_conversion_data.generate_conversion_impls();
   let validated_conversion_impls = proto_conversion_data.create_validated_conversion_helpers();
 
@@ -144,15 +150,15 @@ pub fn process_message_derive_shadow(
     &non_ignored_fields,
   );
 
-  let shadow_struct_derives = message_attrs
-    .shadow_derives
-    .map(|list| quote! { #[#list] });
-
   let oneof_tags_check = generate_oneof_tags_check(
     shadow_struct_ident,
     message_attrs.no_auto_test,
     oneofs_tags_checks,
   );
+
+  let shadow_struct_derives = message_attrs
+    .shadow_derives
+    .map(|list| quote! { #[#list] });
 
   let wrapped_items = wrap_with_imports(vec![
     schema_impls,
@@ -204,20 +210,15 @@ pub fn process_message_derive_direct(
   let mut oneofs_tags_checks: Vec<OneofCheckCtx> = Vec::new();
 
   for field in item.fields.iter_mut() {
-    let field_attrs = process_field_data(FieldOrVariant::Field(field))?;
+    let field_data = process_field_data(FieldOrVariant::Field(field))?;
 
-    if let FieldDataKind::Normal(data) = field_attrs {
+    if let FieldDataKind::Normal(data) = field_data {
       match data.type_info.type_.as_ref() {
         RustType::Box(inner) => {
           bail!(inner, "Boxed messages must be optional in a direct impl")
         }
         RustType::Option(inner) => {
-          if inner.is_box()
-            && !matches!(
-              data.proto_field,
-              ProtoField::Single(ProtoType::Message { is_boxed: true, .. })
-            )
-          {
+          if inner.is_box() && !data.proto_field.is_boxed_message() {
             bail!(
               inner,
               "Detected usage of `Option<Box<..>>`, but the field was not marked as a boxed message. Please use `#[proto(message(boxed))]` to mark it as a boxed message."
@@ -225,10 +226,7 @@ pub fn process_message_derive_direct(
           }
         }
         RustType::Other(inner) => {
-          if matches!(
-            data.proto_field,
-            ProtoField::Single(ProtoType::Message { .. })
-          ) {
+          if data.proto_field.is_message() {
             bail!(
               &inner.path,
               "Messages must be wrapped in Option in direct impls"
@@ -268,26 +266,31 @@ pub fn process_message_derive_direct(
 
   let mut tag_allocator = TagAllocator::new(&used_ranges);
 
-  for (field, field_attrs) in item.fields.iter_mut().zip(fields_data.iter_mut()) {
-    let tag = match field_attrs.tag {
+  for (field, field_data) in item.fields.iter_mut().zip(fields_data.iter_mut()) {
+    let tag = match field_data.tag {
       Some(tag) => tag,
       None => {
-        let new_tag = tag_allocator
-          .next_tag()
-          .map_err(|e| error_with_span!(field_attrs.span, "{e}"))?;
+        if field_data.proto_field.is_oneof() {
+          // We don't need an actual tag for oneof fields
+          0
+        } else {
+          let new_tag = tag_allocator
+            .next_tag()
+            .map_err(|e| error_with_span!(field_data.span, "{e}"))?;
 
-        field_attrs.tag = Some(new_tag);
-        new_tag
+          field_data.tag = Some(new_tag);
+          new_tag
+        }
       }
     };
 
     // We change the type in direct impls as well,
     // mostly just to be able to use the real enum names
     // as opposed to just an opaque `i32`
-    let prost_compatible_type = field_attrs.proto_field.output_proto_type();
+    let prost_compatible_type = field_data.proto_field.output_proto_type();
     field.ty = prost_compatible_type;
 
-    let prost_attr = field_attrs.proto_field.as_prost_attr(tag);
+    let prost_attr = field_data.proto_field.as_prost_attr(tag);
     field.attrs.push(prost_attr);
   }
 

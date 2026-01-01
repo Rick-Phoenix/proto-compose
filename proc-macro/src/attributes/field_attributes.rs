@@ -20,7 +20,7 @@ pub struct FieldData {
   pub ident_str: String,
   pub tag: Option<i32>,
   pub validator: Option<ValidatorTokens>,
-  pub options: Option<Expr>,
+  pub options: TokensOr<TokenStream2>,
   pub proto_name: String,
   pub proto_field: ProtoField,
   pub from_proto: Option<PathOrClosure>,
@@ -50,7 +50,7 @@ impl FieldDataKind {
 pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error> {
   let mut validator: Option<CallOrClosure> = None;
   let mut tag: Option<i32> = None;
-  let mut options: Option<Expr> = None;
+  let mut options = TokensOr::<TokenStream2>::new(|| quote! { vec![] });
   let mut name: Option<String> = None;
   let mut proto_field: Option<ProtoField> = None;
   let mut is_ignored = false;
@@ -64,7 +64,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
 
     match ident.as_str() {
       "options" => {
-        options = Some(meta.expr_value()?);
+        options.set(meta.expr_value()?.into_token_stream());
       }
       "tag" => {
         tag = Some(meta.expr_value()?.as_int::<i32>()?);

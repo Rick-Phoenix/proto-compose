@@ -14,7 +14,7 @@ use attributes::*;
 use convert_case::ccase;
 use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as TokenStream2};
-use quote::{ToTokens, format_ident, quote};
+use quote::{ToTokens, format_ident, quote, quote_spanned};
 use syn::{
   Attribute, Error, Expr, Field, Fields, Ident, ItemEnum, ItemStruct, Lit, LitStr, Meta, MetaList,
   Path, RangeLimits, Token, Type, Variant, Visibility,

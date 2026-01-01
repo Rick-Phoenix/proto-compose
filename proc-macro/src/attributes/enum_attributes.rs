@@ -3,7 +3,7 @@ use crate::*;
 pub struct EnumAttrs {
   pub reserved_names: Vec<String>,
   pub reserved_numbers: ReservedNumbers,
-  pub options: Option<Expr>,
+  pub options: TokensOr<TokenStream2>,
   pub parent_message: Option<Ident>,
   pub name: String,
   pub no_prefix: bool,
@@ -16,7 +16,7 @@ pub fn process_derive_enum_attrs(
 ) -> Result<EnumAttrs, Error> {
   let mut reserved_names: Vec<String> = Vec::new();
   let mut reserved_numbers = ReservedNumbers::default();
-  let mut options: Option<Expr> = None;
+  let mut options = TokensOr::<TokenStream2>::new(|| quote! { vec![] });
   let mut proto_name: Option<String> = None;
   let mut no_prefix = false;
   let mut parent_message: Option<Ident> = None;
@@ -49,7 +49,7 @@ pub fn process_derive_enum_attrs(
         );
       }
       "options" => {
-        options = Some(meta.expr_value()?);
+        options.set(meta.expr_value()?.into_token_stream());
       }
       "name" => {
         proto_name = Some(meta.expr_value()?.as_string()?);

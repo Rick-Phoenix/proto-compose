@@ -297,4 +297,19 @@ impl ProtoField {
       }
     }
   }
+
+  pub fn is_message(&self) -> bool {
+    matches!(self, Self::Single(ProtoType::Message { .. }))
+  }
+
+  pub fn is_boxed_message(&self) -> bool {
+    matches!(
+      self,
+      Self::Single(ProtoType::Message { is_boxed: true, .. })
+    )
+  }
+
+  pub fn is_oneof(&self) -> bool {
+    matches!(self, Self::Oneof(..))
+  }
 }

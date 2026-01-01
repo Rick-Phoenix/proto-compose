@@ -12,7 +12,7 @@ where
   let MessageAttrs {
     reserved_names,
     reserved_numbers,
-    options,
+    options: message_options,
     name: proto_name,
     parent_message,
     cel_rules: top_level_cel_rules,
@@ -39,7 +39,6 @@ where
       }
     } else {
       let field_type_tokens = proto_field.field_proto_type_tokens();
-      let options_tokens = tokens_or_default!(options, quote! { vec![] });
 
       let validator_schema_tokens = validator
         .as_ref()
@@ -52,7 +51,7 @@ where
           ::prelude::ProtoField {
             name: #proto_name.to_string(),
             tag: #tag,
-            options: #options_tokens,
+            options: #options,
             type_: #field_type_tokens,
             validator: #validator_schema_tokens,
           }
@@ -62,8 +61,6 @@ where
   });
 
   let mut output = TokenStream2::new();
-
-  let options_tokens = tokens_or_default!(options, quote! { vec![] });
 
   let name_method = if let Some(parent) = parent_message {
     quote! {
@@ -165,7 +162,7 @@ where
           package: __PROTO_FILE.package,
           reserved_names: vec![ #(#reserved_names),* ],
           reserved_numbers: vec![ #reserved_numbers ],
-          options: #options_tokens,
+          options: #message_options,
           messages: vec![],
           enums: vec![],
           entries: vec![ #(#entries_tokens,)* ],

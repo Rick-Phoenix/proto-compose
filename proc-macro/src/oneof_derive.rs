@@ -55,7 +55,7 @@ pub(crate) fn process_oneof_derive_shadow(
     fields_attrs.push(field_attrs);
   }
 
-  sort_and_check_duplicate_tags(&mut manually_set_tags)?;
+  sort_and_check_invalid_tags(&mut manually_set_tags, &ReservedNumbers::default())?;
 
   for (dst_variant, field_attrs) in shadow_enum_variants.zip(fields_attrs.iter()) {
     let FieldDataKind::Normal(field_attrs) = field_attrs else {
@@ -209,7 +209,7 @@ pub(crate) fn process_oneof_derive_direct(
     }
   }
 
-  sort_and_check_duplicate_tags(&mut manually_set_tags)?;
+  sort_and_check_invalid_tags(&mut manually_set_tags, &ReservedNumbers::default())?;
 
   for (variant, field_attrs) in variants.iter_mut().zip(fields_attrs.iter()) {
     let Some(tag) = field_attrs.tag else {

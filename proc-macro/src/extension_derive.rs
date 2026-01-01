@@ -91,14 +91,13 @@ pub fn process_extension_derive(
       bail!(field, "Tag is missing");
     }
 
-    let options_tokens = tokens_or_default!(options, quote! { vec![] });
     let field_type_tokens = proto_field.field_proto_type_tokens();
 
     fields_tokens.push(quote! {
       ::prelude::ProtoField {
         name: #proto_name.to_string(),
         tag: #tag,
-        options: #options_tokens,
+        options: #options,
         type_: #field_type_tokens,
         validator: None,
       }
