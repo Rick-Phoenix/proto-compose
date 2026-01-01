@@ -6,7 +6,19 @@ use super::*;
 
 pub trait ValidatedMessage {
   fn validate(&self) -> Result<(), Violations>;
+
+  fn validated(self) -> Result<Self, Violations>
+  where
+    Self: Sized,
+  {
+    match self.validate() {
+      Ok(()) => Ok(self),
+      Err(e) => Err(e),
+    }
+  }
+
   fn nested_validate(&self, ctx: &mut ValidationCtx);
+
   #[must_use]
   fn cel_rules() -> &'static [CelProgram] {
     &[]
