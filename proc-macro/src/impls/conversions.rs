@@ -80,11 +80,31 @@ pub struct ProtoConversionImpl<'a> {
 
 impl<'a> ProtoConversionImpl<'a> {
   pub fn generate_conversion_impls(&self) -> TokenStream2 {
+    let Self {
+      source_ident,
+      target_ident,
+      kind,
+      ..
+    } = self;
+
     let mut tokens = TokenStream2::new();
 
     tokens.extend(self.create_into_proto_impl());
     tokens.extend(self.create_from_proto_impl());
-    tokens.extend(self.create_conversion_helpers());
+
+    if kind.is_message() {
+      tokens.extend(quote! {
+        impl ::prelude::IntoMessage for #source_ident {
+          type Message = #target_ident;
+        }
+      });
+    } else {
+      tokens.extend(quote! {
+        impl ::prelude::IntoOneof for #source_ident {
+          type Oneof = #target_ident;
+        }
+      });
+    }
 
     tokens
   }
@@ -104,55 +124,6 @@ impl<'a> ProtoConversionImpl<'a> {
       kind: *kind,
       conversion_data: into_proto,
     })
-  }
-
-  // This one only really makes sense for messages, not for oneofs
-  pub fn create_validated_conversion_helpers(&self) -> TokenStream2 {
-    let Self {
-      source_ident,
-      target_ident,
-      ..
-    } = self;
-
-    quote! {
-      impl #source_ident {
-        pub fn from_validated_proto(value: #target_ident) -> Result<Self, Violations> {
-          match value.validate() {
-            Ok(_) => Ok(value.into()),
-            Err(vi) => Err(vi)
-          }
-        }
-
-        pub fn into_validated_proto(self) -> Result<#target_ident, Violations> {
-          let output: #target_ident = self.into();
-
-          match output.validate() {
-            Ok(_) => Ok(output),
-            Err(vi) => Err(vi)
-          }
-        }
-      }
-    }
-  }
-
-  pub fn create_conversion_helpers(&self) -> TokenStream2 {
-    let Self {
-      source_ident,
-      target_ident,
-      ..
-    } = self;
-
-    quote! {
-      impl #source_ident {
-        pub fn from_proto(value: #target_ident) -> Self {
-          value.into()
-        }
-
-        pub fn into_proto(self) -> #target_ident {
-          self.into()
-        }
-      }
-    }
   }
 
   pub fn create_from_proto_impl(&self) -> TokenStream2 {
@@ -209,12 +180,12 @@ impl<'a> ProtoConversionImpl<'a> {
     field_ident: &Ident,
   ) {
     let field_conversion_kind = match &self.kind {
-      InputItemKind::Enum => FieldConversionKind::EnumVariant {
+      InputItemKind::Oneof => FieldConversionKind::EnumVariant {
         variant_ident: field_ident,
         source_enum_ident: self.source_ident,
         target_enum_ident: self.target_ident,
       },
-      InputItemKind::Struct => FieldConversionKind::StructField { ident: field_ident },
+      InputItemKind::Message => FieldConversionKind::StructField { ident: field_ident },
     };
 
     let base_ident = field_conversion_kind.base_ident();
@@ -239,12 +210,12 @@ impl<'a> ProtoConversionImpl<'a> {
     field_ident: &Ident,
   ) {
     let field_conversion_kind = match &self.kind {
-      InputItemKind::Enum => FieldConversionKind::EnumVariant {
+      InputItemKind::Oneof => FieldConversionKind::EnumVariant {
         variant_ident: field_ident,
         source_enum_ident: self.source_ident,
         target_enum_ident: self.target_ident,
       },
-      InputItemKind::Struct => FieldConversionKind::StructField { ident: field_ident },
+      InputItemKind::Message => FieldConversionKind::StructField { ident: field_ident },
     };
 
     let conversion_expr = if let Some(proto_field) = proto_field {
@@ -299,8 +270,18 @@ impl<'a> ConversionData<'a> {
 
 #[derive(Clone, Copy)]
 pub enum InputItemKind {
-  Enum,
-  Struct,
+  Oneof,
+  Message,
+}
+
+impl InputItemKind {
+  /// Returns `true` if the input item kind is [`Message`].
+  ///
+  /// [`Message`]: InputItemKind::Message
+  #[must_use]
+  pub fn is_message(&self) -> bool {
+    matches!(self, Self::Message)
+  }
 }
 
 fn create_from_impl(info: &FromImpl) -> TokenStream2 {
@@ -321,12 +302,12 @@ fn create_from_impl(info: &FromImpl) -> TokenStream2 {
     process_custom_expression(expr, &base_ident)
   } else {
     match kind {
-      InputItemKind::Enum => quote! {
+      InputItemKind::Oneof => quote! {
         match value {
           #conversion_tokens
         }
       },
-      InputItemKind::Struct => quote! {
+      InputItemKind::Message => quote! {
         Self {
           #conversion_tokens
         }

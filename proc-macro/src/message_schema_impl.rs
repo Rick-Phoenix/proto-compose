@@ -180,11 +180,11 @@ where
         }
 
         fn name() -> &'static str {
-          #orig_struct_ident::name()
+          <#orig_struct_ident as ::prelude::ProtoMessage>::name()
         }
 
         fn proto_schema() -> ::prelude::Message {
-          #orig_struct_ident::proto_schema()
+          <#orig_struct_ident as ::prelude::ProtoMessage>::proto_schema()
         }
       }
 

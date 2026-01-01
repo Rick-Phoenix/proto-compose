@@ -28,7 +28,7 @@ pub(crate) fn process_oneof_derive_shadow(
   let mut proto_conversion_data = ProtoConversionImpl {
     source_ident: orig_enum_ident,
     target_ident: shadow_enum_ident,
-    kind: InputItemKind::Enum,
+    kind: InputItemKind::Oneof,
     into_proto: ConversionData::new(&oneof_attrs.into_proto),
     from_proto: ConversionData::new(&oneof_attrs.from_proto),
   };

@@ -1,5 +1,33 @@
 use crate::{validators::CelRule, *};
 
+pub trait IntoMessage: From<Self::Message> + Into<Self::Message> {
+  type Message: ::prost::Message + ProtoMessage + ValidatedMessage + From<Self>;
+
+  fn into_message(self) -> Self::Message {
+    self.into()
+  }
+
+  fn from_message(msg: Self::Message) -> Self {
+    msg.into()
+  }
+
+  fn into_validated_message(self) -> Result<Self::Message, Violations> {
+    let msg = self.into_message();
+
+    match msg.validate() {
+      Ok(()) => Ok(msg),
+      Err(e) => Err(e),
+    }
+  }
+
+  fn from_validated_message(msg: Self::Message) -> Result<Self, Violations> {
+    match msg.validate() {
+      Ok(()) => Ok(Self::from_message(msg)),
+      Err(e) => Err(e),
+    }
+  }
+}
+
 pub trait ProtoMessage {
   const PACKAGE: &str;
   const SHORT_NAME: &str;

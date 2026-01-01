@@ -34,7 +34,7 @@ pub fn process_message_derive_shadow(
   let mut proto_conversion_data = ProtoConversionImpl {
     source_ident: orig_struct_ident,
     target_ident: shadow_struct_ident,
-    kind: InputItemKind::Struct,
+    kind: InputItemKind::Message,
     into_proto: ConversionData::new(&message_attrs.into_proto),
     from_proto: ConversionData::new(&message_attrs.from_proto),
   };
@@ -118,7 +118,6 @@ pub fn process_message_derive_shadow(
 
   // Into/From proto impls
   let proto_conversion_impls = proto_conversion_data.generate_conversion_impls();
-  let validated_conversion_impls = proto_conversion_data.create_validated_conversion_helpers();
 
   // We strip away the ignored fields from the shadow struct
   if let Fields::Named(fields) = &mut shadow_struct.fields {
@@ -164,12 +163,7 @@ pub fn process_message_derive_shadow(
     .shadow_derives
     .map(|list| quote! { #[#list] });
 
-  let wrapped_items = wrap_with_imports(vec![
-    schema_impls,
-    proto_conversion_impls,
-    validated_conversion_impls,
-    validator_impl,
-  ]);
+  let wrapped_items = wrap_with_imports(vec![schema_impls, proto_conversion_impls, validator_impl]);
 
   // prost::Message already implements Debug and Default
   let derives = if cfg!(feature = "cel") {

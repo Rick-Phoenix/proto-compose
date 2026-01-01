@@ -1,5 +1,17 @@
 use crate::*;
 
+pub trait IntoOneof: From<Self::Oneof> + Into<Self::Oneof> {
+  type Oneof: ProtoOneof + From<Self>;
+
+  fn into_oneof(self) -> Self::Oneof {
+    self.into()
+  }
+
+  fn from_oneof(oneof: Self::Oneof) -> Self {
+    oneof.into()
+  }
+}
+
 pub trait ProtoOneof {
   fn proto_schema() -> Oneof;
 
