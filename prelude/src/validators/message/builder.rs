@@ -3,7 +3,7 @@ use crate::validators::*;
 pub use state::*;
 
 #[derive(Debug, Clone)]
-pub struct MessageValidatorBuilder<T: ProtoMessage, S: State = Empty> {
+pub struct MessageValidatorBuilder<T: ProtoMessage + ValidatedMessage, S: State = Empty> {
   _state: PhantomData<S>,
 
   /// Adds custom validation using one or more [`CelRule`]s to this field.
@@ -17,7 +17,7 @@ pub struct MessageValidatorBuilder<T: ProtoMessage, S: State = Empty> {
   required: bool,
 }
 
-impl<T: ProtoMessage> MessageValidator<T> {
+impl<T: ProtoMessage + ValidatedMessage> MessageValidator<T> {
   #[must_use]
   pub const fn builder() -> MessageValidatorBuilder<T> {
     MessageValidatorBuilder {
@@ -30,7 +30,9 @@ impl<T: ProtoMessage> MessageValidator<T> {
   }
 }
 
-impl<T: ProtoMessage, S: State> From<MessageValidatorBuilder<T, S>> for ProtoOption {
+impl<T: ProtoMessage + ValidatedMessage, S: State> From<MessageValidatorBuilder<T, S>>
+  for ProtoOption
+{
   fn from(value: MessageValidatorBuilder<T, S>) -> Self {
     value.build().into()
   }
@@ -41,7 +43,7 @@ impl<T: ProtoMessage, S: State> From<MessageValidatorBuilder<T, S>> for ProtoOpt
   clippy::use_self,
   clippy::return_self_not_must_use
 )]
-impl<T: ProtoMessage, S: State> MessageValidatorBuilder<T, S> {
+impl<T: ProtoMessage + ValidatedMessage, S: State> MessageValidatorBuilder<T, S> {
   pub fn cel(mut self, program: CelProgram) -> MessageValidatorBuilder<T, S> {
     self.cel.push(program);
 

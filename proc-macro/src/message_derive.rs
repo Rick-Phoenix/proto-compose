@@ -141,7 +141,11 @@ pub fn process_message_derive_shadow(
     message_attrs.no_auto_test,
   );
 
-  let validator_impl = impl_message_validator(shadow_struct_ident, &non_ignored_fields);
+  let validator_impl = impl_message_validator(
+    shadow_struct_ident,
+    &non_ignored_fields,
+    &message_attrs.cel_rules,
+  );
 
   let schema_impls = message_schema_impls(
     orig_struct_ident,
@@ -301,7 +305,7 @@ pub fn process_message_derive_direct(
 
   let schema_impls = message_schema_impls(struct_ident, None, &message_attrs, &fields_data);
 
-  let validator_impl = impl_message_validator(struct_ident, &fields_data);
+  let validator_impl = impl_message_validator(struct_ident, &fields_data, &message_attrs.cel_rules);
 
   let oneof_tags_check =
     generate_oneof_tags_check(struct_ident, message_attrs.no_auto_test, oneofs_tags_checks);

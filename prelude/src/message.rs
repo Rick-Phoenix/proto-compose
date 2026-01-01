@@ -7,21 +7,9 @@ pub trait ProtoMessage {
   fn proto_path() -> ProtoPath;
   fn proto_schema() -> Message;
 
-  // Not for testing only
-  #[must_use]
-  fn cel_rules() -> &'static [CelProgram] {
-    &[]
-  }
-
-  fn validate(&self) -> Result<(), Violations> {
-    Ok(())
-  }
-
   fn name() -> &'static str;
   fn full_name() -> &'static str;
   fn type_url() -> &'static str;
-
-  fn nested_validate(&self, _ctx: &mut ValidationCtx) {}
 }
 
 impl<T> ProtoMessage for Box<T>
@@ -49,10 +37,6 @@ where
 
   fn proto_schema() -> Message {
     T::proto_schema()
-  }
-
-  fn nested_validate(&self, ctx: &mut ValidationCtx) {
-    T::nested_validate(self, ctx);
   }
 }
 

@@ -1,6 +1,10 @@
 use crate::*;
 
-pub fn impl_message_validator<T>(target_ident: &Ident, fields: &[T]) -> TokenStream2
+pub fn impl_message_validator<T>(
+  target_ident: &Ident,
+  fields: &[T],
+  top_level_cel_rules: &IterTokensOr<TokenStream2>,
+) -> TokenStream2
 where
   T: Borrow<FieldData>,
 {
@@ -90,7 +94,7 @@ where
     impl #target_ident {
       #[doc(hidden)]
       fn __validate_internal(&self, field_context: Option<&FieldContext>, parent_elements: &mut Vec<FieldPathElement>, violations: &mut ViolationsAcc) {
-        let top_level_programs = <Self as ::prelude::ProtoMessage>::cel_rules();
+        let top_level_programs = <Self as ::prelude::ValidatedMessage>::cel_rules();
 
         if !top_level_programs.is_empty() {
           let ctx = ProgramsExecutionCtx {
@@ -121,6 +125,25 @@ where
 
       pub fn nested_validate(&self, ctx: &mut ValidationCtx) {
         self.__validate_internal(Some(&ctx.field_context), ctx.parent_elements, ctx.violations)
+      }
+    }
+
+
+    impl ::prelude::ValidatedMessage for #target_ident {
+      fn cel_rules() -> &'static [CelProgram] {
+        static PROGRAMS: std::sync::LazyLock<Vec<::prelude::CelProgram>> = std::sync::LazyLock::new(|| {
+          #top_level_cel_rules
+        });
+
+        &PROGRAMS
+      }
+
+      fn validate(&self) -> Result<(), Violations> {
+        self.validate()
+      }
+
+      fn nested_validate(&self, ctx: &mut ValidationCtx) {
+        self.nested_validate(ctx);
       }
     }
 

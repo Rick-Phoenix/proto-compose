@@ -15,7 +15,6 @@ where
     options: message_options,
     name: proto_name,
     parent_message,
-    cel_rules: top_level_cel_rules,
     extern_path,
     ..
   } = message_attrs;
@@ -61,6 +60,8 @@ where
   });
 
   let mut output = TokenStream2::new();
+
+  let validation_target = shadow_struct_ident.unwrap_or(orig_struct_ident);
 
   let name_method = if let Some(parent) = parent_message {
     quote! {
@@ -126,14 +127,6 @@ where
         &*NAME
       }
 
-      fn cel_rules() -> &'static [CelProgram] {
-        static PROGRAMS: std::sync::LazyLock<Vec<::prelude::CelProgram>> = std::sync::LazyLock::new(|| {
-          #top_level_cel_rules
-        });
-
-        &PROGRAMS
-      }
-
       fn proto_path() -> ::prelude::ProtoPath {
         ::prelude::ProtoPath {
           name: Self::name(),
@@ -158,7 +151,7 @@ where
           messages: vec![],
           enums: vec![],
           entries: vec![ #(#entries_tokens,)* ],
-          cel_rules: Self::cel_rules().iter().map(|prog| prog.rule.clone()).collect(),
+          cel_rules: #validation_target::cel_rules().iter().map(|prog| prog.rule.clone()).collect(),
           rust_path: #rust_path_field
         };
 
@@ -182,10 +175,6 @@ where
           <#orig_struct_ident as ::prelude::ProtoMessage>::full_name()
         }
 
-        fn cel_rules() -> &'static [CelProgram] {
-          <#orig_struct_ident as ::prelude::ProtoMessage>::cel_rules()
-        }
-
         fn proto_path() -> ::prelude::ProtoPath {
           <#orig_struct_ident as ::prelude::ProtoMessage>::proto_path()
         }
@@ -196,14 +185,6 @@ where
 
         fn proto_schema() -> ::prelude::Message {
           #orig_struct_ident::proto_schema()
-        }
-
-        fn validate(&self) -> Result<(), Violations> {
-          self.validate()
-        }
-
-        fn nested_validate(&self, ctx: &mut ValidationCtx) {
-          self.nested_validate(ctx);
         }
       }
 
