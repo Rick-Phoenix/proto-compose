@@ -135,7 +135,9 @@ pub fn collect_package(package: &'static str) -> Package {
   let files: Vec<ProtoFile> = files
     .into_values()
     .map(|mut file| {
-      file.extensions.sort_unstable_by_key(|e| e.target);
+      file
+        .extensions
+        .sort_unstable_by_key(|e| e.target.as_str());
 
       file.messages.sort_unstable_by_key(|m| m.name);
 
