@@ -92,28 +92,21 @@ pub fn process_message_derive_shadow(
       continue;
     };
 
-    let prost_compatible_type = field_data.proto_field.output_proto_type();
-    dst_field.ty = prost_compatible_type;
+    let tag = if field_data.proto_field.is_oneof() {
+      // We don't need an actual tag for oneofs
+      0
+    } else {
+      let new_tag = tag_allocator.next_tag_if_missing(field_data.tag, field_data.span)?;
 
-    let tag = match field_data.tag {
-      Some(tag) => tag,
-      None => {
-        if field_data.proto_field.is_oneof() {
-          // We don't need an actual tag for oneofs
-          0
-        } else {
-          let new_tag = tag_allocator
-            .next_tag()
-            .map_err(|e| error_with_span!(field_data.span, "{e}"))?;
-
-          field_data.tag = Some(new_tag);
-          new_tag
-        }
-      }
+      field_data.tag = Some(new_tag);
+      new_tag
     };
 
     let prost_attr = field_data.proto_field.as_prost_attr(tag);
     dst_field.attrs.push(prost_attr);
+
+    let prost_compatible_type = field_data.proto_field.output_proto_type();
+    dst_field.ty = prost_compatible_type;
   }
 
   // Into/From proto impls
@@ -265,21 +258,14 @@ pub fn process_message_derive_direct(
   let mut tag_allocator = TagAllocator::new(&used_ranges);
 
   for (field, field_data) in item.fields.iter_mut().zip(fields_data.iter_mut()) {
-    let tag = match field_data.tag {
-      Some(tag) => tag,
-      None => {
-        if field_data.proto_field.is_oneof() {
-          // We don't need an actual tag for oneof fields
-          0
-        } else {
-          let new_tag = tag_allocator
-            .next_tag()
-            .map_err(|e| error_with_span!(field_data.span, "{e}"))?;
+    let tag = if field_data.proto_field.is_oneof() {
+      // We don't need an actual tag for oneofs
+      0
+    } else {
+      let new_tag = tag_allocator.next_tag_if_missing(field_data.tag, field_data.span)?;
 
-          field_data.tag = Some(new_tag);
-          new_tag
-        }
-      }
+      field_data.tag = Some(new_tag);
+      new_tag
     };
 
     // We change the type in direct impls as well,

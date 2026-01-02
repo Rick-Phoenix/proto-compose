@@ -23,7 +23,15 @@ impl<'a> TagAllocator<'a> {
     }
   }
 
-  pub fn next_tag(&mut self) -> Result<i32, &'static str> {
+  pub fn next_tag_if_missing(&mut self, tag: Option<i32>, span: Span) -> syn::Result<i32> {
+    if let Some(tag) = tag {
+      Ok(tag)
+    } else {
+      self.next_tag(span)
+    }
+  }
+
+  pub fn next_tag(&mut self, span: Span) -> syn::Result<i32> {
     while self.current_range_idx < self.unavailable.len() {
       let range = &self.unavailable[self.current_range_idx];
 
@@ -44,7 +52,8 @@ impl<'a> TagAllocator<'a> {
     }
 
     if self.reserved_to_max {
-      return Err(
+      bail_with_span!(
+        span,
         "Protobuf tag limit exceeded! Check if you have set the reserved numbers range to infinity",
       );
     }

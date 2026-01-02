@@ -73,9 +73,7 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
       let next_tag = if i == 0 {
         0
       } else {
-        tag_allocator
-          .next_tag()
-          .map_err(|e| error!(&variant, "{e}"))?
+        tag_allocator.next_tag(variant.span())?
       };
 
       let tag_expr: Expr = parse_quote!(#next_tag);
