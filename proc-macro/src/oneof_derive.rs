@@ -1,12 +1,12 @@
 use crate::*;
 
-pub fn process_oneof_derive(item: &mut ItemEnum, is_direct: bool) -> Result<TokenStream2, Error> {
+pub fn process_oneof_derive(item: &mut ItemEnum, is_proxied: bool) -> Result<TokenStream2, Error> {
   let oneof_attrs = process_oneof_attrs(&item.ident, &item.attrs)?;
 
-  if is_direct {
-    process_oneof_derive_direct(item, oneof_attrs)
-  } else {
+  if is_proxied {
     process_oneof_derive_shadow(item, oneof_attrs)
+  } else {
+    process_oneof_derive_direct(item, oneof_attrs)
   }
 }
 

@@ -4,7 +4,7 @@ fn bad_rule() -> CelProgram {
   cel_program!(id = "abc", msg = "hi", expr = "hi")
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 struct BadFieldRules {
   #[proto(tag = 1, validate = |v| v.cel(bad_rule()))]
   pub id: i32,
@@ -24,7 +24,7 @@ fn bad_field_rules() {
   assert_eq_pretty!(cel_errors.len(), 0);
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 #[proto(cel_rules(bad_rule()))]
 struct BadMsgRules {
   #[proto(tag = 1)]
@@ -44,7 +44,7 @@ fn bad_msg_rules() {
   assert_eq_pretty!(cel_errors.len(), 1);
 }
 
-#[proto_oneof(direct)]
+#[proto_oneof]
 enum BadCelOneof {
   #[proto(tag = 1, validate = |v| v.cel(bad_rule()))]
   Id(i32),
@@ -52,7 +52,7 @@ enum BadCelOneof {
   Name(String),
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 struct BadOneofRules {
   #[proto(oneof(tags(1, 2)))]
   pub oneof: Option<BadCelOneof>,

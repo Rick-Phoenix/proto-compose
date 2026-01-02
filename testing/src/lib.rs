@@ -49,7 +49,7 @@ pub mod inner {
     C,
   }
 
-  #[proto_oneof(no_auto_test)]
+  #[proto_oneof(proxied)]
   #[derive(Clone, Debug)]
   pub enum PseudoOneof {
     #[proto(tag = 200, validate = |v| v.min_len(10).max_len(50))]
@@ -60,7 +60,7 @@ pub mod inner {
     C(Box<Abc>),
   }
 
-  #[proto_oneof(direct, no_auto_test)]
+  #[proto_oneof]
   pub enum DirectOneof {
     #[proto(tag = 200)]
     A(String),
@@ -82,7 +82,7 @@ pub mod inner {
     }
   }
 
-  #[proto_message(no_auto_test)]
+  #[proto_message(proxied, no_auto_test)]
   #[proto(reserved_numbers(1, 2, 3..9))]
   #[proto(reserved_names("abc", "bcd"))]
   #[derive(Clone, Debug, Default)]
@@ -111,7 +111,7 @@ pub mod inner {
     #[proto(map(string, enum_), validate = |v| v.min_pairs(20).values(|val| val.defined_only()))]
     enum_map: HashMap<String, PseudoEnum>,
 
-    #[proto(map(string, message(proxied)))]
+    #[proto(map(string, message))]
     message_map: HashMap<String, Nested>,
 
     #[proto(enum_, validate = |v| v.defined_only())]
@@ -123,10 +123,10 @@ pub mod inner {
     #[proto(enum_)]
     optional_enum: Option<PseudoEnum>,
 
-    #[proto(message(proxied))]
+    #[proto(message)]
     nested: Option<Nested>,
 
-    #[proto(repeated(message(proxied)))]
+    #[proto(repeated(message))]
     repeated_message: Vec<Nested>,
 
     #[proto(oneof(default, proxied, tags(200, 201, 202)))]
@@ -147,12 +147,11 @@ pub mod inner {
 
   #[proto_message(no_auto_test)]
   #[proto(parent_message = Abc)]
-  #[derive(Clone, Debug)]
   pub struct Nested {
     name: String,
   }
 
-  #[proto_message(direct, no_auto_test)]
+  #[proto_message(no_auto_test)]
   #[proto(parent_message = Nested)]
   pub struct Nested2 {
     name: String,

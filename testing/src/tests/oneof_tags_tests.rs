@@ -2,7 +2,7 @@ use super::*;
 
 use_proto_file!(TESTING);
 
-#[proto_oneof(direct, no_auto_test)]
+#[proto_oneof]
 pub enum TestOneof {
   #[proto(tag = 100)]
   A(String),
@@ -10,7 +10,7 @@ pub enum TestOneof {
   B(i32),
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 pub struct WrongTagsTest {
   #[proto(oneof(tags(1, 2)))]
   pub oneof: Option<TestOneof>,
@@ -21,7 +21,7 @@ fn wrong_oneof_tags_check() {
   assert!(WrongTagsTest::check_oneofs_tags().is_err());
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 pub struct CorrectTagsTest {
   #[proto(oneof(tags(100, 200)))]
   pub oneof: Option<TestOneof>,

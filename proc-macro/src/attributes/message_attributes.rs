@@ -12,7 +12,7 @@ pub struct MessageAttrs {
   pub into_proto: Option<PathOrClosure>,
   pub shadow_derives: Option<MetaList>,
   pub cel_rules: IterTokensOr<TokenStream2>,
-  pub is_direct: bool,
+  pub is_proxied: bool,
   pub no_auto_test: bool,
   pub extern_path: Option<String>,
 }
@@ -79,11 +79,6 @@ pub fn process_derive_message_attrs(
       "name" => {
         proto_name = Some(meta.expr_value()?.as_string()?);
       }
-      "direct" => {
-        return Err(
-          meta.error("`direct` must be set as a proc macro argument, not as an attribute"),
-        );
-      }
       _ => return Err(meta.error("Unknown attribute")),
     };
 
@@ -101,7 +96,7 @@ pub fn process_derive_message_attrs(
     into_proto,
     shadow_derives,
     cel_rules,
-    is_direct: macro_attrs.is_direct,
+    is_proxied: macro_attrs.is_proxied,
     no_auto_test: macro_attrs.no_auto_test,
     extern_path: macro_attrs.extern_path,
     parent_message,

@@ -2,7 +2,7 @@ use super::*;
 
 use_proto_file!(TESTING);
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 struct MinPairs {
   #[proto(map(int32, int32), tag = 1, validate = |v| v.min_pairs(1))]
   pub items: HashMap<i32, i32>,
@@ -19,7 +19,7 @@ fn min_pairs() {
   assert_eq!(err.first().unwrap().rule_id(), "map.min_pairs");
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 struct MaxPairs {
   #[proto(map(int32, int32), tag = 1, validate = |v| v.max_pairs(1))]
   pub items: HashMap<i32, i32>,

@@ -76,7 +76,7 @@ pub fn proto_message(args: TokenStream, input: TokenStream) -> TokenStream {
       let ident = ident.to_string();
 
       match ident.as_str() {
-        "direct" => macro_attrs.is_direct = true,
+        "proxied" => macro_attrs.is_proxied = true,
         "no_auto_test" => macro_attrs.no_auto_test = true,
         "extern_path" => macro_attrs.extern_path = Some(meta.parse_value::<LitStr>()?.value()),
         _ => {}
@@ -184,11 +184,13 @@ pub fn enum_derive(_input: TokenStream) -> TokenStream {
 pub fn proto_oneof(args: TokenStream, input: TokenStream) -> TokenStream {
   let mut item = parse_macro_input!(input as ItemEnum);
 
-  let mut is_direct = false;
+  let mut is_proxied = false;
 
   let parser = syn::meta::parser(|meta| {
-    if meta.path.is_ident("direct") {
-      is_direct = true;
+    if meta.path.is_ident("proxied") {
+      is_proxied = true;
+    } else {
+      return Err(meta.error("Unknown attribute"));
     }
 
     Ok(())
@@ -196,7 +198,7 @@ pub fn proto_oneof(args: TokenStream, input: TokenStream) -> TokenStream {
 
   parse_macro_input!(args with parser);
 
-  let extra_tokens = match process_oneof_derive(&mut item, is_direct) {
+  let extra_tokens = match process_oneof_derive(&mut item, is_proxied) {
     Ok(output) => output,
     Err(e) => return e.to_compile_error().into(),
   };

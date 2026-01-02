@@ -3,7 +3,7 @@ use prelude::ProtoEnum;
 
 use_proto_file!(TESTING);
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 struct DummyMsg {
   #[proto(tag = 1)]
   pub id: i32,
@@ -16,7 +16,7 @@ enum DummyEnum {
   C,
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 struct UniqueEnums {
   #[proto(repeated(enum_), tag = 1, validate = |v| v.unique())]
   pub unique_enums: Vec<DummyEnum>,
@@ -33,7 +33,7 @@ fn unique_enums() {
   assert_eq!(err.first().unwrap().rule_id(), "repeated.unique");
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 struct UniqueFloats {
   #[proto(tag = 1, validate = |v| v.unique())]
   pub unique_floats: Vec<f32>,
@@ -50,7 +50,7 @@ fn unique_floats() {
   assert_eq!(err.first().unwrap().rule_id(), "repeated.unique");
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 struct UniqueMessages {
   #[proto(repeated(message), tag = 1, validate = |v| v.unique())]
   pub unique_messages: Vec<DummyMsg>,
@@ -67,7 +67,7 @@ fn unique_messages() {
   assert_eq!(err.first().unwrap().rule_id(), "repeated.unique");
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 struct UniqueBytes {
   #[proto(repeated(message), tag = 1, validate = |v| v.unique())]
   pub unique_bytes: Vec<Bytes>,
@@ -84,7 +84,7 @@ fn unique_bytes() {
   assert_eq!(err.first().unwrap().rule_id(), "repeated.unique");
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 struct MinItems {
   #[proto(repeated(int32), tag = 1, validate = |v| v.min_items(3))]
   pub items: Vec<i32>,
@@ -99,7 +99,7 @@ fn min_items() {
   assert_eq!(err.first().unwrap().rule_id(), "repeated.min_items");
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 struct MaxItems {
   #[proto(repeated(int32), tag = 1, validate = |v| v.max_items(1))]
   pub items: Vec<i32>,

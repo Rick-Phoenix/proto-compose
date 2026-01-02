@@ -107,7 +107,7 @@ pub enum TestEnum {
   B,
 }
 
-#[proto_oneof(direct, no_auto_test)]
+#[proto_oneof]
 #[proto(options = test_options())]
 pub enum OneofA {
   #[proto(tag = 200, validate = |v| v.min_len(10).max_len(50))]
@@ -116,7 +116,7 @@ pub enum OneofA {
   B(i32),
 }
 
-#[proto_oneof(direct, no_auto_test)]
+#[proto_oneof]
 pub enum OneofB {
   #[proto(tag = 1502)]
   A(String),
@@ -128,7 +128,7 @@ fn msg_rule() -> CelProgram {
   cel_program!(id = "abc", msg = "abc", expr = "true == true")
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 #[proto(reserved_numbers(1, 2, 3..9))]
 #[proto(reserved_names("abc", "bcd"))]
 #[proto(options = test_options())]
@@ -150,14 +150,14 @@ pub struct Abc {
   pub oneof_field: Option<OneofA>,
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 #[proto(parent_message = Abc)]
 pub struct Nested {
   #[proto(validate = |v| v.len_bytes(68))]
   name: String,
 }
 
-#[proto_message(direct, no_auto_test)]
+#[proto_message(no_auto_test)]
 #[proto(parent_message = Nested)]
 pub struct Nested2 {
   name: String,

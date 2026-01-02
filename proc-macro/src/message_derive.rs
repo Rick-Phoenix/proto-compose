@@ -2,7 +2,7 @@ use crate::*;
 
 #[derive(Default)]
 pub struct MessageMacroAttrs {
-  pub is_direct: bool,
+  pub is_proxied: bool,
   pub no_auto_test: bool,
   pub extern_path: Option<String>,
 }
@@ -13,10 +13,10 @@ pub fn process_message_derive(
 ) -> Result<TokenStream2, Error> {
   let message_attrs = process_derive_message_attrs(&item.ident, macro_attrs, &item.attrs)?;
 
-  if message_attrs.is_direct {
-    process_message_derive_direct(item, message_attrs)
-  } else {
+  if message_attrs.is_proxied {
     process_message_derive_shadow(item, message_attrs)
+  } else {
+    process_message_derive_direct(item, message_attrs)
   }
 }
 
