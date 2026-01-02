@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use fxhash::FxHashSet;
+
 use crate::*;
 
 #[derive(Debug, PartialEq, Template)]
@@ -36,7 +38,7 @@ impl Display for Edition {
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct FileImports {
-  pub set: HashSet<&'static str>,
+  pub set: FxHashSet<&'static str>,
   pub file: &'static str,
 }
 
@@ -60,7 +62,7 @@ impl FileImports {
   pub fn new(file: &'static str) -> Self {
     Self {
       file,
-      set: HashSet::new(),
+      set: HashSet::default(),
     }
   }
 
