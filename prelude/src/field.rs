@@ -25,7 +25,7 @@ impl ProtoField {
 
   pub(crate) fn register_type_import_path(&self, imports: &mut FileImports) {
     if self.validator.is_some() {
-      imports.set.insert("buf/validate/validate.proto");
+      imports.insert_validate_proto();
     }
 
     match &self.type_ {

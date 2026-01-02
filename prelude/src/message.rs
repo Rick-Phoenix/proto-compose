@@ -116,7 +116,7 @@ impl Message {
 
   pub(crate) fn register_imports(&self, imports: &mut FileImports) {
     if !self.cel_rules.is_empty() {
-      imports.set.insert("buf/validate/validate.proto");
+      imports.insert_validate_proto();
     }
 
     for entry in &self.entries {
@@ -126,7 +126,7 @@ impl Message {
           oneof, required, ..
         } => {
           if *required {
-            imports.set.insert("buf/validate/validate.proto");
+            imports.insert_validate_proto();
           }
 
           for field in &oneof.fields {

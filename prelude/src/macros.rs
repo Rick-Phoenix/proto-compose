@@ -9,7 +9,7 @@ macro_rules! length_rule_value {
 
 #[macro_export]
 macro_rules! use_proto_file {
-  ($file:ident) => {
+  ($file:path) => {
     #[doc(hidden)]
     #[allow(unused)]
     const __PROTO_FILE: $crate::RegistryPath = $file;

@@ -40,6 +40,7 @@ impl Display for Edition {
 pub struct FileImports {
   pub set: FxHashSet<&'static str>,
   pub file: &'static str,
+  pub added_validate_proto: bool,
 }
 
 impl Extend<&'static str> for FileImports {
@@ -63,6 +64,14 @@ impl FileImports {
     Self {
       file,
       set: HashSet::default(),
+      added_validate_proto: false,
+    }
+  }
+
+  pub fn insert_validate_proto(&mut self) {
+    if !self.added_validate_proto {
+      self.set.insert("buf/validate/validate.proto");
+      self.added_validate_proto = true;
     }
   }
 
@@ -102,6 +111,7 @@ impl ProtoFile {
     self.edition = edition;
   }
 
+  #[track_caller]
   pub fn merge_with(&mut self, other: Self) {
     if self.name != other.name {
       panic!(
@@ -126,15 +136,18 @@ impl ProtoFile {
   }
 
   pub fn add_messages<I: IntoIterator<Item = Message>>(&mut self, messages: I) {
-    for message in messages {
+    for mut message in messages {
       message.register_imports(&mut self.imports);
+      message.file = self.name;
 
       self.messages.push(message);
     }
   }
 
   pub fn add_enums<I: IntoIterator<Item = Enum>>(&mut self, enums: I) {
-    for enum_ in enums {
+    for mut enum_ in enums {
+      enum_.file = self.name;
+
       self.enums.push(enum_);
     }
   }
