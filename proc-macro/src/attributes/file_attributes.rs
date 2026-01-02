@@ -9,6 +9,10 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
   let mut options = TokensOr::<TokenStream2>::new(|| quote! { vec![] });
   let mut extern_path = TokensOr::<LitStr>::new(|| quote! { std::module_path!() });
   let mut imports: Vec<String> = Vec::new();
+  let mut extensions = IterTokensOr::<Path>::vec().with_formatter(|items, tokens| {
+    tokens
+      .extend(quote! { vec![ #(<#items as ::prelude::ProtoExtension>::as_proto_extension()),* ] })
+  });
 
   let parser = syn::meta::parser(|meta| {
     let ident_str = meta.ident_str()?;
@@ -28,6 +32,9 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
       }
       "imports" => {
         imports = meta.parse_list::<StringList>()?.list;
+      }
+      "extensions" => {
+        extensions.set(meta.parse_list::<PathList>()?.list);
       }
       _ => {
         const_ident = Some(meta.ident()?.clone());
@@ -67,7 +74,8 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
         file: __PROTO_FILE.file,
         package: __PROTO_FILE.package,
         options: || #options,
-        imports: || vec![ #(#imports),* ]
+        imports: || vec![ #(#imports),* ],
+        extensions: || #extensions
       }
     }
   })

@@ -107,16 +107,8 @@ pub fn process_extension_derive(
   item.fields = Fields::Unit;
 
   Ok(quote! {
-    ::prelude::inventory::submit! {
-      ::prelude::RegistryExtension {
-        file: __PROTO_FILE.file,
-        package: __PROTO_FILE.package,
-        extension: || #ident::as_proto_extension()
-      }
-    }
-
-    impl #ident {
-      pub fn as_proto_extension() -> ::prelude::Extension {
+    impl ::prelude::ProtoExtension for #ident {
+      fn as_proto_extension() -> ::prelude::Extension {
         ::prelude::Extension {
           target: #target,
           fields: vec![ #(#fields_tokens),* ]

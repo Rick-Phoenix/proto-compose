@@ -182,9 +182,3 @@ impl ProtoFile {
     }
   }
 }
-
-#[derive(Debug, PartialEq)]
-pub struct Extension {
-  pub target: &'static str,
-  pub fields: Vec<ProtoField>,
-}

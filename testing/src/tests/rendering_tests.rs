@@ -12,7 +12,8 @@ define_proto_file!(
   RENDERING,
   file = "rendering.proto",
   package = TESTING_PKG,
-  options = test_options()
+  options = test_options(),
+  extensions(SomeExt),
 );
 
 #[test]

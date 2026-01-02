@@ -132,15 +132,6 @@ pub fn collect_package(package: &'static str) -> Package {
       .add_services([service]);
   }
 
-  for extension_entry in inventory::iter::<RegistryExtension>().filter(|re| re.package == package) {
-    let extension = (extension_entry.extension)();
-
-    files
-      .get_mut(extension_entry.file)
-      .unwrap_or_else(|| panic!("Could not find the data for file {}", extension_entry.file))
-      .add_extensions([extension]);
-  }
-
   Package {
     name: package,
     files: files.into_values().collect(),
@@ -164,42 +155,28 @@ pub struct RegistryService {
   pub service: fn() -> Service,
 }
 
-// Needs the file because `Extension` does not have the file prop
-pub struct RegistryExtension {
-  pub package: &'static str,
-  pub file: &'static str,
-  pub extension: fn() -> Extension,
-}
-
 pub struct RegistryFile {
   pub file: &'static str,
   pub package: &'static str,
   pub options: fn() -> Vec<ProtoOption>,
   pub imports: fn() -> Vec<&'static str>,
+  pub extensions: fn() -> Vec<Extension>,
 }
 
 #[allow(clippy::from_over_into)]
 impl Into<ProtoFile> for &RegistryFile {
   fn into(self) -> ProtoFile {
-    let mut imports = FileImports::new(self.file);
-    imports.extend((self.imports)());
+    let mut file = ProtoFile::new(self.file, self.package);
 
-    ProtoFile {
-      name: self.file,
-      package: self.package,
-      imports,
-      options: (self.options)(),
-      edition: Default::default(),
-      enums: Default::default(),
-      extensions: Default::default(),
-      messages: Default::default(),
-      services: Default::default(),
-    }
+    file.imports.extend((self.imports)());
+    file.add_extensions((self.extensions)());
+    file.options = (self.options)();
+
+    file
   }
 }
 
 inventory::collect!(RegistryMessage);
 inventory::collect!(RegistryEnum);
 inventory::collect!(RegistryService);
-inventory::collect!(RegistryExtension);
 inventory::collect!(RegistryFile);

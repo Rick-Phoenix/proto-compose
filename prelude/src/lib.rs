@@ -45,6 +45,8 @@ pub use service::*;
 pub use validators::*;
 mod registry;
 pub use registry::*;
+mod extension;
+pub use extension::*;
 
 #[doc(hidden)]
 pub fn apply<I, O, F>(input: I, f: F) -> O
