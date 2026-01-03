@@ -97,6 +97,7 @@ pub fn process_message_derive_shadow(
     .iter_mut()
     .zip(fields_data.iter_mut())
   {
+    // Skipping ignored fields
     let FieldDataKind::Normal(field_data) = field_data else {
       continue;
     };
@@ -118,9 +119,6 @@ pub fn process_message_derive_shadow(
     dst_field.ty = prost_compatible_type;
   }
 
-  // Into/From proto impls
-  let proto_conversion_impls = proto_conversion_data.generate_conversion_impls();
-
   // We strip away the ignored fields from the shadow struct
   if let Fields::Named(fields) = &mut shadow_struct.fields {
     let old_fields = std::mem::take(&mut fields.named);
@@ -130,6 +128,9 @@ pub fn process_message_derive_shadow(
       .filter(|f| !ignored_fields.contains(f.ident.as_ref().unwrap()))
       .collect();
   }
+
+  // Into/From proto impls
+  let proto_conversion_impls = proto_conversion_data.generate_conversion_impls();
 
   let non_ignored_fields: Vec<&FieldData> = fields_data
     .iter()
@@ -144,15 +145,8 @@ pub fn process_message_derive_shadow(
   };
 
   let consistency_checks_impl = message_ctx.generate_consistency_checks();
-
   let validator_impl = message_ctx.generate_validator();
-
   let schema_impls = message_ctx.generate_schema_impls();
-
-  let shadow_struct_derives = message_ctx
-    .message_attrs
-    .shadow_derives
-    .map(|list| quote! { #[#list] });
 
   let wrapped_items = wrap_with_imports(vec![schema_impls, proto_conversion_impls, validator_impl]);
 
@@ -162,6 +156,11 @@ pub fn process_message_derive_shadow(
   } else {
     quote! { #[derive(::prelude::prost::Message, Clone, PartialEq)] }
   };
+
+  let shadow_struct_derives = message_ctx
+    .message_attrs
+    .shadow_derives
+    .map(|list| quote! { #[#list] });
 
   let output_tokens = quote! {
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -197,14 +196,15 @@ pub fn process_message_derive_direct(
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
 
   for field in item.fields.iter_mut() {
-    let field_data = process_field_data(FieldOrVariant::Field(field))?;
+    let field_data_kind = process_field_data(FieldOrVariant::Field(field))?;
 
-    if let FieldDataKind::Normal(data) = field_data {
+    if let FieldDataKind::Normal(data) = field_data_kind {
       match data.type_info.type_.as_ref() {
         RustType::Box(inner) => {
           bail!(inner, "Boxed messages must be optional in a direct impl")
         }
         RustType::Option(inner) => {
+          // This could be inferred, although it might be a bit too opaque
           if inner.is_box() && !data.proto_field.is_boxed_message() {
             bail!(
               inner,
@@ -239,7 +239,10 @@ pub fn process_message_derive_direct(
 
       fields_data.push(data);
     } else {
-      bail!(field, "Cannot use `ignore` in a direct impl");
+      bail!(
+        field,
+        "Cannot use `ignore` in a direct impl. Use a proxied impl instead"
+      );
     }
   }
 
@@ -277,9 +280,7 @@ pub fn process_message_derive_direct(
   };
 
   let consistency_checks_impl = message_ctx.generate_consistency_checks();
-
   let schema_impls = message_ctx.generate_schema_impls();
-
   let validator_impl = message_ctx.generate_validator();
 
   let wrapped_items = wrap_with_imports(vec![schema_impls, validator_impl]);

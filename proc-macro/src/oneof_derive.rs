@@ -44,10 +44,6 @@ pub(crate) fn process_oneof_derive_shadow(
   let orig_enum_ident = &item.ident;
   let shadow_enum_ident = &shadow_enum.ident;
 
-  let mut output_tokens = TokenStream2::new();
-
-  let orig_enum_variants = item.variants.iter_mut();
-  let shadow_enum_variants = shadow_enum.variants.iter_mut();
   let mut ignored_variants: Vec<Ident> = Vec::new();
 
   let mut proto_conversion_data = ProtoConversionImpl {
@@ -61,11 +57,11 @@ pub(crate) fn process_oneof_derive_shadow(
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
   let mut fields_data: Vec<FieldDataKind> = Vec::new();
 
-  for src_variant in orig_enum_variants {
-    let field_data = process_field_data(FieldOrVariant::Variant(src_variant))?;
-    proto_conversion_data.handle_field_conversions(&field_data);
+  for src_variant in item.variants.iter_mut() {
+    let field_data_kind = process_field_data(FieldOrVariant::Variant(src_variant))?;
+    proto_conversion_data.handle_field_conversions(&field_data_kind);
 
-    match &field_data {
+    match &field_data_kind {
       FieldDataKind::Ignored { ident, .. } => ignored_variants.push(ident.clone()),
       FieldDataKind::Normal(data) => {
         if let Some(tag) = data.tag {
@@ -77,28 +73,31 @@ pub(crate) fn process_oneof_derive_shadow(
       }
     };
 
-    fields_data.push(field_data);
+    fields_data.push(field_data_kind);
   }
 
   sort_and_check_invalid_tags(&mut manually_set_tags, &ReservedNumbers::default())?;
 
-  for (dst_variant, field_attrs) in shadow_enum_variants.zip(fields_data.iter()) {
+  for (dst_variant, field_attrs) in shadow_enum
+    .variants
+    .iter_mut()
+    .zip(fields_data.iter())
+  {
+    // Skipping ignored variants
     let FieldDataKind::Normal(field_attrs) = field_attrs else {
       continue;
     };
 
     let Some(tag) = field_attrs.tag else {
-      bail!(dst_variant, "Tag has not been set");
+      bail!(dst_variant, "Tags in oneofs must be set manually");
     };
-
-    let prost_compatible_type = field_attrs.proto_field.output_proto_type();
-    *dst_variant.type_mut()? = prost_compatible_type;
 
     let prost_attr = field_attrs.proto_field.as_prost_attr(tag);
     dst_variant.attrs.push(prost_attr);
-  }
 
-  let proto_conversion_impls = proto_conversion_data.generate_conversion_impls();
+    let prost_compatible_type = field_attrs.proto_field.output_proto_type();
+    *dst_variant.type_mut()? = prost_compatible_type;
+  }
 
   // We strip away the ignored variants from the shadow enum
   shadow_enum.variants = shadow_enum
@@ -112,6 +111,8 @@ pub(crate) fn process_oneof_derive_shadow(
     .filter_map(|f| f.as_normal())
     .collect();
 
+  let proto_conversion_impls = proto_conversion_data.generate_conversion_impls();
+
   let oneof_ctx = OneofCtx {
     oneof_attrs,
     orig_enum_ident,
@@ -121,9 +122,7 @@ pub(crate) fn process_oneof_derive_shadow(
   };
 
   let oneof_schema_impl = oneof_ctx.generate_schema_impl();
-
   let consistency_checks_impl = oneof_ctx.generate_consistency_checks();
-
   let validator_impl = oneof_ctx.generate_validator();
 
   let wrapped_items = wrap_with_imports(vec![
@@ -132,19 +131,19 @@ pub(crate) fn process_oneof_derive_shadow(
     validator_impl,
   ]);
 
-  let shadow_enum_derives = oneof_ctx
-    .oneof_attrs
-    .shadow_derives
-    .map(|list| quote! { #[#list] });
-
+  // prost::Oneof already implements Debug
   let derives = if cfg!(feature = "cel") {
     quote! { #[derive(::prelude::prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)] }
   } else {
     quote! { #[derive(::prelude::prost::Oneof, PartialEq, Clone)] }
   };
 
-  // prost::Oneof already implements Debug
-  output_tokens.extend(quote! {
+  let shadow_enum_derives = oneof_ctx
+    .oneof_attrs
+    .shadow_derives
+    .map(|list| quote! { #[#list] });
+
+  Ok(quote! {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #derives
     #shadow_enum_derives
@@ -152,9 +151,7 @@ pub(crate) fn process_oneof_derive_shadow(
 
     #wrapped_items
     #consistency_checks_impl
-  });
-
-  Ok(output_tokens)
+  })
 }
 
 pub(crate) fn process_oneof_derive_direct(
@@ -177,7 +174,7 @@ pub(crate) fn process_oneof_derive_direct(
   attrs.push(prost_derive);
 
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
-  let mut fields_attrs: Vec<FieldData> = Vec::new();
+  let mut fields_data: Vec<FieldData> = Vec::new();
 
   for variant in variants.iter_mut() {
     let field_attrs = process_field_data(FieldOrVariant::Variant(variant))?;
@@ -199,7 +196,7 @@ pub(crate) fn process_oneof_derive_direct(
           ) {
             bail!(
               variant_type,
-              "Box can only be used for messages in a native oneof"
+              "Box can only be used for messages in a native prost oneof"
             );
           }
         }
@@ -217,41 +214,42 @@ pub(crate) fn process_oneof_derive_direct(
         }
       };
 
-      fields_attrs.push(data);
+      fields_data.push(data);
     } else {
-      bail!(variant, "Cannot use `ignore` in direct impls");
+      bail!(
+        variant,
+        "Cannot use `ignore` in direct impls. Use a proxied impl instead"
+      );
     }
   }
 
   sort_and_check_invalid_tags(&mut manually_set_tags, &ReservedNumbers::default())?;
 
-  for (variant, field_attrs) in variants.iter_mut().zip(fields_attrs.iter()) {
+  for (variant, field_attrs) in variants.iter_mut().zip(fields_data.iter()) {
     let Some(tag) = field_attrs.tag else {
-      bail!(variant, "Tag has not been set");
+      bail!(variant, "Tags in oneofs must be set manually");
     };
+
+    let prost_attr = field_attrs.proto_field.as_prost_attr(tag);
+    variant.attrs.push(prost_attr);
 
     // We change the type in direct impls as well,
     // mostly just to be able to use the real enum names
     // as opposed to just an opaque `i32`
     let prost_compatible_type = field_attrs.proto_field.output_proto_type();
     *variant.type_mut()? = prost_compatible_type;
-
-    let prost_attr = field_attrs.proto_field.as_prost_attr(tag);
-    variant.attrs.push(prost_attr);
   }
 
   let oneof_ctx = OneofCtx {
     oneof_attrs,
     orig_enum_ident: &item.ident,
     shadow_enum_ident: None,
-    non_ignored_variants: fields_attrs,
+    non_ignored_variants: fields_data,
     tags: manually_set_tags,
   };
 
   let oneof_schema_impl = oneof_ctx.generate_schema_impl();
-
   let consistency_checks_impl = oneof_ctx.generate_consistency_checks();
-
   let validator_impl = oneof_ctx.generate_validator();
 
   let wrapped_items = wrap_with_imports(vec![oneof_schema_impl, validator_impl]);
