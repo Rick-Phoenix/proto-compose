@@ -49,7 +49,7 @@ fn insert_message_extern_path(message: &Message, entries: &mut Vec<(String, Stri
 
 fn insert_enum_extern_path(enum_: &Enum, entries: &mut Vec<(String, String)>) {
   let Enum {
-    full_name,
+    name: full_name,
     rust_path,
     package,
     ..

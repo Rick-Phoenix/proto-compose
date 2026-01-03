@@ -1,6 +1,6 @@
 use crate::{validators::CelRule, *};
 
-pub trait IntoMessage: From<Self::Message> + Into<Self::Message> {
+pub trait MessageProxy: From<Self::Message> + Into<Self::Message> {
   type Message: ::prost::Message + ProtoMessage + ValidatedMessage + From<Self>;
 
   #[inline]
@@ -32,7 +32,7 @@ pub trait IntoMessage: From<Self::Message> + Into<Self::Message> {
   }
 }
 
-impl<T: IntoMessage> ProtoMessage for T {
+impl<T: MessageProxy> ProtoMessage for T {
   const PACKAGE: &str = T::Message::PACKAGE;
   const SHORT_NAME: &str = T::Message::SHORT_NAME;
 
@@ -44,8 +44,8 @@ impl<T: IntoMessage> ProtoMessage for T {
     T::Message::proto_schema()
   }
 
-  fn name() -> &'static str {
-    T::Message::name()
+  fn proto_name() -> &'static str {
+    T::Message::proto_name()
   }
 
   fn full_name() -> &'static str {
@@ -64,7 +64,7 @@ pub trait ProtoMessage {
   fn proto_path() -> ProtoPath;
   fn proto_schema() -> Message;
 
-  fn name() -> &'static str;
+  fn proto_name() -> &'static str;
   fn full_name() -> &'static str;
   fn type_url() -> &'static str;
 }

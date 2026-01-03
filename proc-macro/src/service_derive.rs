@@ -105,12 +105,12 @@ pub fn process_service_derive(item: &ItemEnum) -> Result<TokenStream2, Error> {
     ::prelude::inventory::submit! {
       ::prelude::RegistryService {
         package: __PROTO_FILE.package,
-        service: || #ident::proto_schema()
+        service: || #ident::as_proto_service()
       }
     }
 
     impl ::prelude::ProtoService for #ident {
-      fn proto_schema() -> ::prelude::Service {
+      fn as_proto_service() -> ::prelude::Service {
         ::prelude::Service {
           name: #service_name,
           file: __PROTO_FILE.file,

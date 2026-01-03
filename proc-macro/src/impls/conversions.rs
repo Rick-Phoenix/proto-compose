@@ -94,13 +94,13 @@ impl<'a> ProtoConversionImpl<'a> {
 
     if kind.is_message() {
       tokens.extend(quote! {
-        impl ::prelude::IntoMessage for #source_ident {
+        impl ::prelude::MessageProxy for #source_ident {
           type Message = #target_ident;
         }
       });
     } else {
       tokens.extend(quote! {
-        impl ::prelude::IntoOneof for #source_ident {
+        impl ::prelude::OneofProxy for #source_ident {
           type Oneof = #target_ident;
         }
       });

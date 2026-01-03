@@ -97,9 +97,9 @@ pub fn collect_package(package: &'static str) -> Package {
         .entry(parent)
         .or_default()
         .enums
-        .push(enum_.full_name);
+        .push(enum_.name);
 
-      enums.insert(enum_.full_name, enum_);
+      enums.insert(enum_.name, enum_);
     } else {
       files
         .get_mut(enum_.file)
@@ -143,10 +143,10 @@ pub fn collect_package(package: &'static str) -> Package {
 
       for msg in file.messages.iter_mut() {
         msg.messages.sort_unstable_by_key(|m| m.name);
-        msg.enums.sort_unstable_by_key(|e| e.name);
+        msg.enums.sort_unstable_by_key(|e| e.short_name);
       }
 
-      file.enums.sort_unstable_by_key(|e| e.name);
+      file.enums.sort_unstable_by_key(|e| e.short_name);
       file.services.sort_unstable_by_key(|s| s.name);
 
       file

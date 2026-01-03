@@ -59,7 +59,7 @@ impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
     let name_method = if let Some(parent) = parent_message {
       quote! {
         static __NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
-          format!("{}.{}", #parent::name(), #proto_name)
+          format!("{}.{}", #parent::proto_name(), #proto_name)
         });
 
         &*__NAME
@@ -69,7 +69,7 @@ impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
     };
 
     let registry_parent_message = if let Some(parent) = parent_message {
-      quote! { Some(|| #parent::name()) }
+      quote! { Some(|| #parent::proto_name()) }
     } else {
       quote! { None }
     };
@@ -105,7 +105,7 @@ impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
 
         fn type_url() -> &'static str {
           static URL: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
-            format!("/{}.{}", #proto_struct::PACKAGE, #proto_struct::name())
+            format!("/{}.{}", #proto_struct::PACKAGE, #proto_struct::proto_name())
           });
 
           &*URL
@@ -113,7 +113,7 @@ impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
 
         fn full_name() -> &'static str {
           static NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
-            format!("{}.{}", #proto_struct::PACKAGE, #proto_struct::name())
+            format!("{}.{}", #proto_struct::PACKAGE, #proto_struct::proto_name())
           });
 
           &*NAME
@@ -121,20 +121,20 @@ impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
 
         fn proto_path() -> ::prelude::ProtoPath {
           ::prelude::ProtoPath {
-            name: Self::name(),
+            name: Self::proto_name(),
             file: __PROTO_FILE.file,
             package: __PROTO_FILE.package,
           }
         }
 
-        fn name() -> &'static str {
+        fn proto_name() -> &'static str {
           #name_method
         }
 
         fn proto_schema() -> ::prelude::Message {
           ::prelude::Message {
             short_name: #proto_name,
-            name: Self::name(),
+            name: Self::proto_name(),
             file: __PROTO_FILE.file,
             package: __PROTO_FILE.package,
             reserved_names: vec![ #(#reserved_names),* ],

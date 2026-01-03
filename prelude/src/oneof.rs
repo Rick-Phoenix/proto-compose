@@ -1,6 +1,6 @@
 use crate::*;
 
-pub trait IntoOneof: From<Self::Oneof> + Into<Self::Oneof> {
+pub trait OneofProxy: From<Self::Oneof> + Into<Self::Oneof> {
   type Oneof: ProtoOneof + From<Self>;
 
   #[inline]
@@ -14,7 +14,7 @@ pub trait IntoOneof: From<Self::Oneof> + Into<Self::Oneof> {
   }
 }
 
-impl<T: IntoOneof> ProtoOneof for T {
+impl<T: OneofProxy> ProtoOneof for T {
   const NAME: &str = T::Oneof::NAME;
   const TAGS: &[i32] = T::Oneof::TAGS;
 

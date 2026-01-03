@@ -3,7 +3,7 @@ use crate::*;
 pub trait ProtoEnum: TryFrom<i32> + Default {
   fn proto_path() -> ProtoPath;
   fn proto_schema() -> Enum;
-  fn full_name() -> &'static str;
+  fn proto_name() -> &'static str;
 
   fn as_proto_name(&self) -> &'static str;
   fn from_proto_name(name: &str) -> Option<Self>;
@@ -18,8 +18,8 @@ pub trait ProtoEnum: TryFrom<i32> + Default {
 #[derive(Debug, Default, Clone, PartialEq, Template)]
 #[template(path = "enum.proto.j2")]
 pub struct Enum {
+  pub short_name: &'static str,
   pub name: &'static str,
-  pub full_name: &'static str,
   pub package: &'static str,
   pub file: &'static str,
   pub variants: Vec<EnumVariant>,

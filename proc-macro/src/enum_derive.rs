@@ -90,10 +90,10 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     });
   }
 
-  let full_name_method = if let Some(parent) = &parent_message {
+  let proto_name_method = if let Some(parent) = &parent_message {
     quote! {
       static __FULL_NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
-        format!("{}.{}", #parent::full_name(), #proto_name).into()
+        format!("{}.{}", #parent::proto_name(), #proto_name).into()
       });
 
       &*__FULL_NAME
@@ -103,7 +103,7 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   };
 
   let parent_message_registry = if let Some(parent) = &parent_message {
-    quote! { Some(|| #parent::full_name()) }
+    quote! { Some(|| #parent::proto_name()) }
   } else {
     quote! { None }
   };
@@ -171,13 +171,13 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     }
 
     impl ::prelude::ProtoEnum for #enum_name {
-      fn full_name() -> &'static str {
-        #full_name_method
+      fn proto_name() -> &'static str {
+        #proto_name_method
       }
 
       fn proto_path() -> ::prelude::ProtoPath {
         ::prelude::ProtoPath {
-          name: Self::full_name(),
+          name: Self::proto_name(),
           file: __PROTO_FILE.file,
           package: __PROTO_FILE.package,
         }
@@ -200,8 +200,8 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
 
       fn proto_schema() -> ::prelude::Enum {
         ::prelude::Enum {
-          name: #proto_name,
-          full_name: Self::full_name(),
+          short_name: #proto_name,
+          name: Self::proto_name(),
           file: __PROTO_FILE.file,
           package: __PROTO_FILE.package,
           variants: vec! [ #(#variants_tokens,)* ],

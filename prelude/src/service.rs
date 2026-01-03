@@ -1,7 +1,7 @@
 use crate::*;
 
 pub trait ProtoService {
-  fn proto_schema() -> Service;
+  fn as_proto_service() -> Service;
 }
 
 #[derive(Debug, PartialEq, Template)]

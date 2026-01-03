@@ -85,7 +85,7 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
         if T::try_from(*num).is_err() {
           errors.push(ConsistencyError::ContradictoryInput(format!(
             "Number {num} is in the allowed list but it does not belong to the enum {}",
-            T::full_name()
+            T::proto_name()
           )));
         }
       }
