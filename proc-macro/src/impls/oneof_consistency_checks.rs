@@ -20,7 +20,12 @@ impl<'a, T: Borrow<FieldData>> OneofCtx<'a, T> {
           .filter(|v| !v.is_fallback)
           .map(|validator| {
             quote! {
-              (#ident_str, #validator.check_consistency())
+              if let Err(errs) = #validator.check_consistency() {
+                errors.push(FieldError {
+                  field: #ident_str,
+                  errors: errs
+                });
+              }
             }
           })
       });
@@ -48,23 +53,19 @@ impl<'a, T: Borrow<FieldData>> OneofCtx<'a, T> {
       #[cfg(test)]
       impl #oneof_ident {
         pub fn check_validators_consistency() -> Result<(), ::prelude::test_utils::OneofErrors> {
-          let mut errors: Vec<(&'static str, Vec<::prelude::test_utils::ConsistencyError>)> = Vec::new();
+          use ::prelude::test_utils::*;
 
-          #(
-            let (field_name, check) = #consistency_checks;
+          let mut errors: Vec<FieldError> = Vec::new();
 
-            if let Err(errs) = check {
-              errors.push((field_name, errs));
-            }
-          )*
+          #(#consistency_checks)*
 
           if errors.is_empty() {
             Ok(())
           } else {
             Err(
-              ::prelude::test_utils::OneofErrors {
+              OneofErrors {
                 oneof_name: stringify!(#oneof_ident),
-                errors
+                field_errors: errors
               }
             )
           }

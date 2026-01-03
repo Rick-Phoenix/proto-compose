@@ -21,7 +21,7 @@ fn wrong_oneof_tags_check() {
   let err = WrongTagsTest::check_validators_consistency().unwrap_err();
 
   assert!(matches!(
-    err.field_errors[0].1[0],
+    err.field_errors[0].errors[0],
     ConsistencyError::WrongOneofTags(_)
   ));
 }

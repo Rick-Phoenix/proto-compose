@@ -15,9 +15,15 @@ pub enum ConsistencyError {
 }
 
 #[derive(Debug)]
+pub struct FieldError {
+  pub field: &'static str,
+  pub errors: Vec<ConsistencyError>,
+}
+
+#[derive(Debug)]
 pub struct OneofErrors {
   pub oneof_name: &'static str,
-  pub errors: Vec<(&'static str, Vec<ConsistencyError>)>,
+  pub field_errors: Vec<FieldError>,
 }
 
 impl core::error::Error for OneofErrors {}
@@ -30,16 +36,16 @@ impl Display for OneofErrors {
       self.oneof_name.bright_yellow()
     );
 
-    for (variant_name, errs) in &self.errors {
+    for field_error in &self.field_errors {
       let _ = writeln!(
         f,
         "  {}{}{}:",
         self.oneof_name.bright_cyan(),
         "::".bright_cyan(),
-        variant_name.bright_cyan()
+        field_error.field.bright_cyan()
       );
 
-      for err in errs {
+      for err in &field_error.errors {
         let _ = writeln!(f, "        - {err}");
       }
     }
@@ -50,7 +56,7 @@ impl Display for OneofErrors {
 
 pub struct MessageTestError {
   pub message_full_name: &'static str,
-  pub field_errors: Vec<(&'static str, Vec<ConsistencyError>)>,
+  pub field_errors: Vec<FieldError>,
   pub cel_errors: Vec<CelError>,
 }
 
@@ -71,10 +77,10 @@ impl Display for MessageTestError {
     if !field_errors.is_empty() {
       let _ = writeln!(f, "  Fields errors:");
 
-      for (field_name, errs) in field_errors {
-        let _ = writeln!(f, "    {}:", field_name.bright_yellow());
+      for field_error in field_errors {
+        let _ = writeln!(f, "    {}:", field_error.field.bright_yellow());
 
-        for err in errs {
+        for err in &field_error.errors {
           let _ = writeln!(f, "      - {err}");
         }
       }

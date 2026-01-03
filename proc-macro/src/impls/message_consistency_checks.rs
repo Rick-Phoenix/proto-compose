@@ -17,7 +17,10 @@ impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
       if let ProtoField::Oneof(OneofInfo { path, tags, .. }) = proto_field {
         Some(quote! {
           if let Err(err) = #path::check_tags(#ident_str, &mut [ #(#tags),* ]) {
-            field_errors.push((#ident_str, vec![err]));
+            field_errors.push(FieldError {
+              field: #ident_str,
+              errors: vec![err]
+            });
           }
         })
       } else {
@@ -27,10 +30,11 @@ impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
           .filter(|v| !v.is_fallback)
           .map(|validator| {
             quote! {
-              let (field_name, check) = (#ident_str, #validator.check_consistency());
-
-              if let Err(errs) = check {
-                field_errors.push((field_name, errs));
+              if let Err(errs) = #validator.check_consistency() {
+                field_errors.push(FieldError {
+                  field: #ident_str,
+                  errors: errs
+                });
               }
             }
           })
@@ -60,7 +64,9 @@ impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
       #[cfg(test)]
       impl #item_ident {
         pub fn check_validators_consistency() -> Result<(), ::prelude::test_utils::MessageTestError> {
-          let mut field_errors: Vec<(&'static str, Vec<::prelude::test_utils::ConsistencyError>)> = Vec::new();
+          use ::prelude::test_utils::*;
+
+          let mut field_errors: Vec<FieldError> = Vec::new();
           let mut cel_errors: Vec<::prelude::CelError> = Vec::new();
 
           #(#consistency_checks)*
@@ -74,11 +80,11 @@ impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
           }
 
           if !field_errors.is_empty() || !cel_errors.is_empty() {
-            return Err(::prelude::test_utils::MessageTestError {
-              message_full_name: #item_ident::full_name(),
-              field_errors,
-              cel_errors
-            }
+            return Err(MessageTestError {
+                message_full_name: #item_ident::full_name(),
+                field_errors,
+                cel_errors
+              }
             );
           }
 

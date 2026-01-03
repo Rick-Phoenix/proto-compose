@@ -55,9 +55,12 @@ enum BadCelOneof {
 
 #[test]
 fn bad_oneof_rules() {
-  let OneofErrors { oneof_name, errors } = BadCelOneof::check_validators_consistency().unwrap_err();
+  let OneofErrors {
+    oneof_name,
+    field_errors: errors,
+  } = BadCelOneof::check_validators_consistency().unwrap_err();
 
   assert_eq_pretty!(oneof_name, "BadCelOneof");
   assert_eq_pretty!(errors.len(), 1);
-  assert!(matches!(errors[0].1[0], ConsistencyError::CelError(_)));
+  assert!(matches!(errors[0].errors[0], ConsistencyError::CelError(_)));
 }
