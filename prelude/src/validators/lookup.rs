@@ -2,6 +2,7 @@ use proto_types::Duration;
 
 use super::*;
 
+#[doc(hidden)]
 pub trait ListFormatter: Sized {
   fn format_list(items: &[Self]) -> String;
 }
@@ -20,7 +21,7 @@ macro_rules! impl_standard_format {
 
 impl_standard_format!(i32, i64, u32, u64, f32, f64);
 
-impl<T: protocheck_core::ordered_float::FloatCore + Debug> ListFormatter for OrderedFloat<T> {
+impl<T: ordered_float::FloatCore + Debug> ListFormatter for OrderedFloat<T> {
   fn format_list(items: &[Self]) -> String {
     format!("{items:?}")
   }
@@ -109,6 +110,7 @@ impl ListFormatter for Duration {
   }
 }
 
+#[doc(hidden)]
 #[derive(Debug, Clone)]
 pub struct StaticLookup<T: Ord + ListFormatter> {
   pub items: SortedList<T>,

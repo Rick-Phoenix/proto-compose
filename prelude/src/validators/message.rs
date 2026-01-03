@@ -15,8 +15,10 @@ pub trait ValidatedMessage: Clone + Sized {
     }
   }
 
+  #[doc(hidden)]
   fn nested_validate(&self, ctx: &mut ValidationCtx);
 
+  #[doc(hidden)]
   fn validate_cel(
     &self,
     field_context: Option<&FieldContext>,
@@ -42,6 +44,7 @@ pub trait ValidatedMessage: Clone + Sized {
 
   #[inline]
   #[must_use]
+  #[doc(hidden)]
   fn cel_rules() -> &'static [CelProgram] {
     &[]
   }

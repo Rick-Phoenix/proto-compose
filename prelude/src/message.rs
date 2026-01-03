@@ -144,8 +144,4 @@ impl Message {
       nested_msg.register_imports(imports);
     }
   }
-
-  pub fn add_enums<I: IntoIterator<Item = Enum>>(&mut self, enums: I) {
-    self.enums = enums.into_iter().collect();
-  }
 }

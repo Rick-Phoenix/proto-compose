@@ -13,11 +13,13 @@ impl Validator<bool> for BoolValidator {
   where
     Self: 'a;
 
+  #[doc(hidden)]
   fn cel_rules(&self) -> Vec<CelRule> {
     Vec::new()
   }
 
   #[inline]
+  #[doc(hidden)]
   fn make_unique_store<'a>(&self, _: usize) -> Self::UniqueStore<'a> {
     // This is likely to never be used in the first place, but
     // uniqueness checks would fail after more than 2 elements anyway
@@ -25,11 +27,13 @@ impl Validator<bool> for BoolValidator {
   }
 
   #[inline]
+  #[doc(hidden)]
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
     Ok(())
   }
 
   #[cfg(feature = "cel")]
+  #[doc(hidden)]
   fn check_cel_programs_with(&self, _val: Self::Target) -> Result<(), Vec<CelError>> {
     // No CEL rules in this one
     Ok(())

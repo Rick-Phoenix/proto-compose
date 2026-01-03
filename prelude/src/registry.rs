@@ -3,6 +3,7 @@ use ordermap::OrderMap;
 
 use crate::*;
 
+#[doc(hidden)]
 pub struct RegistryPath {
   pub file: &'static str,
   pub package: &'static str,
@@ -49,7 +50,7 @@ struct NestedItems {
 }
 
 #[must_use]
-pub fn collect_package(package: &'static str) -> Package {
+pub(crate) fn collect_package(package: &'static str) -> Package {
   let mut messages: Map<&'static str, Message> = Map::default();
   let mut enums: Map<&'static str, Enum> = Map::default();
   let mut parent_messages_map: Map<&'static str, NestedItems> = Map::default();
@@ -159,23 +160,27 @@ pub fn collect_package(package: &'static str) -> Package {
   }
 }
 
+#[doc(hidden)]
 pub struct RegistryMessage {
   pub package: &'static str,
   pub parent_message: Option<fn() -> &'static str>,
   pub message: fn() -> Message,
 }
 
+#[doc(hidden)]
 pub struct RegistryEnum {
   pub package: &'static str,
   pub parent_message: Option<fn() -> &'static str>,
   pub enum_: fn() -> Enum,
 }
 
+#[doc(hidden)]
 pub struct RegistryService {
   pub package: &'static str,
   pub service: fn() -> Service,
 }
 
+#[doc(hidden)]
 pub struct RegistryFile {
   pub file: &'static str,
   pub package: &'static str,

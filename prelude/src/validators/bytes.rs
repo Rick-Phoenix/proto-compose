@@ -110,9 +110,6 @@ pub(crate) fn check_length_rules(
   Ok(())
 }
 
-#[cfg(feature = "regex")]
-pub type CachedBytesRegex = LazyLock<Regex>;
-
 impl Validator<Bytes> for BytesValidator {
   type Target = Bytes;
   type UniqueStore<'a>
@@ -168,6 +165,7 @@ impl Validator<Bytes> for BytesValidator {
     }
   }
 
+  #[doc(hidden)]
   fn cel_rules(&self) -> Vec<CelRule> {
     self.cel.iter().map(|p| p.rule.clone()).collect()
   }
@@ -414,6 +412,7 @@ impl From<BytesValidator> for ProtoOption {
   }
 }
 
+#[doc(hidden)]
 #[derive(Clone, Debug, Copy)]
 pub enum WellKnownBytes {
   Uuid,

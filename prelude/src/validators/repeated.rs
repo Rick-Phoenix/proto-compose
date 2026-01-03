@@ -126,6 +126,7 @@ pub trait UniqueStore<'a> {
 }
 
 // Just for checking uniqueness for messages
+#[doc(hidden)]
 pub struct LinearRefStore<'a, T>
 where
   T: 'a + ?Sized,
@@ -159,6 +160,7 @@ where
   }
 }
 
+#[doc(hidden)]
 #[derive(Default)]
 pub struct FloatEpsilonStore<T>
 where
@@ -173,8 +175,7 @@ impl<T> FloatEpsilonStore<T>
 where
   T: FloatCore + FloatEq<Tol = T>,
 {
-  #[inline]
-  pub fn new(cap: usize, abs: T, rel: T) -> Self {
+  pub(crate) fn new(cap: usize, abs: T, rel: T) -> Self {
     let clamped_cap = clamp_capacity_for_unique_items_collection::<T>(cap);
 
     Self {
@@ -184,8 +185,7 @@ where
     }
   }
 
-  #[inline]
-  pub fn check_neighbors(&self, idx: usize, item: T) -> bool {
+  pub(crate) fn check_neighbors(&self, idx: usize, item: T) -> bool {
     // Idx at insertion point
     if let Some(above) = self.seen.get(idx)
       && float_eq!(above.0, item, abs <= self.abs_tol, r2nd <= self.rel_tol)
@@ -245,6 +245,7 @@ where
   }
 }
 
+#[doc(hidden)]
 pub struct UnsupportedStore<T> {
   _marker: PhantomData<T>,
 }
@@ -272,6 +273,7 @@ impl<'a, T> UniqueStore<'a> for UnsupportedStore<T> {
   }
 }
 
+#[doc(hidden)]
 pub enum RefHybridStore<'a, T>
 where
   T: 'a + ?Sized,
@@ -312,6 +314,7 @@ where
   }
 }
 
+#[doc(hidden)]
 pub enum CopyHybridStore<T> {
   Small(Vec<T>),
   Large(HashSet<T>),
@@ -371,6 +374,7 @@ where
     Self: 'a;
 
   #[inline]
+  #[doc(hidden)]
   fn make_unique_store<'a>(&self, _size: usize) -> Self::UniqueStore<'a>
   where
     T: 'a,
@@ -407,6 +411,7 @@ where
     }
   }
 
+  #[doc(hidden)]
   fn cel_rules(&self) -> Vec<CelRule> {
     let mut rules: Vec<CelRule> = self.cel.iter().map(|p| p.rule.clone()).collect();
 

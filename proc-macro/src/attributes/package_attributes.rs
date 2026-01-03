@@ -52,7 +52,7 @@ pub fn package_macro_impl(input: TokenStream2) -> syn::Result<TokenStream2> {
   });
 
   Ok(quote! {
-    const #const_ident: ::prelude::PackageGetter = ::prelude::PackageGetter::new(#pkg_name);
+    pub const #const_ident: ::prelude::PackageGetter = ::prelude::PackageGetter::new(#pkg_name);
 
     #test_impl
   })

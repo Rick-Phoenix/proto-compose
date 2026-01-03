@@ -3,7 +3,7 @@ use tonic_prost_build::Config;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   println!("cargo:rerun-if-changed=../testing/proto_test/");
 
-  let package = testing::collect_package();
+  let package = testing::MYAPP_V1.get_package();
 
   package.render_files("../testing/proto_test/")?;
 

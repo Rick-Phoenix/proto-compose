@@ -28,6 +28,7 @@ impl<K: AsProtoField, V: AsProtoField> AsProtoField for ProtoMap<K, V> {
   }
 }
 
+#[doc(hidden)]
 pub trait IntoSubscript {
   fn into_subscript(self) -> Subscript;
 }
@@ -160,37 +161,6 @@ where
   }
 }
 
-impl<K, V> MapValidator<K, V>
-where
-  K: ProtoValidator,
-  V: ProtoValidator + ProtoMessage,
-{
-  #[must_use]
-  #[inline]
-  pub fn default_message_validator() -> Self {
-    Self {
-      values: Some(V::validator_builder().build_validator()),
-      cel: vec![],
-      ignore: Ignore::Unspecified,
-      keys: None,
-      max_pairs: None,
-      min_pairs: None,
-      _key_type: PhantomData,
-      _value_type: PhantomData,
-    }
-  }
-
-  #[must_use]
-  #[inline]
-  pub fn with_default_message_validator(mut self) -> Self {
-    if self.values.is_none() {
-      self.values = Some(V::validator_builder().build_validator());
-    }
-
-    self
-  }
-}
-
 #[cfg(feature = "cel")]
 fn try_convert_to_cel<K, V>(map: HashMap<K, V>) -> Result<::cel::Value, CelError>
 where
@@ -222,6 +192,7 @@ where
     Self: 'a;
 
   #[inline]
+  #[doc(hidden)]
   fn make_unique_store<'a>(&self, _: usize) -> Self::UniqueStore<'a>
   where
     Self: 'a,
@@ -264,6 +235,7 @@ where
     }
   }
 
+  #[doc(hidden)]
   fn cel_rules(&self) -> Vec<CelRule> {
     let mut rules: Vec<CelRule> = self.cel.iter().map(|p| p.rule.clone()).collect();
 

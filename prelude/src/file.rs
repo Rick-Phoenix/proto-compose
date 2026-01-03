@@ -36,6 +36,7 @@ impl Display for Edition {
   }
 }
 
+#[doc(hidden)]
 #[derive(PartialEq, Eq, Debug)]
 pub struct FileImports {
   pub set: FxHashSet<&'static str>,

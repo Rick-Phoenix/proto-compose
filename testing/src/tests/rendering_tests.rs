@@ -8,6 +8,8 @@ use std::sync::Arc;
 
 use super::*;
 
+proto_package!(RENDERING_PKG, name = "rendering");
+
 define_proto_file!(
   RENDERING,
   file = "rendering.proto",
@@ -18,7 +20,7 @@ define_proto_file!(
 
 #[test]
 fn test_renders() {
-  let pkg = prelude::collect_package("rendering_tests");
+  let pkg = RENDERING_PKG.get_package();
 
   pkg.render_files("proto_test").unwrap();
 }

@@ -56,7 +56,6 @@ where
   pub not_in: Option<StaticLookup<OrderedFloat<Num::RustType>>>,
 }
 
-#[inline]
 pub(crate) fn float_in_list<T>(target: T, list: &[OrderedFloat<T>], abs_tol: T, r2nd_tol: T) -> bool
 where
   T: FloatCore + FloatEq<Tol = T>,

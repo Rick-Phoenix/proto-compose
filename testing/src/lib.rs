@@ -9,10 +9,6 @@ use std::collections::HashMap;
 use prelude::*;
 use proto_types::{Duration, Timestamp};
 
-pub fn collect_package() -> Package {
-  prelude::collect_package("myapp.v1")
-}
-
 proto_package!(MYAPP_V1, name = "myapp.v1", no_cel_test);
 
 pub mod inner {
