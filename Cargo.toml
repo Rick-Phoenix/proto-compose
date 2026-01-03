@@ -32,6 +32,7 @@ tonic-prost-build = "0.14.2"
 serde = { version = "1", features = ["derive"] }
 chrono = "0.4"
 protocheck-core = { path = "../protocheck/core" }
+protocheck-proc-macro = { path = "../protocheck/proc_macro/" }
 itertools = "0.14"
 constcat = "0.6"
 float_eq = "1.0"

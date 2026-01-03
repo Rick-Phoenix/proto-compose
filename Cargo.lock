@@ -1094,6 +1094,7 @@ dependencies = [
  "prost",
  "proto-types",
  "protocheck-core",
+ "protocheck-proc-macro",
  "regex",
  "similar-asserts",
  "smallvec",
@@ -1210,16 +1211,6 @@ dependencies = [
  "quote",
  "syn",
  "thiserror 2.0.17",
-]
-
-[[package]]
-name = "protocheck"
-version = "0.1.11"
-dependencies = [
- "document-features",
- "proto-types",
- "protocheck-core",
- "protocheck-proc-macro",
 ]
 
 [[package]]
@@ -1541,8 +1532,6 @@ dependencies = [
  "env_logger",
  "prelude",
  "prost",
- "protocheck",
- "protocheck-proc-macro",
  "regex",
  "similar-asserts",
 ]

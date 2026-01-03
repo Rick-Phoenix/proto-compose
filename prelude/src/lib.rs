@@ -18,6 +18,8 @@ pub use proc_macro_impls::*;
 pub use proto_types;
 use proto_types::protovalidate::{FieldPathElement, Violations};
 pub use protocheck_core::validators::containing::SortedList;
+#[doc(hidden)]
+pub use protocheck_proc_macro::TryIntoCel as TryIntoCelValue;
 use thiserror::Error;
 mod oneof;
 mod options;

@@ -18,8 +18,6 @@ regex = { workspace = true }
 bytes = "1"
 prelude = { path = "../prelude" }
 prost = "0.14.1"
-protocheck-proc-macro = { version = "0.1", path = "../../protocheck/proc_macro/" }
-protocheck = { version = "0.1", path = "../../protocheck/protocheck/" }
 env_logger = "0.11"
 
 [features]

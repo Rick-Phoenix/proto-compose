@@ -33,6 +33,7 @@ constcat = { workspace = true }
 float_eq = { workspace = true }
 smallvec = "1.15.1"
 proc-macro-impls = { path = "../proc-macro/" }
+protocheck-proc-macro = { workspace = true }
 
 [features]
 default = ["regex", "cel"]

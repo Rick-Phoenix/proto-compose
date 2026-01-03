@@ -31,7 +31,7 @@ pub fn process_message_derive(mut item: ItemStruct, macro_attrs: TokenStream2) -
   // prost::Message already implements Debug and Default
   let mut proto_derives = if cfg!(feature = "cel") {
     quote! {
-      #[derive(::prost::Message, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCel)]
+      #[derive(::prost::Message, Clone, PartialEq, ::prelude::TryIntoCelValue)]
       #[cel(cel_crate = ::prelude::cel, proto_types_crate = ::prelude::proto_types)]
     }
   } else {
