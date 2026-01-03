@@ -62,17 +62,17 @@ impl<'a> FallbackImpls<'a> {
       InputItemKind::Oneof => {
         quote! {
           impl #target_ident {
-            pub fn encode(&self, buf: &mut impl ::prelude::prost::bytes::BufMut) {
+            pub fn encode(&self, buf: &mut impl ::prost::bytes::BufMut) {
               unimplemented!()
             }
 
             pub fn merge(
               _: &mut ::core::option::Option<Self>,
               _: u32,
-              _: ::prelude::prost::encoding::wire_type::WireType,
-              _: &mut impl ::prelude::prost::bytes::Buf,
-              _: ::prelude::prost::encoding::DecodeContext,
-            ) -> ::core::result::Result<(), ::prelude::prost::DecodeError>
+              _: ::prost::encoding::wire_type::WireType,
+              _: &mut impl ::prost::bytes::Buf,
+              _: ::prost::encoding::DecodeContext,
+            ) -> ::core::result::Result<(), ::prost::DecodeError>
             {
               unimplemented!()
             }
@@ -85,7 +85,7 @@ impl<'a> FallbackImpls<'a> {
       }
       InputItemKind::Message => {
         quote! {
-          impl ::prelude::prost::Message for #target_ident {
+          impl ::prost::Message for #target_ident {
             fn encoded_len(&self) -> usize {
               unimplemented!()
             }

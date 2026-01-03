@@ -23,7 +23,7 @@ pub fn process_enum_derive(mut item: ItemEnum) -> TokenStream2 {
 
   quote! {
     #[repr(i32)]
-    #[derive(::prelude::prost::Enumeration, ::prelude::macros::Enum, Hash, PartialEq, Eq, Debug, Clone, Copy)]
+    #[derive(::prost::Enumeration, ::prelude::macros::Enum, Hash, PartialEq, Eq, Debug, Clone, Copy)]
     #item
 
     #schema_impls

@@ -4,7 +4,6 @@ pub use ::cel;
 #[macro_use]
 mod decl_macros;
 
-pub use prost;
 use std::fmt::Display;
 
 use askama::Template;

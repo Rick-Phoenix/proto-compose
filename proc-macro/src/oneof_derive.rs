@@ -32,11 +32,11 @@ pub fn process_oneof_derive(mut item: ItemEnum, macro_attrs: TokenStream2) -> To
   // prost::Oneof already implements Debug and Default
   let mut proto_derives = if cfg!(feature = "cel") {
     quote! {
-      #[derive(::prelude::prost::Oneof, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCel)]
+      #[derive(::prost::Oneof, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCel)]
       #[cel(cel_crate = ::prelude::cel, proto_types_crate = ::prelude::proto_types)]
     }
   } else {
-    quote! { #[derive(::prelude::prost::Oneof, Clone, PartialEq)] }
+    quote! { #[derive(::prost::Oneof, Clone, PartialEq)] }
   };
 
   if oneof_attrs.is_proxied {
