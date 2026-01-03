@@ -1,3 +1,6 @@
+#[cfg(feature = "cel")]
+pub use ::cel;
+
 #[macro_use]
 mod macros;
 

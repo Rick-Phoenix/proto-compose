@@ -1,5 +1,57 @@
 use crate::*;
 
+pub fn fallback_message_schema_impl(
+  orig_struct_ident: &Ident,
+  shadow_struct_ident: Option<&Ident>,
+) -> TokenStream2 {
+  let proto_struct = shadow_struct_ident.unwrap_or(orig_struct_ident);
+
+  let mut output = quote! {
+    impl ::prelude::AsProtoType for #proto_struct {
+      fn proto_type() -> ::prelude::ProtoType {
+        unimplemented!()
+      }
+    }
+
+    impl ::prelude::ProtoMessage for #proto_struct {
+      const PACKAGE: &str = "";
+      const SHORT_NAME: &str = "";
+
+      fn type_url() -> &'static str {
+        unimplemented!()
+      }
+
+      fn full_name() -> &'static str {
+        unimplemented!()
+      }
+
+      fn proto_path() -> ::prelude::ProtoPath {
+        unimplemented!()
+      }
+
+      fn proto_name() -> &'static str {
+        unimplemented!()
+      }
+
+      fn proto_schema() -> ::prelude::Message {
+        unimplemented!()
+      }
+    }
+  };
+
+  if shadow_struct_ident.is_some() {
+    output.extend(quote! {
+      impl ::prelude::AsProtoType for #orig_struct_ident {
+        fn proto_type() -> ::prelude::ProtoType {
+          unimplemented!()
+        }
+      }
+    });
+  }
+
+  output
+}
+
 impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
   pub fn generate_schema_impls(&self) -> TokenStream2 {
     let MessageAttrs {

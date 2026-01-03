@@ -12,9 +12,30 @@ pub struct OneofAttrs {
 
 pub fn process_oneof_attrs(
   enum_ident: &Ident,
-  macro_attrs: OneofMacroAttrs,
+  macro_attrs: TokenStream2,
   attrs: &[Attribute],
 ) -> Result<OneofAttrs, Error> {
+  let mut is_proxied = false;
+  let mut no_auto_test = false;
+
+  let macro_attrs_parser = syn::meta::parser(|meta| {
+    let ident_str = meta.ident_str()?;
+
+    match ident_str.as_str() {
+      "proxied" => {
+        is_proxied = true;
+      }
+      "no_auto_test" => {
+        no_auto_test = true;
+      }
+      _ => return Err(meta.error("Unknown attribute")),
+    };
+
+    Ok(())
+  });
+
+  macro_attrs_parser.parse2(macro_attrs)?;
+
   let mut options = TokensOr::<TokenStream2>::new(|| quote! { vec![] });
   let mut name: Option<String> = None;
   let mut from_proto: Option<PathOrClosure> = None;
@@ -52,7 +73,7 @@ pub fn process_oneof_attrs(
     from_proto,
     into_proto,
     shadow_derives,
-    is_proxied: macro_attrs.is_proxied,
-    no_auto_test: macro_attrs.no_auto_test,
+    is_proxied,
+    no_auto_test,
   })
 }

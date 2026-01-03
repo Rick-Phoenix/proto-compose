@@ -1,17 +1,10 @@
 use crate::*;
 
-#[derive(Default)]
-pub struct MessageMacroAttrs {
-  pub is_proxied: bool,
-  pub no_auto_test: bool,
-  pub extern_path: Option<String>,
-}
-
 pub struct MessageCtx<'a, T: Borrow<FieldData>> {
   pub orig_struct_ident: &'a Ident,
   pub shadow_struct_ident: Option<&'a Ident>,
   pub non_ignored_fields: Vec<T>,
-  pub message_attrs: MessageAttrs,
+  pub message_attrs: &'a MessageAttrs,
 }
 
 impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
@@ -22,25 +15,92 @@ impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
   }
 }
 
-pub fn process_message_derive(
-  item: &mut ItemStruct,
-  macro_attrs: MessageMacroAttrs,
-) -> Result<TokenStream2, Error> {
-  let message_attrs = process_derive_message_attrs(&item.ident, macro_attrs, &item.attrs)?;
+pub fn process_message_derive(mut item: ItemStruct, macro_attrs: TokenStream2) -> TokenStream2 {
+  let message_attrs = match process_derive_message_attrs(&item.ident, macro_attrs, &item.attrs) {
+    Ok(attrs) => attrs,
+    Err(e) => {
+      let err = e.into_compile_error();
+
+      return quote! {
+        #item
+        #err
+      };
+    }
+  };
+
+  // prost::Message already implements Debug and Default
+  let mut proto_derives = if cfg!(feature = "cel") {
+    quote! { #[derive(::prelude::prost::Message, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCelValue)] }
+  } else {
+    quote! { #[derive(::prelude::prost::Message, Clone, PartialEq)] }
+  };
 
   if message_attrs.is_proxied {
-    process_message_derive_shadow(item, message_attrs)
+    let mut shadow_struct = create_shadow_struct(&item);
+
+    let impls = match process_message_derive_shadow(&mut item, &mut shadow_struct, &message_attrs) {
+      Ok(impls) => impls,
+      Err(e) => {
+        proto_derives = TokenStream2::new();
+
+        FallbackImpls {
+          error: e,
+          orig_ident: &item.ident,
+          shadow_ident: Some(&shadow_struct.ident),
+          kind: InputItemKind::Message,
+        }
+        .generate_fallback_impls()
+      }
+    };
+
+    let shadow_struct_derives = message_attrs
+      .shadow_derives
+      .map(|list| quote! { #[#list] });
+
+    quote! {
+      #[allow(clippy::derive_partial_eq_without_eq)]
+      #[derive(::proc_macro_impls::Message)]
+      #item
+
+      #[allow(clippy::derive_partial_eq_without_eq)]
+      #proto_derives
+      #shadow_struct_derives
+      #shadow_struct
+
+      #impls
+    }
   } else {
-    process_message_derive_direct(item, message_attrs)
+    let impls = match process_message_derive_direct(&mut item, &message_attrs) {
+      Ok(impls) => impls,
+      Err(e) => {
+        proto_derives = TokenStream2::new();
+
+        FallbackImpls {
+          error: e,
+          orig_ident: &item.ident,
+          shadow_ident: None,
+          kind: InputItemKind::Message,
+        }
+        .generate_fallback_impls()
+      }
+    };
+
+    quote! {
+      #[allow(clippy::derive_partial_eq_without_eq)]
+      #[derive(::proc_macro_impls::Message)]
+      #proto_derives
+      #item
+
+      #impls
+    }
   }
 }
 
 pub fn process_message_derive_shadow(
   orig_struct: &mut ItemStruct,
-  message_attrs: MessageAttrs,
+  shadow_struct: &mut ItemStruct,
+  message_attrs: &MessageAttrs,
 ) -> Result<TokenStream2, Error> {
-  let mut shadow_struct = create_shadow_struct(orig_struct);
-
   let orig_struct_ident = &orig_struct.ident;
   let shadow_struct_ident = &shadow_struct.ident;
 
@@ -150,48 +210,16 @@ pub fn process_message_derive_shadow(
 
   let wrapped_items = wrap_with_imports(vec![schema_impls, proto_conversion_impls, validator_impl]);
 
-  // prost::Message already implements Debug and Default
-  let derives = if cfg!(feature = "cel") {
-    quote! { #[derive(::prelude::prost::Message, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCelValue)] }
-  } else {
-    quote! { #[derive(::prelude::prost::Message, Clone, PartialEq)] }
-  };
-
-  let shadow_struct_derives = message_ctx
-    .message_attrs
-    .shadow_derives
-    .map(|list| quote! { #[#list] });
-
-  let output_tokens = quote! {
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #derives
-    #shadow_struct_derives
-    #shadow_struct
-
+  Ok(quote! {
     #wrapped_items
     #consistency_checks_impl
-  };
-
-  Ok(output_tokens)
+  })
 }
 
 pub fn process_message_derive_direct(
   item: &mut ItemStruct,
-  message_attrs: MessageAttrs,
+  message_attrs: &MessageAttrs,
 ) -> Result<TokenStream2, Error> {
-  item
-    .attrs
-    .push(parse_quote!(#[allow(clippy::derive_partial_eq_without_eq)]));
-
-  // prost::Message already implements Debug and Default
-  let prost_message_attr: Attribute = if cfg!(feature = "cel") {
-    parse_quote!(#[derive(::prelude::prost::Message, Clone, PartialEq, ::protocheck::macros::TryIntoCelValue)])
-  } else {
-    parse_quote!(#[derive(::prelude::prost::Message, Clone, PartialEq)])
-  };
-
-  item.attrs.push(prost_message_attr);
-
   let mut fields_data: Vec<FieldData> = Vec::new();
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
 

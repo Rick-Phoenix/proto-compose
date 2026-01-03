@@ -78,6 +78,42 @@ pub struct ProtoConversionImpl<'a> {
   pub from_proto: ConversionData<'a>,
 }
 
+pub fn fallback_conversion_impls(
+  source_ident: &Ident,
+  target_ident: &Ident,
+  kind: InputItemKind,
+) -> TokenStream2 {
+  let conversion_trait = if kind.is_message() {
+    quote! {
+      impl ::prelude::MessageProxy for #source_ident {
+        type Message = #target_ident;
+      }
+    }
+  } else {
+    quote! {
+      impl ::prelude::OneofProxy for #source_ident {
+        type Oneof = #target_ident;
+      }
+    }
+  };
+
+  quote! {
+    impl From<#source_ident> for #target_ident {
+      fn from (_: #source_ident) -> Self {
+        unimplemented!()
+      }
+    }
+
+    impl From<#target_ident> for #source_ident {
+      fn from (_: #target_ident) -> Self {
+        unimplemented!()
+      }
+    }
+
+    #conversion_trait
+  }
+}
+
 impl<'a> ProtoConversionImpl<'a> {
   pub fn generate_conversion_impls(&self) -> TokenStream2 {
     let Self {

@@ -1,5 +1,33 @@
 use crate::*;
 
+pub fn fallback_message_validator_impl(target_ident: &Ident) -> TokenStream2 {
+  quote! {
+    impl ::prelude::ValidatedMessage for #target_ident {
+      fn validate(&self) -> Result<(), Violations> {
+        Ok(())
+      }
+
+      fn nested_validate(&self, ctx: &mut ValidationCtx) {}
+    }
+
+    impl ::prelude::ProtoValidator for #target_ident {
+      type Target = Self;
+      type Validator = ::prelude::MessageValidator<Self>;
+      type Builder = ::prelude::MessageValidatorBuilder<Self>;
+
+      #[inline]
+      fn default_validator() -> Option<Self::Validator> {
+        Some(MessageValidator::default())
+      }
+
+      #[inline]
+      fn validator_builder() -> Self::Builder {
+        ::prelude::MessageValidator::builder()
+      }
+    }
+  }
+}
+
 impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
   pub fn generate_validator(&self) -> TokenStream2 {
     let target_ident = self.proto_struct_ident();

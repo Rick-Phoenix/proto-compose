@@ -1,5 +1,18 @@
 use crate::*;
 
+pub fn fallback_oneof_schema_impl(enum_ident: &Ident) -> TokenStream2 {
+  quote! {
+    impl ::prelude::ProtoOneof for #enum_ident {
+      const NAME: &str = "";
+      const TAGS: &[i32] = &[];
+
+      fn proto_schema() -> ::prelude::Oneof {
+        unimplemented!()
+      }
+    }
+  }
+}
+
 impl<'a, T: Borrow<FieldData>> OneofCtx<'a, T> {
   pub fn generate_schema_impl(&self) -> TokenStream2 {
     let enum_ident = self.proto_enum_ident();
@@ -46,12 +59,6 @@ impl<'a, T: Borrow<FieldData>> OneofCtx<'a, T> {
         const TAGS: &[i32] = &[ #(#tags),* ];
 
         fn proto_schema() -> ::prelude::Oneof {
-          Self::proto_schema()
-        }
-      }
-
-      impl #enum_ident {
-        pub fn proto_schema() -> ::prelude::Oneof {
           ::prelude::Oneof {
             name: #proto_name,
             fields: vec![ #(#variants_tokens,)* ],

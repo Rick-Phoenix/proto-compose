@@ -7,7 +7,30 @@ struct EnumVariantCtx {
   ident: Ident,
 }
 
-pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
+pub fn process_enum_derive(mut item: ItemEnum) -> TokenStream2 {
+  let schema_impls = match enum_schema_impls(&mut item) {
+    Ok(impls) => impls,
+    Err(e) => {
+      let err = e.into_compile_error();
+      let fallback_impls = fallback_schema_impl(&item.ident);
+
+      quote! {
+        #fallback_impls
+        #err
+      }
+    }
+  };
+
+  quote! {
+    #[repr(i32)]
+    #[derive(::prelude::prost::Enumeration, ::proc_macro_impls::Enum, Hash, PartialEq, Eq, Debug, Clone, Copy)]
+    #item
+
+    #schema_impls
+  }
+}
+
+fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   let ItemEnum {
     ident: enum_name,
     variants,
@@ -215,4 +238,49 @@ pub fn process_enum_derive(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   };
 
   Ok(output_tokens)
+}
+
+fn fallback_schema_impl(enum_name: &Ident) -> TokenStream2 {
+  quote! {
+    impl ::prelude::ProtoValidator for #enum_name {
+      type Target = i32;
+      type Validator = ::prelude::EnumValidator<#enum_name>;
+      type Builder = ::prelude::EnumValidatorBuilder<#enum_name>;
+
+      #[inline]
+      fn validator_builder() -> Self::Builder {
+        ::prelude::EnumValidator::builder()
+      }
+    }
+
+    impl ::prelude::AsProtoType for #enum_name {
+      fn proto_type() -> ::prelude::ProtoType {
+        unimplemented!()
+      }
+    }
+
+    impl ::prelude::ProtoEnum for #enum_name {
+      fn proto_name() -> &'static str {
+        unimplemented!()
+      }
+
+      fn proto_path() -> ::prelude::ProtoPath {
+        unimplemented!()
+      }
+
+      #[inline]
+      fn as_proto_name(&self) -> &'static str {
+        unimplemented!()
+      }
+
+      #[inline]
+      fn from_proto_name(name: &str) -> Option<Self> {
+        unimplemented!()
+      }
+
+      fn proto_schema() -> ::prelude::Enum {
+        unimplemented!()
+      }
+    }
+  }
 }

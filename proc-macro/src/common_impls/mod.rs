@@ -1,5 +1,8 @@
 use crate::*;
 
+mod fallback_impls;
+pub use fallback_impls::*;
+
 pub fn wrap_with_imports(tokens: Vec<TokenStream2>) -> TokenStream2 {
   quote! {
     const _: () = {

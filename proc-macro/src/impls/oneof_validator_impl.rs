@@ -1,5 +1,15 @@
 use crate::*;
 
+pub fn fallback_oneof_validator(oneof_ident: &Ident) -> TokenStream2 {
+  quote! {
+    impl ::prelude::ValidatedOneof for #oneof_ident {
+      fn validate(&self, parent_elements: &mut Vec<FieldPathElement>, violations: &mut ViolationsAcc) {
+        unreachable!()
+      }
+    }
+  }
+}
+
 impl<'a, T: Borrow<FieldData>> OneofCtx<'a, T> {
   pub fn generate_validator(&self) -> TokenStream2 {
     let oneof_ident = self.proto_enum_ident();

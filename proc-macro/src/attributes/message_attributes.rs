@@ -18,10 +18,31 @@ pub struct MessageAttrs {
 }
 
 pub fn process_derive_message_attrs(
-  rust_name: &Ident,
-  macro_attrs: MessageMacroAttrs,
+  struct_ident: &Ident,
+  macro_args: TokenStream2,
   attrs: &[Attribute],
 ) -> Result<MessageAttrs, Error> {
+  let mut is_proxied = false;
+  let mut no_auto_test = false;
+  let mut extern_path: Option<String> = None;
+
+  let parser = syn::meta::parser(|meta| {
+    if let Some(ident) = meta.path.get_ident() {
+      let ident = ident.to_string();
+
+      match ident.as_str() {
+        "proxied" => is_proxied = true,
+        "no_auto_test" => no_auto_test = true,
+        "extern_path" => extern_path = Some(meta.parse_value::<LitStr>()?.value()),
+        _ => {}
+      };
+    }
+
+    Ok(())
+  });
+
+  parser.parse2(macro_args)?;
+
   let mut reserved_names: Vec<String> = Vec::new();
   let mut reserved_numbers = ReservedNumbers::default();
   let mut options = TokensOr::<TokenStream2>::new(|| quote! { vec![] });
@@ -85,7 +106,7 @@ pub fn process_derive_message_attrs(
     Ok(())
   })?;
 
-  let name = proto_name.unwrap_or_else(|| ccase!(pascal, rust_name.to_string()));
+  let name = proto_name.unwrap_or_else(|| ccase!(pascal, struct_ident.to_string()));
 
   Ok(MessageAttrs {
     reserved_names,
@@ -96,9 +117,9 @@ pub fn process_derive_message_attrs(
     into_proto,
     shadow_derives,
     cel_rules,
-    is_proxied: macro_attrs.is_proxied,
-    no_auto_test: macro_attrs.no_auto_test,
-    extern_path: macro_attrs.extern_path,
+    is_proxied,
+    no_auto_test,
+    extern_path,
     parent_message,
   })
 }

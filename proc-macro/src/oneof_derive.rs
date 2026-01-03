@@ -1,13 +1,7 @@
 use crate::*;
 
-#[derive(Default)]
-pub struct OneofMacroAttrs {
-  pub is_proxied: bool,
-  pub no_auto_test: bool,
-}
-
 pub struct OneofCtx<'a, T: Borrow<FieldData>> {
-  pub oneof_attrs: OneofAttrs,
+  pub oneof_attrs: &'a OneofAttrs,
   pub orig_enum_ident: &'a Ident,
   pub shadow_enum_ident: Option<&'a Ident>,
   pub non_ignored_variants: Vec<T>,
@@ -22,25 +16,92 @@ impl<'a, T: Borrow<FieldData>> OneofCtx<'a, T> {
   }
 }
 
-pub fn process_oneof_derive(
-  item: &mut ItemEnum,
-  macro_attrs: OneofMacroAttrs,
-) -> Result<TokenStream2, Error> {
-  let oneof_attrs = process_oneof_attrs(&item.ident, macro_attrs, &item.attrs)?;
+pub fn process_oneof_derive(mut item: ItemEnum, macro_attrs: TokenStream2) -> TokenStream2 {
+  let oneof_attrs = match process_oneof_attrs(&item.ident, macro_attrs, &item.attrs) {
+    Ok(attrs) => attrs,
+    Err(e) => {
+      let err = e.into_compile_error();
+
+      return quote! {
+        #item
+        #err
+      };
+    }
+  };
+
+  // prost::Oneof already implements Debug and Default
+  let mut proto_derives = if cfg!(feature = "cel") {
+    quote! { #[derive(::prelude::prost::Oneof, Clone, PartialEq, ::protocheck_proc_macro::TryIntoCelValue)] }
+  } else {
+    quote! { #[derive(::prelude::prost::Oneof, Clone, PartialEq)] }
+  };
 
   if oneof_attrs.is_proxied {
-    process_oneof_derive_shadow(item, oneof_attrs)
+    let mut shadow_enum = create_shadow_enum(&item);
+
+    let impls = match process_oneof_derive_shadow(&mut item, &mut shadow_enum, &oneof_attrs) {
+      Ok(impls) => impls,
+      Err(e) => {
+        proto_derives = TokenStream2::new();
+
+        FallbackImpls {
+          error: e,
+          orig_ident: &item.ident,
+          shadow_ident: Some(&shadow_enum.ident),
+          kind: InputItemKind::Oneof,
+        }
+        .generate_fallback_impls()
+      }
+    };
+
+    let shadow_enum_derives = oneof_attrs
+      .shadow_derives
+      .map(|list| quote! { #[#list] });
+
+    quote! {
+      #[allow(clippy::derive_partial_eq_without_eq)]
+      #[derive(::proc_macro_impls::Oneof)]
+      #item
+
+      #[allow(clippy::derive_partial_eq_without_eq)]
+      #proto_derives
+      #shadow_enum_derives
+      #shadow_enum
+
+      #impls
+    }
   } else {
-    process_oneof_derive_direct(item, oneof_attrs)
+    let impls = match process_oneof_derive_direct(&mut item, &oneof_attrs) {
+      Ok(impls) => impls,
+      Err(e) => {
+        proto_derives = TokenStream2::new();
+
+        FallbackImpls {
+          error: e,
+          orig_ident: &item.ident,
+          shadow_ident: None,
+          kind: InputItemKind::Oneof,
+        }
+        .generate_fallback_impls()
+      }
+    };
+
+    quote! {
+      #[allow(clippy::derive_partial_eq_without_eq)]
+      #[derive(::proc_macro_impls::Oneof)]
+      #proto_derives
+      #item
+
+      #impls
+    }
   }
 }
 
 pub(crate) fn process_oneof_derive_shadow(
   item: &mut ItemEnum,
-  oneof_attrs: OneofAttrs,
+  shadow_enum: &mut ItemEnum,
+  oneof_attrs: &OneofAttrs,
 ) -> Result<TokenStream2, Error> {
-  let mut shadow_enum = create_shadow_enum(item);
-
   let orig_enum_ident = &item.ident;
   let shadow_enum_ident = &shadow_enum.ident;
 
@@ -100,8 +161,8 @@ pub(crate) fn process_oneof_derive_shadow(
   }
 
   // We strip away the ignored variants from the shadow enum
-  shadow_enum.variants = shadow_enum
-    .variants
+  let shadow_variants = std::mem::take(&mut shadow_enum.variants);
+  shadow_enum.variants = shadow_variants
     .into_iter()
     .filter(|var| !ignored_variants.contains(&var.ident))
     .collect();
@@ -131,24 +192,7 @@ pub(crate) fn process_oneof_derive_shadow(
     validator_impl,
   ]);
 
-  // prost::Oneof already implements Debug
-  let derives = if cfg!(feature = "cel") {
-    quote! { #[derive(::prelude::prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)] }
-  } else {
-    quote! { #[derive(::prelude::prost::Oneof, PartialEq, Clone)] }
-  };
-
-  let shadow_enum_derives = oneof_ctx
-    .oneof_attrs
-    .shadow_derives
-    .map(|list| quote! { #[#list] });
-
   Ok(quote! {
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #derives
-    #shadow_enum_derives
-    #shadow_enum
-
     #wrapped_items
     #consistency_checks_impl
   })
@@ -156,22 +200,9 @@ pub(crate) fn process_oneof_derive_shadow(
 
 pub(crate) fn process_oneof_derive_direct(
   item: &mut ItemEnum,
-  oneof_attrs: OneofAttrs,
+  oneof_attrs: &OneofAttrs,
 ) -> Result<TokenStream2, Error> {
-  let ItemEnum {
-    attrs, variants, ..
-  } = item;
-
-  attrs.push(parse_quote!(#[allow(clippy::derive_partial_eq_without_eq)]));
-
-  // prost::Oneof already implements Debug
-  let prost_derive: Attribute = if cfg!(feature = "cel") {
-    parse_quote!(#[derive(::prelude::prost::Oneof, PartialEq, Clone, ::protocheck_proc_macro::TryIntoCelValue)])
-  } else {
-    parse_quote!(#[derive(::prelude::prost::Oneof, PartialEq, Clone)])
-  };
-
-  attrs.push(prost_derive);
+  let ItemEnum { variants, .. } = item;
 
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
   let mut fields_data: Vec<FieldData> = Vec::new();
