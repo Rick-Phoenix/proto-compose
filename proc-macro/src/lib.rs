@@ -26,7 +26,7 @@ use syn_utils::*;
 use crate::{
   common_impls::*, enum_derive::*, extension_derive::*, impls::*, item_cloners::*,
   message_derive::*, message_schema_impl::*, oneof_derive::*, path_utils::*, proto_field::*,
-  proto_map::*, proto_types::*, service_derive::*,
+  proto_map::*, proto_types::*, service_derive::*, validators_only_derive::*,
 };
 
 mod attributes;
@@ -44,6 +44,28 @@ mod proto_field;
 mod proto_map;
 mod proto_types;
 mod service_derive;
+mod validators_only_derive;
+
+#[proc_macro_derive(ValidatedMessage, attributes(proto))]
+pub fn validator_only_derive(input: TokenStream) -> TokenStream {
+  let item = parse_macro_input!(input as ItemStruct);
+
+  let impls = match process_validators_only_derive(&item) {
+    Ok(impls) => impls.into(),
+    Err(e) => {
+      let err = e.into_compile_error();
+      let fallback_impl = fallback_message_validator_impl(&item.ident);
+
+      quote! {
+        #fallback_impl
+        #err
+      }
+      .into()
+    }
+  };
+
+  wrap_with_imports(vec![impls]).into()
+}
 
 #[proc_macro]
 pub fn define_proto_file(input: TokenStream) -> TokenStream {

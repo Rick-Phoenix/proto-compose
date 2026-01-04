@@ -175,8 +175,11 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     }
 
     impl ::prelude::ProtoValidator for #enum_name {
+      #[doc(hidden)]
       type Target = i32;
+      #[doc(hidden)]
       type Validator = ::prelude::EnumValidator<#enum_name>;
+      #[doc(hidden)]
       type Builder = ::prelude::EnumValidatorBuilder<#enum_name>;
     }
 

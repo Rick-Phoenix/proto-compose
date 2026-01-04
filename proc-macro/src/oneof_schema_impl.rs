@@ -55,7 +55,9 @@ impl<'a, T: Borrow<FieldData>> OneofCtx<'a, T> {
 
     quote! {
       impl ::prelude::ProtoOneof for #enum_ident {
+        #[doc(hidden)]
         const NAME: &str = #proto_name;
+        #[doc(hidden)]
         const TAGS: &[i32] = &[ #(#tags),* ];
 
         fn proto_schema() -> ::prelude::Oneof {
