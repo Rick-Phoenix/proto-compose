@@ -83,7 +83,7 @@ impl<T> TryIntoCel for T {}
 
 impl<T, S: State> ValidatorBuilderFor<T> for MessageValidatorBuilder<T, S>
 where
-  T: ProtoMessage + ValidatedMessage + PartialEq + Clone + Default + TryIntoCel,
+  T: ValidatedMessage + PartialEq + Clone + Default + TryIntoCel,
 {
   type Target = T;
   type Validator = MessageValidator<T>;
@@ -97,7 +97,7 @@ where
 
 impl<T> Validator<T> for MessageValidator<T>
 where
-  T: ProtoMessage + ValidatedMessage + PartialEq + Clone + Default + TryIntoCel,
+  T: ValidatedMessage + PartialEq + Clone + Default + TryIntoCel,
 {
   type Target = T;
   type UniqueStore<'a>
@@ -159,7 +159,7 @@ where
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct MessageValidator<T: ProtoMessage + ValidatedMessage> {
+pub struct MessageValidator<T: ValidatedMessage> {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   pub cel: Vec<CelProgram>,
 
@@ -171,7 +171,7 @@ pub struct MessageValidator<T: ProtoMessage + ValidatedMessage> {
   pub required: bool,
 }
 
-impl<T: ProtoMessage + ValidatedMessage> From<MessageValidator<T>> for ProtoOption {
+impl<T: ValidatedMessage> From<MessageValidator<T>> for ProtoOption {
   fn from(validator: MessageValidator<T>) -> Self {
     let mut rules: OptionValueList = Vec::new();
 
