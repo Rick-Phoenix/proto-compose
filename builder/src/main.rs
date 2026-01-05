@@ -7,6 +7,22 @@ use prelude::{
 };
 
 #[proto_message(no_auto_test)]
+struct FieldMaskRules {
+  #[proto(field_mask, validate = |v| v.const_(["tom_bombadil"]))]
+  pub const_test: Option<FieldMask>,
+  #[proto(field_mask, validate = |v| v.in_(["tom_bombadil"]))]
+  pub in_test: Option<FieldMask>,
+  #[proto(field_mask, validate = |v| v.not_in(["tom_bombadil"]))]
+  pub not_in_test: Option<FieldMask>,
+  #[proto(field_mask, validate = |v| v.cel(cel_program!(id = "cel_rule", msg = "abc", expr = "this.paths[0] == 'tom_bombadil'")))]
+  pub cel_test: Option<FieldMask>,
+  #[proto(field_mask, validate = |v| v.required())]
+  pub required_test: Option<FieldMask>,
+  #[proto(field_mask, validate = |v| v.not_in(["tom_bombadil"]).ignore_always())]
+  pub ignore_always_test: Option<FieldMask>,
+}
+
+#[proto_message(no_auto_test)]
 struct AnyRules {
   #[proto(any, validate = |v| v.in_(["/type_url"]))]
   pub in_test: Option<Any>,

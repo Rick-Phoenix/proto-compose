@@ -26,6 +26,8 @@ mod timestamp_rules;
 pub use timestamp_rules::*;
 mod any_rules;
 pub use any_rules::*;
+mod field_mask_rules;
+pub use field_mask_rules::*;
 
 pub struct RulesCtx {
   pub ignore: IgnoreWrapper,
@@ -202,12 +204,10 @@ pub fn reflection_derive(item: &mut ItemStruct) -> Result<TokenStream2, Error> {
               RulesType::Duration(rules) => get_duration_validator(rules, &rules_ctx),
               RulesType::Timestamp(rules) => get_timestamp_validator(rules, &rules_ctx),
               RulesType::Any(rules) => get_any_validator(rules, &rules_ctx),
+              RulesType::FieldMask(rules) => get_field_mask_validator(rules, &rules_ctx),
               RulesType::Enum(rules) => todo!(),
               RulesType::Repeated(rules) => todo!(),
               RulesType::Map(rules) => todo!(),
-              RulesType::FieldMask(rules) => {
-                todo!()
-              }
             };
 
             ValidatorTokens {

@@ -36,6 +36,12 @@ impl<S: State> ValidatorBuilderFor<FieldMask> for FieldMaskValidatorBuilder<S> {
   }
 }
 
+impl ProtoValidator for FieldMask {
+  type Target = Self;
+  type Validator = FieldMaskValidator;
+  type Builder = FieldMaskValidatorBuilder;
+}
+
 impl Validator<FieldMask> for FieldMaskValidator {
   type Target = FieldMask;
   type UniqueStore<'a>

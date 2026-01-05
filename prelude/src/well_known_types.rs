@@ -45,7 +45,7 @@ impl AsProtoType for () {
 impl AsProtoType for FieldMask {
   fn proto_type() -> ProtoType {
     ProtoType::Message(ProtoPath {
-      name: "Duration",
+      name: "FieldMask",
       package: "google.protobuf",
       file: "google/protobuf/field_mask.proto",
     })

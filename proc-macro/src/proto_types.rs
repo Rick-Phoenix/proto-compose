@@ -160,8 +160,7 @@ impl ProtoType {
       Self::String => quote! { String },
       Self::Bool => quote! { bool },
       Self::Bytes => quote! { ::bytes::Bytes },
-      Self::Enum(path) => quote! { #path },
-      Self::Message(MessageInfo { path, .. }) => quote! { #path },
+      Self::Enum(path) | Self::Message(MessageInfo { path, .. }) => quote! { #path },
       Self::Int32 => quote! { i32 },
       Self::Sint32 => quote! { prelude::Sint32 },
       Self::Duration => quote! { ::prelude::proto_types::Duration },
@@ -231,8 +230,7 @@ impl ProtoType {
       Self::String => quote! { String },
       Self::Bool => quote! { bool },
       Self::Bytes => quote! { ::bytes::Bytes },
-      Self::Enum(path) => quote! { #path },
-      Self::Message(MessageInfo { path, .. }) => quote! { #path },
+      Self::Enum(path) | Self::Message(MessageInfo { path, .. }) => quote! { #path },
       Self::Int32 => quote! { i32 },
       Self::Sint32 => quote! { ::prelude::Sint32 },
       Self::Duration => quote! { ::prelude::proto_types::Duration },
@@ -286,7 +284,7 @@ impl ProtoType {
       Self::Enum(path) => {
         let path_as_str = path.to_token_stream().to_string();
 
-        format!("enumeration({})", path_as_str).into()
+        format!("enumeration({path_as_str})").into()
       }
       Self::Int32 => "int32".into(),
       Self::Sint32 => "sint32".into(),
@@ -309,7 +307,7 @@ impl ProtoType {
       Self::String => quote! { String },
       Self::Bool => quote! { bool },
       Self::Bytes => quote! { Bytes },
-      Self::Enum(_) => quote! { i32 },
+      Self::Enum(_) | Self::Int32 | Self::Sint32 | Self::Sfixed32 => quote! { i32 },
       Self::Message(MessageInfo { boxed, path }) => {
         if *boxed {
           quote! { Box<#path> }
@@ -317,22 +315,15 @@ impl ProtoType {
           path.to_token_stream()
         }
       }
-      Self::Int32 => quote! { i32 },
-      Self::Sint32 => quote! { i32 },
       Self::Duration => quote! { ::prelude::proto_types::Duration },
       Self::Timestamp => quote! { ::prelude::proto_types::Timestamp },
       Self::Any => quote! { ::prelude::proto_types::Any },
       Self::FieldMask => quote! { ::prelude::proto_types::FieldMask },
-      Self::Uint32 => quote! { u32 },
+      Self::Uint32 | Self::Fixed32 => quote! { u32 },
       Self::Float => quote! { f32 },
       Self::Double => quote! { f64 },
-      Self::Int64 => quote! { i64  },
-      Self::Uint64 => quote! { u64 },
-      Self::Sint64 => quote! { i64  },
-      Self::Fixed32 => quote! { u32 },
-      Self::Fixed64 => quote! { u64 },
-      Self::Sfixed32 => quote! { i32 },
-      Self::Sfixed64 => quote! { i64 },
+      Self::Int64 | Self::Sint64 | Self::Sfixed64 => quote! { i64  },
+      Self::Uint64 | Self::Fixed64 => quote! { u64 },
     }
   }
 

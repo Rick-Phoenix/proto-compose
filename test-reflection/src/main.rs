@@ -41,6 +41,7 @@ mod test {
   mod bool_tests;
   mod bytes_tests;
   mod duration_tests;
+  mod field_mask_tests;
   mod numeric_tests;
   mod string_tests;
   mod timestamp_tests;
