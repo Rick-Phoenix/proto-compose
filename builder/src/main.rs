@@ -2,8 +2,33 @@
 
 use bytes::Bytes;
 use prelude::{
-  cel_program, define_proto_file, proto_message, proto_package, proto_types::Duration,
+  cel_program, define_proto_file, proto_message, proto_package,
+  proto_types::{Duration, Timestamp},
 };
+
+#[proto_message(no_auto_test)]
+struct TimestampRules {
+  #[proto(timestamp, validate = |v| v.const_(Timestamp::default()))]
+  pub const_test: Option<Timestamp>,
+  #[proto(timestamp, validate = |v| v.lt(Timestamp::default()))]
+  pub lt_test: Option<Timestamp>,
+  #[proto(timestamp, validate = |v| v.lte(Timestamp::default()))]
+  pub lte_test: Option<Timestamp>,
+  #[proto(timestamp, validate = |v| v.gt(Timestamp::default()))]
+  pub gt_test: Option<Timestamp>,
+  #[proto(timestamp, validate = |v| v.gte(Timestamp::default()))]
+  pub gte_test: Option<Timestamp>,
+  #[proto(timestamp, validate = |v| v.within(Duration { seconds: 10, nanos: 0 }))]
+  pub within_test: Option<Timestamp>,
+  #[proto(timestamp, validate = |v| v.lt_now())]
+  pub lt_now_test: Option<Timestamp>,
+  #[proto(timestamp, validate = |v| v.gt_now())]
+  pub gt_now_test: Option<Timestamp>,
+  #[proto(timestamp, validate = |v| v.required())]
+  pub required_test: Option<Timestamp>,
+  #[proto(timestamp, validate = |v| v.const_(Timestamp::default()).ignore_always())]
+  pub ignore_always_test: Option<Timestamp>,
+}
 
 #[proto_message(no_auto_test)]
 struct DurationRules {

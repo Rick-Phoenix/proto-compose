@@ -4,7 +4,7 @@ use ::proto_types::protovalidate::duration_rules::{GreaterThan, LessThan};
 
 use super::*;
 
-fn tokenize_duration(duration: Duration) -> TokenStream2 {
+pub(super) fn tokenize_duration(duration: Duration) -> TokenStream2 {
   let Duration { seconds, nanos } = duration;
 
   quote! { ::prelude::proto_types::Duration { seconds: #seconds, nanos: #nanos } }

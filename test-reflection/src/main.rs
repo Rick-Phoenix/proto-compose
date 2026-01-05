@@ -42,4 +42,5 @@ mod test {
   mod duration_tests;
   mod numeric_tests;
   mod string_tests;
+  mod timestamp_tests;
 }
