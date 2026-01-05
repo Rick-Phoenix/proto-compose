@@ -22,7 +22,11 @@ pub fn fallback_message_validator_impl(target_ident: &Ident) -> TokenStream2 {
   }
 }
 
-pub fn generate_validator2(target_ident: &Ident, fields: &[FieldData]) -> TokenStream2 {
+pub fn generate_message_validator(
+  target_ident: &Ident,
+  fields: &[FieldData],
+  top_level_cel_rules: &IterTokensOr<TokenStream2>,
+) -> TokenStream2 {
   let validators_tokens = fields.iter().filter_map(|data| {
     let FieldData {
       ident,
@@ -34,8 +38,6 @@ pub fn generate_validator2(target_ident: &Ident, fields: &[FieldData]) -> TokenS
       proto_field,
       ..
     } = data;
-
-    let ident_str = ident_str.strip_prefix("r#").unwrap_or(ident_str);
 
     if let ProtoField::Oneof(OneofInfo { required, .. }) = proto_field {
       Some(if *required {
@@ -106,17 +108,14 @@ pub fn generate_validator2(target_ident: &Ident, fields: &[FieldData]) -> TokenS
     }
   });
 
-  // let top_level_cel_rules = &self.message_attrs.cel_rules;
-
-  // let has_cel_rules = !top_level_cel_rules.is_empty();
-  let has_cel_rules = false;
+  let has_cel_rules = !top_level_cel_rules.is_empty();
 
   let cel_rules_method = has_cel_rules.then(|| {
       quote! {
         #[inline]
         fn cel_rules() -> &'static [CelProgram] {
           static PROGRAMS: std::sync::LazyLock<Vec<::prelude::CelProgram>> = std::sync::LazyLock::new(|| {
-            top_level_cel_rules
+            #top_level_cel_rules
           });
 
           &PROGRAMS

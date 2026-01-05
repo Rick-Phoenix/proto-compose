@@ -39,5 +39,6 @@ protocheck-proc-macro = { workspace = true }
 [features]
 default = ["regex", "cel"]
 
+reflection = ["proc-macro-impls/reflection"]
 cel = ["dep:cel", "protocheck-core/cel", "proto-types/cel"]
 regex = ["dep:regex", "protocheck-core/regex"]

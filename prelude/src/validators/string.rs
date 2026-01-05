@@ -63,7 +63,41 @@ pub struct StringValidator {
   pub const_: Option<Arc<str>>,
 }
 
+pub fn test_validator() -> StringValidatorBuilder {
+  StringValidator::builder()
+}
+
 impl StringValidator {
+  #[must_use]
+  pub fn from_descriptor(desc: StringRules) -> Self {
+    Self {
+      cel: vec![],
+      well_known: None,
+      ignore: Ignore::Unspecified,
+      required: false,
+      len: desc.len.map(|v| v as usize),
+      min_len: desc.min_len.map(|v| v as usize),
+      max_len: desc.max_len.map(|v| v as usize),
+      len_bytes: desc.len_bytes.map(|v| v as usize),
+      min_bytes: desc.min_bytes.map(|v| v as usize),
+      max_bytes: desc.max_bytes.map(|v| v as usize),
+      #[cfg(feature = "regex")]
+      pattern: desc.pattern.map(|p| Regex::new(&p).unwrap()),
+      prefix: desc.prefix.map(|s| s.into()),
+      suffix: desc.suffix.map(|s| s.into()),
+      contains: desc.contains.map(|s| s.into()),
+      not_contains: desc.not_contains.map(|s| s.into()),
+      in_: (!desc.r#in.is_empty()).then(|| {
+        StaticLookup::new(desc.r#in.into_iter().map(|s| {
+          let str: &'static str = Box::leak(s.into_boxed_str());
+          str
+        }))
+      }),
+      not_in: None,
+      const_: desc.r#const.map(|s| s.into()),
+    }
+  }
+
   #[inline]
   const fn has_pattern(&self) -> bool {
     #[cfg(feature = "regex")]

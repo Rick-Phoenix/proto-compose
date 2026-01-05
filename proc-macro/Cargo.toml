@@ -17,8 +17,10 @@ syn = { version = "2", features = ["extra-traits", "full"] }
 convert_case = "0.9"
 proto-types = { workspace = true }
 syn-utils = { path = "../../syn-utils/" }
+prost-reflect = { version = "0.16", optional = true }
 
 [features]
 default = ["cel"]
 
+reflection = ["dep:prost-reflect"]
 cel = []

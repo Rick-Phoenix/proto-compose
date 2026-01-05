@@ -23,10 +23,11 @@ use syn::{
 };
 use syn_utils::*;
 
+use crate::reflection::reflection_derive;
 use crate::{
   common_impls::*, enum_derive::*, extension_derive::*, impls::*, item_cloners::*,
   message_derive::*, message_schema_impl::*, oneof_derive::*, path_utils::*, proto_field::*,
-  proto_map::*, proto_types::*, service_derive::*, validators_only_derive::*,
+  proto_map::*, proto_types::*, service_derive::*,
 };
 
 mod attributes;
@@ -43,15 +44,16 @@ mod path_utils;
 mod proto_field;
 mod proto_map;
 mod proto_types;
+#[cfg(feature = "reflection")]
+mod reflection;
 mod service_derive;
-mod validators_only_derive;
 
 #[proc_macro_derive(ValidatedMessage, attributes(proto))]
-pub fn validator_only_derive(input: TokenStream) -> TokenStream {
-  let item = parse_macro_input!(input as ItemStruct);
+pub fn validated_message_derive(input: TokenStream) -> TokenStream {
+  let mut item = parse_macro_input!(input as ItemStruct);
 
-  let impls = match process_validators_only_derive(&item) {
-    Ok(impls) => impls.into(),
+  let validator_impl = match reflection::reflection_derive(&mut item) {
+    Ok(imp) => imp,
     Err(e) => {
       let err = e.into_compile_error();
       let fallback_impl = fallback_message_validator_impl(&item.ident);
@@ -60,11 +62,10 @@ pub fn validator_only_derive(input: TokenStream) -> TokenStream {
         #fallback_impl
         #err
       }
-      .into()
     }
   };
 
-  wrap_with_imports(vec![impls]).into()
+  validator_impl.into()
 }
 
 #[proc_macro]

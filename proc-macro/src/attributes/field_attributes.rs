@@ -48,7 +48,7 @@ impl FieldDataKind {
 }
 
 pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error> {
-  let mut validator: Option<CallOrClosure> = None;
+  let mut validator: Option<ClosureOrExpr> = None;
   let mut tag: Option<i32> = None;
   let mut options = TokensOr::<TokenStream2>::new(|| quote! { vec![] });
   let mut name: Option<String> = None;
@@ -73,7 +73,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
         name = Some(meta.expr_value()?.as_string()?);
       }
       "validate" => {
-        validator = Some(meta.expr_value()?.as_call_or_closure()?);
+        validator = Some(meta.expr_value()?.as_closure_or_expr());
       }
       "from_proto" => {
         from_proto = Some(meta.expr_value()?.as_path_or_closure()?);
@@ -153,9 +153,9 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
       let validator_target_type = proto_field.validator_target_type();
 
       match validator {
-        CallOrClosure::Call(call) => quote! { #call.build_validator() },
+        ClosureOrExpr::Expr(call) => quote! { #call.build_validator() },
 
-        CallOrClosure::Closure(closure) => {
+        ClosureOrExpr::Closure(closure) => {
           quote! { <#validator_target_type as ::prelude::ProtoValidator>::validator_from_closure(#closure) }
         }
       }
