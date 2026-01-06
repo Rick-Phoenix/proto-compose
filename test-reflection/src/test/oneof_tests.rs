@@ -46,6 +46,13 @@ fn oneof_tests() {
 
   msg.test_oneof = Some(TestOneof::DefaultValidatorMsg(DefaultValidatorTest {
     id: 1,
+    test_oneof2: None,
+    ..Default::default()
+  }));
+  assert_violation!("oneof.required", "required oneof");
+
+  msg.test_oneof = Some(TestOneof::DefaultValidatorMsg(DefaultValidatorTest {
+    id: 1,
     test_oneof2: Some(TestOneof2::Number(2)),
     ..Default::default()
   }));

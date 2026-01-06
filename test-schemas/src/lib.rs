@@ -34,7 +34,7 @@ pub struct DefaultValidatorTest2 {
 #[proto(cel_rules(cel_program!(id = "id_is_1", msg = "abc", expr = "this.id == 1")))]
 pub struct DefaultValidatorTest {
   pub id: i32,
-  #[proto(oneof(tags(1, 2)))]
+  #[proto(oneof(required, tags(1, 2)))]
   pub test_oneof2: Option<TestOneof2>,
   #[proto(repeated(message))]
   pub repeated_test: Vec<DefaultValidatorTest>,
