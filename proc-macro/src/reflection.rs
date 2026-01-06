@@ -294,6 +294,8 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
     }
   }
 
+  let mut cel_rules = IterTokensOr::<TokenStream2>::vec();
+
   // Message Rules
   if let ProstValue::Message(message_rules_msg) = message_desc
     .options()
@@ -301,16 +303,21 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
     .as_ref()
   {
     let message_rules = MessageRules::decode(message_rules_msg.encode_to_vec().as_slice())
-      .map_err(|e| error!(item, "Could not decode message rules: {e}"))?;
+      .expect("Could not decode message rules");
 
-    if !message_rules.cel.is_empty() {}
+    for rule in message_rules.cel {
+      let Rule {
+        id,
+        message,
+        expression,
+      } = rule;
+
+      cel_rules
+        .push(quote! { ::prelude::cel_program!(id = #id, msg = #message, expr = #expression) });
+    }
   }
 
-  let validator_impl = generate_message_validator(
-    &item.ident,
-    &fields_data,
-    &IterTokensOr::<TokenStream2>::vec(),
-  );
+  let validator_impl = generate_message_validator(&item.ident, &fields_data, &cel_rules);
 
   Ok(wrap_with_imports(vec![validator_impl]))
 }

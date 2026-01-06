@@ -88,6 +88,21 @@ pub struct Message {
   pub rust_path: String,
 }
 
+impl Message {
+  pub(crate) fn options_with_cel_rules(&self) -> Vec<ProtoOption> {
+    self
+      .options
+      .clone()
+      .into_iter()
+      .chain(self.cel_rules.clone().into_iter().map(|r| {
+        let mut opt: ProtoOption = r.into();
+        opt.name = "(buf.validate.message).cel".into();
+        opt
+      }))
+      .collect()
+  }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum MessageEntry {
   Field(ProtoField),

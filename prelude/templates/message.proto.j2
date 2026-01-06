@@ -9,7 +9,7 @@ message {{+ self.short_name +}} {
   {{+ numbers ~}}
 {%~ endif %}
 
-  {%~ for option in self.options +%}
+  {%~ for option in self.options_with_cel_rules() +%}
   option {{+ option.name +}} = {{+ option.value | indent(2) }};
   {% endfor +%}
 

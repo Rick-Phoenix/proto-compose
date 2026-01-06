@@ -7,9 +7,10 @@ fn main() {
   println!("Hello, world!");
 }
 
-#[allow(clippy::clone_on_copy)]
+#[allow(clippy::clone_on_copy, unused_assignments, clippy::redundant_clone)]
 #[cfg(test)]
 mod test {
+  use maplit::hashmap;
   use prelude::ValidatedMessage;
 
   #[cfg(feature = "reflection")]
@@ -68,6 +69,7 @@ mod test {
   mod enums_tests;
   mod field_mask_tests;
   mod map_tests;
+  mod message_tests;
   mod numeric_tests;
   mod oneof_tests;
   mod repeated_tests;

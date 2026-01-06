@@ -15,16 +15,45 @@ define_proto_file!(
 );
 
 #[proto_oneof(no_auto_test)]
+pub enum TestOneof2 {
+  #[proto(tag = 1)]
+  String(String),
+  #[proto(tag = 2, validate = |v| v.const_(1))]
+  Number(i32),
+}
+
+#[proto_message(no_auto_test)]
+pub struct DefaultValidatorTest2 {
+  #[proto(message)]
+  pub msg_with_default_validator: Option<DefaultValidatorTest>,
+}
+
+#[allow(clippy::use_self)]
+#[proto_message(no_auto_test)]
+#[proto(cel_rules(cel_program!(id = "id_is_1", msg = "abc", expr = "this.id == 1")))]
+pub struct DefaultValidatorTest {
+  pub id: i32,
+  #[proto(oneof(tags(1, 2)))]
+  pub test_oneof2: Option<TestOneof2>,
+  #[proto(repeated(message))]
+  pub repeated_test: Vec<DefaultValidatorTest>,
+  #[proto(map(int32, message))]
+  pub map_test: HashMap<i32, DefaultValidatorTest>,
+}
+
+#[proto_oneof(no_auto_test)]
 pub enum TestOneof {
   #[proto(tag = 1, validate = |v| v.cel(cel_program!(id = "string_cel_rule", msg = "abc", expr = "this != 'b'")))]
   String(String),
   #[proto(tag = 2, message(boxed), validate = |v| v.cel(cel_program!(id = "recursive_cel_rule", msg = "abc", expr = "this.string != 'c'")))]
   BoxedMsg(Box<OneofTests>),
+  #[proto(tag = 3, message)]
+  DefaultValidatorMsg(DefaultValidatorTest),
 }
 
 #[proto_message(no_auto_test)]
 pub struct OneofTests {
-  #[proto(oneof(tags(1, 2)))]
+  #[proto(oneof(tags(1, 2, 3)))]
   pub test_oneof: Option<TestOneof>,
 }
 

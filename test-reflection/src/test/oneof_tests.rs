@@ -1,4 +1,9 @@
 #[cfg(feature = "reflection")]
+use crate::proto::default_validator_test::TestOneof2;
+#[cfg(not(feature = "reflection"))]
+use test_schemas::TestOneof2;
+
+#[cfg(feature = "reflection")]
 use crate::proto::oneof_tests::TestOneof;
 
 #[cfg(not(feature = "reflection"))]
@@ -31,6 +36,28 @@ fn oneof_tests() {
     test_oneof: Some(TestOneof::String("c".to_string())),
   })));
   assert_violation!("recursive_cel_rule", "recursive oneof cel rule");
+
+  msg.test_oneof = Some(TestOneof::DefaultValidatorMsg(DefaultValidatorTest {
+    id: 2,
+    test_oneof2: Some(TestOneof2::Number(1)),
+    ..Default::default()
+  }));
+  assert_violation!("id_is_1", "default message validation");
+
+  msg.test_oneof = Some(TestOneof::DefaultValidatorMsg(DefaultValidatorTest {
+    id: 1,
+    test_oneof2: Some(TestOneof2::Number(2)),
+    ..Default::default()
+  }));
+  assert_violation!("int32.const", "default message validation");
+
+  msg.test_oneof = Some(TestOneof::DefaultValidatorMsg(DefaultValidatorTest {
+    id: 1,
+    test_oneof2: Some(TestOneof2::Number(1)),
+    ..Default::default()
+  }));
+  assert!(msg.validate().is_ok(), "default message validation");
+  msg = baseline.clone();
 
   msg.test_oneof = Some(TestOneof::BoxedMsg(Box::new(msg.clone())));
   assert!(msg.validate().is_ok(), "recursive oneof validation");
