@@ -377,6 +377,7 @@ where
 
     let mut outer_rules: OptionValueList = vec![];
 
+    insert_cel_rules!(validator, outer_rules);
     outer_rules.push((MAP.clone(), OptionValue::Message(rules.into())));
 
     if !validator.ignore.is_default() {
