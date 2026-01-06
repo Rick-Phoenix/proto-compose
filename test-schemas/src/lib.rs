@@ -15,7 +15,21 @@ define_proto_file!(
 );
 
 #[proto_message(no_auto_test)]
-pub struct RepeatedItemsTests {
+pub struct MapTests {
+  #[proto(map(int32, int32), validate = |v| v.min_pairs(1))]
+  pub min_pairs_test: HashMap<i32, i32>,
+  #[proto(map(int32, int32), validate = |v| v.max_pairs(1))]
+  pub max_pairs_test: HashMap<i32, i32>,
+  #[proto(map(int32, int32), validate = |v| v.keys(|k| k.gte(2).cel(cel_program!(id = "key_rule", msg = "abc", expr = "this <= 15"))))]
+  pub keys_test: HashMap<i32, i32>,
+  #[proto(map(int32, int32), validate = |v| v.values(|vals| vals.gte(2).cel(cel_program!(id = "value_rule", msg = "abc", expr = "this <= 15"))))]
+  pub values_test: HashMap<i32, i32>,
+  #[proto(map(int32, int32), validate = |v| v.cel(cel_program!(id = "cel_rule", msg = "abc", expr = "1 in this && this[1] == 1")).ignore_if_zero_value())]
+  pub cel_test: HashMap<i32, i32>,
+}
+
+#[proto_message(no_auto_test)]
+pub struct RepeatedTests {
   #[proto(repeated(int32), validate = |v| v.items(|i| i.const_(15)))]
   pub items_test: Vec<i32>,
   #[proto(repeated(int32), validate = |v| v.items(|i| i.cel(cel_program!(id = "cel_rule", msg = "abc", expr = "this == 1"))))]

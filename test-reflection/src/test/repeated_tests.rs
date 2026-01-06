@@ -4,7 +4,7 @@ use super::*;
 
 #[test]
 fn repeated_tests() {
-  let mut msg = RepeatedItemsTests {
+  let mut msg = RepeatedTests {
     items_test: vec![15, 15],
     items_cel_test: vec![1],
     cel_test: vec![1],

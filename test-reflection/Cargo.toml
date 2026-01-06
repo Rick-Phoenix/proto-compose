@@ -14,6 +14,7 @@ prost = { workspace = true }
 paste = "1"
 bytes = { workspace = true }
 test-schemas = { path = "../test-schemas" }
+maplit = "1.0"
 
 [build-dependencies]
 prost-build = "0.14"

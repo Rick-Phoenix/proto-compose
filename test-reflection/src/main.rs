@@ -65,6 +65,7 @@ mod test {
   mod bytes_tests;
   mod duration_tests;
   mod field_mask_tests;
+  mod map_tests;
   mod numeric_tests;
   mod repeated_tests;
   mod string_tests;
