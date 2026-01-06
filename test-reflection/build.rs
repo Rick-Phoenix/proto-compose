@@ -67,6 +67,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
   }
 
+  for enum_desc in pool.all_enums() {
+    let full_ish_name = enum_desc
+      .full_name()
+      .strip_prefix(&format!("{}.", enum_desc.package_name()))
+      .unwrap_or(enum_desc.full_name());
+
+    config.enum_attribute(full_ish_name, "#[derive(::prelude::NamedEnum)]");
+    config.enum_attribute(
+      full_ish_name,
+      format!(r#"#[proto(name = "{full_ish_name}")]"#),
+    );
+  }
+
   config.compile_protos(files, proto_include_paths)?;
 
   println!(

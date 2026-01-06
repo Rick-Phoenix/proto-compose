@@ -1,5 +1,5 @@
 use super::*;
-use prelude::ProtoEnum;
+use prelude::ProtoEnumSchema;
 
 use_proto_file!(TESTING);
 

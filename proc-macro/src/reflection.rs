@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use crate::*;
 use ::proto_types::protovalidate::FieldRules;
 use ::proto_types::protovalidate::Ignore;
@@ -7,7 +5,6 @@ use ::proto_types::protovalidate::MessageRules;
 use ::proto_types::protovalidate::OneofRules;
 use ::proto_types::protovalidate::Rule;
 use ::proto_types::protovalidate::field_rules::Type as RulesType;
-use proc_macro2::TokenTree;
 use prost_reflect::prost::Message;
 use prost_reflect::{Value as ProstValue, *};
 mod pool_loader;
@@ -85,12 +82,6 @@ impl<'a> RulesCtx<'a> {
   }
 }
 
-enum FieldKind {
-  Enum(Path),
-  Message(Path),
-  Oneof(Path),
-}
-
 pub fn reflection_derive(item: &mut ItemStruct) -> Result<TokenStream2, Error> {
   let ItemStruct { fields, .. } = item;
 
@@ -125,10 +116,9 @@ pub fn reflection_derive(item: &mut ItemStruct) -> Result<TokenStream2, Error> {
     let ident = field.require_ident()?;
     let ident_str = ident.to_string();
 
-    let mut field_kind: Option<FieldKind> = None;
     let type_info = TypeInfo::from_type(&field.ty)?;
-    let mut proto_type: Option<ProtoType> = None;
     let mut proto_field: Option<ProtoField> = None;
+    let mut found_enum_path: Option<Path> = None;
 
     for attr in &field.attrs {
       if attr.path().is_ident("prost") {
@@ -138,36 +128,14 @@ pub fn reflection_derive(item: &mut ItemStruct) -> Result<TokenStream2, Error> {
           match ident_str.as_str() {
             "map" => {
               let val = meta.parse_value::<LitStr>()?.value();
-              let (key, value) = val
+              let (_, value) = val
                 .split_once(", ")
                 .ok_or_else(|| meta.error("Failed to parse map attribute"))?;
 
-              let key_type = ProtoMapKeys::from_str(key, meta.path.span())?;
-              let value_type = if let Some((_, wrapped_path)) = value.split_once("enumeration") {
+              if let Some((_, wrapped_path)) = value.split_once("enumeration") {
                 let str_path = &wrapped_path[1..wrapped_path.len() - 1];
-
-                ProtoType::Enum(syn::parse_str(str_path)?)
-              } else if value == "message" {
-                let msg_path = if let RustType::HashMap((_, rust_val)) = type_info.type_.as_ref()
-                  && let Some(path) = rust_val.as_path()
-                {
-                  path
-                } else {
-                  return Err(meta.error("Failed to infer map value type"));
-                };
-
-                ProtoType::Message(MessageInfo {
-                  path: msg_path,
-                  boxed: false,
-                })
-              } else {
-                ProtoType::from_ident(value, meta.path.span(), None)?
-              };
-
-              proto_field = Some(ProtoField::Map(ProtoMap {
-                keys: key_type,
-                values: value_type,
-              }))
+                found_enum_path = Some(syn::parse_str(str_path)?);
+              }
             }
             "oneof" => {
               let path_str = meta.parse_value::<LitStr>()?;
@@ -182,27 +150,7 @@ pub fn reflection_derive(item: &mut ItemStruct) -> Result<TokenStream2, Error> {
             "enumeration" => {
               let path_str = meta.parse_value::<LitStr>()?;
 
-              proto_type = Some(ProtoType::Enum(path_str.parse()?));
-            }
-            "message" => {
-              match type_info.type_.as_ref() {
-                RustType::Option(inner) => {
-                  let mut is_boxed = false;
-                  let path = if inner.is_box() {
-                    is_boxed = true;
-                    inner.inner().as_path()
-                  } else {
-                    inner.as_path()
-                  }
-                  .ok_or_else(|| meta.error("Failed to infer the message path"))?;
-
-                  proto_type = Some(ProtoType::Message(MessageInfo {
-                    path,
-                    boxed: is_boxed,
-                  }))
-                }
-                _ => return Err(meta.error("Failed to infer the message path")),
-              };
+              found_enum_path = Some(path_str.parse()?);
             }
             _ => drain_token_stream!(meta.input),
           };
@@ -235,18 +183,7 @@ pub fn reflection_derive(item: &mut ItemStruct) -> Result<TokenStream2, Error> {
         .get_field_by_name(proto_name)
         .ok_or_else(|| error!(field, "Field `{proto_name}` not found in the descriptor"))?;
 
-      let proto_type =
-        proto_type.unwrap_or_else(|| ProtoType::from_descriptor(field_desc.kind(), &type_info));
-
-      let proto_field = proto_field.unwrap_or_else(|| {
-        if field_desc.is_list() {
-          ProtoField::Repeated(proto_type)
-        } else if field_desc.supports_presence() {
-          ProtoField::Optional(proto_type)
-        } else {
-          ProtoField::Single(proto_type)
-        }
-      });
+      let proto_field = ProtoField::from_descriptor(&field_desc, &type_info, found_enum_path)?;
 
       let validator = if let ProstValue::Message(field_rules_msg) = field_desc
         .options()
@@ -344,28 +281,63 @@ impl ProtoMapKeys {
 }
 
 impl ProtoField {
-  pub fn from_descriptor(desc: &FieldDescriptor, type_info: &TypeInfo) -> Self {
-    if desc.is_list() {
-      Self::Repeated(ProtoType::from_descriptor(desc.kind(), type_info))
+  pub fn from_descriptor(
+    desc: &FieldDescriptor,
+    type_info: &TypeInfo,
+    found_enum_path: Option<Path>,
+  ) -> syn::Result<Self> {
+    let output = if desc.is_list() {
+      let RustType::Vec(inner) = type_info.type_.as_ref() else {
+        bail!(type_info, "Found repeated descriptor on a non Vec field");
+      };
+
+      Self::Repeated(ProtoType::from_descriptor(
+        desc.kind(),
+        inner,
+        found_enum_path,
+      )?)
     } else if desc.is_map()
       && let Kind::Message(map_desc) = desc.kind()
     {
       let keys = ProtoMapKeys::from_descriptor(map_desc.map_entry_key_field().kind());
-      let values = ProtoType::from_descriptor(map_desc.map_entry_value_field().kind(), type_info);
+
+      let RustType::HashMap((_, rust_values)) = type_info.type_.as_ref() else {
+        bail!(type_info, "Found map descriptor on a non HashMap field");
+      };
+
+      let values = ProtoType::from_descriptor(
+        map_desc.map_entry_value_field().kind(),
+        rust_values,
+        found_enum_path,
+      )?;
 
       Self::Map(ProtoMap { keys, values })
     } else if desc.supports_presence() {
-      Self::Optional(ProtoType::from_descriptor(desc.kind(), type_info))
+      Self::Optional(ProtoType::from_descriptor(
+        desc.kind(),
+        type_info.inner(),
+        found_enum_path,
+      )?)
     } else {
-      Self::Single(ProtoType::from_descriptor(desc.kind(), type_info))
-    }
+      Self::Single(ProtoType::from_descriptor(
+        desc.kind(),
+        type_info,
+        found_enum_path,
+      )?)
+    };
+
+    Ok(output)
   }
 }
 
 impl ProtoType {
   #[allow(clippy::needless_pass_by_value)]
-  pub fn from_descriptor(kind: Kind, type_info: &TypeInfo) -> Self {
-    match kind {
+  pub fn from_descriptor(
+    kind: Kind,
+    type_info: &TypeInfo,
+    found_enum_path: Option<Path>,
+  ) -> syn::Result<Self> {
+    let output = match kind {
       Kind::Double => Self::Double,
       Kind::Float => Self::Float,
       Kind::Int32 => Self::Int32,
@@ -386,12 +358,28 @@ impl ProtoType {
         "google.protobuf.Timestamp" => Self::Timestamp,
         "google.protobuf.Any" => Self::Any,
         "google.protobuf.FieldMask" => Self::FieldMask,
-        _ => Self::Message(MessageInfo {
-          path: type_info.inner().as_path().unwrap(),
-          boxed: type_info.is_box(),
-        }),
+        _ => {
+          let mut boxed = false;
+          let inner = if type_info.is_box() {
+            boxed = true;
+            type_info.inner()
+          } else {
+            type_info
+          };
+
+          Self::Message(MessageInfo {
+            path: inner
+              .as_path()
+              .ok_or_else(|| error!(type_info, "Failed to infer message path"))?,
+            boxed,
+          })
+        }
       },
-      Kind::Enum(_) => Self::Enum(type_info.inner().as_path().unwrap()),
-    }
+      Kind::Enum(_) => {
+        Self::Enum(found_enum_path.ok_or_else(|| error!(type_info, "Failed to infer enum path"))?)
+      }
+    };
+
+    Ok(output)
   }
 }
