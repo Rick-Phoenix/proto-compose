@@ -53,11 +53,12 @@ macro_rules! impl_testing_methods {
 #[macro_export]
 macro_rules! cel_program {
   (id = $id:expr, msg = $msg:expr, expr = $expr:expr) => {
-    ::prelude::CelProgram::new($crate::CelRule {
+    $crate::CelRule {
       id: $id.into(),
       message: $msg.into(),
       expression: $expr.into(),
-    })
+    }
+    .into()
   };
 
   ($rule:expr) => {
