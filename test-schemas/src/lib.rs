@@ -16,6 +16,29 @@ define_proto_file!(
 );
 
 #[proto_message(no_auto_test)]
+pub struct ParentMessage {
+  #[proto(message)]
+  pub nested_message: Option<NestedMessage>,
+  #[proto(enum_(NestedEnum))]
+  pub nested_enum: i32,
+}
+
+#[proto_enum]
+#[proto(parent_message = NestedMessage)]
+pub enum NestedEnum {
+  A,
+  B,
+  C,
+}
+
+#[proto_message(no_auto_test)]
+#[proto(parent_message = ParentMessage)]
+pub struct NestedMessage {
+  #[proto(enum_(NestedEnum))]
+  pub nested_enum: i32,
+}
+
+#[proto_message(no_auto_test)]
 pub struct TolerancesTests {
   #[proto(validate = |v| v.const_(12.0).abs_tolerance(0.0001))]
   pub float_tolerance: f64,

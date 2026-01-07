@@ -1,16 +1,23 @@
 use crate::*;
 
+// This cannot be reused from the proc macro because that one gets
+// the parent message name with a method, this one gets it from an attribute
+// therefore we cannot pass it from the proc macro to this one,
+// only via reflection
 pub fn named_enum_derive(item: &ItemEnum) -> syn::Result<TokenStream2> {
   let mut name: Option<String> = None;
 
   for attr in &item.attrs {
     if attr.path().is_ident("proto") {
       attr.parse_nested_meta(|meta| {
-        if meta.path.is_ident("name") {
-          name = Some(meta.parse_value::<LitStr>()?.value());
-        } else {
-          return Err(meta.error("Unknown attribute"));
-        }
+        let ident_str = meta.ident_str()?;
+
+        match ident_str.as_str() {
+          "name" => {
+            name = Some(meta.parse_value::<LitStr>()?.value());
+          }
+          _ => return Err(meta.error("Unknown attribute")),
+        };
 
         Ok(())
       })?;

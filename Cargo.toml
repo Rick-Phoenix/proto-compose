@@ -6,6 +6,7 @@ members = [
   "test-reflection",
   "test-server",
   "testing",
+  "builder",
 ]
 resolver = "3"
 
@@ -45,6 +46,8 @@ constcat = "0.6"
 float_eq = "1.0"
 ordered-float = "5"
 bytes = "1"
+prost-build = "0.14"
+prost-reflect = "0.16"
 
 [workspace.lints.clippy]
 redundant_closure = "allow"

@@ -17,8 +17,8 @@ test-schemas = { path = "../test-schemas" }
 maplit = "1.0"
 
 [build-dependencies]
-prost-build = "0.14"
-prost-reflect = "0.16"
+prost-build = { workspace = true }
+builder = { path = "../builder" }
 
 [lints]
 workspace = true

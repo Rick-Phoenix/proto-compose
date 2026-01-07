@@ -116,7 +116,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   let proto_name_method = if let Some(parent) = &parent_message {
     quote! {
       static __FULL_NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
-        format!("{}.{}", #parent::proto_name(), #proto_name).into()
+        format!("{}.{}", <#parent as ::prelude::ProtoMessage>::proto_name(), #proto_name).into()
       });
 
       &*__FULL_NAME
@@ -126,7 +126,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   };
 
   let parent_message_registry = if let Some(parent) = &parent_message {
-    quote! { Some(|| #parent::proto_name()) }
+    quote! { Some(|| <#parent as ::prelude::ProtoMessage>::proto_name()) }
   } else {
     quote! { None }
   };

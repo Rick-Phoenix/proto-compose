@@ -24,8 +24,8 @@ use syn_utils::*;
 
 use crate::{
   common_impls::*, enum_proc_macro::*, extension_derive::*, impls::*, item_cloners::*,
-  message_derive::*, message_schema_impl::*, oneof_proc_macro::*, path_utils::*, proto_field::*,
-  proto_map::*, proto_types::*, service_derive::*,
+  message_proc_macro::*, message_schema_impl::*, oneof_proc_macro::*, path_utils::*,
+  proto_field::*, proto_map::*, proto_types::*, service_derive::*,
 };
 
 mod attributes;
@@ -38,7 +38,7 @@ mod enum_proc_macro;
 mod extension_derive;
 mod impls;
 mod item_cloners;
-mod message_derive;
+mod message_proc_macro;
 mod message_schema_impl;
 mod oneof_proc_macro;
 mod oneof_schema_impl;
@@ -101,8 +101,8 @@ pub fn validated_oneof_derive(input: TokenStream) -> TokenStream {
 }
 
 #[cfg(feature = "reflection")]
-#[proc_macro_derive(NamedEnum, attributes(proto))]
-pub fn named_enum_derive(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(ProtoEnum, attributes(proto))]
+pub fn enum_derive(input: TokenStream) -> TokenStream {
   let item = parse_macro_input!(input as ItemEnum);
 
   let impl_tokens = match enum_derive::named_enum_derive(&item) {
@@ -177,9 +177,10 @@ pub fn proto_package(input: TokenStream) -> TokenStream {
 pub fn proto_message(args: TokenStream, input: TokenStream) -> TokenStream {
   let item = parse_macro_input!(input as ItemStruct);
 
-  process_message_derive(item, args.into()).into()
+  message_proc_macro(item, args.into()).into()
 }
 
+#[doc(hidden)]
 #[proc_macro_derive(Message, attributes(proto))]
 pub fn message_derive(_input: TokenStream) -> TokenStream {
   TokenStream::new()
@@ -203,6 +204,7 @@ pub fn proto_extension(args: TokenStream, input: TokenStream) -> TokenStream {
   .into()
 }
 
+#[doc(hidden)]
 #[proc_macro_derive(Extension, attributes(proto))]
 pub fn extension_derive(_input: TokenStream) -> TokenStream {
   TokenStream::new()
@@ -220,6 +222,7 @@ pub fn proto_service(_args: TokenStream, input: TokenStream) -> TokenStream {
   output.into()
 }
 
+#[doc(hidden)]
 #[proc_macro_derive(Service, attributes(proto))]
 pub fn service_derive(_input: TokenStream) -> TokenStream {
   TokenStream::new()
@@ -232,8 +235,9 @@ pub fn proto_enum(_args: TokenStream, input: TokenStream) -> TokenStream {
   enum_proc_macro(item).into()
 }
 
+#[doc(hidden)]
 #[proc_macro_derive(Enum, attributes(proto))]
-pub fn enum_derive(_input: TokenStream) -> TokenStream {
+pub fn enum_empty_derive(_input: TokenStream) -> TokenStream {
   TokenStream::new()
 }
 
@@ -244,6 +248,7 @@ pub fn proto_oneof(args: TokenStream, input: TokenStream) -> TokenStream {
   process_oneof_proc_macro(item, args.into()).into()
 }
 
+#[doc(hidden)]
 #[proc_macro_derive(Oneof, attributes(proto))]
 pub fn oneof_derive(_input: TokenStream) -> TokenStream {
   TokenStream::new()

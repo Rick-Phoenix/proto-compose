@@ -286,6 +286,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "builder"
+version = "0.1.0"
+dependencies = [
+ "prost-build",
+ "prost-reflect",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1513,13 +1521,13 @@ dependencies = [
 name = "test-reflection"
 version = "0.1.0"
 dependencies = [
+ "builder",
  "bytes",
  "maplit",
  "paste",
  "prelude",
  "prost",
  "prost-build",
- "prost-reflect",
  "proto-types",
  "test-schemas",
 ]

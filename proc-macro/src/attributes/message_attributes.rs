@@ -17,7 +17,7 @@ pub struct MessageAttrs {
   pub extern_path: Option<String>,
 }
 
-pub fn process_derive_message_attrs(
+pub fn process_message_attrs(
   struct_ident: &Ident,
   macro_args: TokenStream2,
   attrs: &[Attribute],

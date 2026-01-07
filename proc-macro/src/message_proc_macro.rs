@@ -15,8 +15,8 @@ impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
   }
 }
 
-pub fn process_message_derive(mut item: ItemStruct, macro_attrs: TokenStream2) -> TokenStream2 {
-  let message_attrs = match process_derive_message_attrs(&item.ident, macro_attrs, &item.attrs) {
+pub fn message_proc_macro(mut item: ItemStruct, macro_attrs: TokenStream2) -> TokenStream2 {
+  let message_attrs = match process_message_attrs(&item.ident, macro_attrs, &item.attrs) {
     Ok(attrs) => attrs,
     Err(e) => {
       let err = e.into_compile_error();
@@ -41,7 +41,7 @@ pub fn process_message_derive(mut item: ItemStruct, macro_attrs: TokenStream2) -
   if message_attrs.is_proxied {
     let mut shadow_struct = create_shadow_struct(&item);
 
-    let impls = match process_message_derive_shadow(&mut item, &mut shadow_struct, &message_attrs) {
+    let impls = match message_macro_shadow(&mut item, &mut shadow_struct, &message_attrs) {
       Ok(impls) => impls,
       Err(e) => {
         proto_derives = TokenStream2::new();
@@ -73,7 +73,7 @@ pub fn process_message_derive(mut item: ItemStruct, macro_attrs: TokenStream2) -
       #impls
     }
   } else {
-    let impls = match process_message_derive_direct(&mut item, &message_attrs) {
+    let impls = match message_macro_direct(&mut item, &message_attrs) {
       Ok(impls) => impls,
       Err(e) => {
         proto_derives = TokenStream2::new();
@@ -99,7 +99,7 @@ pub fn process_message_derive(mut item: ItemStruct, macro_attrs: TokenStream2) -
   }
 }
 
-pub fn process_message_derive_shadow(
+pub fn message_macro_shadow(
   orig_struct: &mut ItemStruct,
   shadow_struct: &mut ItemStruct,
   message_attrs: &MessageAttrs,
@@ -219,7 +219,7 @@ pub fn process_message_derive_shadow(
   })
 }
 
-pub fn process_message_derive_direct(
+pub fn message_macro_direct(
   item: &mut ItemStruct,
   message_attrs: &MessageAttrs,
 ) -> Result<TokenStream2, Error> {
