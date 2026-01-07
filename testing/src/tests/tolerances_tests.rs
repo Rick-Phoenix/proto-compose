@@ -1,6 +1,16 @@
+#![allow(unused_assignments)]
+
 use proto_types::{Duration, Timestamp};
 
 use super::*;
+
+#[proto_message(no_auto_test)]
+pub struct TolerancesTests {
+  #[proto(validate = |v| v.const_(12.0).abs_tolerance(0.0001))]
+  pub float_tolerance: f64,
+  #[proto(timestamp, validate = |v| v.gt_now().now_tolerance(Duration { seconds: 5, nanos: 0 }))]
+  pub timestamp_tolerance: Option<Timestamp>,
+}
 
 #[test]
 fn tolerances_tests() {

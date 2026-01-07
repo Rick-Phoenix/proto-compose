@@ -15,37 +15,6 @@ define_proto_file!(
   package = TEST_SCHEMAS
 );
 
-#[proto_message(no_auto_test)]
-pub struct ParentMessage {
-  #[proto(message)]
-  pub nested_message: Option<NestedMessage>,
-  #[proto(enum_(NestedEnum))]
-  pub nested_enum: i32,
-}
-
-#[proto_enum]
-#[proto(parent_message = NestedMessage)]
-pub enum NestedEnum {
-  A,
-  B,
-  C,
-}
-
-#[proto_message(no_auto_test)]
-#[proto(parent_message = ParentMessage)]
-pub struct NestedMessage {
-  #[proto(enum_(NestedEnum))]
-  pub nested_enum: i32,
-}
-
-#[proto_message(no_auto_test)]
-pub struct TolerancesTests {
-  #[proto(validate = |v| v.const_(12.0).abs_tolerance(0.0001))]
-  pub float_tolerance: f64,
-  #[proto(timestamp, validate = |v| v.gt_now().now_tolerance(Duration { seconds: 5, nanos: 0 }))]
-  pub timestamp_tolerance: Option<Timestamp>,
-}
-
 #[proto_oneof(no_auto_test)]
 pub enum TestOneof2 {
   #[proto(tag = 1)]

@@ -2,6 +2,15 @@
 
 use super::*;
 
+macro_rules! num {
+  ($num:literal, finite_test) => {
+    ($num as f32).into()
+  };
+  ($num:literal) => {
+    $num
+  };
+}
+
 macro_rules! test_numeric {
   ($name:ident $(, $finite_test:ident, $float_type:ty)?) => {
     paste::paste! {

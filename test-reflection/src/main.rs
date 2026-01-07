@@ -64,15 +64,6 @@ mod test {
     assert_eq!(violations.first().unwrap().rule_id(), expected, "{error}");
   }
 
-  macro_rules! num {
-    ($num:literal, finite_test) => {
-      ($num as f32).into()
-    };
-    ($num:literal) => {
-      $num
-    };
-  }
-
   mod any_tests;
   mod bool_tests;
   mod bytes_tests;
@@ -86,6 +77,4 @@ mod test {
   mod repeated_tests;
   mod string_tests;
   mod timestamp_tests;
-  #[cfg(not(feature = "reflection"))]
-  mod tolerances_tests;
 }
