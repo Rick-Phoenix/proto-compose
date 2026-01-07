@@ -33,7 +33,7 @@ mod proto_type;
 mod rendering_utils;
 mod service;
 pub mod test_utils;
-use test_utils::*;
+pub use test_utils::*;
 mod well_known_types;
 pub use field::*;
 pub use file::*;
