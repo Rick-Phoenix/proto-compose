@@ -6,8 +6,6 @@ use float_eq::FloatEq;
 use float_eq::float_eq;
 use std::{fmt::Display, marker::PhantomData};
 
-use protocheck_core::ordered_float::{self, FloatCore};
-
 use super::*;
 
 #[derive(Clone, Debug)]
@@ -367,15 +365,14 @@ pub trait FloatWrapper: AsProtoType + Default {
     + IntoCel
     + ordered_float::FloatCore
     + ordered_float::PrimitiveFloat
-    + ListRules<LookupTarget = OrderedFloat<Self::RustType>>
     + float_eq::FloatEq<Tol = Self::RustType>
     + 'static;
   const LT_VIOLATION: &'static LazyLock<ViolationData>;
   const LTE_VIOLATION: &'static LazyLock<ViolationData>;
   const GT_VIOLATION: &'static LazyLock<ViolationData>;
   const GTE_VIOLATION: &'static LazyLock<ViolationData>;
-  const IN_VIOLATION: &'static LazyLock<ViolationData> = Self::RustType::IN_VIOLATION;
-  const NOT_IN_VIOLATION: &'static LazyLock<ViolationData> = Self::RustType::NOT_IN_VIOLATION;
+  const IN_VIOLATION: &'static LazyLock<ViolationData>;
+  const NOT_IN_VIOLATION: &'static LazyLock<ViolationData>;
   const CONST_VIOLATION: &'static LazyLock<ViolationData>;
   const FINITE_VIOLATION: &'static LazyLock<ViolationData>;
 
@@ -393,6 +390,8 @@ macro_rules! impl_float_wrapper {
         const GTE_VIOLATION: &'static LazyLock<ViolationData> = &[< $proto_type _GTE_VIOLATION >];
         const CONST_VIOLATION: &'static LazyLock<ViolationData> = &[< $proto_type _CONST_VIOLATION >];
         const FINITE_VIOLATION: &'static LazyLock<ViolationData> = &[< $proto_type _FINITE_VIOLATION >];
+        const IN_VIOLATION: &'static LazyLock<ViolationData> = &[< $proto_type _IN_VIOLATION >];
+        const NOT_IN_VIOLATION: &'static LazyLock<ViolationData> = &[< $proto_type _NOT_IN_VIOLATION >];
 
         fn type_name() -> Arc<str> {
           $proto_type.clone()

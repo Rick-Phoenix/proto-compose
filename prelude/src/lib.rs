@@ -7,9 +7,11 @@ mod decl_macros;
 use std::fmt::Display;
 
 use askama::Template;
+use float_eq::{FloatEq, float_eq};
 use fxhash::FxHashMap;
 #[doc(hidden)]
 pub use inventory;
+use ordered_float::{FloatCore, OrderedFloat};
 use owo_colors::OwoColorize;
 #[doc(hidden)]
 pub use paste::paste;
@@ -17,7 +19,6 @@ pub use proc_macro_impls as macros;
 pub use proc_macro_impls::*;
 pub use proto_types;
 use proto_types::protovalidate::{FieldPathElement, Violations};
-pub use protocheck_core::validators::containing::SortedList;
 use thiserror::Error;
 mod oneof;
 mod options;
@@ -44,8 +45,6 @@ pub use options::*;
 pub use package::*;
 pub use proto_enum::*;
 pub use proto_type::*;
-pub use protocheck_core::field_data::FieldContext;
-use protocheck_core::field_data::FieldKind;
 use rendering_utils::*;
 pub use service::*;
 pub use validators::*;

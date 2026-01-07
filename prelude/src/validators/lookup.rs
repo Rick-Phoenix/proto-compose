@@ -1,6 +1,330 @@
+use std::ops::Deref;
+
+use ordered_float::OrderedFloat;
 use proto_types::Duration;
 
 use super::*;
+
+#[inline]
+fn clamp_capacity_for_unique_items_collection<T>(requested_cap: usize) -> usize {
+  // 128KB Budget
+  const MAX_BYTES: usize = 128 * 1024;
+  let item_size = std::mem::size_of::<T>();
+
+  // For ZSTs, uniqueness checks would fail after one insertion anyway
+  if item_size == 0 {
+    return 1;
+  }
+
+  let max_items = MAX_BYTES / item_size;
+
+  requested_cap.min(max_items)
+}
+
+pub trait UniqueStore<'a> {
+  type Item: ?Sized;
+
+  fn default_with_capacity(cap: usize) -> Self;
+  fn insert(&mut self, item: &'a Self::Item) -> bool;
+}
+
+// Just for checking uniqueness for messages
+#[doc(hidden)]
+pub struct LinearRefStore<'a, T>
+where
+  T: 'a + ?Sized,
+{
+  seen: Vec<&'a T>,
+}
+
+impl<'a, T> UniqueStore<'a> for LinearRefStore<'a, T>
+where
+  T: 'a + PartialEq + ?Sized,
+{
+  type Item = T;
+
+  #[inline]
+  fn default_with_capacity(cap: usize) -> Self {
+    let clamped_cap = clamp_capacity_for_unique_items_collection::<&T>(cap);
+
+    Self {
+      seen: Vec::with_capacity(clamped_cap),
+    }
+  }
+
+  #[inline]
+  fn insert(&mut self, item: &'a T) -> bool {
+    if self.seen.contains(&item) {
+      false
+    } else {
+      self.seen.push(item);
+      true
+    }
+  }
+}
+
+#[doc(hidden)]
+#[derive(Default)]
+pub struct FloatEpsilonStore<T>
+where
+  T: FloatCore + FloatEq<Tol = T>,
+{
+  seen: Vec<OrderedFloat<T>>,
+  abs_tol: T,
+  rel_tol: T,
+}
+
+impl<T> FloatEpsilonStore<T>
+where
+  T: FloatCore + FloatEq<Tol = T>,
+{
+  pub(crate) fn new(cap: usize, abs: T, rel: T) -> Self {
+    let clamped_cap = clamp_capacity_for_unique_items_collection::<T>(cap);
+
+    Self {
+      seen: Vec::with_capacity(clamped_cap),
+      abs_tol: abs,
+      rel_tol: rel,
+    }
+  }
+
+  pub(crate) fn check_neighbors(&self, idx: usize, item: T) -> bool {
+    // Idx at insertion point
+    if let Some(above) = self.seen.get(idx)
+      && float_eq!(above.0, item, abs <= self.abs_tol, r2nd <= self.rel_tol)
+    {
+      return true;
+    }
+
+    // Idx before insertion point
+    if idx > 0
+      && let Some(below) = self.seen.get(idx - 1)
+      && float_eq!(below.0, item, abs <= self.abs_tol, r2nd <= self.rel_tol)
+    {
+      return true;
+    }
+
+    false
+  }
+}
+
+impl<'a, T> UniqueStore<'a> for FloatEpsilonStore<T>
+where
+  T: FloatCore + FloatEq<Tol = T> + Default + 'a,
+{
+  type Item = T;
+
+  #[inline]
+  fn default_with_capacity(cap: usize) -> Self {
+    let clamped_cap = clamp_capacity_for_unique_items_collection::<T>(cap);
+
+    Self {
+      seen: Vec::with_capacity(clamped_cap),
+      abs_tol: Default::default(),
+      rel_tol: Default::default(),
+    }
+  }
+
+  #[inline]
+  fn insert(&mut self, item: &Self::Item) -> bool {
+    let wrapped = OrderedFloat(*item);
+
+    match self.seen.binary_search(&wrapped) {
+      // Exact bit-for-bit match found
+      Ok(_) => false,
+
+      // No exact match. 'idx' is the insertion point.
+      Err(idx) => {
+        let is_duplicate = self.check_neighbors(idx, *item);
+
+        if is_duplicate {
+          false
+        } else {
+          self.seen.insert(idx, wrapped);
+          true
+        }
+      }
+    }
+  }
+}
+
+#[doc(hidden)]
+pub struct UnsupportedStore<T> {
+  _marker: PhantomData<T>,
+}
+
+impl<T> Default for UnsupportedStore<T> {
+  #[inline]
+  fn default() -> Self {
+    Self {
+      _marker: PhantomData,
+    }
+  }
+}
+
+impl<'a, T> UniqueStore<'a> for UnsupportedStore<T> {
+  type Item = T;
+
+  #[inline]
+  fn default_with_capacity(_size: usize) -> Self {
+    Self::default()
+  }
+
+  #[inline]
+  fn insert(&mut self, _item: &'a Self::Item) -> bool {
+    true
+  }
+}
+
+#[doc(hidden)]
+pub enum RefHybridStore<'a, T>
+where
+  T: 'a + ?Sized,
+{
+  Small(Vec<&'a T>),
+  Large(HashSet<&'a T>),
+}
+
+impl<'a, T> UniqueStore<'a> for RefHybridStore<'a, T>
+where
+  T: 'a + Eq + Hash + Ord + ?Sized,
+{
+  type Item = T;
+
+  #[inline]
+  fn default_with_capacity(cap: usize) -> Self {
+    let clamped_cap = clamp_capacity_for_unique_items_collection::<&T>(cap);
+
+    if cap <= 32 {
+      Self::Small(Vec::with_capacity(clamped_cap))
+    } else {
+      Self::Large(HashSet::with_capacity(clamped_cap))
+    }
+  }
+
+  #[inline]
+  fn insert(&mut self, item: &'a T) -> bool {
+    match self {
+      Self::Small(vec) => match vec.binary_search(&item) {
+        Ok(_) => false,
+        Err(idx) => {
+          vec.insert(idx, item);
+          true
+        }
+      },
+      Self::Large(set) => set.insert(item),
+    }
+  }
+}
+
+#[doc(hidden)]
+pub enum CopyHybridStore<T> {
+  Small(Vec<T>),
+  Large(HashSet<T>),
+}
+
+impl<'a, T> UniqueStore<'a> for CopyHybridStore<T>
+where
+  T: 'a + Copy + Eq + Hash + Ord,
+{
+  type Item = T;
+
+  #[inline]
+  fn default_with_capacity(cap: usize) -> Self {
+    let clamped_cap = clamp_capacity_for_unique_items_collection::<T>(cap);
+
+    if cap <= 32 {
+      Self::Small(Vec::with_capacity(clamped_cap))
+    } else {
+      Self::Large(HashSet::with_capacity(clamped_cap))
+    }
+  }
+
+  #[inline]
+  fn insert(&mut self, item: &'a T) -> bool {
+    match self {
+      Self::Small(vec) => match vec.binary_search(item) {
+        Ok(_) => false,
+        Err(idx) => {
+          vec.insert(idx, *item);
+          true
+        }
+      },
+      Self::Large(set) => set.insert(*item),
+    }
+  }
+}
+
+#[derive(Debug, Clone)]
+pub struct SortedList<T: Ord> {
+  items: Box<[T]>,
+}
+
+impl<T> SortedList<T>
+where
+  T: Ord,
+{
+  pub fn new<I: IntoIterator<Item = T>>(iter: I) -> Self {
+    let mut items: Vec<T> = iter.into_iter().collect();
+
+    items.sort();
+
+    Self {
+      items: items.into_boxed_slice(),
+    }
+  }
+
+  #[must_use]
+  pub fn as_slice(&self) -> &[T] {
+    &self.items
+  }
+
+  pub fn contains(&self, item: &T) -> bool {
+    self.items.binary_search(item).is_ok()
+  }
+
+  pub fn iter(&self) -> std::slice::Iter<'_, T> {
+    self.into_iter()
+  }
+
+  #[allow(clippy::len_without_is_empty)]
+  #[must_use]
+  pub fn len(&self) -> usize {
+    self.items.len()
+  }
+}
+
+impl<T: Ord> Deref for SortedList<T> {
+  type Target = [T];
+
+  fn deref(&self) -> &Self::Target {
+    &self.items
+  }
+}
+
+impl<T: Ord> AsRef<[T]> for SortedList<T> {
+  fn as_ref(&self) -> &[T] {
+    &self.items
+  }
+}
+
+impl<T: Ord> IntoIterator for SortedList<T> {
+  type Item = T;
+  type IntoIter = std::vec::IntoIter<T>;
+
+  fn into_iter(self) -> Self::IntoIter {
+    self.items.into_vec().into_iter()
+  }
+}
+
+impl<'a, T: Ord> IntoIterator for &'a SortedList<T> {
+  type Item = &'a T;
+  type IntoIter = std::slice::Iter<'a, T>;
+
+  fn into_iter(self) -> Self::IntoIter {
+    self.items.iter()
+  }
+}
 
 #[doc(hidden)]
 pub trait ListFormatter: Sized {

@@ -4,10 +4,6 @@ use std::{fmt::Debug, hash::Hash, sync::Arc};
 
 use common_strings::*;
 use proto_types::protovalidate::*;
-use protocheck_core::{
-  ordered_float::OrderedFloat,
-  validators::{containing::ListRules, well_known_strings::*},
-};
 
 // Here we use a generic for the target of the validator
 // AND an assoc. type for the actual type being validated

@@ -1,8 +1,62 @@
-use protocheck_core::field_data::FieldKind;
-
 use super::*;
 
+use proto_types::field_descriptor_proto::Type as ProtoPrimitive;
+use proto_types::protovalidate::field_path_element::Subscript;
 use smallvec::SmallVec;
+
+/// The context for the field being validated.
+#[derive(Clone, Debug)]
+pub struct FieldContext<'a> {
+  pub proto_name: &'a str,
+  pub tag: i32,
+  pub subscript: Option<Subscript>,
+  pub map_key_type: Option<ProtoPrimitive>,
+  pub map_value_type: Option<ProtoPrimitive>,
+  pub field_type: ProtoPrimitive,
+  pub field_kind: FieldKind,
+}
+
+impl FieldContext<'_> {
+  #[must_use]
+  pub fn as_path_element(&self) -> FieldPathElement {
+    FieldPathElement {
+      field_number: Some(self.tag),
+      field_name: Some(self.proto_name.to_string()),
+      field_type: Some(self.field_type as i32),
+      key_type: self.map_key_type.map(|t| t as i32),
+      value_type: self.map_value_type.map(|t| t as i32),
+      subscript: self.subscript.clone(),
+    }
+  }
+}
+
+#[derive(Clone, Default, Debug, Copy, PartialEq, Eq)]
+pub enum FieldKind {
+  Map,
+  MapKey,
+  MapValue,
+  Repeated,
+  RepeatedItem,
+  #[default]
+  Single,
+}
+
+impl FieldKind {
+  #[must_use]
+  pub const fn is_map_key(&self) -> bool {
+    matches!(self, Self::MapKey)
+  }
+
+  #[must_use]
+  pub const fn is_map_value(&self) -> bool {
+    matches!(self, Self::MapValue)
+  }
+
+  #[must_use]
+  pub const fn is_repeated_item(&self) -> bool {
+    matches!(self, Self::RepeatedItem)
+  }
+}
 
 pub struct ValidationCtx<'a> {
   pub field_context: FieldContext<'a>,
@@ -149,8 +203,8 @@ pub(crate) fn create_violation_core(
     let current_elem = FieldPathElement {
       field_type: Some(field_context.field_type as i32),
       field_name: Some(field_context.proto_name.to_string()),
-      key_type: field_context.key_type.map(|t| t as i32),
-      value_type: field_context.value_type.map(|t| t as i32),
+      key_type: field_context.map_key_type.map(|t| t as i32),
+      value_type: field_context.map_value_type.map(|t| t as i32),
       field_number: Some(field_context.tag),
       subscript: field_context.subscript.clone(),
     };

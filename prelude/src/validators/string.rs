@@ -1,6 +1,8 @@
+pub(crate) mod well_known_strings;
+use well_known_strings::*;
 pub mod builder;
+pub use builder::StringValidatorBuilder;
 use builder::state::State;
-pub use builder::{StringValidatorBuilder, WellKnownStrings};
 
 #[cfg(feature = "regex")]
 use regex::Regex;
@@ -289,7 +291,7 @@ impl Validator<String> for StringValidator {
       }
 
       if let Some(allowed_list) = &self.in_
-        && !<&str>::is_in(&val.as_str(), &allowed_list.items)
+        && !allowed_list.items.contains(&val.as_str())
       {
         let err = ["must be one of these values: ", &allowed_list.items_str].concat();
 
@@ -297,7 +299,7 @@ impl Validator<String> for StringValidator {
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && <&str>::is_in(&val.as_str(), &forbidden_list.items)
+        && forbidden_list.items.contains(&val.as_str())
       {
         let err = ["cannot be one of these values: ", &forbidden_list.items_str].concat();
 

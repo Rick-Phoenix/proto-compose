@@ -1090,8 +1090,10 @@ dependencies = [
  "chrono",
  "constcat",
  "float_eq",
+ "fluent-uri",
  "fxhash",
  "inventory",
+ "ipnetwork",
  "log",
  "ordered-float",
  "ordermap",
@@ -1100,7 +1102,6 @@ dependencies = [
  "proc-macro-impls",
  "prost",
  "proto-types",
- "protocheck-core",
  "protocheck-proc-macro",
  "regex",
  "similar-asserts",
@@ -1222,21 +1223,6 @@ dependencies = [
  "quote",
  "syn",
  "thiserror 2.0.17",
-]
-
-[[package]]
-name = "protocheck-core"
-version = "0.1.11"
-dependencies = [
- "bytes",
- "cel",
- "chrono",
- "fluent-uri",
- "ipnetwork",
- "ordered-float",
- "paste",
- "proto-types",
- "regex",
 ]
 
 [[package]]

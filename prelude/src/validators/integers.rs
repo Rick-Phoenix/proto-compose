@@ -164,7 +164,7 @@ where
       }
 
       if let Some(allowed_list) = &self.in_
-        && !val.is_in(&allowed_list.items)
+        && !allowed_list.items.contains(&val)
       {
         let err = ["must be one of these values: ", &allowed_list.items_str].concat();
 
@@ -172,7 +172,7 @@ where
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && val.is_in(&forbidden_list.items)
+        && forbidden_list.items.contains(&val)
       {
         let err = ["cannot be one of these values: ", &forbidden_list.items_str].concat();
 
@@ -263,7 +263,6 @@ pub trait IntWrapper: AsProtoType + Default {
     + Display
     + Eq
     + Default
-    + ListRules<LookupTarget = Self::RustType>
     + Ord
     + IntoCel
     + ListFormatter

@@ -121,7 +121,7 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
       }
 
       if let Some(allowed_list) = &self.in_
-        && !i32::is_in(&val, &allowed_list.items)
+        && !allowed_list.items.contains(&val)
       {
         let err = ["must be one of these values: ", &allowed_list.items_str].concat();
 
@@ -129,7 +129,7 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
       }
 
       if let Some(forbidden_list) = &self.not_in
-        && i32::is_in(&val, &forbidden_list.items)
+        && forbidden_list.items.contains(&val)
       {
         let err = ["cannot be one of these values: ", &forbidden_list.items_str].concat();
 

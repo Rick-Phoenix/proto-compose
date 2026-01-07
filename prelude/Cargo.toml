@@ -23,7 +23,6 @@ cel = { workspace = true, optional = true }
 thiserror = { workspace = true }
 chrono = { workspace = true }
 log = "0.4"
-protocheck-core = { workspace = true }
 owo-colors = { version = "4.2" }
 inventory = "0.3.21"
 ordermap = "1.0.0"
@@ -35,10 +34,12 @@ float_eq = { workspace = true }
 smallvec = "1.15.1"
 proc-macro-impls = { path = "../proc-macro/" }
 protocheck-proc-macro = { workspace = true }
+ipnetwork = "0.21"
+fluent-uri = "0.4"
 
 [features]
 default = ["regex", "cel"]
 
 reflection = ["proc-macro-impls/reflection"]
-cel = ["dep:cel", "protocheck-core/cel", "proto-types/cel"]
-regex = ["dep:regex", "protocheck-core/regex"]
+cel = ["dep:cel", "proto-types/cel"]
+regex = ["dep:regex"]
