@@ -13,18 +13,18 @@ use super::*;
 pub struct ProtoMap<K, V>(PhantomData<K>, PhantomData<V>);
 
 impl<K: AsProtoField, V: AsProtoField> AsProtoField for ProtoMap<K, V> {
-  fn as_proto_field() -> ProtoFieldInfo {
+  fn as_proto_field() -> FieldType {
     let keys = match K::as_proto_field() {
-      ProtoFieldInfo::Single(data) => data,
+      FieldType::Normal(data) => data,
       _ => panic!("Map keys cannot be repeated, optional or nested maps"),
     };
 
     let values = match V::as_proto_field() {
-      ProtoFieldInfo::Single(data) => data,
+      FieldType::Normal(data) => data,
       _ => panic!("Map values cannot be repeated, optional or nested maps"),
     };
 
-    ProtoFieldInfo::Map { keys, values }
+    FieldType::Map { keys, values }
   }
 }
 

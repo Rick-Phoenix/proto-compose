@@ -3,7 +3,7 @@ use crate::*;
 #[derive(Debug, PartialEq)]
 pub struct Extension {
   pub target: ExtensionTarget,
-  pub fields: Vec<ProtoField>,
+  pub fields: Vec<Field>,
 }
 
 pub trait ProtoExtension {

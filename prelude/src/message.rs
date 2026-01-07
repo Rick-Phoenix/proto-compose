@@ -105,7 +105,7 @@ impl Message {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum MessageEntry {
-  Field(ProtoField),
+  Field(Field),
   Oneof { oneof: Oneof, required: bool },
 }
 
@@ -140,7 +140,7 @@ impl Message {
 
     for entry in &self.entries {
       match entry {
-        MessageEntry::Field(field) => field.register_type_import_path(imports),
+        MessageEntry::Field(field) => field.register_import_path(imports),
         MessageEntry::Oneof {
           oneof, required, ..
         } => {
@@ -149,7 +149,7 @@ impl Message {
           }
 
           for field in &oneof.fields {
-            field.register_type_import_path(imports)
+            field.register_import_path(imports)
           }
         }
       }

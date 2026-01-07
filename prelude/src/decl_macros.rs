@@ -103,10 +103,10 @@ macro_rules! impl_validator {
 }
 
 macro_rules! impl_proto_type {
-  ($rust_type:ty, $proto_type:expr) => {
+  ($rust_type:ty, $proto_type:ident) => {
     impl AsProtoType for $rust_type {
       fn proto_type() -> ProtoType {
-        ProtoType::Primitive { name: $proto_type }
+        ProtoType::Scalar(ProtoScalar::$proto_type)
       }
     }
   };

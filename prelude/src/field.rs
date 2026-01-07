@@ -1,10 +1,10 @@
 use crate::*;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct ProtoField {
+pub struct Field {
   pub name: &'static str,
   pub tag: i32,
-  pub type_: ProtoFieldInfo,
+  pub type_: FieldType,
   pub options: Vec<ProtoOption>,
   pub validator: Option<FieldValidator>,
 }
@@ -15,7 +15,7 @@ pub struct FieldValidator {
   pub cel_rules: Vec<CelRule>,
 }
 
-impl ProtoField {
+impl Field {
   pub(crate) fn options_with_validators(&self) -> impl Iterator<Item = &options::ProtoOption> {
     self
       .options
@@ -23,16 +23,16 @@ impl ProtoField {
       .chain(self.validator.iter().map(|v| &v.schema))
   }
 
-  pub(crate) fn register_type_import_path(&self, imports: &mut FileImports) {
+  pub(crate) fn register_import_path(&self, imports: &mut FileImports) {
     if self.validator.is_some() {
       imports.insert_validate_proto();
     }
 
     match &self.type_ {
-      ProtoFieldInfo::Single(ty) | ProtoFieldInfo::Repeated(ty) | ProtoFieldInfo::Optional(ty) => {
+      FieldType::Normal(ty) | FieldType::Repeated(ty) | FieldType::Optional(ty) => {
         ty.register_import(imports)
       }
-      ProtoFieldInfo::Map { keys, values } => {
+      FieldType::Map { keys, values } => {
         keys.register_import(imports);
         values.register_import(imports);
       }

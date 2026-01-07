@@ -92,7 +92,7 @@ impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
 
         quote! {
           ::prelude::MessageEntry::Field(
-            ::prelude::ProtoField {
+            ::prelude::Field {
               name: #proto_name,
               tag: #tag,
               options: #options,

@@ -61,6 +61,6 @@ pub trait ValidatedOneof {
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Oneof {
   pub name: &'static str,
-  pub fields: Vec<ProtoField>,
+  pub fields: Vec<Field>,
   pub options: Vec<ProtoOption>,
 }

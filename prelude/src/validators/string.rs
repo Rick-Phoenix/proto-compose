@@ -82,7 +82,7 @@ impl StringValidator {
 #[cfg(feature = "regex")]
 pub type CachedRegex = LazyLock<Regex>;
 
-impl_proto_type!(String, "string");
+impl_proto_type!(String, String);
 
 impl_validator!(StringValidator, String);
 

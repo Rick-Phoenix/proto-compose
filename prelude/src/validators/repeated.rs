@@ -63,11 +63,11 @@ where
 }
 
 impl<T: AsProtoField> AsProtoField for Vec<T> {
-  fn as_proto_field() -> ProtoFieldInfo {
+  fn as_proto_field() -> FieldType {
     let inner_type = T::as_proto_field();
 
     match inner_type {
-      ProtoFieldInfo::Single(typ) => ProtoFieldInfo::Repeated(typ),
+      FieldType::Normal(typ) => FieldType::Repeated(typ),
       _ => panic!("Repeated fields cannot be optional, maps or other repeated fields",),
     }
   }

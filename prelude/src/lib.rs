@@ -27,7 +27,6 @@ use std::{collections::HashSet, fmt::Write, marker::PhantomData, ops::Range, syn
 mod field;
 mod file;
 mod message;
-mod optional;
 mod package;
 mod proto_enum;
 mod proto_type;

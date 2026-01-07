@@ -85,8 +85,6 @@ mod cel_impls {
     }
   }
 
-  pub type CachedProgram = LazyLock<CelProgram>;
-
   impl PartialEq for CelProgram {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -145,6 +143,7 @@ mod cel_impls {
   }
 
   impl From<Infallible> for CelError {
+    #[inline]
     fn from(value: Infallible) -> Self {
       match value {}
     }

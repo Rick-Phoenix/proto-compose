@@ -29,10 +29,6 @@ pub enum ProtoType {
 }
 
 impl ProtoType {
-  pub const fn is_custom_message(&self) -> bool {
-    matches!(self, Self::Message { .. })
-  }
-
   pub const fn is_message(&self) -> bool {
     matches!(
       self,
@@ -40,7 +36,7 @@ impl ProtoType {
     )
   }
 
-  pub fn is_boxed_message(&self) -> bool {
+  pub const fn is_boxed_message(&self) -> bool {
     matches!(self, Self::Message(MessageInfo { boxed: true, .. }))
   }
 
@@ -364,7 +360,7 @@ impl ProtoType {
   ///
   /// [`Enum`]: ProtoType::Enum
   #[must_use]
-  pub fn is_enum(&self) -> bool {
+  pub const fn is_enum(&self) -> bool {
     matches!(self, Self::Enum(..))
   }
 }

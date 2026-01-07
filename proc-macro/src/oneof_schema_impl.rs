@@ -36,7 +36,7 @@ impl<T: Borrow<FieldData>> OneofCtx<'_, T> {
         .map_or_else(|| quote! { None }, |e| quote! { Some(#e.into_schema()) });
 
       quote! {
-        ::prelude::ProtoField {
+        ::prelude::Field {
           name: #proto_name,
           tag: #tag,
           options: #options,

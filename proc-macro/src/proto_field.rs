@@ -101,13 +101,13 @@ impl ProtoField {
 
   pub fn descriptor_type_tokens(&self) -> TokenStream2 {
     match self {
-      ProtoField::Map(_) => {
+      Self::Map(_) => {
         quote! { ::prelude::proto_types::field_descriptor_proto::Type::Message }
       }
-      ProtoField::Repeated(inner) => inner.descriptor_type_tokens(),
-      ProtoField::Optional(inner) => inner.descriptor_type_tokens(),
-      ProtoField::Single(inner) => inner.descriptor_type_tokens(),
-      ProtoField::Oneof { .. } => {
+      Self::Repeated(inner) | Self::Optional(inner) | Self::Single(inner) => {
+        inner.descriptor_type_tokens()
+      }
+      Self::Oneof { .. } => {
         quote! { compile_error!("Validator tokens should not be triggered for a oneof field") }
       }
     }
@@ -115,7 +115,7 @@ impl ProtoField {
 
   pub fn as_prost_attr(&self, tag: i32) -> Attribute {
     let inner = match self {
-      ProtoField::Oneof(OneofInfo { path, tags, .. }) => {
+      Self::Oneof(OneofInfo { path, tags, .. }) => {
         let oneof_path_str = path.to_token_stream().to_string();
         let tags_str = tags_to_str(tags);
 
@@ -129,17 +129,17 @@ impl ProtoField {
         quote! { map = #map_attr }
       }
 
-      ProtoField::Repeated(proto_type) => {
+      Self::Repeated(proto_type) => {
         let p_type = proto_type.as_prost_attr_type();
 
         quote! { #p_type, repeated }
       }
-      ProtoField::Optional(proto_type) => {
+      Self::Optional(proto_type) => {
         let p_type = proto_type.as_prost_attr_type();
 
         quote! { #p_type, optional }
       }
-      ProtoField::Single(proto_type) => proto_type.as_prost_attr_type(),
+      Self::Single(proto_type) => proto_type.as_prost_attr_type(),
     };
 
     let tag_as_str = tag.to_string();
@@ -156,13 +156,13 @@ impl ProtoField {
           quote! { #base_ident.map(|v| v.into()) }
         }
       }
-      ProtoField::Map(ProtoMap { .. }) => {
+      Self::Map(ProtoMap { .. }) => {
         quote! { #base_ident.into_iter().map(|(k, v)| (k.into(), v.into())).collect() }
       }
-      ProtoField::Repeated(_) => {
+      Self::Repeated(_) => {
         quote! { #base_ident.into_iter().map(Into::into).collect() }
       }
-      ProtoField::Optional(inner) => {
+      Self::Optional(inner) => {
         let conversion = if inner.is_message() {
           let base_ident2 = quote! { v };
           inner.default_into_proto(&base_ident2)
@@ -172,7 +172,7 @@ impl ProtoField {
 
         quote! { #base_ident.map(|v| #conversion) }
       }
-      ProtoField::Single(proto_type) => proto_type.default_into_proto(base_ident),
+      Self::Single(proto_type) => proto_type.default_into_proto(base_ident),
     }
   }
 
@@ -185,25 +185,25 @@ impl ProtoField {
           quote! { #base_ident.map(|v| v.into()) }
         }
       }
-      ProtoField::Map(ProtoMap { values, .. }) => {
+      Self::Map(ProtoMap { values, .. }) => {
         let base_ident2 = quote! { v };
         let values_converter = values.default_from_proto(&base_ident2);
 
         quote! { #base_ident.into_iter().map(|(k, v)| (k.into(), #values_converter)).collect() }
       }
-      ProtoField::Repeated(proto_type) => {
+      Self::Repeated(proto_type) => {
         let base_ident2 = quote! { v };
         let inner = proto_type.default_from_proto(&base_ident2);
 
         quote! { #base_ident.into_iter().map(|v| #inner).collect() }
       }
-      ProtoField::Optional(proto_type) => {
+      Self::Optional(proto_type) => {
         let base_ident2 = quote! { v };
         let inner = proto_type.default_from_proto(&base_ident2);
 
         quote! { #base_ident.map(|v| #inner) }
       }
-      ProtoField::Single(proto_type) => proto_type.default_from_proto(base_ident),
+      Self::Single(proto_type) => proto_type.default_from_proto(base_ident),
     }
   }
 
@@ -215,14 +215,13 @@ impl ProtoField {
 
         quote! { ::prelude::ProtoMap<#keys, #values> }
       }
-      ProtoField::Oneof { .. } => quote! {},
-      ProtoField::Repeated(proto_type) => {
+      Self::Oneof { .. } => quote! {},
+      Self::Repeated(proto_type) => {
         let inner = proto_type.validator_target_type();
 
         quote! { Vec<#inner> }
       }
-      ProtoField::Optional(proto_type) => proto_type.validator_target_type(),
-      ProtoField::Single(proto_type) => proto_type.validator_target_type(),
+      Self::Optional(proto_type) | Self::Single(proto_type) => proto_type.validator_target_type(),
     }
   }
 
@@ -234,37 +233,36 @@ impl ProtoField {
 
         quote! { MapValidator<#keys, #values> }
       }
-      ProtoField::Oneof { .. } => quote! {},
-      ProtoField::Repeated(proto_type) => {
+      Self::Oneof { .. } => quote! {},
+      Self::Repeated(proto_type) => {
         let inner = proto_type.validator_target_type();
 
         quote! { RepeatedValidator<#inner> }
       }
-      ProtoField::Optional(proto_type) => proto_type.validator_name(),
-      ProtoField::Single(proto_type) => proto_type.validator_name(),
+      Self::Optional(proto_type) | Self::Single(proto_type) => proto_type.validator_name(),
     }
   }
 
   pub fn field_proto_type_tokens(&self) -> TokenStream2 {
     let target_type = match self {
-      ProtoField::Map(proto_map) => {
+      Self::Map(proto_map) => {
         let keys = proto_map.keys.field_proto_type_tokens();
         let values = proto_map.values.field_proto_type_tokens();
 
         quote! { ::prelude::ProtoMap<#keys, #values> }
       }
-      ProtoField::Oneof { .. } => quote! {},
-      ProtoField::Repeated(proto_type) => {
+      Self::Oneof { .. } => quote! {},
+      Self::Repeated(proto_type) => {
         let inner = proto_type.field_proto_type_tokens();
 
         quote! { Vec<#inner> }
       }
-      ProtoField::Optional(proto_type) => {
+      Self::Optional(proto_type) => {
         let inner = proto_type.field_proto_type_tokens();
 
         quote! { Option<#inner> }
       }
-      ProtoField::Single(proto_type) => proto_type.field_proto_type_tokens(),
+      Self::Single(proto_type) => proto_type.field_proto_type_tokens(),
     };
 
     quote! { <#target_type as ::prelude::AsProtoField>::as_proto_field() }
@@ -279,17 +277,17 @@ impl ProtoField {
         parse_quote! { std::collections::HashMap<#keys, #values> }
       }
       Self::Oneof(OneofInfo { path, .. }) => parse_quote! { Option<#path> },
-      ProtoField::Repeated(inner) => {
+      Self::Repeated(inner) => {
         let inner_type = inner.output_proto_type();
 
         parse_quote! { Vec<#inner_type> }
       }
-      ProtoField::Optional(inner) => {
+      Self::Optional(inner) => {
         let inner_type = inner.output_proto_type();
 
         parse_quote! { Option<#inner_type> }
       }
-      ProtoField::Single(inner) => {
+      Self::Single(inner) => {
         let inner = inner.output_proto_type();
 
         parse_quote! { #inner }
@@ -297,13 +295,10 @@ impl ProtoField {
     }
   }
 
-  pub fn inner(&self) -> Option<&ProtoType> {
+  pub const fn inner(&self) -> Option<&ProtoType> {
     match self {
-      ProtoField::Map(_) => None,
-      ProtoField::Oneof(_) => None,
-      ProtoField::Repeated(inner) => Some(inner),
-      ProtoField::Optional(inner) => Some(inner),
-      ProtoField::Single(inner) => Some(inner),
+      Self::Map(_) | Self::Oneof(_) => None,
+      Self::Repeated(inner) | Self::Optional(inner) | Self::Single(inner) => Some(inner),
     }
   }
 
@@ -323,7 +318,7 @@ impl ProtoField {
       .is_some_and(|inner| inner.is_boxed_message())
   }
 
-  pub fn is_oneof(&self) -> bool {
+  pub const fn is_oneof(&self) -> bool {
     matches!(self, Self::Oneof(..))
   }
 }

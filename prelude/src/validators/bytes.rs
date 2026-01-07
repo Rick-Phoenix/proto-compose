@@ -10,7 +10,8 @@ use regex::bytes::Regex;
 use super::*;
 
 impl_validator!(BytesValidator, Bytes);
-impl_proto_type!(Bytes, "bytes");
+impl_proto_type!(Bytes, Bytes);
+impl_proto_type!(Vec<u8>, Bytes);
 
 #[derive(Clone, Debug)]
 pub struct BytesValidator {

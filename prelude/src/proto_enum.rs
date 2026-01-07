@@ -2,6 +2,14 @@ use crate::*;
 
 pub trait ProtoEnum: TryFrom<i32> + Default {
   fn proto_name() -> &'static str;
+}
+
+pub trait ProtoEnumSchema: TryFrom<i32> + Default + ProtoEnum {
+  fn proto_path() -> ProtoPath;
+  fn proto_schema() -> Enum;
+
+  fn as_proto_name(&self) -> &'static str;
+  fn from_proto_name(name: &str) -> Option<Self>;
 
   #[inline]
   #[must_use]
@@ -14,14 +22,6 @@ pub trait ProtoEnum: TryFrom<i32> + Default {
   fn from_int_or_default(int: i32) -> Self {
     int.try_into().unwrap_or_default()
   }
-}
-
-pub trait ProtoEnumSchema: TryFrom<i32> + Default + ProtoEnum {
-  fn proto_path() -> ProtoPath;
-  fn proto_schema() -> Enum;
-
-  fn as_proto_name(&self) -> &'static str;
-  fn from_proto_name(name: &str) -> Option<Self>;
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Template)]

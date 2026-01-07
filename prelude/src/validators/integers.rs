@@ -4,7 +4,7 @@ use builder::state::State;
 
 use std::{fmt::Display, marker::PhantomData};
 
-pub use proto_types::num_wrappers::{Fixed32, Fixed64, Sfixed32, Sfixed64, Sint32, Sint64};
+pub use proto_types::num_wrappers::*;
 use proto_types::protovalidate::violations_data::*;
 
 use super::*;
@@ -303,7 +303,7 @@ macro_rules! impl_int {
   ($rust_type:ty, $proto_type:ident, primitive) => {
     paste::paste! {
       impl_int_wrapper!($rust_type, $rust_type, $proto_type);
-      impl_proto_type!($rust_type, stringify!([ < $proto_type:lower > ]));
+      impl_proto_type!($rust_type, [ < $proto_type:camel > ]);
       impl_int_validator!($rust_type, $rust_type);
     }
   };
@@ -311,7 +311,7 @@ macro_rules! impl_int {
   ($rust_type:ty, $wrapper:ident) => {
     paste::paste! {
       impl_int_wrapper!($wrapper, $rust_type, [< $wrapper:upper >]);
-      impl_proto_type!($wrapper, stringify!([< $wrapper:lower >]));
+      impl_proto_type!($wrapper, $wrapper);
       impl_int_validator!($wrapper, $rust_type);
     }
   };

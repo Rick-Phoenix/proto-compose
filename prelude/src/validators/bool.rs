@@ -5,7 +5,7 @@ use builder::state::State;
 use super::*;
 
 impl_validator!(BoolValidator, bool);
-impl_proto_type!(bool, "bool");
+impl_proto_type!(bool, Bool);
 
 impl Validator<bool> for BoolValidator {
   type Target = bool;
