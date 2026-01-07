@@ -23,9 +23,9 @@ use syn::{
 use syn_utils::*;
 
 use crate::{
-  common_impls::*, enum_proc_macro::*, extension_derive::*, impls::*, item_cloners::*,
-  message_proc_macro::*, message_schema_impl::*, oneof_proc_macro::*, path_utils::*,
-  proto_field::*, proto_map::*, proto_types::*, service_derive::*,
+  common_impls::*, enum_proc_macro::*, extension_derive::*, file_macro::*, impls::*,
+  item_cloners::*, message_proc_macro::*, message_schema_impl::*, oneof_proc_macro::*,
+  path_utils::*, proto_field::*, proto_map::*, proto_types::*, service_derive::*,
 };
 
 mod attributes;
@@ -36,6 +36,7 @@ mod common_impls;
 mod enum_derive;
 mod enum_proc_macro;
 mod extension_derive;
+mod file_macro;
 mod impls;
 mod item_cloners;
 mod message_proc_macro;

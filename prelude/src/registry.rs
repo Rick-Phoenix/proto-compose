@@ -184,6 +184,7 @@ pub struct RegistryService {
 pub struct RegistryFile {
   pub file: &'static str,
   pub package: &'static str,
+  pub edition: Edition,
   pub options: fn() -> Vec<ProtoOption>,
   pub imports: fn() -> Vec<&'static str>,
   pub extensions: fn() -> Vec<Extension>,
@@ -203,6 +204,7 @@ impl Into<ProtoFile> for &RegistryFile {
     }
 
     file.options = (self.options)();
+    file.edition = self.edition;
 
     file
   }

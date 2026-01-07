@@ -52,7 +52,7 @@ pub fn fallback_message_schema_impl(
   output
 }
 
-impl<'a, T: Borrow<FieldData>> MessageCtx<'a, T> {
+impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
   pub fn generate_schema_impls(&self) -> TokenStream2 {
     let MessageAttrs {
       reserved_names,

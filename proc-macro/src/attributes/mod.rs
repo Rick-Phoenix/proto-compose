@@ -1,5 +1,3 @@
-mod file_attributes;
-pub use file_attributes::*;
 mod package_attributes;
 pub use package_attributes::*;
 mod extension_field_attributes;

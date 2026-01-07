@@ -13,6 +13,7 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
     tokens
       .extend(quote! { vec![ #(<#items as ::prelude::ProtoExtension>::as_proto_extension()),* ] })
   });
+  let mut edition = TokensOr::<TokenStream2>::new(|| quote! { ::prelude::Edition::Proto3 });
 
   let parser = syn::meta::parser(|meta| {
     let ident_str = meta.ident_str()?;
@@ -35,6 +36,9 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
       }
       "extensions" => {
         extensions.set(meta.parse_list::<PathList>()?.list);
+      }
+      "edition" => {
+        edition.set(meta.parse_value::<Path>()?.into_token_stream());
       }
       _ => {
         const_ident = Some(meta.ident()?.clone());
@@ -73,6 +77,7 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
       ::prelude::RegistryFile {
         file: __PROTO_FILE.file,
         package: __PROTO_FILE.package,
+        edition: #edition,
         options: || #options,
         imports: || vec![ #(#imports),* ],
         extensions: || #extensions
