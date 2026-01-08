@@ -158,38 +158,33 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
 
 impl<T: ProtoEnum> From<EnumValidator<T>> for ProtoOption {
   fn from(validator: EnumValidator<T>) -> Self {
-    let mut rules: OptionValueList = Vec::new();
+    let mut rules = OptionMessageBuilder::new();
 
-    if let Some(const_val) = validator.const_ {
-      rules.push((CONST_.clone(), OptionValue::Int(i64::from(const_val))));
-    }
+    rules.maybe_set(&CONST_, validator.const_);
 
-    insert_boolean_option!(validator, rules, defined_only);
+    rules
+      .set_boolean(&DEFINED_ONLY, validator.defined_only)
+      .maybe_set(
+        &IN_,
+        validator
+          .in_
+          .map(|list| OptionValue::new_list(list.items.iter())),
+      )
+      .maybe_set(
+        &NOT_IN,
+        validator
+          .not_in
+          .map(|list| OptionValue::new_list(list.items.iter())),
+      );
 
-    if let Some(allowed_list) = &validator.in_ {
-      rules.push((
-        IN_.clone(),
-        OptionValue::new_list(allowed_list.items.iter()),
-      ));
-    }
+    let mut outer_rules = OptionMessageBuilder::new();
 
-    if let Some(forbidden_list) = &validator.not_in {
-      rules.push((
-        NOT_IN.clone(),
-        OptionValue::new_list(forbidden_list.items.iter()),
-      ));
-    }
+    outer_rules.set(ENUM.clone(), OptionValue::Message(rules.into()));
 
-    let mut outer_rules: OptionValueList = vec![];
-
-    outer_rules.push((ENUM.clone(), OptionValue::Message(rules.into())));
-
-    insert_cel_rules!(validator, outer_rules);
-    insert_boolean_option!(validator, outer_rules, required);
-
-    if !validator.ignore.is_default() {
-      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
-    }
+    outer_rules
+      .add_cel_options(validator.cel)
+      .set_required(validator.required)
+      .set_ignore(validator.ignore);
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

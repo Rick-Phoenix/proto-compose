@@ -111,36 +111,34 @@ impl Validator<Any> for AnyValidator {
 
 impl From<AnyValidator> for ProtoOption {
   fn from(validator: AnyValidator) -> Self {
-    let mut rules: OptionValueList = Vec::new();
+    let mut rules = OptionMessageBuilder::new();
 
-    if let Some(allowed_list) = &validator.in_ {
-      rules.push((
-        IN_.clone(),
-        OptionValue::new_list(allowed_list.items.iter()),
-      ));
-    }
+    rules
+      .maybe_set(
+        &IN_,
+        validator
+          .in_
+          .map(|list| OptionValue::new_list(list.items.iter())),
+      )
+      .maybe_set(
+        &NOT_IN,
+        validator
+          .not_in
+          .map(|list| OptionValue::new_list(list.items.iter())),
+      );
 
-    if let Some(forbidden_list) = &validator.not_in {
-      rules.push((
-        NOT_IN.clone(),
-        OptionValue::new_list(forbidden_list.items.iter()),
-      ));
-    }
+    let mut outer_rules = OptionMessageBuilder::new();
 
-    let mut outer_rules: OptionValueList = vec![];
+    outer_rules.set(ANY.clone(), OptionValue::Message(rules.build()));
 
-    outer_rules.push((ANY.clone(), OptionValue::Message(rules.into())));
-
-    insert_cel_rules!(validator, outer_rules);
-    insert_boolean_option!(validator, outer_rules, required);
-
-    if !validator.ignore.is_default() {
-      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
-    }
+    outer_rules
+      .add_cel_options(validator.cel)
+      .set_required(validator.required)
+      .set_ignore(validator.ignore);
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),
-      value: OptionValue::Message(outer_rules.into()),
+      value: OptionValue::Message(outer_rules.build()),
     }
   }
 }

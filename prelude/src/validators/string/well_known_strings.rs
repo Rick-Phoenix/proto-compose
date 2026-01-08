@@ -35,7 +35,9 @@ pub enum WellKnownStrings {
 }
 
 impl WellKnownStrings {
-  pub(crate) fn to_option(self, option_values: &mut OptionValueList) {
+  pub(crate) fn to_option(self) -> (Arc<str>, OptionValue, bool) {
+    let mut is_strict = false;
+
     let name = match self {
       #[cfg(feature = "regex")]
       Self::Ulid => ULID.clone(),
@@ -68,29 +70,23 @@ impl WellKnownStrings {
 
     let value = match self {
       #[cfg(feature = "regex")]
-      Self::HeaderNameLoose => {
-        option_values.push((STRICT.clone(), OptionValue::Bool(false)));
-        OptionValue::Enum(KNOWN_REGEX_HTTP_HEADER_NAME.clone())
-      }
+      Self::HeaderNameLoose => OptionValue::Enum(KNOWN_REGEX_HTTP_HEADER_NAME.clone()),
       #[cfg(feature = "regex")]
       Self::HeaderNameStrict => {
-        option_values.push((STRICT.clone(), OptionValue::Bool(true)));
+        is_strict = true;
         OptionValue::Enum(KNOWN_REGEX_HTTP_HEADER_NAME.clone())
       }
       #[cfg(feature = "regex")]
-      Self::HeaderValueLoose => {
-        option_values.push((STRICT.clone(), OptionValue::Bool(false)));
-        OptionValue::Enum(KNOWN_REGEX_HTTP_HEADER_VALUE.clone())
-      }
+      Self::HeaderValueLoose => OptionValue::Enum(KNOWN_REGEX_HTTP_HEADER_VALUE.clone()),
       #[cfg(feature = "regex")]
       Self::HeaderValueStrict => {
-        option_values.push((STRICT.clone(), OptionValue::Bool(true)));
+        is_strict = true;
         OptionValue::Enum(KNOWN_REGEX_HTTP_HEADER_VALUE.clone())
       }
       _ => OptionValue::Bool(true),
     };
 
-    option_values.push((name, value));
+    (name, value, is_strict)
   }
 }
 

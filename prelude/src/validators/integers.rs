@@ -211,40 +211,43 @@ where
   N: IntWrapper,
 {
   fn from(validator: IntValidator<N>) -> Self {
-    let mut values: OptionValueList = Vec::new();
+    let mut rules = OptionMessageBuilder::new();
 
-    if let Some(const_val) = validator.const_ {
-      values.push((CONST_.clone(), const_val.into()));
+    macro_rules! set_options {
+      ($($name:ident),*) => {
+        paste::paste! {
+          rules
+          $(
+            .maybe_set(&[< $name:upper >], validator.$name)
+          )*
+        }
+      };
     }
 
-    insert_option!(validator, values, lt);
-    insert_option!(validator, values, lte);
-    insert_option!(validator, values, gt);
-    insert_option!(validator, values, gte);
+    set_options!(const_, lt, lte, gt, gte);
 
-    if let Some(allowed_list) = &validator.in_ {
-      values.push((
-        IN_.clone(),
-        OptionValue::new_list(allowed_list.items.iter()),
-      ));
-    }
+    rules
+      .maybe_set(
+        &IN_,
+        validator
+          .in_
+          .map(|list| OptionValue::new_list(list.items.iter())),
+      )
+      .maybe_set(
+        &NOT_IN,
+        validator
+          .not_in
+          .map(|list| OptionValue::new_list(list.items.iter())),
+      );
 
-    if let Some(forbidden_list) = &validator.not_in {
-      values.push((
-        NOT_IN.clone(),
-        OptionValue::new_list(forbidden_list.items.iter()),
-      ));
-    }
+    let mut outer_rules = OptionMessageBuilder::new();
 
-    let mut outer_rules: OptionValueList =
-      vec![(N::type_name(), OptionValue::Message(values.into()))];
+    outer_rules.set(N::type_name(), OptionValue::Message(rules.into()));
 
-    insert_cel_rules!(validator, outer_rules);
-    insert_boolean_option!(validator, outer_rules, required);
-
-    if !validator.ignore.is_default() {
-      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
-    }
+    outer_rules
+      .add_cel_options(validator.cel)
+      .set_required(validator.required)
+      .set_ignore(validator.ignore);
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

@@ -197,30 +197,33 @@ impl Validator<Timestamp> for TimestampValidator {
 
 impl From<TimestampValidator> for ProtoOption {
   fn from(validator: TimestampValidator) -> Self {
-    let mut rules: OptionValueList = Vec::new();
+    let mut rules = OptionMessageBuilder::new();
 
-    if let Some(const_val) = validator.const_ {
-      rules.push((CONST_.clone(), OptionValue::Timestamp(const_val)));
+    macro_rules! set_options {
+      ($($name:ident),*) => {
+        paste::paste! {
+          rules
+          $(
+            .maybe_set(&[< $name:upper >], validator.$name)
+          )*
+        }
+      };
     }
 
-    insert_option!(validator, rules, lt);
-    insert_option!(validator, rules, lte);
-    insert_option!(validator, rules, gt);
-    insert_option!(validator, rules, gte);
-    insert_boolean_option!(validator, rules, lt_now);
-    insert_boolean_option!(validator, rules, gt_now);
-    insert_option!(validator, rules, within);
+    set_options!(const_, lt, lte, gt, gte, within);
 
-    let mut outer_rules: OptionValueList = vec![];
+    rules
+      .set_boolean(&LT_NOW, validator.lt_now)
+      .set_boolean(&GT_NOW, validator.gt_now);
 
-    outer_rules.push((TIMESTAMP.clone(), OptionValue::Message(rules.into())));
+    let mut outer_rules = OptionMessageBuilder::new();
 
-    insert_cel_rules!(validator, outer_rules);
-    insert_boolean_option!(validator, outer_rules, required);
+    outer_rules.set(TIMESTAMP.clone(), OptionValue::Message(rules.into()));
 
-    if !validator.ignore.is_default() {
-      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
-    }
+    outer_rules
+      .add_cel_options(validator.cel)
+      .set_required(validator.required)
+      .set_ignore(validator.ignore);
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

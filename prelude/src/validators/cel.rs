@@ -33,12 +33,13 @@ impl From<CelRule> for ProtoOption {
 impl From<CelRule> for OptionValue {
   fn from(value: CelRule) -> Self {
     Self::Message(
-      vec![
+      [
         (ID.clone(), Self::String(value.id.into())),
         (MESSAGE.clone(), Self::String(value.message.into())),
         (EXPRESSION.clone(), Self::String(value.expression.into())),
       ]
-      .into(),
+      .into_iter()
+      .collect(),
     )
   }
 }

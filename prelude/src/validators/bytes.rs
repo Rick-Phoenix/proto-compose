@@ -329,85 +329,68 @@ impl Validator<Bytes> for BytesValidator {
   }
 }
 
-macro_rules! insert_bytes_option {
-  ($validator:ident, $values:ident, $field:ident) => {
-    $validator.$field.map(|v| {
-      $values.push((
-        $crate::paste!([< $field:upper >]).clone(),
-        OptionValue::String(format_bytes_as_proto_string_literal(&v).into()),
-      ))
-    })
-  };
-}
-
 impl From<BytesValidator> for ProtoOption {
   fn from(validator: BytesValidator) -> Self {
-    let mut rules: OptionValueList = Vec::new();
+    let mut rules = OptionMessageBuilder::new();
 
-    if let Some(const_val) = validator.const_ {
-      rules.push((
-        CONST_.clone(),
-        OptionValue::String(format_bytes_as_proto_string_literal(&const_val).into()),
-      ));
+    macro_rules! set_options {
+      ($($name:ident),*) => {
+        paste::paste! {
+          rules
+          $(
+            .maybe_set(&[< $name:upper >], validator.$name)
+          )*
+        }
+      };
     }
 
-    if validator.len.is_none() {
-      insert_option!(validator, rules, min_len);
-      insert_option!(validator, rules, max_len);
-    } else {
-      insert_option!(validator, rules, len);
-    }
+    set_options!(const_, min_len, max_len, len, contains, prefix, suffix);
 
     #[cfg(feature = "regex")]
     if let Some(pattern) = validator.pattern {
-      rules.push((
+      rules.set(
         PATTERN.clone(),
         OptionValue::String(pattern.as_str().into()),
-      ))
+      );
     }
 
-    insert_bytes_option!(validator, rules, contains);
-    insert_bytes_option!(validator, rules, prefix);
-    insert_bytes_option!(validator, rules, suffix);
+    rules
+      .maybe_set(
+        &IN_,
+        validator.in_.map(|list| {
+          OptionValue::new_list(
+            list
+              .items
+              .iter()
+              .map(|b| OptionValue::String(format_bytes_as_proto_string_literal(b).into())),
+          )
+        }),
+      )
+      .maybe_set(
+        &NOT_IN,
+        validator.not_in.map(|list| {
+          OptionValue::new_list(
+            list
+              .items
+              .iter()
+              .map(|b| OptionValue::String(format_bytes_as_proto_string_literal(b).into())),
+          )
+        }),
+      );
 
-    if let Some(allowed_list) = &validator.in_ {
-      rules.push((
-        IN_.clone(),
-        OptionValue::new_list(
-          allowed_list
-            .items
-            .iter()
-            .map(|b| OptionValue::String(format_bytes_as_proto_string_literal(b).into())),
-        ),
-      ));
+    if let Some(well_known) = validator.well_known {
+      let (name, val) = well_known.to_option();
+      rules.set(name, val);
     }
 
-    if let Some(forbidden_list) = &validator.not_in {
-      rules.push((
-        NOT_IN.clone(),
-        OptionValue::new_list(
-          forbidden_list
-            .items
-            .iter()
-            .map(|b| OptionValue::String(format_bytes_as_proto_string_literal(b).into())),
-        ),
-      ));
-    }
+    let mut outer_rules = OptionMessageBuilder::new();
 
-    if let Some(v) = validator.well_known {
-      v.to_option(&mut rules);
-    }
+    outer_rules.set(BYTES.clone(), OptionValue::Message(rules.into()));
 
-    let mut outer_rules: OptionValueList = vec![];
-
-    outer_rules.push((BYTES.clone(), OptionValue::Message(rules.into())));
-
-    insert_cel_rules!(validator, outer_rules);
-    insert_boolean_option!(validator, outer_rules, required);
-
-    if !validator.ignore.is_default() {
-      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
-    }
+    outer_rules
+      .add_cel_options(validator.cel)
+      .set_required(validator.required)
+      .set_ignore(validator.ignore);
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),
@@ -426,7 +409,7 @@ pub enum WellKnownBytes {
 }
 
 impl WellKnownBytes {
-  pub(crate) fn to_option(self, option_values: &mut OptionValueList) {
+  pub(crate) fn to_option(self) -> (Arc<str>, OptionValue) {
     let name = match self {
       Self::Uuid => UUID.clone(),
       Self::Ip => IP.clone(),
@@ -434,11 +417,11 @@ impl WellKnownBytes {
       Self::Ipv6 => IPV6.clone(),
     };
 
-    option_values.push((name, OptionValue::Bool(true)));
+    (name, OptionValue::Bool(true))
   }
 }
 
-fn format_bytes_as_proto_string_literal(bytes: &[u8]) -> String {
+pub(crate) fn format_bytes_as_proto_string_literal(bytes: &[u8]) -> String {
   let mut result = String::new();
 
   for &byte in bytes {

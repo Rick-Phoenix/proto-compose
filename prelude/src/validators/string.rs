@@ -444,65 +444,74 @@ impl Validator<String> for StringValidator {
 
 impl From<StringValidator> for ProtoOption {
   fn from(validator: StringValidator) -> Self {
-    let mut rules: OptionValueList = Vec::new();
+    let mut rules = OptionMessageBuilder::new();
 
-    if let Some(const_val) = validator.const_ {
-      rules.push((CONST_.clone(), OptionValue::String(const_val)));
+    macro_rules! set_options {
+      ($($name:ident),*) => {
+        paste::paste! {
+          rules
+          $(
+            .maybe_set(&[< $name:upper >], validator.$name)
+          )*
+        }
+      };
     }
 
-    insert_option!(validator, rules, min_len);
-    insert_option!(validator, rules, max_len);
-    insert_option!(validator, rules, len);
-
-    insert_option!(validator, rules, min_bytes);
-    insert_option!(validator, rules, max_bytes);
-    insert_option!(validator, rules, len_bytes);
+    set_options!(
+      const_,
+      min_len,
+      max_len,
+      len,
+      min_bytes,
+      max_bytes,
+      len_bytes,
+      prefix,
+      suffix,
+      contains,
+      not_contains
+    );
 
     #[cfg(feature = "regex")]
     if let Some(pattern) = validator.pattern {
-      rules.push((
+      rules.set(
         PATTERN.clone(),
         OptionValue::String(pattern.as_str().into()),
-      ))
+      );
     }
 
-    insert_option!(validator, rules, prefix);
-    insert_option!(validator, rules, suffix);
-    insert_option!(validator, rules, contains);
-    insert_option!(validator, rules, not_contains);
+    rules
+      .maybe_set(
+        &IN_,
+        validator
+          .in_
+          .map(|list| OptionValue::new_list(list.items.iter())),
+      )
+      .maybe_set(
+        &NOT_IN,
+        validator
+          .not_in
+          .map(|list| OptionValue::new_list(list.items.iter())),
+      );
 
-    if let Some(allowed_list) = &validator.in_ {
-      rules.push((
-        IN_.clone(),
-        OptionValue::new_list(allowed_list.items.iter()),
-      ));
-    }
+    if let Some(well_known) = validator.well_known {
+      let (name, value, is_strict) = well_known.to_option();
 
-    if let Some(forbidden_list) = &validator.not_in {
-      rules.push((
-        NOT_IN.clone(),
-        OptionValue::new_list(forbidden_list.items.iter()),
-      ));
-    }
-
-    if let Some(v) = validator.well_known {
-      v.to_option(&mut rules)
+      rules.set(name, value);
+      rules.set_boolean(&STRICT, is_strict);
     }
 
     // This is the outer rule grouping, "(buf.validate.field)"
-    let mut outer_rules: OptionValueList = vec![];
+    let mut outer_rules = OptionMessageBuilder::new();
 
     // (buf.validate.field).string .et_cetera...
-    outer_rules.push((STRING.clone(), OptionValue::Message(rules.into())));
+    outer_rules.set(STRING.clone(), OptionValue::Message(rules.into()));
 
     // These must be added on the outer grouping, as they are generic rules
     // It's (buf.validate.field).required, NOT (buf.validate.field).string.required
-    insert_cel_rules!(validator, outer_rules);
-    insert_boolean_option!(validator, outer_rules, required);
-
-    if !validator.ignore.is_default() {
-      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
-    }
+    outer_rules
+      .add_cel_options(validator.cel)
+      .set_required(validator.required)
+      .set_ignore(validator.ignore);
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

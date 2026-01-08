@@ -32,4 +32,6 @@
   { seconds: {{+ val.seconds }}, nanos: {{+ val.nanos +}} }
 {% when Self::Timestamp with (val) %}
   { seconds: {{+ val.seconds }}, nanos: {{+ val.nanos +}} }
+{% when Self::Bytes with (val) %}
+  "{{ crate::format_bytes_as_proto_string_literal(&val) }}"
 {% endmatch %}

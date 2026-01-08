@@ -174,45 +174,40 @@ impl Validator<Duration> for DurationValidator {
 
 impl From<DurationValidator> for ProtoOption {
   fn from(validator: DurationValidator) -> Self {
-    let mut rules: OptionValueList = Vec::new();
+    let mut rules = OptionMessageBuilder::new();
 
-    if let Some(const_val) = validator.const_ {
-      rules.push((CONST_.clone(), OptionValue::Duration(const_val)));
-    }
+    rules.maybe_set(&CONST_, validator.const_);
 
-    insert_option!(validator, rules, lt);
-    insert_option!(validator, rules, lte);
-    insert_option!(validator, rules, gt);
-    insert_option!(validator, rules, gte);
+    rules
+      .maybe_set(&LT, validator.lt)
+      .maybe_set(&LTE, validator.lte)
+      .maybe_set(&GT, validator.gt)
+      .maybe_set(&GTE, validator.gte)
+      .maybe_set(
+        &IN_,
+        validator
+          .in_
+          .map(|list| OptionValue::new_list(list.items.iter())),
+      )
+      .maybe_set(
+        &NOT_IN,
+        validator
+          .not_in
+          .map(|list| OptionValue::new_list(list.items.iter())),
+      );
 
-    if let Some(allowed_list) = &validator.in_ {
-      rules.push((
-        IN_.clone(),
-        OptionValue::new_list(allowed_list.items.iter()),
-      ));
-    }
+    let mut outer_rules = OptionMessageBuilder::new();
 
-    if let Some(forbidden_list) = &validator.not_in {
-      rules.push((
-        NOT_IN.clone(),
-        OptionValue::new_list(forbidden_list.items.iter()),
-      ));
-    }
+    outer_rules.set(DURATION.clone(), OptionValue::Message(rules.build()));
 
-    let mut outer_rules: OptionValueList = vec![];
-
-    outer_rules.push((DURATION.clone(), OptionValue::Message(rules.into())));
-
-    insert_cel_rules!(validator, outer_rules);
-    insert_boolean_option!(validator, outer_rules, required);
-
-    if !validator.ignore.is_default() {
-      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
-    }
+    outer_rules
+      .add_cel_options(validator.cel)
+      .set_required(validator.required)
+      .set_ignore(validator.ignore);
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),
-      value: OptionValue::Message(outer_rules.into()),
+      value: OptionValue::Message(outer_rules.build()),
     }
   }
 }

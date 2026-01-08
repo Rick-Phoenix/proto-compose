@@ -2,7 +2,7 @@ use crate::*;
 mod common_strings;
 use std::{fmt::Debug, hash::Hash, sync::Arc};
 
-use common_strings::*;
+pub(crate) use common_strings::*;
 use proto_types::protovalidate::*;
 
 // Here we use a generic for the target of the validator
@@ -77,8 +77,6 @@ pub trait ProtoValidator: std::marker::Sized {
   }
 }
 
-type OptionValueList = Vec<(Arc<str>, OptionValue)>;
-
 impl From<Ignore> for OptionValue {
   fn from(value: Ignore) -> Self {
     let name = match value {
@@ -88,50 +86,6 @@ impl From<Ignore> for OptionValue {
     };
 
     Self::Enum(name)
-  }
-}
-
-#[macro_use]
-mod macros {
-  macro_rules! insert_cel_rules {
-    ($validator:ident, $values:ident) => {
-      if !$validator.cel.is_empty() {
-        let rule_values: Vec<OptionValue> = $validator
-          .cel
-          .iter()
-          .map(|program| program.rule.clone().into())
-          .collect();
-        $values.push((CEL.clone(), OptionValue::List(rule_values.into())));
-      }
-    };
-  }
-
-  macro_rules! insert_option {
-    (
-    $validator:ident,
-    $values:ident,
-    $field:ident
-  ) => {
-      $crate::paste! {
-        if let Some(value) = $validator.$field {
-          $values.push(([< $field:snake:upper >].clone(), value.into()))
-        }
-      }
-    };
-  }
-
-  macro_rules! insert_boolean_option {
-    (
-    $validator:ident,
-    $values:ident,
-    $field:ident
-  ) => {
-      $crate::paste! {
-        if $validator.$field {
-          $values.push(([< $field:snake:upper >].clone(), OptionValue::Bool($validator.$field)));
-        }
-      }
-    };
   }
 }
 

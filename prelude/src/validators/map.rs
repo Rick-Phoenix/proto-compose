@@ -318,31 +318,31 @@ where
   V: ProtoValidator,
 {
   fn from(validator: MapValidator<K, V>) -> Self {
-    let mut rules: OptionValueList = Vec::new();
+    let mut rules = OptionMessageBuilder::new();
 
-    insert_option!(validator, rules, min_pairs);
-    insert_option!(validator, rules, max_pairs);
+    rules
+      .maybe_set(&MIN_PAIRS, validator.min_pairs)
+      .maybe_set(&MAX_PAIRS, validator.max_pairs);
 
     if let Some(keys_option) = validator.keys {
       let keys_schema: Self = keys_option.into();
 
-      rules.push((KEYS.clone(), keys_schema.value));
+      rules.set(KEYS.clone(), keys_schema.value);
     }
 
     if let Some(values_option) = validator.values {
       let values_schema: Self = values_option.into();
 
-      rules.push((VALUES.clone(), values_schema.value));
+      rules.set(VALUES.clone(), values_schema.value);
     }
 
-    let mut outer_rules: OptionValueList = vec![];
+    let mut outer_rules = OptionMessageBuilder::new();
 
-    insert_cel_rules!(validator, outer_rules);
-    outer_rules.push((MAP.clone(), OptionValue::Message(rules.into())));
+    outer_rules.set(MAP.clone(), OptionValue::Message(rules.into()));
 
-    if !validator.ignore.is_default() {
-      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
-    }
+    outer_rules
+      .add_cel_options(validator.cel)
+      .set_ignore(validator.ignore);
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

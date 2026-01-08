@@ -3,8 +3,11 @@ mod common_options;
 use std::sync::Arc;
 
 use askama::Template;
+use bytes::Bytes;
 pub use common_options::*;
-use proto_types::{Duration, Timestamp};
+use proto_types::{Duration, Timestamp, protovalidate::Ignore};
+
+use crate::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ProtoOption {
@@ -21,11 +24,199 @@ pub enum OptionValue {
   Uint(u64),
   Float(f64),
   String(Arc<str>),
+  Bytes(Bytes),
   List(Arc<[Self]>),
-  Message(Arc<[(Arc<str>, Self)]>),
+  Message(OptionMessage),
   Enum(Arc<str>),
   Duration(Duration),
   Timestamp(Timestamp),
+}
+
+#[derive(Default, Debug, Clone, PartialEq)]
+pub struct OptionMessage {
+  inner: Arc<[(Arc<str>, OptionValue)]>,
+}
+
+impl<'a> IntoIterator for &'a OptionMessage {
+  type Item = &'a (Arc<str>, OptionValue);
+  type IntoIter = std::slice::Iter<'a, (Arc<str>, OptionValue)>;
+
+  #[inline]
+  fn into_iter(self) -> Self::IntoIter {
+    self.inner.iter()
+  }
+}
+
+impl<N, V> FromIterator<(N, V)> for OptionMessage
+where
+  N: Into<Arc<str>>,
+  V: Into<OptionValue>,
+{
+  fn from_iter<T: IntoIterator<Item = (N, V)>>(iter: T) -> Self {
+    let items: Vec<(Arc<str>, OptionValue)> = iter
+      .into_iter()
+      .map(|(n, v)| (n.into(), v.into()))
+      .collect();
+
+    Self {
+      inner: items.into_boxed_slice().into(),
+    }
+  }
+}
+
+impl OptionMessage {
+  #[must_use]
+  #[inline]
+  pub fn new() -> Self {
+    Self::default()
+  }
+
+  #[inline]
+  #[must_use]
+  pub fn get(&self, name: &str) -> Option<&OptionValue> {
+    self
+      .inner
+      .iter()
+      .find_map(|(n, v)| (n.as_ref() == name).then_some(v))
+  }
+
+  #[inline]
+  pub fn iter(&self) -> std::slice::Iter<'_, (Arc<str>, OptionValue)> {
+    self.inner.iter()
+  }
+}
+
+#[derive(Default, Debug, Clone, PartialEq)]
+pub struct OptionMessageBuilder {
+  inner: Vec<(Arc<str>, OptionValue)>,
+}
+
+impl OptionMessageBuilder {
+  pub(crate) fn maybe_set(
+    &mut self,
+    name: &Arc<str>,
+    value: Option<impl Into<OptionValue>>,
+  ) -> &mut Self {
+    if let Some(value) = value {
+      self.set(name.clone(), value);
+    }
+    self
+  }
+
+  pub(crate) fn set_boolean(&mut self, name: &Arc<str>, boolean: bool) -> &mut Self {
+    if boolean {
+      self.set(name.clone(), OptionValue::Bool(true));
+    }
+    self
+  }
+
+  pub(crate) fn add_cel_options(&mut self, rules: Vec<CelProgram>) -> &mut Self {
+    if !rules.is_empty() {
+      let rule_options: Vec<OptionValue> = rules
+        .into_iter()
+        .map(|program| program.rule.into())
+        .collect();
+      self.set(CEL.clone(), OptionValue::List(rule_options.into()));
+    }
+    self
+  }
+
+  #[inline]
+  #[must_use]
+  pub fn new() -> Self {
+    Self::default()
+  }
+
+  #[inline]
+  pub fn set(&mut self, name: impl Into<Arc<str>>, value: impl Into<OptionValue>) -> &mut Self {
+    self.inner.push((name.into(), value.into()));
+    self
+  }
+
+  pub(crate) fn set_required(&mut self, required: bool) -> &mut Self {
+    if required {
+      self.set(REQUIRED.clone(), OptionValue::Bool(true));
+    }
+    self
+  }
+
+  pub(crate) fn set_ignore(&mut self, ignore: Ignore) -> &mut Self {
+    if !matches!(ignore, Ignore::Unspecified) {
+      // The long conversion is necessary here to avoid issues with the i32 representation
+      self.set(IGNORE.clone(), <Ignore as Into<OptionValue>>::into(ignore));
+    }
+    self
+  }
+
+  #[inline]
+  pub fn iter(&self) -> std::slice::Iter<'_, KeyValue> {
+    self.inner.iter()
+  }
+
+  #[inline]
+  #[must_use]
+  pub fn build(self) -> OptionMessage {
+    OptionMessage {
+      inner: self.inner.into_boxed_slice().into(),
+    }
+  }
+}
+
+impl From<OptionMessageBuilder> for OptionMessage {
+  fn from(value: OptionMessageBuilder) -> Self {
+    value.build()
+  }
+}
+
+type KeyValue = (Arc<str>, OptionValue);
+
+impl IntoIterator for OptionMessageBuilder {
+  type Item = KeyValue;
+  type IntoIter = std::vec::IntoIter<KeyValue>;
+
+  #[inline]
+  fn into_iter(self) -> Self::IntoIter {
+    self.inner.into_iter()
+  }
+}
+
+impl<'a> IntoIterator for &'a OptionMessageBuilder {
+  type Item = &'a KeyValue;
+  type IntoIter = std::slice::Iter<'a, KeyValue>;
+
+  #[inline]
+  fn into_iter(self) -> Self::IntoIter {
+    self.inner.iter()
+  }
+}
+
+impl<N, V> FromIterator<(N, V)> for OptionMessageBuilder
+where
+  N: Into<Arc<str>>,
+  V: Into<OptionValue>,
+{
+  fn from_iter<T: IntoIterator<Item = (N, V)>>(iter: T) -> Self {
+    let items: Vec<KeyValue> = iter
+      .into_iter()
+      .map(|(n, v)| (n.into(), v.into()))
+      .collect();
+
+    Self { inner: items }
+  }
+}
+
+impl<N, V> Extend<(N, V)> for OptionMessageBuilder
+where
+  N: Into<Arc<str>>,
+  V: Into<OptionValue>,
+{
+  fn extend<T: IntoIterator<Item = (N, V)>>(&mut self, iter: T) {
+    self.inner.extend(
+      iter
+        .into_iter()
+        .map(|(n, v)| (n.into(), v.into())),
+    )
+  }
 }
 
 impl OptionValue {
@@ -45,12 +236,7 @@ impl OptionValue {
     V: Into<Self>,
     I: IntoIterator<Item = (S, V)>,
   {
-    let items: Vec<(Arc<str>, Self)> = items
-      .into_iter()
-      .map(|(name, val)| (name.into(), val.into()))
-      .collect();
-
-    Self::Message(items.into())
+    Self::Message(items.into_iter().collect())
   }
 
   /// Creates a new list option value.
@@ -156,7 +342,6 @@ impl From<isize> for OptionValue {
   }
 }
 
-option_value_conversion!(Arc<[(Arc<str>, OptionValue)]>, Message);
 option_value_conversion!(bool, Bool);
 option_value_conversion!(Duration, Duration);
 option_value_conversion!(Timestamp, Timestamp);
@@ -166,3 +351,4 @@ option_value_conversion!(u64, Uint);
 option_value_conversion!(u32, Uint, as u64);
 option_value_conversion!(f64, Float);
 option_value_conversion!(f32, Float, as f64);
+option_value_conversion!(Bytes, Bytes);

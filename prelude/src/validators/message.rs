@@ -142,14 +142,12 @@ pub struct MessageValidator<T: ValidatedMessage> {
 
 impl<T: ValidatedMessage> From<MessageValidator<T>> for ProtoOption {
   fn from(validator: MessageValidator<T>) -> Self {
-    let mut rules: OptionValueList = Vec::new();
+    let mut rules = OptionMessageBuilder::new();
 
-    insert_cel_rules!(validator, rules);
-    insert_boolean_option!(validator, rules, required);
-
-    if !validator.ignore.is_default() {
-      rules.push((IGNORE.clone(), validator.ignore.into()))
-    }
+    rules
+      .add_cel_options(validator.cel)
+      .set_required(validator.required)
+      .set_ignore(validator.ignore);
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),

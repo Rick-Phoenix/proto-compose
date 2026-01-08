@@ -67,23 +67,23 @@ pub struct BoolValidator {
 
 impl From<BoolValidator> for ProtoOption {
   fn from(validator: BoolValidator) -> Self {
-    let mut rules: OptionValueList = Vec::new();
+    let mut rules = OptionMessageBuilder::new();
 
-    insert_option!(validator, rules, const_);
-
-    let mut outer_rules: OptionValueList = vec![];
-
-    outer_rules.push((BOOL.clone(), OptionValue::Message(rules.into())));
-
-    insert_boolean_option!(validator, outer_rules, required);
-
-    if !validator.ignore.is_default() {
-      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
+    if let Some(value) = validator.const_ {
+      rules.set(CONST_.clone(), OptionValue::Bool(value));
     }
+
+    let mut outer_rules = OptionMessageBuilder::new();
+
+    outer_rules.set(BOOL.clone(), OptionValue::Message(rules.build()));
+
+    outer_rules
+      .set_required(validator.required)
+      .set_ignore(validator.ignore);
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),
-      value: OptionValue::Message(outer_rules.into()),
+      value: OptionValue::Message(outer_rules.build()),
     }
   }
 }

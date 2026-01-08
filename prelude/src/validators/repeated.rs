@@ -292,27 +292,26 @@ where
   T: ProtoValidator,
 {
   fn from(validator: RepeatedValidator<T>) -> Self {
-    let mut rules: OptionValueList = Vec::new();
+    let mut rules = OptionMessageBuilder::new();
 
-    insert_boolean_option!(validator, rules, unique);
-    insert_option!(validator, rules, min_items);
-    insert_option!(validator, rules, max_items);
+    rules
+      .set_boolean(&UNIQUE, validator.unique)
+      .maybe_set(&MIN_ITEMS, validator.min_items)
+      .maybe_set(&MAX_ITEMS, validator.max_items);
 
     if let Some(items_option) = validator.items {
       let items_schema: Self = items_option.into();
 
-      rules.push((ITEMS.clone(), items_schema.value));
+      rules.set(ITEMS.clone(), items_schema.value);
     }
 
-    let mut outer_rules: OptionValueList = vec![];
+    let mut outer_rules = OptionMessageBuilder::new();
 
-    insert_cel_rules!(validator, outer_rules);
+    outer_rules.set(REPEATED.clone(), OptionValue::Message(rules.into()));
 
-    outer_rules.push((REPEATED.clone(), OptionValue::Message(rules.into())));
-
-    if !validator.ignore.is_default() {
-      outer_rules.push((IGNORE.clone(), validator.ignore.into()))
-    }
+    outer_rules
+      .add_cel_options(validator.cel)
+      .set_ignore(validator.ignore);
 
     Self {
       name: BUF_VALIDATE_FIELD.clone(),
