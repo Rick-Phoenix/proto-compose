@@ -326,7 +326,6 @@ impl<'a, T: Ord> IntoIterator for &'a SortedList<T> {
   }
 }
 
-#[doc(hidden)]
 pub trait ListFormatter: Sized {
   fn format_list(items: &[Self]) -> String;
 }

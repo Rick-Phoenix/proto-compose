@@ -8,7 +8,7 @@ mod sealed {
   pub(super) struct Sealed;
 }
 
-pub trait State: ::core::marker::Sized {
+pub trait State: Sized {
   type Ignore;
   type Required;
   type AbsTolerance;

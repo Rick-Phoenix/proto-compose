@@ -256,6 +256,9 @@ where
   }
 }
 
+#[allow(private_interfaces)]
+struct Sealed;
+
 pub trait IntWrapper: AsProtoType + Default {
   type RustType: PartialOrd
     + PartialEq
@@ -277,6 +280,8 @@ pub trait IntWrapper: AsProtoType + Default {
   const IN_VIOLATION: &'static LazyLock<ViolationData>;
   const NOT_IN_VIOLATION: &'static LazyLock<ViolationData>;
   const CONST_VIOLATION: &'static LazyLock<ViolationData>;
+  #[allow(private_interfaces)]
+  const SEALED: Sealed;
 
   fn type_name() -> Arc<str>;
 }
@@ -293,6 +298,8 @@ macro_rules! impl_int_wrapper {
         const IN_VIOLATION: &'static LazyLock<ViolationData> = &[< $proto_type _IN_VIOLATION >];
         const NOT_IN_VIOLATION: &'static LazyLock<ViolationData> = &[< $proto_type _NOT_IN_VIOLATION >];
         const CONST_VIOLATION: &'static LazyLock<ViolationData> = &[< $proto_type _CONST_VIOLATION >];
+        #[allow(private_interfaces)]
+        const SEALED: Sealed = Sealed;
 
         fn type_name() -> Arc<str> {
           $proto_type.clone()

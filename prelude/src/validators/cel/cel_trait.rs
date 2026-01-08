@@ -3,10 +3,12 @@ use proto_types::cel::CelConversionError;
 
 use crate::*;
 
+#[doc(hidden)]
 // Not being detected by the LSP that this is used
 #[allow(unused)]
 #[cfg(feature = "cel")]
 pub trait IntoCel: Into<::cel::Value> {}
+#[doc(hidden)]
 #[cfg(feature = "cel")]
 impl<T> IntoCel for T where T: Into<::cel::Value> {}
 
@@ -72,12 +74,16 @@ pub trait TryIntoCel {}
 #[cfg(not(feature = "cel"))]
 impl<T> TryIntoCel for T {}
 
+#[doc(hidden)]
 #[cfg(feature = "cel")]
 pub trait IntoCelKey: Into<::cel::objects::Key> {}
+#[doc(hidden)]
 #[cfg(feature = "cel")]
 impl<T> IntoCelKey for T where T: Into<::cel::objects::Key> {}
 
+#[doc(hidden)]
 #[cfg(not(feature = "cel"))]
 pub trait IntoCelKey {}
+#[doc(hidden)]
 #[cfg(not(feature = "cel"))]
 impl<T> IntoCelKey for T {}

@@ -356,6 +356,9 @@ where
 impl_proto_type!(f32, Float);
 impl_proto_type!(f64, Double);
 
+#[allow(private_interfaces)]
+struct Sealed;
+
 pub trait FloatWrapper: AsProtoType + Default {
   type RustType: PartialOrd
     + PartialEq
@@ -377,6 +380,8 @@ pub trait FloatWrapper: AsProtoType + Default {
   const NOT_IN_VIOLATION: &'static LazyLock<ViolationData>;
   const CONST_VIOLATION: &'static LazyLock<ViolationData>;
   const FINITE_VIOLATION: &'static LazyLock<ViolationData>;
+  #[allow(private_interfaces)]
+  const SEALED: Sealed;
 
   fn type_name() -> Arc<str>;
 }
@@ -394,6 +399,8 @@ macro_rules! impl_float_wrapper {
         const FINITE_VIOLATION: &'static LazyLock<ViolationData> = &[< $proto_type _FINITE_VIOLATION >];
         const IN_VIOLATION: &'static LazyLock<ViolationData> = &[< $proto_type _IN_VIOLATION >];
         const NOT_IN_VIOLATION: &'static LazyLock<ViolationData> = &[< $proto_type _NOT_IN_VIOLATION >];
+        #[allow(private_interfaces)]
+        const SEALED: Sealed = Sealed;
 
         fn type_name() -> Arc<str> {
           $proto_type.clone()
