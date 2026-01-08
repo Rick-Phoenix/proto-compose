@@ -245,44 +245,13 @@ impl OptionValue {
     V: Into<Self>,
     I: IntoIterator<Item = V>,
   {
-    let items: Vec<Self> = items
-      .into_iter()
-      .map(std::convert::Into::into)
-      .collect();
+    let items: Vec<Self> = items.into_iter().map(Into::into).collect();
 
     Self::List(items.into())
   }
 }
 
-impl<T: Clone + Into<Self>> From<&T> for OptionValue {
-  fn from(value: &T) -> Self {
-    value.clone().into()
-  }
-}
-
-macro_rules! option_value_conversion {
-  ($origin_type:ty, $dest_type:ident $(, as $as_type:ty)?) => {
-    impl From<$origin_type> for OptionValue {
-      fn from(value: $origin_type) -> OptionValue {
-        OptionValue::$dest_type(value $(as $as_type)?)
-      }
-    }
-  };
-}
-
-impl<T: Into<Self> + Clone> From<Arc<[T]>> for OptionValue {
-  fn from(value: Arc<[T]>) -> Self {
-    Self::List(
-      value
-        .iter()
-        .map(|item| (*item).clone().into())
-        .collect::<Vec<Self>>()
-        .into(),
-    )
-  }
-}
-
-impl<T: Into<Self> + Clone> From<Vec<T>> for OptionValue {
+impl<T: Into<Self>> From<Vec<T>> for OptionValue {
   fn from(value: Vec<T>) -> Self {
     Self::List(
       value
@@ -294,27 +263,9 @@ impl<T: Into<Self> + Clone> From<Vec<T>> for OptionValue {
   }
 }
 
-impl<T: Into<Self> + Clone> From<&[T]> for OptionValue {
-  fn from(value: &[T]) -> Self {
-    Self::List(
-      value
-        .iter()
-        .map(|item| item.clone().into())
-        .collect::<Vec<Self>>()
-        .into(),
-    )
-  }
-}
-
 impl From<&str> for OptionValue {
   fn from(value: &str) -> Self {
     Self::String(value.into())
-  }
-}
-
-impl From<Arc<str>> for OptionValue {
-  fn from(value: Arc<str>) -> Self {
-    Self::String(value)
   }
 }
 
@@ -330,16 +281,14 @@ impl From<std::time::Duration> for OptionValue {
   }
 }
 
-impl From<usize> for OptionValue {
-  fn from(value: usize) -> Self {
-    Self::Uint(value as u64)
-  }
-}
-
-impl From<isize> for OptionValue {
-  fn from(value: isize) -> Self {
-    Self::Int(value as i64)
-  }
+macro_rules! option_value_conversion {
+  ($origin_type:ty, $dest_type:ident $(, as $as_type:ty)?) => {
+    impl From<$origin_type> for OptionValue {
+      fn from(value: $origin_type) -> OptionValue {
+        OptionValue::$dest_type(value $(as $as_type)?)
+      }
+    }
+  };
 }
 
 option_value_conversion!(bool, Bool);
@@ -349,6 +298,9 @@ option_value_conversion!(i64, Int);
 option_value_conversion!(i32, Int, as i64);
 option_value_conversion!(u64, Uint);
 option_value_conversion!(u32, Uint, as u64);
+option_value_conversion!(usize, Uint, as u64);
 option_value_conversion!(f64, Float);
 option_value_conversion!(f32, Float, as f64);
 option_value_conversion!(Bytes, Bytes);
+option_value_conversion!(OptionMessage, Message);
+option_value_conversion!(Arc<str>, String);

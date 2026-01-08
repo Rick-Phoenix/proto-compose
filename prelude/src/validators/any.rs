@@ -118,13 +118,13 @@ impl From<AnyValidator> for ProtoOption {
         &IN_,
         validator
           .in_
-          .map(|list| OptionValue::new_list(list.items.iter())),
+          .map(|list| OptionValue::new_list(list.items)),
       )
       .maybe_set(
         &NOT_IN,
         validator
           .not_in
-          .map(|list| OptionValue::new_list(list.items.iter())),
+          .map(|list| OptionValue::new_list(list.items)),
       );
 
     let mut outer_rules = OptionMessageBuilder::new();

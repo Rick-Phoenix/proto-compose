@@ -215,7 +215,7 @@ impl From<FieldMaskValidator> for ProtoOption {
     if let Some(const_val) = validator.const_ {
       let mut msg_val = OptionMessageBuilder::new();
 
-      msg_val.set(PATHS.clone(), OptionValue::new_list(const_val.items.iter()));
+      msg_val.set(PATHS.clone(), OptionValue::new_list(const_val.items));
 
       rules.set(CONST_.clone(), OptionValue::Message(msg_val.into()));
     }
@@ -225,13 +225,13 @@ impl From<FieldMaskValidator> for ProtoOption {
         &IN_,
         validator
           .in_
-          .map(|list| OptionValue::new_list(list.items.iter())),
+          .map(|list| OptionValue::new_list(list.items)),
       )
       .maybe_set(
         &NOT_IN,
         validator
           .not_in
-          .map(|list| OptionValue::new_list(list.items.iter())),
+          .map(|list| OptionValue::new_list(list.items)),
       );
 
     let mut outer_rules = OptionMessageBuilder::new();
