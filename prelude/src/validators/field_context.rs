@@ -188,11 +188,11 @@ impl ViolationsAcc {
     parent_elements: &[FieldPathElement],
   ) {
     let violation = new_violation_with_custom_id(
-      rule.id,
+      &rule.id,
       field_context,
       parent_elements,
       &CEL_VIOLATION,
-      rule.message,
+      &rule.message,
     );
 
     self.push(violation);

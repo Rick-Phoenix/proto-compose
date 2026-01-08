@@ -7,11 +7,11 @@ use super::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CelRule {
   /// The id of this specific rule.
-  pub id: &'static str,
+  pub id: Arc<str>,
   /// The error message to display in case the rule fails validation.
-  pub message: &'static str,
+  pub message: Arc<str>,
   /// The CEL expression that must be used to perform the validation check.
-  pub expression: &'static str,
+  pub expression: Arc<str>,
 }
 
 impl From<CelRule> for CelProgram {
@@ -34,9 +34,9 @@ impl From<CelRule> for OptionValue {
   fn from(value: CelRule) -> Self {
     Self::Message(
       [
-        (ID.clone(), Self::String(value.id.into())),
-        (MESSAGE.clone(), Self::String(value.message.into())),
-        (EXPRESSION.clone(), Self::String(value.expression.into())),
+        (ID.clone(), Self::String(value.id)),
+        (MESSAGE.clone(), Self::String(value.message)),
+        (EXPRESSION.clone(), Self::String(value.expression)),
       ]
       .into_iter()
       .collect(),
@@ -96,11 +96,11 @@ mod cel_impls {
   impl CelError {
     #[must_use]
     #[inline]
-    pub const fn rule_id(&self) -> Option<&'static str> {
+    pub fn rule_id(&self) -> Option<&str> {
       match self {
         Self::ConversionError(_) => None,
         Self::NonBooleanResult { rule_id, .. } | Self::ExecutionError { rule_id, .. } => {
-          Some(rule_id)
+          Some(rule_id.as_ref())
         }
       }
     }
@@ -129,16 +129,13 @@ mod cel_impls {
   #[derive(Debug, Clone, Error)]
   pub enum CelError {
     #[error("Expected CEL program with id `{rule_id}` to return a boolean result, got `{value:?}`")]
-    NonBooleanResult {
-      rule_id: &'static str,
-      value: ValueType,
-    },
+    NonBooleanResult { rule_id: Arc<str>, value: ValueType },
     // SHould use FieldPath here to at least get the context of the value
     #[error("Failed to inject value in CEL program: {0}")]
     ConversionError(String),
     #[error("Failed to execute CEL program with id `{rule_id}`: {source}")]
     ExecutionError {
-      rule_id: &'static str,
+      rule_id: Arc<str>,
       source: ExecutionError,
     },
   }
@@ -245,7 +242,7 @@ mod cel_impls {
     #[inline]
     pub fn get_program(&self) -> &Program {
       self.program.get_or_init(|| {
-        Program::compile(self.rule.expression).unwrap_or_else(|e| {
+        Program::compile(&self.rule.expression).unwrap_or_else(|e| {
           panic!(
             "Failed to compile CEL program with id `{}`: {e}",
             self.rule.id
@@ -260,7 +257,7 @@ mod cel_impls {
       let result = program
         .execute(ctx)
         .map_err(|e| CelError::ExecutionError {
-          rule_id: self.rule.id,
+          rule_id: self.rule.id.clone(),
           source: e,
         })?;
 
@@ -268,7 +265,7 @@ mod cel_impls {
         Ok(result)
       } else {
         Err(CelError::NonBooleanResult {
-          rule_id: self.rule.id,
+          rule_id: self.rule.id.clone(),
           value: result.type_of(),
         })
       }
