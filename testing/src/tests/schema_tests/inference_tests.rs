@@ -142,7 +142,7 @@ struct MessageInference {
   repeated_inf: Vec<CardinalityInference>,
   #[proto(map(int32, message))]
   map_inf: HashMap<i32, CardinalityInference>,
-  #[proto(message(boxed))]
+  #[proto(message)]
   boxed_inf: Option<Box<MessageInference>>,
 }
 
@@ -159,9 +159,53 @@ fn message_inference() {
       keys: ProtoMapKey::Int32,
       values: msg_type,
     },
+    FieldType::Normal(ProtoType::Message(MessageInference::proto_path())),
   ];
 
   for (field, exp_type) in schema.fields().zip(exp_types) {
     assert_eq_pretty!(field.type_, exp_type);
   }
+}
+
+#[proto_oneof(proxied, no_auto_test)]
+enum ProxiedOneof {
+  #[proto(tag = 1)]
+  A(String),
+  #[proto(tag = 2)]
+  B(i32),
+}
+
+#[proto_message(proxied, no_auto_test)]
+struct ProxiedMsg {
+  id: i32,
+}
+
+#[proto_message(proxied, no_auto_test)]
+struct ProxiedInference {
+  #[proto(oneof(proxied, tags(1, 2)))]
+  oneof: Option<ProxiedOneof>,
+  #[proto(message(proxied))]
+  msg: Option<ProxiedMsg>,
+}
+
+#[test]
+fn proxied_inference() {
+  let schema = ProxiedInferenceProto::proto_schema();
+
+  let oneof = schema.entries.first().unwrap();
+
+  assert_eq_pretty!(
+    oneof,
+    &MessageEntry::Oneof {
+      oneof: ProxiedOneofProto::proto_schema(),
+      required: false
+    }
+  );
+
+  let msg_field = schema.entries.last().unwrap();
+
+  assert_eq_pretty!(
+    msg_field.as_field().unwrap().type_,
+    FieldType::Normal(ProtoType::Message(ProxiedMsgProto::proto_path()))
+  );
 }

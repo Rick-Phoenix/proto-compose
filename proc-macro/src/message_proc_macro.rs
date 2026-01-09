@@ -165,6 +165,17 @@ pub fn message_macro_shadow(
       continue;
     };
 
+    if let ProtoField::Oneof(OneofInfo { default: false, .. }) = &field_data.proto_field
+      && !field_data.type_info.is_option()
+      && !field_data.has_custom_conversions()
+      && !proto_conversion_data.has_custom_impls()
+    {
+      bail!(
+        &field_data.type_info,
+        "A oneof must be wrapped in `Option` unless a custom to/from proto implementation is provided or the `default` attribute is used"
+      );
+    }
+
     let tag = if field_data.proto_field.is_oneof() {
       // We don't need an actual tag for oneofs
       0
@@ -232,6 +243,13 @@ pub fn message_macro_direct(
     if let FieldDataKind::Normal(data) = field_data_kind {
       if data.proto_field.is_enum() && !data.type_info.inner().is_int() {
         bail!(&data.type_info, "Enums must use `i32` in direct impls")
+      }
+
+      if data.proto_field.is_oneof() && !data.type_info.is_option() {
+        bail!(
+          &data.type_info,
+          "Oneofs must be wrapped in `Option` in a direct impl"
+        )
       }
 
       match data.type_info.type_.as_ref() {

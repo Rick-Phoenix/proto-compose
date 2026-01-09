@@ -115,6 +115,10 @@ pub fn fallback_conversion_impls(
 }
 
 impl ProtoConversionImpl<'_> {
+  pub fn has_custom_impls(&self) -> bool {
+    self.into_proto.has_custom_impl() && self.from_proto.has_custom_impl()
+  }
+
   pub fn generate_conversion_impls(&self) -> TokenStream2 {
     let Self {
       source_ident,

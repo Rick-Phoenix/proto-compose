@@ -28,6 +28,12 @@ pub struct FieldData {
   pub deprecated: bool,
 }
 
+impl FieldData {
+  pub fn has_custom_conversions(&self) -> bool {
+    self.from_proto.is_some() && self.into_proto.is_some()
+  }
+}
+
 // No sense in boxing since it's the most common path
 #[allow(clippy::large_enum_variant)]
 pub enum FieldDataKind {

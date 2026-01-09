@@ -47,6 +47,15 @@ fn oneof_with_default() {
   assert_eq_pretty!(converted.field, OneofWithDefault::B(IntWrapper(5)));
 }
 
+// This should compile because using a oneof not wrapped with `Option` should be allowed
+// if a custom conversion impl is provided
+#[proto_message(proxied, no_auto_test)]
+struct DefaultOneofWithCustomImpl {
+  #[proto(oneof(proxied, tags(1, 2)))]
+  #[proto(from_proto = |_| OneofWithDefault::B(IntWrapper(0)), into_proto = |_| Some(OneofWithDefaultProto::default()))]
+  oneof: OneofWithDefault,
+}
+
 #[proto_oneof(proxied, no_auto_test)]
 #[derive(PartialEq)]
 enum OneofCustomFieldConversions {
