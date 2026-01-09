@@ -3,8 +3,7 @@ use ordermap::OrderMap;
 
 use crate::*;
 
-#[doc(hidden)]
-pub struct RegistryPath {
+pub struct FileReference {
   pub file: &'static str,
   pub package: &'static str,
   pub extern_path: &'static str,

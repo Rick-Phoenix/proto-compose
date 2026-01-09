@@ -2,11 +2,11 @@ use std::{collections::hash_map::Entry, fs::File, path::Path, sync::Arc};
 
 use crate::*;
 
-pub struct PackageGetter {
+pub struct PackageReference {
   pub name: &'static str,
 }
 
-impl PackageGetter {
+impl PackageReference {
   #[must_use]
   pub const fn new(name: &'static str) -> Self {
     Self { name }

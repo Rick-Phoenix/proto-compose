@@ -53,7 +53,7 @@ macro_rules! use_proto_file {
   ($file:path) => {
     #[doc(hidden)]
     #[allow(unused)]
-    const __PROTO_FILE: $crate::RegistryPath = $file;
+    const __PROTO_FILE: $crate::FileReference = $file;
   };
 }
 

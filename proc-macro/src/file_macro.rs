@@ -63,7 +63,7 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
   Ok(quote! {
     #[doc(hidden)]
     #[allow(unused)]
-    const #const_ident: ::prelude::RegistryPath = ::prelude::RegistryPath {
+    const #const_ident: ::prelude::FileReference = ::prelude::FileReference {
       file: #file,
       package: #package.name,
       extern_path: #extern_path,
@@ -71,7 +71,7 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
 
     #[doc(hidden)]
     #[allow(unused)]
-    const __PROTO_FILE: ::prelude::RegistryPath = #const_ident;
+    const __PROTO_FILE: ::prelude::FileReference = #const_ident;
 
     ::prelude::inventory::submit! {
       ::prelude::RegistryFile {

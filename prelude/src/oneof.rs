@@ -64,3 +64,11 @@ pub struct Oneof {
   pub fields: Vec<Field>,
   pub options: Vec<ProtoOption>,
 }
+
+impl Oneof {
+  #[must_use]
+  pub fn with_options<I: IntoIterator<Item = ProtoOption>>(mut self, options: I) -> Self {
+    self.options.extend(options);
+    self
+  }
+}

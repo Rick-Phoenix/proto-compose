@@ -77,10 +77,19 @@ impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
       } = data.borrow();
 
       if let ProtoField::Oneof(OneofInfo { path, required, .. }) = proto_field {
-        quote! {
-          ::prelude::MessageEntry::Oneof {
-            oneof: <#path as ::prelude::ProtoOneof>::proto_schema(),
-            required: #required
+        if options.is_default() {
+          quote! {
+            ::prelude::MessageEntry::Oneof {
+              oneof: <#path as ::prelude::ProtoOneof>::proto_schema(),
+              required: #required
+            }
+          }
+        } else {
+          quote! {
+            ::prelude::MessageEntry::Oneof {
+              oneof: <#path as ::prelude::ProtoOneof>::proto_schema().with_options(#options),
+              required: #required
+            }
           }
         }
       } else {

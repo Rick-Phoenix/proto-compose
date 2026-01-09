@@ -268,8 +268,28 @@ fn message_schema_output() {
 #[proto_message(no_auto_test)]
 #[proto(parent_message = TestMessage)]
 pub struct Nested1 {
-  #[proto(validate = |v| v.len_bytes(68))]
-  name: String,
+  #[proto(oneof(tags(200, 201)), options = [proto_option!("some_option" => 100)])]
+  reused_oneof: Option<OneofA>,
+}
+
+#[test]
+fn added_oneof_options() {
+  let mut base_options = OneofA::proto_schema().options;
+
+  let msg = Nested1::proto_schema();
+
+  let MessageEntry::Oneof { oneof, .. } = msg.entries.first().unwrap() else {
+    panic!()
+  };
+
+  assert_ne!(
+    base_options, oneof.options,
+    "Extended and base options should not be the same"
+  );
+
+  // After adding the extra options, they should be the same
+  base_options.push(proto_option!("some_option" => 100));
+  assert_eq_pretty!(base_options, oneof.options);
 }
 
 #[proto_message(no_auto_test)]
