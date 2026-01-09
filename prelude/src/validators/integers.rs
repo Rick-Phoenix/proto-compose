@@ -273,6 +273,7 @@ pub trait IntWrapper: AsProtoType + Default {
     + Ord
     + IntoCel
     + ListFormatter
+    + AsProtoMapKey
     + 'static;
   const LT_VIOLATION: &'static LazyLock<ViolationData>;
   const LTE_VIOLATION: &'static LazyLock<ViolationData>;
@@ -315,6 +316,7 @@ macro_rules! impl_int {
     paste::paste! {
       impl_int_wrapper!($rust_type, $rust_type, $proto_type);
       impl_proto_type!($rust_type, [ < $proto_type:camel > ]);
+      impl_proto_map_key!($rust_type, [ < $proto_type:camel > ]);
       impl_int_validator!($rust_type, $rust_type);
     }
   };
@@ -323,6 +325,7 @@ macro_rules! impl_int {
     paste::paste! {
       impl_int_wrapper!($wrapper, $rust_type, [< $wrapper:upper >]);
       impl_proto_type!($wrapper, $wrapper);
+      impl_proto_map_key!($wrapper, $wrapper);
       impl_int_validator!($wrapper, $rust_type);
     }
   };

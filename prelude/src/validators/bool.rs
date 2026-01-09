@@ -4,6 +4,7 @@ pub use builder::BoolValidatorBuilder;
 use super::*;
 
 impl_proto_type!(bool, Bool);
+impl_proto_map_key!(bool, Bool);
 
 impl Validator<bool> for BoolValidator {
   type Target = bool;

@@ -33,7 +33,7 @@ impl Field {
         ty.register_import(imports)
       }
       FieldType::Map { keys, values } => {
-        keys.register_import(imports);
+        keys.into_type().register_import(imports);
         values.register_import(imports);
       }
     };

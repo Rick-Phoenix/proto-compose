@@ -152,3 +152,17 @@ macro_rules! impl_proto_type {
     }
   };
 }
+
+macro_rules! impl_proto_map_key {
+  ($rust_type:ty, $enum_ident:ident) => {
+    #[doc(hidden)]
+    impl AsProtoMapKey for $rust_type {
+      #[allow(private_interfaces)]
+      const SEALED: crate::proto_type::Sealed = crate::proto_type::Sealed;
+
+      fn as_proto_map_key() -> ProtoMapKey {
+        ProtoMapKey::$enum_ident
+      }
+    }
+  };
+}

@@ -79,6 +79,7 @@ impl StringValidator {
 }
 
 impl_proto_type!(String, String);
+impl_proto_map_key!(String, String);
 
 impl Validator<String> for StringValidator {
   type Target = String;

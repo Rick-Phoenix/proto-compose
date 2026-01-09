@@ -59,14 +59,9 @@ where
   }
 }
 
-impl<T: AsProtoField> AsProtoField for Vec<T> {
+impl<T: AsProtoType> AsProtoField for Vec<T> {
   fn as_proto_field() -> FieldType {
-    let inner_type = T::as_proto_field();
-
-    match inner_type {
-      FieldType::Normal(typ) => FieldType::Repeated(typ),
-      _ => panic!("Repeated fields cannot be optional, maps or other repeated fields",),
-    }
+    FieldType::Repeated(T::proto_type())
   }
 }
 

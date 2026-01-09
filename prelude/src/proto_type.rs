@@ -12,27 +12,16 @@ pub trait AsProtoField {
 
 impl<T> AsProtoField for Option<T>
 where
-  T: AsProtoField,
+  T: AsProtoType,
 {
   #[inline]
   fn as_proto_field() -> FieldType {
-    match T::as_proto_field() {
-      FieldType::Normal(typ) => {
-        if typ.is_message() {
-          FieldType::Normal(typ)
-        } else {
-          FieldType::Optional(typ)
-        }
-      }
-      FieldType::Map { .. } => {
-        panic!("Optional fields cannot be maps")
-      }
-      FieldType::Repeated(_) => {
-        panic!("Optional fields cannot be repeated")
-      }
-      FieldType::Optional(_) => {
-        panic!("Optional fields cannot be nested")
-      }
+    let type_ = T::proto_type();
+
+    if type_.is_message() {
+      FieldType::Normal(type_)
+    } else {
+      FieldType::Optional(type_)
     }
   }
 }
@@ -47,9 +36,89 @@ impl<T: AsProtoType> AsProtoField for T {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FieldType {
   Normal(ProtoType),
-  Map { keys: ProtoType, values: ProtoType },
+  Map {
+    keys: ProtoMapKey,
+    values: ProtoType,
+  },
   Repeated(ProtoType),
   Optional(ProtoType),
+}
+
+#[allow(private_interfaces)]
+pub(crate) struct Sealed;
+
+#[doc(hidden)]
+pub trait AsProtoMapKey {
+  fn as_proto_map_key() -> ProtoMapKey;
+  #[allow(private_interfaces)]
+  const SEALED: Sealed;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProtoMapKey {
+  String,
+  Bool,
+  Int32,
+  Int64,
+  Sint32,
+  Sint64,
+  Sfixed32,
+  Sfixed64,
+  Fixed32,
+  Fixed64,
+  Uint32,
+  Uint64,
+}
+
+impl ProtoMapKey {
+  #[must_use]
+  pub fn into_type(self) -> ProtoType {
+    self.into()
+  }
+}
+
+impl From<ProtoMapKey> for ProtoType {
+  fn from(value: ProtoMapKey) -> Self {
+    Self::Scalar(value.into())
+  }
+}
+
+impl From<ProtoMapKey> for ProtoScalar {
+  fn from(value: ProtoMapKey) -> Self {
+    match value {
+      ProtoMapKey::String => Self::String,
+      ProtoMapKey::Bool => Self::Bool,
+      ProtoMapKey::Int32 => Self::Int32,
+      ProtoMapKey::Int64 => Self::Int64,
+      ProtoMapKey::Sint32 => Self::Sint32,
+      ProtoMapKey::Sint64 => Self::Sint64,
+      ProtoMapKey::Sfixed32 => Self::Sfixed32,
+      ProtoMapKey::Sfixed64 => Self::Sfixed64,
+      ProtoMapKey::Fixed32 => Self::Fixed32,
+      ProtoMapKey::Fixed64 => Self::Fixed64,
+      ProtoMapKey::Uint32 => Self::Uint32,
+      ProtoMapKey::Uint64 => Self::Uint64,
+    }
+  }
+}
+
+impl Display for ProtoMapKey {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Self::Int32 => write!(f, "int32"),
+      Self::Int64 => write!(f, "int64"),
+      Self::Uint32 => write!(f, "uint32"),
+      Self::Uint64 => write!(f, "uint64"),
+      Self::Sint32 => write!(f, "sint32"),
+      Self::Sint64 => write!(f, "sint64"),
+      Self::Fixed32 => write!(f, "fixed32"),
+      Self::Fixed64 => write!(f, "fixed64"),
+      Self::Sfixed32 => write!(f, "sfixed32"),
+      Self::Sfixed64 => write!(f, "sfixed64"),
+      Self::Bool => write!(f, "bool"),
+      Self::String => write!(f, "string"),
+    }
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
@@ -151,7 +220,7 @@ impl FieldType {
       }
       Self::Map { keys, values } => format!(
         "map<{}, {}>",
-        keys.render_name(current_package),
+        keys.into_type().render_name(current_package),
         values.render_name(current_package)
       )
       .into(),

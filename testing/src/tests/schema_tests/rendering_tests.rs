@@ -299,7 +299,7 @@ fn message_schema_output() {
     (
       "map_field",
       FieldType::Map {
-        keys: ProtoType::Scalar(ProtoScalar::Sint32),
+        keys: ProtoMapKey::Sint32,
         values: ProtoType::Scalar(ProtoScalar::Sint32),
       },
     ),

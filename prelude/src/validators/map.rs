@@ -11,19 +11,12 @@ use super::*;
 
 pub struct ProtoMap<K, V>(PhantomData<K>, PhantomData<V>);
 
-impl<K: AsProtoField, V: AsProtoField> AsProtoField for ProtoMap<K, V> {
+impl<K: AsProtoMapKey, V: AsProtoType> AsProtoField for ProtoMap<K, V> {
   fn as_proto_field() -> FieldType {
-    let keys = match K::as_proto_field() {
-      FieldType::Normal(data) => data,
-      _ => panic!("Map keys cannot be repeated, optional or nested maps"),
-    };
-
-    let values = match V::as_proto_field() {
-      FieldType::Normal(data) => data,
-      _ => panic!("Map values cannot be repeated, optional or nested maps"),
-    };
-
-    FieldType::Map { keys, values }
+    FieldType::Map {
+      keys: K::as_proto_map_key(),
+      values: V::proto_type(),
+    }
   }
 }
 
