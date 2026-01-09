@@ -47,6 +47,14 @@ impl ItemPathEntry {
 
     Some(output)
   }
+
+  /// Returns `true` if the item path entry is [`Proxied`].
+  ///
+  /// [`Proxied`]: ItemPathEntry::Proxied
+  #[must_use]
+  pub fn is_proxied(&self) -> bool {
+    matches!(self, Self::Proxied)
+  }
 }
 
 impl ToTokens for ItemPathEntry {

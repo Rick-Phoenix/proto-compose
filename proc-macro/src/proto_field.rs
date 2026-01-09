@@ -17,8 +17,8 @@ impl ProtoField {
   ) -> syn::Result<Self> {
     let output = match ident_str {
       "repeated" => {
-        let fallback = if let RustType::Vec(inner) = type_info.type_.as_ref() {
-          inner.as_path()
+        let inner_type_info = if let RustType::Vec(inner) = type_info.type_.as_ref() {
+          Some(inner.as_ref())
         } else {
           None
         };
@@ -26,14 +26,14 @@ impl ProtoField {
         let inner = meta.parse_inner_value(|meta| {
           let inner_ident = meta.path.require_ident()?.to_string();
 
-          ProtoType::from_nested_meta(&inner_ident, &meta, fallback.as_ref())
+          ProtoType::from_nested_meta(&inner_ident, &meta, inner_type_info)
         })?;
 
         Self::Repeated(inner)
       }
       "optional" => {
-        let fallback = if let RustType::Option(inner) = type_info.type_.as_ref() {
-          inner.as_path()
+        let inner_type_info = if let RustType::Option(inner) = type_info.type_.as_ref() {
+          Some(inner.as_ref())
         } else {
           None
         };
@@ -41,7 +41,7 @@ impl ProtoField {
         let inner = meta.parse_inner_value(|meta| {
           let inner_ident = meta.path.require_ident()?.to_string();
 
-          ProtoType::from_nested_meta(&inner_ident, &meta, fallback.as_ref())
+          ProtoType::from_nested_meta(&inner_ident, &meta, inner_type_info)
         })?;
 
         Self::Optional(inner)
@@ -53,10 +53,9 @@ impl ProtoField {
       }
       "oneof" => Self::Oneof(OneofInfo::parse(meta, type_info)?),
       _ => {
-        let inner =
-          ProtoType::from_nested_meta(ident_str, meta, type_info.inner().as_path().as_ref())?;
+        let inferred_type = ProtoType::from_nested_meta(ident_str, meta, Some(type_info))?;
 
-        Self::Single(inner)
+        Self::Single(inferred_type)
       }
     };
 

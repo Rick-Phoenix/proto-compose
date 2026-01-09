@@ -109,8 +109,8 @@ pub fn parse_map_with_context(
     match idx {
       0 => keys = Some(ProtoMapKeys::from_path(&meta.path)?),
       1 => {
-        let fallback = if let RustType::HashMap((_, v)) = rust_type {
-          v.as_path()
+        let values_type_info = if let RustType::HashMap((_, v)) = rust_type {
+          Some(v.as_ref())
         } else {
           None
         };
@@ -118,7 +118,7 @@ pub fn parse_map_with_context(
         values = Some(ProtoType::from_nested_meta(
           &meta.path.require_ident()?.to_string(),
           &meta,
-          fallback.as_ref(),
+          values_type_info,
         )?);
       }
       _ => return Err(meta.error("Expected only 2 arguments for keys and values")),

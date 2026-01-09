@@ -155,7 +155,7 @@ pub struct UniqueMessages {
 
 #[proto_message(no_auto_test)]
 pub struct UniqueBytes {
-  #[proto(repeated(message), tag = 1, validate = |v| v.unique())]
+  #[proto(repeated(bytes), tag = 1, validate = |v| v.unique())]
   pub unique_bytes: Vec<Bytes>,
 }
 

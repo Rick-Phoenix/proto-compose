@@ -149,7 +149,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
         if inner.is_box() {
           return Err(error!(
             inner,
-            "You seem to be using Option<Box<T>>. If you are using a boxed message, please use message(boxed)"
+            "You seem to be using Option<Box<T>>, but a proto type is not specified. If you are using a boxed message, mark the field as a message"
           ));
         } else {
           ProtoField::Optional(ProtoType::from_primitive(&inner.require_path()?)?)
@@ -158,7 +158,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
       RustType::Box(inner) => {
         return Err(error!(
           inner,
-          "You seem to be using Box<T>. If you meant to use a boxed message as a oneof variant, please use message(boxed)"
+          "You seem to be using Box<T>. If you meant to use a boxed message, mark it as a message"
         ));
       }
       RustType::Vec(inner) => {

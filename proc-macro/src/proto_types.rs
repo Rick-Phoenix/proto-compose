@@ -1,5 +1,3 @@
-use syn::spanned::Spanned;
-
 use crate::*;
 
 #[derive(Debug, Clone, Default)]
@@ -67,44 +65,8 @@ impl ProtoType {
   pub fn from_nested_meta(
     ident_str: &str,
     meta: &ParseNestedMeta,
-    fallback: Option<&Path>,
+    type_info: Option<&TypeInfo>,
   ) -> Result<Self, Error> {
-    let output = match meta.meta_type() {
-      MetaType::Path => {
-        let span = meta.path.span();
-
-        Self::from_ident(ident_str, span, fallback)?
-      }
-      MetaType::List => Self::from_meta_list(ident_str, meta, fallback)?,
-      MetaType::NameValue => return Err(meta.error("Expected a path or a metalist")),
-    };
-
-    Ok(output)
-  }
-
-  pub fn from_meta_list(
-    ident_str: &str,
-    meta: &ParseNestedMeta,
-    fallback: Option<&Path>,
-  ) -> Result<Self, Error> {
-    let output = match ident_str {
-      "message" => {
-        let msg_info = MessageInfo::parse(meta, fallback)?;
-
-        Self::Message(msg_info)
-      }
-      "enum_" => {
-        let path = meta.parse_list::<Path>()?;
-
-        Self::Enum(path)
-      }
-      _ => return Err(meta.error("Unknown protobuf type")),
-    };
-
-    Ok(output)
-  }
-
-  pub fn from_ident(ident_str: &str, span: Span, fallback: Option<&Path>) -> Result<Self, Error> {
     let output = match ident_str {
       "string" => Self::String,
       "int32" => Self::Int32,
@@ -120,32 +82,28 @@ impl ProtoType {
       "float" => Self::Float,
       "double" => Self::Double,
       "message" => {
-        let path = fallback
-          .ok_or(error_with_span!(
-            span,
-            "Failed to infer the path to the message type. Please set it manually"
-          ))?
-          .clone();
+        let msg_info = MessageInfo::parse(meta, type_info)?;
 
-        Self::Message(MessageInfo { path, boxed: false })
+        Self::Message(msg_info)
       }
       "bytes" => Self::Bytes,
       "bool" => Self::Bool,
       "duration" => Self::Duration,
       "timestamp" => Self::Timestamp,
       "enum_" => {
-        let path = fallback
-          .ok_or(error_with_span!(
-            span,
-            "Failed to infer the path to the enum type. Please set it manually"
-          ))?
-          .clone();
+        let path = if let Ok(path) = meta.parse_list::<Path>() {
+          path
+        } else {
+          type_info
+            .and_then(|type_info| type_info.as_path())
+            .ok_or_else(|| meta.error("Failed to infer the enum path. Please set it manually"))?
+        };
 
         Self::Enum(path)
       }
       "any" => Self::Any,
       "field_mask" => Self::FieldMask,
-      _ => return Err(error_with_span!(span, "Unknown protobuf type {ident_str}")),
+      _ => return Err(meta_error!(meta, "Unknown protobuf type {ident_str}")),
     };
 
     Ok(output)

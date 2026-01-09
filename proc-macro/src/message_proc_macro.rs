@@ -235,17 +235,8 @@ pub fn message_macro_direct(
       }
 
       match data.type_info.type_.as_ref() {
-        RustType::Box(inner) => {
+        RustType::Box(inner) if data.proto_field.is_message() => {
           bail!(inner, "Boxed messages must be optional in a direct impl")
-        }
-        RustType::Option(inner) => {
-          // This could be inferred, although it might be a bit too opaque
-          if inner.is_box() && !data.proto_field.is_boxed_message() {
-            bail!(
-              inner,
-              "Detected usage of `Option<Box<..>>`, but the field was not marked as a boxed message. Please use `#[proto(message(boxed))]` to mark it as a boxed message."
-            );
-          }
         }
         RustType::Other(inner) => {
           if data.proto_field.is_message() {

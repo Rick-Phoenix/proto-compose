@@ -60,22 +60,6 @@ pub fn process_extension_field_attrs(field: &Field) -> Result<ExtensionFieldAttr
 
         ProtoField::Map(proto_map)
       }
-      RustType::Option(inner) => {
-        if inner.is_box() {
-          return Err(error!(
-            inner,
-            "You seem to be using Option<Box<T>>. If you are using a boxed message, please use message(boxed)"
-          ));
-        } else {
-          ProtoField::Optional(ProtoType::from_primitive(&inner.require_path()?)?)
-        }
-      }
-      RustType::Box(inner) => {
-        return Err(error!(
-          inner,
-          "You seem to be using Box<T>. If you meant to use a boxed message as a oneof variant, please use message(boxed)"
-        ));
-      }
       RustType::Vec(inner) => {
         ProtoField::Repeated(ProtoType::from_primitive(&inner.require_path()?)?)
       }

@@ -1,3 +1,5 @@
+#![allow(clippy::struct_field_names)]
+
 mod cel_tests;
 mod oneof_tags_tests;
 
