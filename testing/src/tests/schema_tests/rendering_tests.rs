@@ -14,7 +14,7 @@ proto_package!(RENDERING_PKG, name = "rendering");
 
 define_proto_file!(
   RENDERING,
-  file = "rendering.proto",
+  name = "rendering.proto",
   package = RENDERING_PKG,
   options = test_options(),
   extensions(TestExtension),
@@ -91,11 +91,24 @@ fn extension_schema_output() {
 
   assert_eq_pretty!(schema.fields.len(), 2);
 
-  assert_eq_pretty!(schema.fields[0].name, "name");
-  assert_eq_pretty!(schema.fields[0].tag, 5000);
-  assert_eq_pretty!(schema.fields[0].options, test_options());
-  assert_eq_pretty!(schema.fields[1].name, "name2");
-  assert_eq_pretty!(schema.fields[1].tag, 5001);
+  let field1 = schema.fields.first().unwrap();
+
+  assert_eq_pretty!(field1.name, "name");
+  assert_eq_pretty!(field1.tag, 5000);
+  assert_eq_pretty!(field1.options, test_options());
+  assert_eq_pretty!(
+    field1.type_,
+    FieldType::Normal(ProtoType::Scalar(ProtoScalar::String))
+  );
+
+  let field2 = schema.fields.last().unwrap();
+
+  assert_eq_pretty!(field2.name, "name2");
+  assert_eq_pretty!(field2.tag, 5001);
+  assert_eq_pretty!(
+    field2.type_,
+    FieldType::Normal(ProtoType::Scalar(ProtoScalar::String))
+  );
 }
 
 #[proto_service]
@@ -122,6 +135,8 @@ fn service_schema_output() {
 
   assert_eq_pretty!(service1.name, "Service1");
   assert_eq_pretty!(service1.request.name, "TestMessage");
+  assert_eq_pretty!(service1.request.file, RENDERING.name);
+  assert_eq_pretty!(service1.request.package, RENDERING.package);
   assert_eq_pretty!(service1.response.name, "TestMessage.Nested1");
   assert_eq_pretty!(service1.options, test_options());
 }
@@ -167,8 +182,8 @@ fn enum_schema_output() {
 pub enum OneofA {
   #[proto(tag = 201, options = test_options())]
   A(String),
-  #[proto(tag = 200, validate = |v| v.gt(10).lt(50))]
-  B(i32),
+  #[proto(fixed32, tag = 200, validate = |v| v.gt(10).lt(50))]
+  B(u32),
 }
 
 #[test]
@@ -178,15 +193,24 @@ fn oneof_schema_output() {
   assert_eq_pretty!(schema.options, test_options());
 
   let var1 = schema.fields.first().unwrap();
-
-  assert_eq_pretty!(var1.tag, 201);
   assert_eq_pretty!(var1.options, test_options());
-  assert_eq_pretty!(var1.name, "a");
 
-  let var2 = schema.fields.last().unwrap();
+  let names_tags_and_types = [
+    (
+      "a",
+      201,
+      FieldType::Normal(ProtoType::Scalar(ProtoScalar::String)),
+    ),
+    (
+      "b",
+      200,
+      FieldType::Normal(ProtoType::Scalar(ProtoScalar::Fixed32)),
+    ),
+  ];
 
-  assert_eq_pretty!(var2.tag, 200);
-  assert_eq_pretty!(var2.name, "b");
+  for (variant, (name, tag, type_)) in schema.fields.iter().zip(names_tags_and_types) {
+    check_field(variant, tag, name, &type_);
+  }
 }
 
 #[proto_oneof(no_auto_test)]
@@ -227,9 +251,15 @@ pub struct TestMessage {
 }
 
 #[track_caller]
-fn check_tag_and_name(field: &Field, tag: i32, name: &str) {
+fn check_field(field: &Field, tag: i32, name: &str, type_: &FieldType) {
   assert_eq_pretty!(field.tag, tag, "expected tag {tag} for field {name}");
   assert_eq_pretty!(field.name, name, "expected the field to be called {name}");
+  assert_eq_pretty!(field.name, name, "expected the field to be called {name}");
+  assert_eq_pretty!(
+    &field.type_,
+    type_,
+    "expected field {name} to have type {type_:?}"
+  );
 }
 
 #[test]
@@ -245,22 +275,49 @@ fn message_schema_output() {
   assert_eq_pretty!(schema.entries.len(), 6);
 
   let fields = schema.entries.iter().filter_map(|e| e.as_field());
-  let names = [
-    "manual_tag_field",
-    "repeated_field",
-    "optional_field",
-    "msg_field",
-    "map_field",
+  let names_and_types = [
+    (
+      "manual_tag_field",
+      FieldType::Normal(ProtoType::Scalar(ProtoScalar::Int32)),
+    ),
+    (
+      "repeated_field",
+      FieldType::Repeated(ProtoType::Scalar(ProtoScalar::Int32)),
+    ),
+    (
+      "optional_field",
+      FieldType::Optional(ProtoType::Scalar(ProtoScalar::Bytes)),
+    ),
+    (
+      "msg_field",
+      FieldType::Normal(ProtoType::Message(ProtoPath {
+        name: "TestMessage.Nested1",
+        package: RENDERING_PKG.name,
+        file: RENDERING.name,
+      })),
+    ),
+    (
+      "map_field",
+      FieldType::Map {
+        keys: ProtoType::Scalar(ProtoScalar::Sint32),
+        values: ProtoType::Scalar(ProtoScalar::Sint32),
+      },
+    ),
   ];
 
-  for (i, (field, expected_name)) in fields.zip(names).enumerate() {
+  for (i, (field, (expected_name, expected_type))) in fields.zip(names_and_types).enumerate() {
     if i == 0 {
-      check_tag_and_name(field, 9, expected_name);
+      check_field(field, 9, expected_name, &expected_type);
     } else {
       // First 9 numbers should be skipped because
       // 1-8 are reserved,
       // and 9 is manually occupied by the first field
-      check_tag_and_name(field, (i + 9).try_into().unwrap(), expected_name);
+      check_field(
+        field,
+        (i + 9).try_into().unwrap(),
+        expected_name,
+        &expected_type,
+      );
     }
   }
 }

@@ -100,6 +100,15 @@ pub enum ProtoType {
   Enum(ProtoPath),
 }
 
+impl Display for ProtoType {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Self::Scalar(proto_scalar) => write!(f, "{proto_scalar}"),
+      Self::Message(proto_path) | Self::Enum(proto_path) => write!(f, "{proto_path}"),
+    }
+  }
+}
+
 impl ProtoType {
   /// Returns `true` if the proto type is [`Message`].
   ///
@@ -187,4 +196,12 @@ pub struct ProtoPath {
   pub name: &'static str,
   pub package: &'static str,
   pub file: &'static str,
+}
+
+impl Display for ProtoPath {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let Self { name, package, .. } = self;
+
+    write!(f, "{package}.{name}")
+  }
 }

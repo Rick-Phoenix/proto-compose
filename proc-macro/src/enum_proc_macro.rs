@@ -248,7 +248,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
       fn proto_path() -> ::prelude::ProtoPath {
         ::prelude::ProtoPath {
           name: <Self as ::prelude::ProtoEnum>::proto_name(),
-          file: __PROTO_FILE.file,
+          file: __PROTO_FILE.name,
           package: __PROTO_FILE.package,
         }
       }
@@ -272,7 +272,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
         ::prelude::Enum {
           short_name: #proto_name,
           name: <Self as ::prelude::ProtoEnum>::proto_name(),
-          file: __PROTO_FILE.file,
+          file: __PROTO_FILE.name,
           package: __PROTO_FILE.package,
           variants: vec! [ #(#variants_tokens,)* ],
           reserved_names: vec![ #(#reserved_names),* ],

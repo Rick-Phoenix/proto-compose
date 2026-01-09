@@ -4,7 +4,7 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
   let input_span = input.span();
 
   let mut const_ident: Option<Ident> = None;
-  let mut file: Option<String> = None;
+  let mut name: Option<String> = None;
   let mut package: Option<Path> = None;
   let mut options = TokensOr::<TokenStream2>::new(|| quote! { vec![] });
   let mut extern_path = TokensOr::<LitStr>::new(|| quote! { std::module_path!() });
@@ -19,8 +19,8 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
     let ident_str = meta.ident_str()?;
 
     match ident_str.as_str() {
-      "file" => {
-        file = Some(meta.parse_value::<LitStr>()?.value());
+      "name" => {
+        name = Some(meta.parse_value::<LitStr>()?.value());
       }
       "package" => {
         package = Some(meta.parse_value::<Path>()?);
@@ -56,7 +56,7 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
       "Missing const ident (must be the first argument)"
     )
   })?;
-  let file = file.ok_or_else(|| error_with_span!(input_span, "Missing `file` attribute"))?;
+  let file = name.ok_or_else(|| error_with_span!(input_span, "Missing `file` attribute"))?;
   let package =
     package.ok_or_else(|| error_with_span!(input_span, "Missing `package` attribute"))?;
 
@@ -64,7 +64,7 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
     #[doc(hidden)]
     #[allow(unused)]
     const #const_ident: ::prelude::FileReference = ::prelude::FileReference {
-      file: #file,
+      name: #file,
       package: #package.name,
       extern_path: #extern_path,
     };
@@ -75,7 +75,7 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
 
     ::prelude::inventory::submit! {
       ::prelude::RegistryFile {
-        file: __PROTO_FILE.file,
+        name: __PROTO_FILE.name,
         package: __PROTO_FILE.package,
         edition: #edition,
         options: || #options.into_iter().collect(),

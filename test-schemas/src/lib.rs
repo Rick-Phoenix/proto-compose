@@ -19,7 +19,7 @@ use std::collections::HashMap;
 proto_package!(TEST_SCHEMAS, name = "test_schemas.v1", no_cel_test);
 define_proto_file!(
   TEST_SCHEMAS_FILE,
-  file = "test_schemas.proto",
+  name = "test_schemas.proto",
   package = TEST_SCHEMAS
 );
 

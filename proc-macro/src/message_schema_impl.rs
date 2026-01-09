@@ -189,7 +189,7 @@ impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
         fn proto_path() -> ::prelude::ProtoPath {
           ::prelude::ProtoPath {
             name: Self::proto_name(),
-            file: __PROTO_FILE.file,
+            file: __PROTO_FILE.name,
             package: __PROTO_FILE.package,
           }
         }
@@ -202,7 +202,7 @@ impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
           ::prelude::Message {
             short_name: #proto_name,
             name: Self::proto_name(),
-            file: __PROTO_FILE.file,
+            file: __PROTO_FILE.name,
             package: __PROTO_FILE.package,
             reserved_names: vec![ #(#reserved_names),* ],
             reserved_numbers: vec![ #reserved_numbers ],

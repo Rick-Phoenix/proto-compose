@@ -4,7 +4,7 @@ use ordermap::OrderMap;
 use crate::*;
 
 pub struct FileReference {
-  pub file: &'static str,
+  pub name: &'static str,
   pub package: &'static str,
   pub extern_path: &'static str,
 }
@@ -181,7 +181,7 @@ pub struct RegistryService {
 
 #[doc(hidden)]
 pub struct RegistryFile {
-  pub file: &'static str,
+  pub name: &'static str,
   pub package: &'static str,
   pub edition: Edition,
   pub options: fn() -> Vec<ProtoOption>,
@@ -192,7 +192,7 @@ pub struct RegistryFile {
 #[allow(clippy::from_over_into)]
 impl Into<ProtoFile> for &RegistryFile {
   fn into(self) -> ProtoFile {
-    let mut file = ProtoFile::new(self.file, self.package);
+    let mut file = ProtoFile::new(self.name, self.package);
 
     file.imports.extend((self.imports)());
 

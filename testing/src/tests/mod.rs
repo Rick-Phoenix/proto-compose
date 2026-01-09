@@ -10,7 +10,7 @@ use similar_asserts::assert_eq as assert_eq_pretty;
 
 proto_package!(TESTING_PKG, name = "testing", no_cel_test);
 
-define_proto_file!(TESTING, file = "testing", package = TESTING_PKG);
+define_proto_file!(TESTING, name = "testing.proto", package = TESTING_PKG);
 
 #[track_caller]
 pub(crate) fn assert_violation_id(msg: &impl ValidatedMessage, expected: &str, error: &str) {
