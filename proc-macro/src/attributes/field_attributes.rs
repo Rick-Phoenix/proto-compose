@@ -225,7 +225,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
     proto_field,
     from_proto,
     into_proto,
-    span: field.span(),
+    span: field_span,
     ident_str: field_ident.to_string(),
     ident: field_ident,
     type_info,

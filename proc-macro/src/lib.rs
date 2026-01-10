@@ -26,15 +26,14 @@ use syn::{
 use syn_utils::*;
 
 use crate::{
-  common_impls::*, enum_proc_macro::*, extension_derive::*, file_macro::*, impls::*,
-  item_cloners::*, message_proc_macro::*, message_schema_impl::*, oneof_proc_macro::*,
-  package_macro::*, path_utils::*, proto_field::*, proto_map::*, proto_types::*, service_derive::*,
+  enum_proc_macro::*, extension_derive::*, file_macro::*, impls::*, item_cloners::*,
+  message_proc_macro::*, message_schema_impl::*, oneof_proc_macro::*, package_macro::*,
+  path_utils::*, proto_field::*, proto_map::*, proto_types::*, service_derive::*,
 };
 
 mod attributes;
 #[cfg(feature = "cel")]
 mod cel_try_into;
-mod common_impls;
 #[cfg(feature = "reflection")]
 mod enum_derive;
 mod enum_proc_macro;

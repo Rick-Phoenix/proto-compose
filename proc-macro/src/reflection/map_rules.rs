@@ -1,56 +1,62 @@
 use super::*;
 
-pub fn get_map_validator(ctx: &RulesCtx, map_data: &ProtoMap) -> BuilderTokens {
-  let ProtoMap { keys, values } = map_data;
+impl RulesCtx<'_> {
+  pub fn get_map_validator(&self, map_data: &ProtoMap) -> BuilderTokens {
+    let span = self.field_span;
+    let ProtoMap { keys, values } = map_data;
 
-  let keys_validator_type = keys.validator_target_type();
-  let values_validator_type = values.validator_target_type();
-  let mut builder = BuilderTokens::new(
-    quote! { MapValidator::<#keys_validator_type, #values_validator_type>::builder() },
-  );
+    let keys_validator_type = keys.validator_target_type();
+    let values_validator_type = values.validator_target_type();
+    let mut builder = BuilderTokens::new(
+      span,
+      quote_spanned! {span=> MapValidator::<#keys_validator_type, #values_validator_type>::builder() },
+    );
 
-  ctx.tokenize_ignore(&mut builder);
-  ctx.tokenize_cel_rules(&mut builder);
+    self.tokenize_ignore(&mut builder);
+    self.tokenize_cel_rules(&mut builder);
 
-  if let Some(RulesType::Map(rules)) = &ctx.rules.r#type {
-    if let Some(val) = rules.min_pairs {
-      #[allow(clippy::cast_possible_truncation)]
-      let val = val as usize;
+    if let Some(RulesType::Map(rules)) = &self.rules.r#type {
+      if let Some(val) = rules.min_pairs {
+        #[allow(clippy::cast_possible_truncation)]
+        let val = val as usize;
 
-      builder.extend(quote! { .min_pairs(#val) });
+        builder.extend(quote_spanned! {span=> .min_pairs(#val) });
+      }
+
+      if let Some(val) = rules.max_pairs {
+        #[allow(clippy::cast_possible_truncation)]
+        let val = val as usize;
+
+        builder.extend(quote_spanned! {span=> .max_pairs(#val) });
+      }
+
+      if let Some(keys_rules) = rules
+        .keys
+        .as_ref()
+        .and_then(|r| RulesCtx::from_non_empty_rules(r, self.field_span))
+      {
+        let keys_validator = keys_rules
+          .get_field_validator(&((*keys).into()))
+          .unwrap()
+          .into_builder();
+
+        builder.extend(quote_spanned! {span=> .keys(|_| #keys_validator) });
+      }
+
+      if let Some(values_rules) = rules
+        .values
+        .as_ref()
+        .and_then(|r| RulesCtx::from_non_empty_rules(r, self.field_span))
+      {
+        let values_validator = values_rules
+          .get_field_validator(values)
+          .unwrap()
+          .into_builder();
+
+        builder.extend(quote_spanned! {span=> .values(|_| #values_validator) });
+      }
     }
 
-    if let Some(val) = rules.max_pairs {
-      #[allow(clippy::cast_possible_truncation)]
-      let val = val as usize;
-
-      builder.extend(quote! { .max_pairs(#val) });
-    }
-
-    if let Some(keys_rules) = rules
-      .keys
-      .as_ref()
-      .and_then(|r| RulesCtx::from_non_empty_rules(r, ctx.field_span))
-    {
-      let keys_validator = get_field_validator(&keys_rules, &((*keys).into()))
-        .unwrap()
-        .into_builder();
-
-      builder.extend(quote! { .keys(|_| #keys_validator) });
-    }
-
-    if let Some(values_rules) = rules
-      .values
-      .as_ref()
-      .and_then(|r| RulesCtx::from_non_empty_rules(r, ctx.field_span))
-    {
-      let values_validator = get_field_validator(&values_rules, values)
-        .unwrap()
-        .into_builder();
-
-      builder.extend(quote! { .values(|_| #values_validator) });
-    }
+    builder
   }
-
-  builder
 }

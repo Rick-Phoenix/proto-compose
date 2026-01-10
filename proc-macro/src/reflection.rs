@@ -43,13 +43,15 @@ pub use message_derive::*;
 pub struct BuilderTokens {
   pub builder_expr: TokenStream2,
   pub methods_tokens: TokenStream2,
+  pub span: Span,
 }
 
 impl BuilderTokens {
-  pub fn new(builder_expr: TokenStream2) -> Self {
+  pub fn new(span: Span, builder_expr: TokenStream2) -> Self {
     Self {
       builder_expr,
       methods_tokens: TokenStream2::new(),
+      span,
     }
   }
 
@@ -61,6 +63,7 @@ impl BuilderTokens {
     let Self {
       mut builder_expr,
       methods_tokens,
+      ..
     } = self;
 
     methods_tokens.to_tokens(&mut builder_expr);
@@ -74,11 +77,12 @@ impl BuilderTokens {
     let Self {
       mut builder_expr,
       methods_tokens,
+      span,
     } = self;
 
     methods_tokens.to_tokens(&mut builder_expr);
 
-    quote! {
+    quote_spanned! {span=>
       ::prelude::#builder_expr.build()
     }
   }
@@ -108,7 +112,7 @@ impl<'a> RulesCtx<'a> {
         expression,
       } = rule;
 
-      validator.extend(quote! {
+      validator.extend(quote_spanned! {self.field_span=>
         .cel(::prelude::cel_program!(id = #id, msg = #message, expr = #expression))
       });
     }
@@ -116,14 +120,14 @@ impl<'a> RulesCtx<'a> {
 
   pub fn tokenize_required(&self, validator: &mut BuilderTokens) {
     if self.rules.required() {
-      validator.extend(quote! { .required() });
+      validator.extend(quote_spanned! {self.field_span=> .required() });
     }
   }
 
   pub fn tokenize_ignore(&self, validator: &mut BuilderTokens) {
     match self.rules.ignore() {
       Ignore::IfZeroValue => {
-        validator.extend(quote! { .ignore_if_zero_value() });
+        validator.extend(quote_spanned! {self.field_span=> .ignore_if_zero_value() });
       }
       _ => {}
     };

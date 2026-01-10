@@ -101,7 +101,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
       let next_tag = if i == 0 {
         0
       } else {
-        tag_allocator.next_tag(variant.span())?
+        tag_allocator.next_tag(variant.ident.span())?
       };
 
       let tag_expr: Expr = parse_quote!(#next_tag);

@@ -105,7 +105,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
         oneof.required = oneof_rules.required();
 
         fields_data.push(FieldData {
-          span: field.span(),
+          span: field_span,
           ident: ident.clone(),
           type_info,
           proto_name: proto_name.to_string(),
@@ -135,14 +135,14 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
         && let Some(rules_ctx) = RulesCtx::from_non_empty_rules(
           &FieldRules::decode(field_rules_msg.encode_to_vec().as_ref())
             .expect("Failed to decode field rules"),
-          field.span(),
+          field.ident.span(),
         ) {
         let expr = match &proto_field {
-          ProtoField::Map(proto_map) => get_map_validator(&rules_ctx, proto_map),
+          ProtoField::Map(proto_map) => rules_ctx.get_map_validator(proto_map),
           ProtoField::Oneof(_) => todo!(),
-          ProtoField::Repeated(inner) => get_repeated_validator(&rules_ctx, inner),
+          ProtoField::Repeated(inner) => rules_ctx.get_repeated_validator(inner),
           ProtoField::Optional(inner) | ProtoField::Single(inner) => {
-            get_field_validator(&rules_ctx, inner).unwrap()
+            rules_ctx.get_field_validator(inner).unwrap()
           }
         };
 
@@ -162,7 +162,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
       };
 
       fields_data.push(FieldData {
-        span: field.span(),
+        span: field_span,
         ident: ident.clone(),
         type_info,
         proto_name: proto_name.to_string(),

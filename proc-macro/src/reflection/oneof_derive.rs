@@ -39,7 +39,7 @@ pub fn reflection_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, Erro
   let mut fields_data: Vec<FieldData> = Vec::new();
 
   for variant in variants {
-    let variant_span = variant.span();
+    let variant_span = variant.ident.span();
 
     let ident = &variant.ident;
     let ident_str = ident.to_string();
@@ -81,11 +81,11 @@ pub fn reflection_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, Erro
       && let Some(rules_ctx) = RulesCtx::from_non_empty_rules(
         &FieldRules::decode(field_rules_msg.encode_to_vec().as_ref())
           .expect("Failed to decode field rules"),
-        variant.span(),
+        variant.ident.span(),
       ) {
       let expr = match &proto_field {
         ProtoField::Optional(inner) | ProtoField::Single(inner) => {
-          get_field_validator(&rules_ctx, inner).unwrap()
+          rules_ctx.get_field_validator(inner).unwrap()
         }
         ProtoField::Map(_) => unreachable!("Maps cannot be used in oneofs"),
         ProtoField::Oneof(_) => unreachable!("Oneofs cannot be nested"),

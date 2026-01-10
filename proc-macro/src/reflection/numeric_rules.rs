@@ -1,59 +1,66 @@
 use super::*;
 use ::proto_types::protovalidate::*;
 
-pub fn get_numeric_validator<T: NumericRules>(ctx: &RulesCtx) -> BuilderTokens {
-  let type_tokens = T::type_tokens();
-  let mut builder = BuilderTokens::new(if T::IS_FLOAT {
-    quote! { FloatValidator::<#type_tokens>::builder() }
-  } else {
-    quote! { IntValidator::<#type_tokens>::builder() }
-  });
+impl RulesCtx<'_> {
+  pub fn get_numeric_validator<T: NumericRules>(&self) -> BuilderTokens {
+    let span = self.field_span;
 
-  ctx.tokenize_ignore(&mut builder);
-  ctx.tokenize_required(&mut builder);
-  ctx.tokenize_cel_rules(&mut builder);
+    let type_tokens = T::type_tokens(span);
+    let mut builder = BuilderTokens::new(
+      span,
+      if T::IS_FLOAT {
+        quote_spanned! {span=> FloatValidator::<#type_tokens>::builder() }
+      } else {
+        quote_spanned! {span=> IntValidator::<#type_tokens>::builder() }
+      },
+    );
 
-  if let Some(rules) = T::from_field_rules(ctx.rules) {
-    if let Some(val) = rules.const_() {
-      builder.extend(quote! { .const_(#val) });
+    self.tokenize_ignore(&mut builder);
+    self.tokenize_required(&mut builder);
+    self.tokenize_cel_rules(&mut builder);
+
+    if let Some(rules) = T::from_field_rules(self.rules) {
+      if let Some(val) = rules.const_() {
+        builder.extend(quote_spanned! {span=> .const_(#val) });
+      }
+
+      macro_rules! rule {
+        ($name:ident) => {
+          if let Some($name) = rules.$name() {
+            builder.extend(quote_spanned! {span=> .$name(#$name) });
+          }
+        };
+      }
+
+      rule!(lte);
+      rule!(lt);
+      rule!(gte);
+      rule!(gt);
+
+      let in_list = rules.in_();
+      if !in_list.is_empty() {
+        builder.extend(quote_spanned! {span=> .in_([ #(#in_list),* ]) });
+      }
+
+      let not_in_list = rules.not_in();
+      if !not_in_list.is_empty() {
+        builder.extend(quote_spanned! {span=> .not_in([ #(#not_in_list),* ]) });
+      }
+
+      if rules.finite() {
+        builder.extend(quote_spanned! {span=> .finite() });
+      }
     }
 
-    macro_rules! rule {
-      ($name:ident) => {
-        if let Some($name) = rules.$name() {
-          builder.extend(quote! { .$name(#$name) });
-        }
-      };
-    }
-
-    rule!(lte);
-    rule!(lt);
-    rule!(gte);
-    rule!(gt);
-
-    let in_list = rules.in_();
-    if !in_list.is_empty() {
-      builder.extend(quote! { .in_([ #(#in_list),* ]) });
-    }
-
-    let not_in_list = rules.not_in();
-    if !not_in_list.is_empty() {
-      builder.extend(quote! { .not_in([ #(#not_in_list),* ]) });
-    }
-
-    if rules.finite() {
-      builder.extend(quote! { .finite() });
-    }
+    builder
   }
-
-  builder
 }
 
 pub trait NumericRules {
   type Unit: ToTokens + Copy;
   const IS_FLOAT: bool = false;
 
-  fn type_tokens() -> TokenStream2;
+  fn type_tokens(span: Span) -> TokenStream2;
   fn from_field_rules(field_rules: &FieldRules) -> Option<&Self>;
   fn const_(&self) -> Option<Self::Unit>;
   fn lte(&self) -> Option<Self::Unit>;
@@ -97,8 +104,8 @@ macro_rules! impl_numeric_rules {
           })
         }
 
-        fn type_tokens() -> TokenStream2 {
-          quote! { $wrapper }
+        fn type_tokens(span: Span) -> TokenStream2 {
+          quote_spanned! {span=> $wrapper }
         }
 
         fn const_(&self) -> Option<Self::Unit> {

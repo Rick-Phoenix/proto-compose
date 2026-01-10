@@ -1,16 +1,19 @@
 use super::*;
 
-pub fn get_bool_validator(ctx: &RulesCtx) -> BuilderTokens {
-  let mut builder = BuilderTokens::new(quote! { BoolValidator::builder() });
+impl RulesCtx<'_> {
+  pub fn get_bool_validator(&self) -> BuilderTokens {
+    let span = self.field_span;
+    let mut builder = BuilderTokens::new(span, quote_spanned! {span=> BoolValidator::builder() });
 
-  ctx.tokenize_ignore(&mut builder);
-  ctx.tokenize_required(&mut builder);
+    self.tokenize_ignore(&mut builder);
+    self.tokenize_required(&mut builder);
 
-  if let Some(RulesType::Bool(rules)) = &ctx.rules.r#type
-    && let Some(val) = rules.r#const
-  {
-    builder.extend(quote! { .const_(#val) });
+    if let Some(RulesType::Bool(rules)) = &self.rules.r#type
+      && let Some(val) = rules.r#const
+    {
+      builder.extend(quote_spanned! {span=> .const_(#val) });
+    }
+
+    builder
   }
-
-  builder
 }

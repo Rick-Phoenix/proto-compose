@@ -1,44 +1,51 @@
 use super::*;
 
-pub fn get_repeated_validator(ctx: &RulesCtx, inner: &ProtoType) -> BuilderTokens {
-  let inner_validator_type = inner.validator_target_type();
-  let mut builder =
-    BuilderTokens::new(quote! { RepeatedValidator::<#inner_validator_type>::builder() });
+impl RulesCtx<'_> {
+  pub fn get_repeated_validator(&self, inner: &ProtoType) -> BuilderTokens {
+    let span = self.field_span;
 
-  ctx.tokenize_ignore(&mut builder);
-  ctx.tokenize_cel_rules(&mut builder);
+    let inner_validator_type = inner.validator_target_type();
+    let mut builder = BuilderTokens::new(
+      span,
+      quote_spanned! {span=> RepeatedValidator::<#inner_validator_type>::builder() },
+    );
 
-  if let Some(RulesType::Repeated(rules)) = &ctx.rules.r#type {
-    if let Some(val) = rules.min_items {
-      #[allow(clippy::cast_possible_truncation)]
-      let val = val as usize;
+    self.tokenize_ignore(&mut builder);
+    self.tokenize_cel_rules(&mut builder);
 
-      builder.extend(quote! { .min_items(#val) });
+    if let Some(RulesType::Repeated(rules)) = &self.rules.r#type {
+      if let Some(val) = rules.min_items {
+        #[allow(clippy::cast_possible_truncation)]
+        let val = val as usize;
+
+        builder.extend(quote_spanned! {span=> .min_items(#val) });
+      }
+
+      if let Some(val) = rules.max_items {
+        #[allow(clippy::cast_possible_truncation)]
+        let val = val as usize;
+
+        builder.extend(quote_spanned! {span=> .max_items(#val) });
+      }
+
+      if rules.unique() {
+        builder.extend(quote_spanned! {span=> .unique() });
+      }
+
+      if let Some(items_rules) = rules
+        .items
+        .as_ref()
+        .and_then(|r| RulesCtx::from_non_empty_rules(r, self.field_span))
+      {
+        let items_validator = items_rules
+          .get_field_validator(inner)
+          .unwrap()
+          .into_builder();
+
+        builder.extend(quote_spanned! {span=> .items(|_| #items_validator) });
+      }
     }
 
-    if let Some(val) = rules.max_items {
-      #[allow(clippy::cast_possible_truncation)]
-      let val = val as usize;
-
-      builder.extend(quote! { .max_items(#val) });
-    }
-
-    if rules.unique() {
-      builder.extend(quote! { .unique() });
-    }
-
-    if let Some(items_rules) = rules
-      .items
-      .as_ref()
-      .and_then(|r| RulesCtx::from_non_empty_rules(r, ctx.field_span))
-    {
-      let items_validator = get_field_validator(&items_rules, inner)
-        .unwrap()
-        .into_builder();
-
-      builder.extend(quote! { .items(|_| #items_validator) });
-    }
+    builder
   }
-
-  builder
 }
