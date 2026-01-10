@@ -73,19 +73,20 @@ impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
         proto_name,
         proto_field,
         deprecated,
+        span,
         ..
       } = data.borrow();
 
       if let ProtoField::Oneof(OneofInfo { path, required, .. }) = proto_field {
         if options.is_default() {
-          quote! {
+          quote_spanned! {*span=>
             ::prelude::MessageEntry::Oneof {
               oneof: <#path as ::prelude::ProtoOneof>::proto_schema(),
               required: #required
             }
           }
         } else {
-          quote! {
+          quote_spanned! {*span=>
             ::prelude::MessageEntry::Oneof {
               oneof: <#path as ::prelude::ProtoOneof>::proto_schema().with_options(#options),
               required: #required
@@ -99,11 +100,14 @@ impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
           .as_ref()
           // For default validators (messages only) we skip the schema generation
           .filter(|v| !v.is_fallback)
-          .map_or_else(|| quote! { None }, |e| quote! { Some(#e.into_schema()) });
+          .map_or_else(
+            || quote_spanned! {*span=> None },
+            |e| quote_spanned! {*span=> Some(#e.into_schema()) },
+          );
 
-        let options_tokens = options_tokens(options, *deprecated);
+        let options_tokens = options_tokens(*span, options, *deprecated);
 
-        quote! {
+        quote_spanned! {*span=>
           ::prelude::MessageEntry::Field(
             ::prelude::Field {
               name: #proto_name,
@@ -122,7 +126,7 @@ impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
     let proto_struct = self.proto_struct_ident();
 
     let name_method = if let Some(parent) = parent_message {
-      quote! {
+      quote_spanned! {parent.span()=>
         static __NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
           format!("{}.{}", <#parent as ::prelude::ProtoMessage>::proto_name(), #proto_name)
         });
@@ -134,20 +138,20 @@ impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
     };
 
     let registry_parent_message = if let Some(parent) = parent_message {
-      quote! { Some(|| <#parent as ::prelude::ProtoMessage>::proto_name()) }
+      quote_spanned! {parent.span()=> Some(|| <#parent as ::prelude::ProtoMessage>::proto_name()) }
     } else {
       quote! { None }
     };
 
     let rust_path_field = if let Some(path) = extern_path {
-      quote! { #path.to_string() }
+      quote_spanned! {path.span()=> #path.to_string() }
     } else {
       let rust_ident_str = proto_struct.to_string();
 
       quote! { format!("::{}::{}", __PROTO_FILE.extern_path, #rust_ident_str) }
     };
 
-    let options_tokens = options_tokens(message_options, *deprecated);
+    let options_tokens = options_tokens(Span::call_site(), message_options, *deprecated);
 
     output.extend(quote! {
       ::prelude::inventory::submit! {
@@ -205,7 +209,7 @@ impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
             file: __PROTO_FILE.name,
             package: __PROTO_FILE.package,
             reserved_names: vec![ #(#reserved_names),* ],
-            reserved_numbers: vec![ #reserved_numbers ],
+            reserved_numbers: #reserved_numbers,
             options: #options_tokens.into_iter().collect(),
             messages: vec![],
             enums: vec![],

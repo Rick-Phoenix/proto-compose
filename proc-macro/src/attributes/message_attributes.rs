@@ -7,7 +7,7 @@ pub struct MessageAttrs {
   pub reserved_names: Vec<String>,
   pub reserved_numbers: ReservedNumbers,
   pub options: TokensOr<TokenStream2>,
-  pub name: String,
+  pub name: ParsedStr,
   pub parent_message: Option<Ident>,
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
@@ -15,7 +15,7 @@ pub struct MessageAttrs {
   pub cel_rules: IterTokensOr<TokenStream2>,
   pub is_proxied: bool,
   pub no_auto_test: bool,
-  pub extern_path: Option<String>,
+  pub extern_path: Option<ParsedStr>,
   pub deprecated: bool,
 }
 
@@ -26,7 +26,7 @@ pub fn process_message_attrs(
 ) -> Result<MessageAttrs, Error> {
   let mut is_proxied = false;
   let mut no_auto_test = false;
-  let mut extern_path: Option<String> = None;
+  let mut extern_path: Option<ParsedStr> = None;
 
   let parser = syn::meta::parser(|meta| {
     if let Some(ident) = meta.path.get_ident() {
@@ -35,7 +35,7 @@ pub fn process_message_attrs(
       match ident.as_str() {
         "proxied" => is_proxied = true,
         "no_auto_test" => no_auto_test = true,
-        "extern_path" => extern_path = Some(meta.parse_value::<LitStr>()?.value()),
+        "extern_path" => extern_path = Some(meta.parse_value::<ParsedStr>()?),
         _ => {}
       };
     }
@@ -48,7 +48,7 @@ pub fn process_message_attrs(
   let mut reserved_names: Vec<String> = Vec::new();
   let mut reserved_numbers = ReservedNumbers::default();
   let mut options = TokensOr::<TokenStream2>::vec();
-  let mut proto_name: Option<String> = None;
+  let mut proto_name: Option<ParsedStr> = None;
   let mut from_proto: Option<PathOrClosure> = None;
   let mut into_proto: Option<PathOrClosure> = None;
   let mut shadow_derives: Option<MetaList> = None;
@@ -120,7 +120,7 @@ pub fn process_message_attrs(
               into_proto = Some(meta.expr_value()?.as_path_or_closure()?);
             }
             "name" => {
-              proto_name = Some(meta.expr_value()?.as_string()?);
+              proto_name = Some(meta.parse_value::<ParsedStr>()?);
             }
             _ => return Err(meta.error("Unknown attribute")),
           };
@@ -132,7 +132,8 @@ pub fn process_message_attrs(
     }
   }
 
-  let name = proto_name.unwrap_or_else(|| to_pascal_case(&struct_ident.to_string()));
+  let name = proto_name
+    .unwrap_or_else(|| ParsedStr::with_default_span(to_pascal_case(&struct_ident.to_string())));
 
   Ok(MessageAttrs {
     reserved_names,

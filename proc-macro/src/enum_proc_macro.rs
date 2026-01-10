@@ -6,6 +6,7 @@ struct EnumVariantCtx {
   tag: i32,
   ident: Ident,
   deprecated: bool,
+  span: Span,
 }
 
 pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
@@ -33,7 +34,7 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
 
 fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   let ItemEnum {
-    ident: enum_name,
+    ident: enum_ident,
     variants,
     attrs,
     ..
@@ -49,7 +50,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     extern_path,
     deprecated,
     ..
-  } = process_derive_enum_attrs(enum_name, attrs)?;
+  } = process_derive_enum_attrs(enum_ident, attrs)?;
 
   let mut variants_data: Vec<EnumVariantCtx> = Vec::new();
   let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
@@ -116,11 +117,12 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
       tag,
       ident: variant_ident.clone(),
       deprecated,
+      span: variant_ident.span(),
     });
   }
 
   let proto_name_method = if let Some(parent) = &parent_message {
-    quote! {
+    quote_spanned! {parent.span()=>
       static __FULL_NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
         format!("{}.{}", <#parent as ::prelude::ProtoMessage>::proto_name(), #proto_name).into()
       });
@@ -132,15 +134,15 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   };
 
   let parent_message_registry = if let Some(parent) = &parent_message {
-    quote! { Some(|| <#parent as ::prelude::ProtoMessage>::proto_name()) }
+    quote_spanned! {parent.span()=> Some(|| <#parent as ::prelude::ProtoMessage>::proto_name()) }
   } else {
     quote! { None }
   };
 
   let rust_path_field = if let Some(extern_path) = extern_path {
-    quote! { #extern_path.to_string() }
+    quote_spanned! {extern_path.span()=> #extern_path.to_string() }
   } else {
-    let rust_ident_str = enum_name.to_string();
+    let rust_ident_str = enum_ident.to_string();
 
     quote! { format!("::{}::{}", __PROTO_FILE.extern_path, #rust_ident_str) }
   };
@@ -151,54 +153,61 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
       options,
       tag,
       deprecated,
+      span,
       ..
     } = var;
 
-    let options_tokens = options_tokens(options, *deprecated);
+    let options_tokens = options_tokens(*span, options, *deprecated);
 
-    quote! {
+    quote_spanned! {*span=>
       ::prelude::EnumVariant { name: #name, options: #options_tokens.into_iter().collect(), tag: #tag, }
     }
   });
 
   let from_str_impl = variants_data.iter().map(|var| {
-    let EnumVariantCtx { name, ident, .. } = var;
+    let EnumVariantCtx {
+      name, ident, span, ..
+    } = var;
 
-    quote! {
+    quote_spanned! {*span=>
       #name => Some(Self::#ident)
     }
   });
 
   let as_str_impl = variants_data.iter().map(|var| {
-    let EnumVariantCtx { name, ident, .. } = var;
+    let EnumVariantCtx {
+      name, ident, span, ..
+    } = var;
 
-    quote! {
+    quote_spanned! {*span=>
       Self::#ident => #name
     }
   });
 
   let try_from_impl = variants_data.iter().map(|var| {
-    let EnumVariantCtx { ident, tag, .. } = var;
+    let EnumVariantCtx {
+      ident, tag, span, ..
+    } = var;
 
-    quote! {
-      #tag => Ok(#enum_name::#ident)
+    quote_spanned! {*span=>
+      #tag => Ok(#enum_ident::#ident)
     }
   });
 
   let first_variant_ident = &variants_data.first().as_ref().unwrap().ident;
 
-  let options_tokens = options_tokens(&enum_options, deprecated);
+  let options_tokens = options_tokens(Span::call_site(), &enum_options, deprecated);
 
   Ok(quote! {
     ::prelude::inventory::submit! {
       ::prelude::RegistryEnum {
         parent_message: #parent_message_registry,
         package: __PROTO_FILE.package,
-        enum_: || <#enum_name as ::prelude::ProtoEnumSchema>::proto_schema()
+        enum_: || <#enum_ident as ::prelude::ProtoEnumSchema>::proto_schema()
       }
     }
 
-    impl TryFrom<i32> for #enum_name {
+    impl TryFrom<i32> for #enum_ident {
       type Error = ::prost::UnknownEnumValue;
 
       fn try_from(value: i32) -> Result<Self, Self::Error> {
@@ -209,28 +218,28 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
       }
     }
 
-    impl Default for #enum_name {
+    impl Default for #enum_ident {
       fn default() -> Self {
-        #enum_name::#first_variant_ident
+        #enum_ident::#first_variant_ident
       }
     }
 
-    impl From<#enum_name> for i32 {
-      fn from(value: #enum_name) -> i32 {
+    impl From<#enum_ident> for i32 {
+      fn from(value: #enum_ident) -> i32 {
         value as i32
       }
     }
 
-    impl ::prelude::ProtoValidator for #enum_name {
+    impl ::prelude::ProtoValidator for #enum_ident {
       #[doc(hidden)]
       type Target = i32;
       #[doc(hidden)]
-      type Validator = ::prelude::EnumValidator<#enum_name>;
+      type Validator = ::prelude::EnumValidator<#enum_ident>;
       #[doc(hidden)]
-      type Builder = ::prelude::EnumValidatorBuilder<#enum_name>;
+      type Builder = ::prelude::EnumValidatorBuilder<#enum_ident>;
     }
 
-    impl ::prelude::AsProtoType for #enum_name {
+    impl ::prelude::AsProtoType for #enum_ident {
       fn proto_type() -> ::prelude::ProtoType {
         ::prelude::ProtoType::Enum(
           <Self as ::prelude::ProtoEnumSchema>::proto_path()
@@ -238,13 +247,13 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
       }
     }
 
-    impl ::prelude::ProtoEnum for #enum_name {
+    impl ::prelude::ProtoEnum for #enum_ident {
       fn proto_name() -> &'static str {
         #proto_name_method
       }
     }
 
-    impl ::prelude::ProtoEnumSchema for #enum_name {
+    impl ::prelude::ProtoEnumSchema for #enum_ident {
       fn proto_path() -> ::prelude::ProtoPath {
         ::prelude::ProtoPath {
           name: <Self as ::prelude::ProtoEnum>::proto_name(),
@@ -276,7 +285,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
           package: __PROTO_FILE.package,
           variants: vec! [ #(#variants_tokens,)* ],
           reserved_names: vec![ #(#reserved_names),* ],
-          reserved_numbers: vec![ #reserved_numbers ],
+          reserved_numbers: #reserved_numbers,
           options: #options_tokens.into_iter().collect(),
           rust_path: #rust_path_field
         }

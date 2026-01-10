@@ -67,7 +67,7 @@ pub fn process_extension_derive(
 
     let field_type_tokens = proto_field.field_proto_type_tokens();
 
-    fields_tokens.push(quote! {
+    fields_tokens.push(quote_spanned! {field.ident.span()=>
       ::prelude::Field {
         name: #proto_name,
         tag: #tag,

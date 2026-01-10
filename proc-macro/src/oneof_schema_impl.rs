@@ -25,6 +25,7 @@ impl<T: Borrow<FieldData>> OneofCtx<'_, T> {
         proto_name,
         proto_field,
         deprecated,
+        span,
         ..
       } = data.borrow();
 
@@ -34,11 +35,14 @@ impl<T: Borrow<FieldData>> OneofCtx<'_, T> {
         .as_ref()
         // For default validators (messages only) we skip the schema generation
         .filter(|v| !v.is_fallback)
-        .map_or_else(|| quote! { None }, |e| quote! { Some(#e.into_schema()) });
+        .map_or_else(
+          || quote_spanned! {*span=> None },
+          |e| quote_spanned! {*span=> Some(#e.into_schema()) },
+        );
 
-      let options_tokens = options_tokens(options, *deprecated);
+      let options_tokens = options_tokens(*span, options, *deprecated);
 
-      quote! {
+      quote_spanned! {*span=>
         ::prelude::Field {
           name: #proto_name,
           tag: #tag,

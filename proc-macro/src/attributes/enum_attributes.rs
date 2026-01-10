@@ -5,9 +5,9 @@ pub struct EnumAttrs {
   pub reserved_numbers: ReservedNumbers,
   pub options: TokensOr<TokenStream2>,
   pub parent_message: Option<Ident>,
-  pub name: String,
+  pub name: ParsedStr,
   pub no_prefix: bool,
-  pub extern_path: Option<String>,
+  pub extern_path: Option<ParsedStr>,
   pub deprecated: bool,
 }
 
@@ -18,10 +18,10 @@ pub fn process_derive_enum_attrs(
   let mut reserved_names: Vec<String> = Vec::new();
   let mut reserved_numbers = ReservedNumbers::default();
   let mut options = TokensOr::<TokenStream2>::vec();
-  let mut proto_name: Option<String> = None;
+  let mut proto_name: Option<ParsedStr> = None;
   let mut no_prefix = false;
   let mut parent_message: Option<Ident> = None;
-  let mut extern_path: Option<String> = None;
+  let mut extern_path: Option<ParsedStr> = None;
   let mut deprecated = false;
 
   for attr in attrs {
@@ -56,7 +56,7 @@ pub fn process_derive_enum_attrs(
               reserved_numbers = numbers;
             }
             "extern_path" => {
-              extern_path = Some(meta.expr_value()?.as_string()?);
+              extern_path = Some(meta.parse_value::<ParsedStr>()?);
             }
             "parent_message" => {
               parent_message = Some(
@@ -72,7 +72,7 @@ pub fn process_derive_enum_attrs(
               options.set(meta.expr_value()?.into_token_stream());
             }
             "name" => {
-              proto_name = Some(meta.expr_value()?.as_string()?);
+              proto_name = Some(meta.parse_value::<ParsedStr>()?);
             }
             "no_prefix" => no_prefix = true,
             _ => return Err(meta.error("Unknown attribute")),
@@ -85,7 +85,8 @@ pub fn process_derive_enum_attrs(
     }
   }
 
-  let name = proto_name.unwrap_or_else(|| to_pascal_case(&enum_ident.to_string()));
+  let name = proto_name
+    .unwrap_or_else(|| ParsedStr::with_default_span(to_pascal_case(&enum_ident.to_string())));
 
   Ok(EnumAttrs {
     reserved_names,

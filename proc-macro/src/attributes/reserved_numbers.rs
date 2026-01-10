@@ -2,8 +2,20 @@ use std::cmp::Ordering;
 
 use crate::*;
 
-#[derive(Default, Clone, Debug)]
-pub struct ReservedNumbers(pub Vec<Range<i32>>);
+#[derive(Clone, Debug)]
+pub struct ReservedNumbers {
+  pub ranges: Vec<Range<i32>>,
+  pub span: Span,
+}
+
+impl Default for ReservedNumbers {
+  fn default() -> Self {
+    Self {
+      ranges: vec![],
+      span: Span::call_site(),
+    }
+  }
+}
 
 pub const PROTOBUF_MAX_TAG: i32 = 536_870_911;
 
@@ -62,7 +74,7 @@ pub fn build_unavailable_ranges(
 ) -> syn::Result<Vec<Range<i32>>> {
   sort_and_check_invalid_tags(manual_tags, reserved_numbers)?;
 
-  let mut reserved_iter = reserved_numbers.0.iter().cloned().peekable();
+  let mut reserved_iter = reserved_numbers.ranges.iter().cloned().peekable();
 
   let mut manual_iter = manual_tags
     .iter()
@@ -105,20 +117,21 @@ pub fn build_unavailable_ranges(
 
 impl ReservedNumbers {
   pub fn contains(&self, tag: i32) -> bool {
-    is_reserved(tag, &self.0)
+    is_reserved(tag, &self.ranges)
   }
 }
 
 impl ToTokens for ReservedNumbers {
   fn to_tokens(&self, tokens: &mut TokenStream2) {
-    for range in &self.0 {
-      let start = range.start;
-      let end = range.end;
+    let list = self.ranges.iter().map(|range| {
+      let Range { start, end } = range;
 
-      tokens.extend(quote! {
-        #start..#end,
-      });
-    }
+      quote! {
+        #start..#end
+      }
+    });
+
+    tokens.extend(quote_spanned! {self.span=> vec![ #(#list),* ] });
   }
 }
 
@@ -181,6 +194,9 @@ impl Parse for ReservedNumbers {
 
     ranges.sort_by_key(|range| range.start);
 
-    Ok(Self(ranges))
+    Ok(Self {
+      ranges,
+      span: input.span(),
+    })
   }
 }

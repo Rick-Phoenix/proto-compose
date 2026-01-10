@@ -28,9 +28,13 @@ pub fn wrap_with_imports(tokens: &[TokenStream2]) -> TokenStream2 {
   }
 }
 
-pub fn options_tokens(options: &TokensOr<TokenStream2>, deprecated: bool) -> TokenStream2 {
+pub fn options_tokens(
+  span: Span,
+  options: &TokensOr<TokenStream2>,
+  deprecated: bool,
+) -> TokenStream2 {
   if deprecated {
-    quote! {
+    quote_spanned! {span=>
       {
         let mut options: Vec<::prelude::ProtoOption> = #options;
         options.push(::prelude::proto_deprecated());

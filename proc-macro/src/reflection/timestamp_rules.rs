@@ -1,6 +1,7 @@
 use ::proto_types::Timestamp;
 use ::proto_types::protovalidate::timestamp_rules::{GreaterThan, LessThan};
 
+use super::duration_rules::tokenize_duration;
 use super::*;
 
 fn tokenize_timestamp(span: Span, timestamp: Timestamp) -> TokenStream2 {

@@ -2,6 +2,7 @@ use crate::*;
 
 struct HandlerCtx {
   name: String,
+  span: Span,
   request: TokenStream2,
   response: TokenStream2,
   options: TokensOr<TokenStream2>,
@@ -81,6 +82,7 @@ pub fn process_service_derive(item: &ItemEnum) -> Result<TokenStream2, Error> {
       response,
       options: handler_options,
       deprecated,
+      span: variant.ident.span(),
     });
   }
 
@@ -91,11 +93,12 @@ pub fn process_service_derive(item: &ItemEnum) -> Result<TokenStream2, Error> {
       response,
       options,
       deprecated,
+      span,
     } = data;
 
-    let options_tokens = options_tokens(options, *deprecated);
+    let options_tokens = options_tokens(*span, options, *deprecated);
 
-    quote! {
+    quote_spanned! {*span=>
       ::prelude::ServiceHandler {
         name: #name,
         request: <#request as ::prelude::ProtoMessage>::proto_path(),
@@ -105,7 +108,7 @@ pub fn process_service_derive(item: &ItemEnum) -> Result<TokenStream2, Error> {
     }
   });
 
-  let options_tokens = options_tokens(&service_options, deprecated);
+  let options_tokens = options_tokens(Span::call_site(), &service_options, deprecated);
 
   Ok(quote! {
     #[derive(::prelude::macros::Service)]

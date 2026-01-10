@@ -67,9 +67,10 @@ impl ToTokens for ItemPathEntry {
 }
 
 pub fn ident_with_proto_suffix(mut path: Path) -> Path {
+  let span = path.span();
   let last_segment = path.segments.last_mut().unwrap();
 
-  last_segment.ident = format_ident!("{}Proto", last_segment.ident);
+  last_segment.ident = format_ident!("{}Proto", last_segment.ident, span = span);
 
   path
 }

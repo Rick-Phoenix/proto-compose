@@ -59,10 +59,7 @@ mod service_derive;
 pub fn cel_oneof_derive(input: TokenStream) -> TokenStream {
   let item = parse_macro_input!(input as ItemEnum);
 
-  let cel_crate_path = TokensOr::<TokenStream2>::new(|_| quote! { ::prelude::cel });
-  let proto_types_path = TokensOr::<TokenStream2>::new(|_| quote! { ::prelude::proto_types });
-
-  match cel_try_into::derive_cel_value_oneof(&item, &cel_crate_path, &proto_types_path) {
+  match cel_try_into::derive_cel_value_oneof(&item) {
     Ok(tokens) => tokens.into(),
     Err(e) => e.into_compile_error().into(),
   }
@@ -73,10 +70,7 @@ pub fn cel_oneof_derive(input: TokenStream) -> TokenStream {
 pub fn cel_struct_derive(input: TokenStream) -> TokenStream {
   let item = parse_macro_input!(input as ItemStruct);
 
-  let cel_crate_path = TokensOr::<TokenStream2>::new(|_| quote! { ::prelude::cel });
-  let proto_types_path = TokensOr::<TokenStream2>::new(|_| quote! { ::prelude::proto_types });
-
-  match cel_try_into::derive_cel_value_struct(&item, &cel_crate_path, &proto_types_path) {
+  match cel_try_into::derive_cel_value_struct(&item) {
     Ok(tokens) => tokens.into(),
     Err(e) => e.into_compile_error().into(),
   }
