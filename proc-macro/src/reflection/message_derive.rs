@@ -151,7 +151,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
           is_fallback: false,
           span: field_span,
         }
-      } else if let Some(fallback) = proto_field.default_validator_expr() {
+      } else if let Some(fallback) = proto_field.default_validator_expr(field_span) {
         ValidatorTokens {
           expr: fallback,
           is_fallback: true,

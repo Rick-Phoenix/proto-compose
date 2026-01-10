@@ -59,7 +59,7 @@ impl FieldDataKind {
 pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error> {
   let field_span = field.ident()?.span();
 
-  let mut validator: Option<(ClosureOrExpr, Span)> = None;
+  let mut validator: Option<ClosureOrExpr> = None;
   let mut tag: Option<i32> = None;
   let mut options = TokensOr::<TokenStream2>::vec();
   let mut name: Option<String> = None;
@@ -103,10 +103,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
               name = Some(meta.expr_value()?.as_string()?);
             }
             "validate" => {
-              let span = meta.input.span();
-              let expr = meta.expr_value()?.as_closure_or_expr();
-
-              validator = Some((expr, span));
+              validator = Some(meta.expr_value()?.as_closure_or_expr());
             }
             "from_proto" => {
               from_proto = Some(meta.expr_value()?.as_path_or_closure()?);
@@ -186,35 +183,31 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
     }
   };
 
-  let validator_expr = validator.as_ref().map(|(validator, span)|  {
-      let validator_target_type = proto_field.validator_target_type();
+  let validator = if let Some(expr) = validator {
+    let validator_target_type = proto_field.validator_target_type(field_span);
+    let span = expr.span();
 
-      let expr = match validator {
-        ClosureOrExpr::Expr(expr) => quote_spanned! (*span=> #expr),
+    let expr = match expr {
+      ClosureOrExpr::Expr(expr) => expr.to_token_stream(),
 
-        ClosureOrExpr::Closure(closure) => {
-          quote_spanned! {*span=> <#validator_target_type as ::prelude::ProtoValidator>::validator_from_closure(#closure) }
-        }
-      };
+      ClosureOrExpr::Closure(closure) => {
+        quote_spanned! {closure.span()=> <#validator_target_type as ::prelude::ProtoValidator>::validator_from_closure(#closure) }
+      }
+    };
 
-      (expr, *span)
-    });
-
-  #[allow(clippy::manual_map)]
-  let validator = if let Some((expr, span)) = validator_expr {
     Some(ValidatorTokens {
       expr,
       is_fallback: false,
       span,
     })
-  } else if let Some(expr) = proto_field.default_validator_expr() {
-    Some(ValidatorTokens {
-      expr,
-      is_fallback: true,
-      span: field_span,
-    })
   } else {
-    None
+    proto_field
+      .default_validator_expr(field_span)
+      .map(|expr| ValidatorTokens {
+        expr,
+        is_fallback: true,
+        span: field_span,
+      })
   };
 
   Ok(FieldDataKind::Normal(FieldData {

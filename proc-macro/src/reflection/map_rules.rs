@@ -5,8 +5,8 @@ impl RulesCtx<'_> {
     let span = self.field_span;
     let ProtoMap { keys, values } = map_data;
 
-    let keys_validator_type = keys.validator_target_type();
-    let values_validator_type = values.validator_target_type();
+    let keys_validator_type = keys.into_type().validator_target_type(span);
+    let values_validator_type = values.validator_target_type(span);
     let mut builder = BuilderTokens::new(
       span,
       quote_spanned! {span=> MapValidator::<#keys_validator_type, #values_validator_type>::builder() },

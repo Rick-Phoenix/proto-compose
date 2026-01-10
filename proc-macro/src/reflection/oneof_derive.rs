@@ -97,7 +97,7 @@ pub fn reflection_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, Erro
         is_fallback: false,
         span: variant_span,
       }
-    } else if let Some(fallback) = proto_field.default_validator_expr() {
+    } else if let Some(fallback) = proto_field.default_validator_expr(variant_span) {
       ValidatorTokens {
         expr: fallback,
         is_fallback: true,

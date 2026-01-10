@@ -188,20 +188,16 @@ pub fn message_macro_shadow(
       );
     }
 
-    let tag = if field_data.proto_field.is_oneof() {
-      // We don't need an actual tag for oneofs
-      0
-    } else {
-      let new_tag = tag_allocator.next_tag_if_missing(field_data.tag, field_data.span)?;
+    if !field_data.proto_field.is_oneof() && field_data.tag.is_none() {
+      let new_tag = tag_allocator.next_tag(field_data.span)?;
 
       field_data.tag = Some(new_tag);
-      new_tag
     };
 
-    let prost_attr = field_data.proto_field.as_prost_attr(tag);
+    let prost_attr = field_data.as_prost_attr();
     dst_field.attrs.push(prost_attr);
 
-    let prost_compatible_type = field_data.proto_field.output_proto_type(false);
+    let prost_compatible_type = field_data.output_proto_type(false);
     dst_field.ty = prost_compatible_type;
   }
 
@@ -308,17 +304,13 @@ pub fn message_macro_direct(
   let mut tag_allocator = TagAllocator::new(&used_ranges);
 
   for (field, field_data) in item.fields.iter_mut().zip(fields_data.iter_mut()) {
-    let tag = if field_data.proto_field.is_oneof() {
-      // We don't need an actual tag for oneofs
-      0
-    } else {
-      let new_tag = tag_allocator.next_tag_if_missing(field_data.tag, field_data.span)?;
+    if !field_data.proto_field.is_oneof() && field_data.tag.is_none() {
+      let new_tag = tag_allocator.next_tag(field_data.span)?;
 
       field_data.tag = Some(new_tag);
-      new_tag
     };
 
-    let prost_attr = field_data.proto_field.as_prost_attr(tag);
+    let prost_attr = field_data.as_prost_attr();
     field.attrs.push(prost_attr);
   }
 

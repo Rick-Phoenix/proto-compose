@@ -24,6 +24,8 @@ pub fn generate_message_validator<T: Borrow<FieldData>>(
   top_level_cel_rules: &IterTokensOr<TokenStream2>,
 ) -> TokenStream2 {
   let validators_tokens = fields.iter().filter_map(|data| {
+    let data = data.borrow();
+
     let FieldData {
       ident,
       type_info,
@@ -34,7 +36,7 @@ pub fn generate_message_validator<T: Borrow<FieldData>>(
       proto_field,
       span,
       ..
-    } = data.borrow();
+    } = data;
 
     if let ProtoField::Oneof(OneofInfo { required, .. }) = proto_field {
       Some(if *required {
@@ -60,9 +62,9 @@ pub fn generate_message_validator<T: Borrow<FieldData>>(
       {
         let validator_static_ident = format_ident!("{}_VALIDATOR", to_upper_snake_case(ident_str));
 
-        let validator_name = proto_field.validator_name();
+        let validator_name = data.validator_name();
 
-        let field_type = proto_field.descriptor_type_tokens();
+        let field_type = data.descriptor_type_tokens();
 
         let argument = {
           match type_info.type_.as_ref() {

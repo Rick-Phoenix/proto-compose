@@ -124,7 +124,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   let proto_name_method = if let Some(parent) = &parent_message {
     quote_spanned! {parent.span()=>
       static __FULL_NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
-        format!("{}.{}", <#parent as ::prelude::ProtoMessage>::proto_name(), #proto_name).into()
+        format!("{}.{}", <#parent as ::prelude::ProtoMessage>::proto_name(), #proto_name)
       });
 
       &*__FULL_NAME

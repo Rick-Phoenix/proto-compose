@@ -29,7 +29,7 @@ impl<T: Borrow<FieldData>> OneofCtx<'_, T> {
         ..
       } = data.borrow();
 
-      let field_type_tokens = proto_field.field_proto_type_tokens();
+      let field_type_tokens = proto_field.field_proto_type_tokens(*span);
 
       let validator_schema_tokens = validator
         .as_ref()

@@ -15,15 +15,16 @@ pub fn generate_oneof_validator<T: Borrow<FieldData>>(
   variants: &[T],
 ) -> TokenStream2 {
   let validators_tokens = variants.iter().filter_map(|data| {
+    let data = data.borrow();
+
     let FieldData {
       ident,
       ident_str,
       tag,
       validator,
       proto_name,
-      proto_field,
       ..
-    } = data.borrow();
+    } = data;
 
     if let Some(ValidatorTokens {
       expr: validator_expr,
@@ -33,9 +34,9 @@ pub fn generate_oneof_validator<T: Borrow<FieldData>>(
     {
       let validator_static_ident = format_ident!("{}_VALIDATOR", to_upper_snake_case(ident_str));
 
-      let validator_name = proto_field.validator_name();
+      let validator_name = data.validator_name();
 
-      let field_type = proto_field.descriptor_type_tokens();
+      let field_type = data.descriptor_type_tokens();
 
       Some(quote_spanned! {*span=>
         Self::#ident(v) => {

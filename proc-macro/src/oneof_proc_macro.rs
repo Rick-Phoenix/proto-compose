@@ -152,14 +152,14 @@ pub(crate) fn oneof_shadow_proc_macro(
       continue;
     };
 
-    let Some(tag) = field_attrs.tag else {
-      bail!(dst_variant, "Tags in oneofs must be set manually");
+    if field_attrs.tag.is_none() {
+      bail!(dst_variant.ident, "Tags in oneofs must be set manually");
     };
 
-    let prost_attr = field_attrs.proto_field.as_prost_attr(tag);
+    let prost_attr = field_attrs.as_prost_attr();
     dst_variant.attrs.push(prost_attr);
 
-    let prost_compatible_type = field_attrs.proto_field.output_proto_type(true);
+    let prost_compatible_type = field_attrs.output_proto_type(true);
     *dst_variant.type_mut()? = prost_compatible_type;
   }
 
@@ -258,11 +258,11 @@ pub(crate) fn oneof_direct_proc_macro(
   sort_and_check_invalid_tags(&mut manually_set_tags, &ReservedNumbers::default())?;
 
   for (variant, field_attrs) in variants.iter_mut().zip(fields_data.iter()) {
-    let Some(tag) = field_attrs.tag else {
-      bail!(variant, "Tags in oneofs must be set manually");
+    if field_attrs.tag.is_none() {
+      bail!(variant.ident, "Tags in oneofs must be set manually");
     };
 
-    let prost_attr = field_attrs.proto_field.as_prost_attr(tag);
+    let prost_attr = field_attrs.as_prost_attr();
     variant.attrs.push(prost_attr);
   }
 

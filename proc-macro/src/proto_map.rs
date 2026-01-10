@@ -36,19 +36,8 @@ impl From<ProtoMapKeys> for ProtoType {
 }
 
 impl ProtoMapKeys {
-  pub fn validator_target_type(self) -> TokenStream2 {
-    let pt: ProtoType = self.into();
-    pt.validator_target_type()
-  }
-
-  pub fn output_proto_type(self) -> TokenStream2 {
-    let pt: ProtoType = self.into();
-    pt.output_proto_type()
-  }
-
-  pub fn field_proto_type_tokens(self) -> TokenStream2 {
-    let pt: ProtoType = self.into();
-    pt.field_proto_type_tokens()
+  pub fn into_type(self) -> ProtoType {
+    self.into()
   }
 }
 

@@ -1,6 +1,6 @@
 [working-directory(".")]
-test-all: test-shared-schemas
-    cargo test --workspace --exclude proc-macro-impls --exclude test-server -- --nocapture
+test-all: test-shared-schemas test-schemas
+    cargo test -p prelude -- --nocapture
 
 test-schemas:
     cargo test -p testing -- --nocapture
@@ -19,26 +19,16 @@ expand-reflection: gen-schemas
 test-renders:
     cargo test -p testing test_renders -- -q --nocapture
 
-[working-directory("testing")]
-build-protos:
-    cargo run -p testing
-
-build-server:
-    cargo build -p test-server
-
-test:
-    cargo test --all-features -- -q --nocapture
-
 update-changelog version:
     git cliff --tag {{ version }}
     git add "CHANGELOG.md"
     git commit -m "updated changelog"
 
-release-test version: test
+release-test version: test-all
     cargo release {{ version }} -p protoschema
 
-release-exec version: test (update-changelog version)
+release-exec version: test-all (update-changelog version)
     cargo release {{ version }} -p protoschema --execute
 
 build-docs:
-    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features --open
+    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc -p prelude --all-features --open

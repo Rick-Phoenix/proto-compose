@@ -19,7 +19,7 @@ use syn::{
   MetaList, Path, RangeLimits, Token, Type, Variant, Visibility,
   meta::ParseNestedMeta,
   parse::{Parse, Parser},
-  parse_macro_input, parse_quote,
+  parse_macro_input, parse_quote, parse_quote_spanned,
   spanned::Spanned,
   token,
 };
@@ -38,6 +38,7 @@ mod cel_try_into;
 mod enum_derive;
 mod enum_proc_macro;
 mod extension_derive;
+mod field_data;
 mod file_macro;
 mod impls;
 mod item_cloners;

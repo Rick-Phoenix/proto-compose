@@ -4,7 +4,7 @@ impl RulesCtx<'_> {
   pub fn get_repeated_validator(&self, inner: &ProtoType) -> BuilderTokens {
     let span = self.field_span;
 
-    let inner_validator_type = inner.validator_target_type();
+    let inner_validator_type = inner.validator_target_type(span);
     let mut builder = BuilderTokens::new(
       span,
       quote_spanned! {span=> RepeatedValidator::<#inner_validator_type>::builder() },
