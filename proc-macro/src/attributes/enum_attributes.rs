@@ -1,5 +1,6 @@
 use crate::*;
 
+#[derive(Default)]
 pub struct EnumAttrs {
   pub reserved_names: Vec<String>,
   pub reserved_numbers: ReservedNumbers,

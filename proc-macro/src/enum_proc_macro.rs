@@ -9,27 +9,13 @@ struct EnumVariantCtx {
   span: Span,
 }
 
-pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
-  let schema_impls = enum_schema_impls(&mut item).unwrap_or_else(|e| {
-    let err = e.into_compile_error();
-    let fallback_impls = fallback_schema_impl(&item.ident);
-
-    quote! {
-      #fallback_impls
-      #err
-    }
-  });
-
-  quote! {
-    #[repr(i32)]
-    #[derive(::prelude::macros::Enum, Hash, PartialEq, Eq, Debug, Clone, Copy)]
-    #item
-
-    #schema_impls
-  }
+#[derive(Default)]
+struct EnumData {
+  variants_data: Vec<EnumVariantCtx>,
+  enum_attrs: EnumAttrs,
 }
 
-fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
+fn extract_enum_data(item: &mut ItemEnum) -> syn::Result<EnumData> {
   let ItemEnum {
     ident: enum_ident,
     variants,
@@ -37,17 +23,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     ..
   } = item;
 
-  let EnumAttrs {
-    reserved_names,
-    reserved_numbers,
-    options: enum_options,
-    name: proto_name,
-    no_prefix,
-    parent_message,
-    extern_path,
-    deprecated,
-    ..
-  } = process_derive_enum_attrs(enum_ident, attrs)?;
+  let enum_attrs = process_derive_enum_attrs(enum_ident, attrs)?;
 
   let mut variants_data: Vec<EnumVariantCtx> = Vec::new();
   let mut manually_set_tags: Vec<ParsedNum> = Vec::new();
@@ -63,7 +39,8 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     }
   }
 
-  let unavailable_ranges = build_unavailable_ranges(&reserved_numbers, &mut manually_set_tags)?;
+  let unavailable_ranges =
+    build_unavailable_ranges(&enum_attrs.reserved_numbers, &mut manually_set_tags)?;
 
   let mut tag_allocator = TagAllocator::new(&unavailable_ranges);
 
@@ -78,9 +55,14 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
       options,
       name,
       deprecated,
-    } = process_derive_enum_variants_attrs(&proto_name, variant_ident, &variant.attrs, no_prefix)?;
+    } = process_derive_enum_variants_attrs(
+      &enum_attrs.name,
+      variant_ident,
+      &variant.attrs,
+      enum_attrs.no_prefix,
+    )?;
 
-    if reserved_names.contains(&name) {
+    if enum_attrs.reserved_names.contains(&name) {
       bail!(variant_ident, "Name `{name}` is reserved");
     }
 
@@ -118,6 +100,35 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     });
   }
 
+  Ok(EnumData {
+    variants_data,
+    enum_attrs,
+  })
+}
+
+pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
+  let mut error: Option<TokenStream2> = None;
+
+  let EnumData {
+    variants_data,
+    enum_attrs:
+      EnumAttrs {
+        reserved_names,
+        reserved_numbers,
+        options: enum_options,
+        parent_message,
+        name: proto_name,
+        extern_path,
+        deprecated,
+        ..
+      },
+  } = extract_enum_data(&mut item).unwrap_or_else(|e| {
+    error = Some(e.into_compile_error());
+    EnumData::default()
+  });
+
+  let enum_ident = &item.ident;
+
   let proto_name_method = if let Some(parent) = &parent_message {
     quote_spanned! {parent.span()=>
       static __FULL_NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
@@ -144,7 +155,10 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     quote! { format!("::{}::{}", __PROTO_FILE.extern_path, #rust_ident_str) }
   };
 
-  let variants_tokens = variants_data.iter().map(|var| {
+  let variants_tokens = if error.is_some() {
+    quote! { unimplemented!() }
+  } else {
+    let tokens = variants_data.iter().map(|var| {
     let EnumVariantCtx {
       name,
       options,
@@ -161,41 +175,80 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     }
   });
 
-  let from_str_impl = variants_data.iter().map(|var| {
-    let EnumVariantCtx {
-      name, ident, span, ..
-    } = var;
+    quote! { #(#tokens),* }
+  };
 
-    quote_spanned! {*span=>
-      #name => Some(Self::#ident)
+  let from_str_impl = if error.is_some() {
+    quote! { unimplemented!() }
+  } else {
+    let tokens = variants_data.iter().map(|var| {
+      let EnumVariantCtx {
+        name, ident, span, ..
+      } = var;
+
+      quote_spanned! {*span=>
+        #name => Some(Self::#ident)
+      }
+    });
+
+    quote! {
+      match name {
+        #(#tokens,)*
+        _ => None
+      }
     }
-  });
+  };
 
-  let as_str_impl = variants_data.iter().map(|var| {
-    let EnumVariantCtx {
-      name, ident, span, ..
-    } = var;
+  let as_str_impl = if error.is_some() {
+    quote! { unimplemented!() }
+  } else {
+    let tokens = variants_data.iter().map(|var| {
+      let EnumVariantCtx {
+        name, ident, span, ..
+      } = var;
 
-    quote_spanned! {*span=>
-      Self::#ident => #name
+      quote_spanned! {*span=>
+        Self::#ident => #name
+      }
+    });
+
+    quote! {
+      match self {
+        #(#tokens),*
+      }
     }
-  });
+  };
 
-  let try_from_impl = variants_data.iter().map(|var| {
-    let EnumVariantCtx {
-      ident, tag, span, ..
-    } = var;
+  let try_from_impl = if error.is_some() {
+    quote! { unimplemented!() }
+  } else {
+    let tokens = variants_data.iter().map(|var| {
+      let EnumVariantCtx {
+        tag, ident, span, ..
+      } = var;
 
-    quote_spanned! {*span=>
-      #tag => Ok(#enum_ident::#ident)
+      quote_spanned! {*span=>
+        #tag => Ok(#enum_ident::#ident)
+      }
+    });
+
+    quote! {
+      match value {
+        #(#tokens,)*
+        _ => Err(::prost::UnknownEnumValue(value))
+      }
     }
-  });
+  };
 
   let first_variant_ident = &variants_data.first().as_ref().unwrap().ident;
 
   let options_tokens = options_tokens(Span::call_site(), &enum_options, deprecated);
 
-  Ok(quote! {
+  quote! {
+    #[repr(i32)]
+    #[derive(::prelude::macros::Enum, Hash, PartialEq, Eq, Debug, Clone, Copy)]
+    #item
+
     ::prelude::inventory::submit! {
       ::prelude::RegistryEnum {
         parent_message: #parent_message_registry,
@@ -209,10 +262,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
 
       #[inline]
       fn try_from(value: i32) -> Result<Self, Self::Error> {
-        match value {
-          #(#try_from_impl,)*
-          _ => Err(::prost::UnknownEnumValue(value))
-        }
+        #try_from_impl
       }
     }
 
@@ -264,17 +314,12 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
 
       #[inline]
       fn as_proto_name(&self) -> &'static str {
-        match self {
-          #(#as_str_impl),*
-        }
+        #as_str_impl
       }
 
       #[inline]
       fn from_proto_name(name: &str) -> Option<Self> {
-        match name {
-          #(#from_str_impl,)*
-          _ => None
-        }
+        #from_str_impl
       }
 
       fn proto_schema() -> ::prelude::Enum {
@@ -283,7 +328,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
           name: <Self as ::prelude::ProtoEnum>::proto_name(),
           file: __PROTO_FILE.name,
           package: __PROTO_FILE.package,
-          variants: vec! [ #(#variants_tokens,)* ],
+          variants: vec! [ #variants_tokens ],
           reserved_names: vec![ #(#reserved_names),* ],
           reserved_numbers: #reserved_numbers,
           options: #options_tokens.into_iter().collect(),
@@ -291,43 +336,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
         }
       }
     }
-  })
-}
 
-fn fallback_schema_impl(enum_name: &Ident) -> TokenStream2 {
-  quote! {
-    impl ::prelude::ProtoValidator for #enum_name {
-      type Target = i32;
-      type Validator = ::prelude::EnumValidator<#enum_name>;
-      type Builder = ::prelude::EnumValidatorBuilder<#enum_name>;
-    }
-
-    impl ::prelude::AsProtoType for #enum_name {
-      fn proto_type() -> ::prelude::ProtoType {
-        unimplemented!()
-      }
-    }
-
-    impl ::prelude::ProtoEnumSchema for #enum_name {
-      fn proto_name() -> &'static str {
-        unimplemented!()
-      }
-
-      fn proto_path() -> ::prelude::ProtoPath {
-        unimplemented!()
-      }
-
-      fn as_proto_name(&self) -> &'static str {
-        unimplemented!()
-      }
-
-      fn from_proto_name(name: &str) -> Option<Self> {
-        unimplemented!()
-      }
-
-      fn proto_schema() -> ::prelude::Enum {
-        unimplemented!()
-      }
-    }
+    #error
   }
 }
