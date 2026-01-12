@@ -121,6 +121,7 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
 
       #proto_derives
       #shadow_enum_derives
+      #[allow(clippy::use_self)]
       #shadow_enum
 
       #conversions

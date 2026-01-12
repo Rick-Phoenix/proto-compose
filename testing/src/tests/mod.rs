@@ -2,6 +2,7 @@
 
 mod cel_tests;
 mod oneof_tags_tests;
+mod validation_tests;
 
 mod schema_tests;
 mod tolerances_tests;
@@ -9,6 +10,7 @@ mod tolerances_tests;
 use ::bytes::Bytes;
 use prelude::{test_utils::*, *};
 use similar_asserts::assert_eq as assert_eq_pretty;
+use std::collections::HashMap;
 
 proto_package!(TESTING_PKG, name = "testing", no_cel_test);
 

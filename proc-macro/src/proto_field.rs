@@ -75,7 +75,9 @@ impl ProtoField {
 
         quote_spanned! {span=> ::prelude::ProtoMap<#keys, #values> }
       }
-      Self::Oneof { .. } => quote! {},
+      Self::Oneof { .. } => quote! {
+         compile_error!("Proto type tokens should not be called for oneofs, if you see this please report it as a bug")
+      },
       Self::Repeated(proto_type) => {
         let inner = proto_type.field_proto_type_tokens(span);
 
@@ -94,7 +96,6 @@ impl ProtoField {
 
   // This one has to stay with `ProtoField` because it's used before
   // FieldData is fully created
-  // Maybe I should handle the oneof default here?
   pub fn default_validator_expr(&self, span: Span) -> Option<TokenStream2> {
     match self {
       Self::Map(map) => {
@@ -140,7 +141,9 @@ impl ProtoField {
 
         quote_spanned! {span=> ::prelude::ProtoMap<#keys, #values> }
       }
-      Self::Oneof { .. } => quote! {},
+      Self::Oneof { .. } => quote! {
+        compile_error!("validator target type should not be triggered for oneofs, please report the bug if you see this")
+      },
       Self::Repeated(proto_type) => {
         let inner = proto_type.validator_target_type(span);
 

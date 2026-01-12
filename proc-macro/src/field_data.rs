@@ -10,7 +10,7 @@ impl FieldData {
         inner.descriptor_type_tokens(self.span)
       }
       ProtoField::Oneof { .. } => {
-        quote_spanned! {self.span=> compile_error!("Validator tokens should not be triggered for a oneof field") }
+        quote_spanned! {self.span=> compile_error!("Validator tokens should not be triggered for a oneof field, please report this bug if you see it") }
       }
     }
   }

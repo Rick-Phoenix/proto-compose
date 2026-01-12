@@ -109,6 +109,7 @@ pub fn message_proc_macro(mut item: ItemStruct, macro_attrs: TokenStream2) -> To
 
       #proto_derives
       #shadow_struct_derives
+      #[allow(clippy::use_self)]
       #proxy_struct
 
       #conversions
@@ -253,8 +254,8 @@ where
       }
 
       if item_kind.is_message()
-        && let Some(ProtoType::Message(MessageInfo { default: false, .. })) =
-          field_data.proto_field.inner()
+        && let ProtoField::Single(ProtoType::Message(MessageInfo { default: false, .. })) =
+          field_data.proto_field
         && !field_data.type_info.is_option()
         && !field_data.has_custom_conversions()
         && !container_attrs.has_custom_conversions()

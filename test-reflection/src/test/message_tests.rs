@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn message_tests() {
+fn direct_default_validator() {
   let mut msg = DefaultValidatorTest2 {
     msg_with_default_validator: Some(DefaultValidatorTest {
       id: 1,
