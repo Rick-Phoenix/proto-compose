@@ -9,7 +9,7 @@ pub(super) fn tokenize_duration(span: Span, duration: Duration) -> TokenStream2 
   quote_spanned! {span=> ::prelude::proto_types::Duration { seconds: #seconds, nanos: #nanos } }
 }
 
-impl RulesCtx<'_> {
+impl RulesCtx {
   pub fn get_duration_validator(&self) -> BuilderTokens {
     let span = self.field_span;
     let mut builder =

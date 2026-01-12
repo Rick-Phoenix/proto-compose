@@ -102,14 +102,7 @@ pub fn extract_fields_data_reflection(item: &mut ItemStruct) -> Result<Reflectio
         .find(|oneof| oneof.name() == proto_name)
         .ok_or_else(|| error!(ident, "Oneof `{proto_name}` missing in the descriptor"))?;
 
-      if let ProstValue::Message(oneof_rules_msg) = oneof_desc
-        .options()
-        .get_extension(&ONEOF_RULES_EXT_DESCRIPTOR)
-        .as_ref()
-      {
-        let oneof_rules = OneofRules::decode(oneof_rules_msg.encode_to_vec().as_slice())
-          .map_err(|e| error!(ident, "Could not decode oneof rules: {}", e))?;
-
+      if let Some(oneof_rules) = get_oneof_rules(&oneof_desc) {
         oneof.required = oneof_rules.required();
 
         fields_data.push(FieldDataKind::Normal(FieldData {
@@ -136,21 +129,13 @@ pub fn extract_fields_data_reflection(item: &mut ItemStruct) -> Result<Reflectio
 
       let proto_field = ProtoField::from_descriptor(&field_desc, &type_info, found_enum_path)?;
 
-      let validator = if let ProstValue::Message(field_rules_msg) = field_desc
-        .options()
-        .get_extension(&FIELD_RULES_EXT_DESCRIPTOR)
-        .as_ref()
-        && let Some(rules_ctx) = RulesCtx::from_non_empty_rules(
-          &FieldRules::decode(field_rules_msg.encode_to_vec().as_ref())
-            .expect("Failed to decode field rules"),
-          field.ident.span(),
-        ) {
+      let validator = if let Some(rules_ctx) = RulesCtx::from_descriptor(&field_desc, field_span) {
         let expr = match &proto_field {
           ProtoField::Map(proto_map) => rules_ctx.get_map_validator(proto_map),
           ProtoField::Oneof(_) => todo!(),
           ProtoField::Repeated(inner) => rules_ctx.get_repeated_validator(inner),
           ProtoField::Optional(inner) | ProtoField::Single(inner) => {
-            rules_ctx.get_field_validator(inner).unwrap()
+            rules_ctx.get_field_validator(inner)
           }
         };
 
@@ -192,14 +177,7 @@ pub fn extract_fields_data_reflection(item: &mut ItemStruct) -> Result<Reflectio
   let mut cel_rules = IterTokensOr::<TokenStream2>::vec();
 
   // Message Rules
-  if let ProstValue::Message(message_rules_msg) = message_desc
-    .options()
-    .get_extension(&MESSAGE_RULES_EXT_DESCRIPTOR)
-    .as_ref()
-  {
-    let message_rules = MessageRules::decode(message_rules_msg.encode_to_vec().as_slice())
-      .expect("Could not decode message rules");
-
+  if let Some(message_rules) = get_message_rules(&message_desc) {
     for rule in message_rules.cel {
       let Rule {
         id,
@@ -218,6 +196,36 @@ pub fn extract_fields_data_reflection(item: &mut ItemStruct) -> Result<Reflectio
     no_auto_test,
     msg_name,
   })
+}
+
+fn get_message_rules(message_descriptor: &MessageDescriptor) -> Option<MessageRules> {
+  if let ProstValue::Message(message_rules_msg) = message_descriptor
+    .options()
+    .get_extension(&MESSAGE_RULES_EXT_DESCRIPTOR)
+    .as_ref()
+  {
+    Some(
+      MessageRules::decode(message_rules_msg.encode_to_vec().as_slice())
+        .expect("Could not decode message rules"),
+    )
+  } else {
+    None
+  }
+}
+
+fn get_oneof_rules(oneof_desc: &OneofDescriptor) -> Option<OneofRules> {
+  if let ProstValue::Message(oneof_rules_msg) = oneof_desc
+    .options()
+    .get_extension(&ONEOF_RULES_EXT_DESCRIPTOR)
+    .as_ref()
+  {
+    Some(
+      OneofRules::decode(oneof_rules_msg.encode_to_vec().as_slice())
+        .expect("Could not decode oneof rules"),
+    )
+  } else {
+    None
+  }
 }
 
 pub fn reflection_message_derive(item: &mut ItemStruct) -> TokenStream2 {

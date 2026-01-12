@@ -1,6 +1,6 @@
 use super::*;
 
-impl RulesCtx<'_> {
+impl RulesCtx {
   pub fn get_enum_validator(&self, enum_path: &Path) -> BuilderTokens {
     let span = self.field_span;
     let mut builder = BuilderTokens::new(

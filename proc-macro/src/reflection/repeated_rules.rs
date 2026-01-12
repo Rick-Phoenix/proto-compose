@@ -1,7 +1,7 @@
 use super::*;
 
-impl RulesCtx<'_> {
-  pub fn get_repeated_validator(&self, inner: &ProtoType) -> BuilderTokens {
+impl RulesCtx {
+  pub fn get_repeated_validator(self, inner: &ProtoType) -> BuilderTokens {
     let span = self.field_span;
 
     let inner_validator_type = inner.validator_target_type(span);
@@ -13,7 +13,7 @@ impl RulesCtx<'_> {
     self.tokenize_ignore(&mut builder);
     self.tokenize_cel_rules(&mut builder);
 
-    if let Some(RulesType::Repeated(rules)) = &self.rules.r#type {
+    if let Some(RulesType::Repeated(rules)) = self.rules.r#type {
       if let Some(val) = rules.min_items {
         #[allow(clippy::cast_possible_truncation)]
         let val = val as usize;
@@ -34,12 +34,10 @@ impl RulesCtx<'_> {
 
       if let Some(items_rules) = rules
         .items
-        .as_ref()
-        .and_then(|r| RulesCtx::from_non_empty_rules(r, self.field_span))
+        .and_then(|r| Self::from_non_empty_rules(*r, self.field_span))
       {
         let items_validator = items_rules
           .get_field_validator(inner)
-          .unwrap()
           .into_builder();
 
         builder.extend(quote_spanned! {span=> .items(|_| #items_validator) });

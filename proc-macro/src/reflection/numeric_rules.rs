@@ -1,7 +1,7 @@
 use super::*;
 use ::proto_types::protovalidate::*;
 
-impl RulesCtx<'_> {
+impl RulesCtx {
   pub fn get_numeric_validator<T: NumericRules>(&self) -> BuilderTokens {
     let span = self.field_span;
 
@@ -19,7 +19,7 @@ impl RulesCtx<'_> {
     self.tokenize_required(&mut builder);
     self.tokenize_cel_rules(&mut builder);
 
-    if let Some(rules) = T::from_field_rules(self.rules) {
+    if let Some(rules) = T::from_field_rules(&self.rules) {
       if let Some(val) = rules.const_() {
         builder.extend(quote_spanned! {span=> .const_(#val) });
       }

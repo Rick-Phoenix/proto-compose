@@ -1,7 +1,7 @@
 use super::*;
 
-impl RulesCtx<'_> {
-  pub fn get_map_validator(&self, map_data: &ProtoMap) -> BuilderTokens {
+impl RulesCtx {
+  pub fn get_map_validator(self, map_data: &ProtoMap) -> BuilderTokens {
     let span = self.field_span;
     let ProtoMap { keys, values } = map_data;
 
@@ -15,7 +15,7 @@ impl RulesCtx<'_> {
     self.tokenize_ignore(&mut builder);
     self.tokenize_cel_rules(&mut builder);
 
-    if let Some(RulesType::Map(rules)) = &self.rules.r#type {
+    if let Some(RulesType::Map(rules)) = self.rules.r#type {
       if let Some(val) = rules.min_pairs {
         #[allow(clippy::cast_possible_truncation)]
         let val = val as usize;
@@ -32,12 +32,10 @@ impl RulesCtx<'_> {
 
       if let Some(keys_rules) = rules
         .keys
-        .as_ref()
-        .and_then(|r| RulesCtx::from_non_empty_rules(r, self.field_span))
+        .and_then(|r| Self::from_non_empty_rules(*r, self.field_span))
       {
         let keys_validator = keys_rules
           .get_field_validator(&((*keys).into()))
-          .unwrap()
           .into_builder();
 
         builder.extend(quote_spanned! {span=> .keys(|_| #keys_validator) });
@@ -45,12 +43,10 @@ impl RulesCtx<'_> {
 
       if let Some(values_rules) = rules
         .values
-        .as_ref()
-        .and_then(|r| RulesCtx::from_non_empty_rules(r, self.field_span))
+        .and_then(|r| Self::from_non_empty_rules(*r, self.field_span))
       {
         let values_validator = values_rules
           .get_field_validator(values)
-          .unwrap()
           .into_builder();
 
         builder.extend(quote_spanned! {span=> .values(|_| #values_validator) });

@@ -72,13 +72,28 @@ impl BuilderTokens {
   }
 }
 
-pub struct RulesCtx<'a> {
+pub struct RulesCtx {
   pub field_span: Span,
-  pub rules: &'a FieldRules,
+  pub rules: FieldRules,
 }
 
-impl<'a> RulesCtx<'a> {
-  pub fn from_non_empty_rules(rules: &'a FieldRules, field_span: Span) -> Option<Self> {
+impl RulesCtx {
+  pub fn from_descriptor(field_descriptor: &FieldDescriptor, field_span: Span) -> Option<Self> {
+    if let ProstValue::Message(field_rules_msg) = field_descriptor
+      .options()
+      .get_extension(&FIELD_RULES_EXT_DESCRIPTOR)
+      .as_ref()
+    {
+      let rules = FieldRules::decode(field_rules_msg.encode_to_vec().as_ref())
+        .expect("Failed to decode field rules");
+
+      Self::from_non_empty_rules(rules, field_span)
+    } else {
+      None
+    }
+  }
+
+  pub fn from_non_empty_rules(rules: FieldRules, field_span: Span) -> Option<Self> {
     if matches!(rules.ignore(), Ignore::Always)
       || (!rules.required() && rules.cel.is_empty() && rules.r#type.is_none())
     {

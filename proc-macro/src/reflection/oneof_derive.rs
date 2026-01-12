@@ -80,18 +80,10 @@ pub fn extract_oneof_data_reflection(item: &mut ItemEnum) -> Result<OneofDataRef
     let type_info = TypeInfo::from_type(variant.type_()?)?;
     let proto_field = ProtoField::from_descriptor(&field_desc, &type_info, found_enum_path)?;
 
-    let validator = if let ProstValue::Message(field_rules_msg) = field_desc
-      .options()
-      .get_extension(&FIELD_RULES_EXT_DESCRIPTOR)
-      .as_ref()
-      && let Some(rules_ctx) = RulesCtx::from_non_empty_rules(
-        &FieldRules::decode(field_rules_msg.encode_to_vec().as_ref())
-          .expect("Failed to decode field rules"),
-        variant.ident.span(),
-      ) {
+    let validator = if let Some(rules_ctx) = RulesCtx::from_descriptor(&field_desc, variant_span) {
       let expr = match &proto_field {
         ProtoField::Optional(inner) | ProtoField::Single(inner) => {
-          rules_ctx.get_field_validator(inner).unwrap()
+          rules_ctx.get_field_validator(inner)
         }
         ProtoField::Map(_) => unreachable!("Maps cannot be used in oneofs"),
         ProtoField::Oneof(_) => unreachable!("Oneofs cannot be nested"),

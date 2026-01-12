@@ -2,9 +2,9 @@ use ::proto_types::protovalidate::*;
 
 use super::*;
 
-impl RulesCtx<'_> {
-  pub fn get_field_validator(&self, proto_type: &ProtoType) -> syn::Result<BuilderTokens> {
-    let validator = match proto_type {
+impl RulesCtx {
+  pub fn get_field_validator(&self, proto_type: &ProtoType) -> BuilderTokens {
+    match proto_type {
       ProtoType::String => self.get_string_validator(),
       ProtoType::Bool => self.get_bool_validator(),
       ProtoType::Bytes => self.get_bytes_validator(),
@@ -26,8 +26,6 @@ impl RulesCtx<'_> {
       ProtoType::Timestamp => self.get_timestamp_validator(),
       ProtoType::Any => self.get_any_validator(),
       ProtoType::FieldMask => self.get_field_mask_validator(),
-    };
-
-    Ok(validator)
+    }
   }
 }

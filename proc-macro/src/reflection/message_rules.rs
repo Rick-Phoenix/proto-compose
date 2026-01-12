@@ -1,6 +1,6 @@
 use super::*;
 
-impl RulesCtx<'_> {
+impl RulesCtx {
   pub fn get_message_field_validator(&self, msg_path: &Path) -> BuilderTokens {
     let span = self.field_span;
     let mut builder = BuilderTokens::new(
