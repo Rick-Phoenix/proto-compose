@@ -1,6 +1,6 @@
 use crate::*;
 
-boolean_enum!(pub SkipAutoTest);
+bool_enum!(pub SkipAutoTest);
 
 #[derive(Default)]
 pub struct OneofAttrs {

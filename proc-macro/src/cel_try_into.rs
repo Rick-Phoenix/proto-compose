@@ -81,7 +81,7 @@ pub(crate) fn derive_cel_value_struct(item: &ItemStruct) -> Result<TokenStream2,
   let fields = if let syn::Fields::Named(fields) = &item.fields {
     &fields.named
   } else {
-    bail_call_site!("This derive macro only works on structs with named fields");
+    bail_call_site!("The `CelValue` derive macro only works on structs with named fields");
   };
 
   let mut tokens = TokenStream2::new();

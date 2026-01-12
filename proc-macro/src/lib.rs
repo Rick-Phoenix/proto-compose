@@ -7,7 +7,7 @@
 use std::{borrow::Cow, fmt::Display, ops::Range};
 
 use attributes::*;
-use bool_enum::boolean_enum;
+use bool_enum::bool_enum;
 use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{ToTokens, format_ident, quote, quote_spanned};

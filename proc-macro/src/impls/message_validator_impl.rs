@@ -1,6 +1,6 @@
 use crate::*;
 
-boolean_enum!(pub UseFallback);
+bool_enum!(pub UseFallback);
 
 pub fn generate_message_validator(
   use_fallback: UseFallback,

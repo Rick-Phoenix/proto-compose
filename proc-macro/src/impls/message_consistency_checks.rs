@@ -1,6 +1,6 @@
 use crate::*;
 
-boolean_enum!(pub SkipOneofTagsCheck);
+bool_enum!(pub SkipOneofTagsCheck);
 
 pub fn generate_message_consistency_checks(
   item_ident: &Ident,
