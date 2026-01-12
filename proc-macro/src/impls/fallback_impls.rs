@@ -3,7 +3,7 @@ use crate::*;
 pub struct FallbackImpls<'a> {
   pub orig_ident: &'a Ident,
   pub shadow_ident: Option<&'a Ident>,
-  pub kind: InputItemKind,
+  pub kind: ItemKind,
 }
 
 impl<'a> FallbackImpls<'a> {
@@ -41,7 +41,7 @@ impl<'a> FallbackImpls<'a> {
     };
 
     output.extend(match self.kind {
-      InputItemKind::Oneof => {
+      ItemKind::Oneof => {
         quote! {
           impl #target_ident {
             pub fn encode(&self, buf: &mut impl ::prost::bytes::BufMut) {
@@ -65,7 +65,7 @@ impl<'a> FallbackImpls<'a> {
           }
         }
       }
-      InputItemKind::Message => {
+      ItemKind::Message => {
         quote! {
           impl ::prost::Message for #target_ident {
             fn encoded_len(&self) -> usize {
@@ -85,7 +85,7 @@ impl<'a> FallbackImpls<'a> {
 
     if cfg!(feature = "cel") {
       output.extend(match self.kind {
-        InputItemKind::Oneof => quote! {
+        ItemKind::Oneof => quote! {
           impl ::prelude::CelOneof for #target_ident {
             #[doc(hidden)]
             fn try_into_cel_recursive(self, depth: usize) -> Result<(String, ::prelude::cel::Value), ::prelude::proto_types::cel::CelConversionError> {
@@ -102,7 +102,7 @@ impl<'a> FallbackImpls<'a> {
             }
           }
         },
-        InputItemKind::Message => quote! {
+        ItemKind::Message => quote! {
           impl #target_ident {
             pub fn try_into_cel_recursive(self, _: usize) -> Result<::prelude::cel::Value, ::prelude::proto_types::cel::CelConversionError> {
               Ok(::prelude::cel::Value::Null)

@@ -49,7 +49,7 @@ pub fn message_proc_macro(mut item: ItemStruct, macro_attrs: TokenStream2) -> To
     &mut fields_data,
     Some(&mut tag_allocator),
     ContainerAttrs::Message(&message_attrs),
-    InputItemKind::Message,
+    ItemKind::Message,
   )
   .unwrap_or_default_and_push_error(&mut errors);
 
@@ -58,7 +58,7 @@ pub fn message_proc_macro(mut item: ItemStruct, macro_attrs: TokenStream2) -> To
     FallbackImpls {
       orig_ident: &item.ident,
       shadow_ident: proxy_struct.as_ref().map(|ps| &ps.ident),
-      kind: InputItemKind::Message,
+      kind: ItemKind::Message,
     }
     .fallback_derive_impls()
   } else if cfg!(feature = "cel") {
@@ -97,7 +97,7 @@ pub fn message_proc_macro(mut item: ItemStruct, macro_attrs: TokenStream2) -> To
     let conversions = ProtoConversionImpl {
       source_ident: item.ident.clone(),
       target_ident: proxy_struct.ident.clone(),
-      kind: InputItemKind::Message,
+      kind: ItemKind::Message,
       into_proto: ConversionData::new(message_attrs.into_proto.as_ref()),
       from_proto: ConversionData::new(message_attrs.from_proto.as_ref()),
     }
@@ -207,7 +207,7 @@ pub fn second_processing<'a, I>(
   fields_data: &mut [FieldDataKind],
   mut tag_allocator: Option<&mut TagAllocator>,
   container_attrs: ContainerAttrs,
-  item_kind: InputItemKind,
+  item_kind: ItemKind,
 ) -> syn::Result<()>
 where
   I: IntoIterator<Item = FieldOrVariant<'a>>,

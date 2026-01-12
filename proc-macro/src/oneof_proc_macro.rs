@@ -64,7 +64,7 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
     &mut fields_data,
     None,
     ContainerAttrs::Oneof(&oneof_attrs),
-    InputItemKind::Oneof,
+    ItemKind::Oneof,
   )
   .unwrap_or_default_and_push_error(&mut errors);
 
@@ -73,7 +73,7 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
     FallbackImpls {
       orig_ident: &item.ident,
       shadow_ident: shadow_enum.as_ref().map(|se| &se.ident),
-      kind: InputItemKind::Oneof,
+      kind: ItemKind::Oneof,
     }
     .fallback_derive_impls()
   } else if cfg!(feature = "cel") {
@@ -109,7 +109,7 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
     let conversions = ProtoConversionImpl {
       source_ident: item.ident.clone(),
       target_ident: shadow_enum.ident.clone(),
-      kind: InputItemKind::Oneof,
+      kind: ItemKind::Oneof,
       into_proto: ConversionData::new(oneof_attrs.into_proto.as_ref()),
       from_proto: ConversionData::new(oneof_attrs.from_proto.as_ref()),
     }

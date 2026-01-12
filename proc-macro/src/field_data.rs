@@ -77,7 +77,7 @@ impl FieldData {
     }
   }
 
-  pub fn output_proto_type(&self, item_kind: InputItemKind) -> Type {
+  pub fn output_proto_type(&self, item_kind: ItemKind) -> Type {
     match &self.proto_field {
       ProtoField::Map(map) => {
         let keys = map.keys.into_type().output_proto_type(self.span);

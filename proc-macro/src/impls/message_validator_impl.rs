@@ -2,10 +2,7 @@ use crate::*;
 
 bool_enum!(pub UseFallback);
 
-pub fn field_validator_tokens(
-  field_data: &FieldData,
-  item_kind: InputItemKind,
-) -> Option<TokenStream2> {
+pub fn field_validator_tokens(field_data: &FieldData, item_kind: ItemKind) -> Option<TokenStream2> {
   let FieldData {
     ident,
     ident_str,
@@ -46,8 +43,8 @@ pub fn field_validator_tokens(
       let field_type = field_data.descriptor_type_tokens();
 
       let argument = match item_kind {
-        InputItemKind::Oneof => quote! { Some(v) },
-        InputItemKind::Message => match type_info.type_.as_ref() {
+        ItemKind::Oneof => quote! { Some(v) },
+        ItemKind::Message => match type_info.type_.as_ref() {
           RustType::Option(inner) => {
             if inner.is_box() {
               quote_spanned! (*span=> self.#ident.as_deref())
@@ -104,7 +101,7 @@ pub fn generate_message_validator(
     let tokens = fields
       .iter()
       .filter_map(|d| d.as_normal())
-      .filter_map(|data| field_validator_tokens(data, InputItemKind::Message));
+      .filter_map(|data| field_validator_tokens(data, ItemKind::Message));
 
     quote! { #(#tokens)* }
   };

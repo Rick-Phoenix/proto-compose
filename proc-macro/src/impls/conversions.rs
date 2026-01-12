@@ -66,14 +66,14 @@ fn process_custom_expression(expr: &PathOrClosure, base_ident: &TokenStream2) ->
 pub struct FromImpl<'a> {
   pub source_ident: &'a Ident,
   pub target_ident: &'a Ident,
-  pub kind: InputItemKind,
+  pub kind: ItemKind,
   pub conversion_data: &'a ConversionData<'a>,
 }
 
 pub struct ProtoConversionImpl<'a> {
   pub source_ident: Ident,
   pub target_ident: Ident,
-  pub kind: InputItemKind,
+  pub kind: ItemKind,
   pub into_proto: ConversionData<'a>,
   pub from_proto: ConversionData<'a>,
 }
@@ -184,12 +184,12 @@ impl ProtoConversionImpl<'_> {
     field_ident: &Ident,
   ) {
     let field_conversion_kind = match &self.kind {
-      InputItemKind::Oneof => FieldConversionKind::EnumVariant {
+      ItemKind::Oneof => FieldConversionKind::EnumVariant {
         variant_ident: field_ident,
         source_enum_ident: &self.source_ident,
         target_enum_ident: &self.target_ident,
       },
-      InputItemKind::Message => FieldConversionKind::StructField { ident: field_ident },
+      ItemKind::Message => FieldConversionKind::StructField { ident: field_ident },
     };
 
     let base_ident = field_conversion_kind.base_ident();
@@ -212,12 +212,12 @@ impl ProtoConversionImpl<'_> {
     field_ident: &Ident,
   ) {
     let field_conversion_kind = match &self.kind {
-      InputItemKind::Oneof => FieldConversionKind::EnumVariant {
+      ItemKind::Oneof => FieldConversionKind::EnumVariant {
         variant_ident: field_ident,
         source_enum_ident: &self.source_ident,
         target_enum_ident: &self.target_ident,
       },
-      InputItemKind::Message => FieldConversionKind::StructField { ident: field_ident },
+      ItemKind::Message => FieldConversionKind::StructField { ident: field_ident },
     };
 
     let conversion_expr = if let Some(proto_field) = proto_field {
@@ -271,12 +271,12 @@ impl<'a> ConversionData<'a> {
 }
 
 #[derive(Clone, Copy)]
-pub enum InputItemKind {
+pub enum ItemKind {
   Oneof,
   Message,
 }
 
-impl InputItemKind {
+impl ItemKind {
   /// Returns `true` if the input item kind is [`Message`].
   ///
   /// [`Message`]: InputItemKind::Message
@@ -306,12 +306,12 @@ fn create_from_impl(info: &FromImpl) -> TokenStream2 {
     quote! { unimplemented!() }
   } else {
     match kind {
-      InputItemKind::Oneof => quote! {
+      ItemKind::Oneof => quote! {
         match value {
           #conversion_tokens
         }
       },
-      InputItemKind::Message => quote! {
+      ItemKind::Message => quote! {
         Self {
           #conversion_tokens
         }

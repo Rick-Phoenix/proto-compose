@@ -12,7 +12,7 @@ pub fn generate_oneof_validator(
       .iter()
       .filter_map(|d| d.as_normal())
       .filter_map(|data| {
-        field_validator_tokens(data, InputItemKind::Oneof).map(|inner| {
+        field_validator_tokens(data, ItemKind::Oneof).map(|inner| {
           let ident = &data.ident;
 
           quote_spanned! {data.span=>
