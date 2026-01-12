@@ -354,6 +354,7 @@ fn create_from_impl(info: &FromImpl) -> TokenStream2 {
   };
 
   quote! {
+    #[allow(clippy::useless_conversion)]
     impl From<#source_ident> for #target_ident {
       fn from(value: #source_ident) -> Self {
         #conversion_body

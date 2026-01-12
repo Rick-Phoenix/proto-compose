@@ -53,15 +53,15 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   } = process_derive_enum_attrs(enum_ident, attrs)?;
 
   let mut variants_data: Vec<EnumVariantCtx> = Vec::new();
-  let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
+  let mut manually_set_tags: Vec<ParsedNum> = Vec::new();
 
   for variant in variants.iter() {
     if let Some((_, expr)) = &variant.discriminant {
       let num = expr.as_int::<i32>()?;
 
-      manually_set_tags.push(ManuallySetTag {
-        tag: num,
-        field_span: variant.ident.span(),
+      manually_set_tags.push(ParsedNum {
+        num,
+        span: variant.ident.span(),
       });
     }
   }
@@ -71,11 +71,11 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
   let mut tag_allocator = TagAllocator::new(&unavailable_ranges);
 
   for (i, variant) in variants.iter_mut().enumerate() {
-    if !variant.fields.is_empty() {
-      bail!(variant, "Protobuf enums can only have unit variants");
-    }
-
     let variant_ident = &variant.ident;
+
+    if !variant.fields.is_empty() {
+      bail!(variant_ident, "Protobuf enums can only have unit variants");
+    }
 
     let EnumVariantAttrs {
       options,
@@ -84,7 +84,7 @@ fn enum_schema_impls(item: &mut ItemEnum) -> Result<TokenStream2, Error> {
     } = process_derive_enum_variants_attrs(&proto_name, variant_ident, &variant.attrs, no_prefix)?;
 
     if reserved_names.contains(&name) {
-      bail!(&variant, "Name `{name}` is reserved");
+      bail!(variant_ident, "Name `{name}` is reserved");
     }
 
     let tag = if let Some((_, expr)) = &variant.discriminant {

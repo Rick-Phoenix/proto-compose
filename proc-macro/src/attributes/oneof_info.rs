@@ -3,16 +3,16 @@ use crate::*;
 #[derive(Debug, Clone)]
 pub struct OneofInfo {
   pub path: Path,
-  pub tags: Vec<i32>,
+  pub tags: Vec<ParsedNum>,
   pub default: bool,
   pub required: bool,
 }
 
-pub fn tags_to_str(tags: &[i32]) -> String {
+pub fn tags_to_str(tags: &[ParsedNum]) -> String {
   let mut tags_str = String::new();
 
   for (i, tag) in tags.iter().enumerate() {
-    tags_str.push_str(&tag.to_string());
+    tags_str.push_str(&tag.num.to_string());
 
     if i != tags.len() - 1 {
       tags_str.push_str(", ");
@@ -25,7 +25,7 @@ pub fn tags_to_str(tags: &[i32]) -> String {
 impl OneofInfo {
   pub fn parse(meta: &ParseNestedMeta, type_info: &TypeInfo) -> syn::Result<Self> {
     let mut oneof_path = ItemPathEntry::default();
-    let mut tags: Vec<i32> = Vec::new();
+    let mut tags: Vec<ParsedNum> = Vec::new();
     let mut default = false;
     let mut required = false;
 
@@ -37,7 +37,9 @@ impl OneofInfo {
         "proxied" => oneof_path = ItemPathEntry::Proxied,
         "required" => required = true,
         "tags" => {
-          tags = meta.parse_list::<NumList>()?.list;
+          tags = meta
+            .parse_list::<PunctuatedItems<ParsedNum>>()?
+            .list;
         }
         _ => {
           oneof_path = ItemPathEntry::Path(meta.path);

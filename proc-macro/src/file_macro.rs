@@ -1,8 +1,6 @@
 use crate::*;
 
 pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
-  let input_span = input.span();
-
   let mut const_ident: Option<Ident> = None;
   let mut name: Option<String> = None;
   let mut package: Option<Path> = None;
@@ -50,15 +48,10 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
 
   parser.parse2(input)?;
 
-  let const_ident = const_ident.ok_or_else(|| {
-    error_with_span!(
-      input_span,
-      "Missing const ident (must be the first argument)"
-    )
-  })?;
-  let file = name.ok_or_else(|| error_with_span!(input_span, "Missing `file` attribute"))?;
-  let package =
-    package.ok_or_else(|| error_with_span!(input_span, "Missing `package` attribute"))?;
+  let const_ident = const_ident
+    .ok_or_else(|| error_call_site!("Missing const ident (must be the first argument)"))?;
+  let file = name.ok_or_else(|| error_call_site!("Missing `file` attribute"))?;
+  let package = package.ok_or_else(|| error_call_site!("Missing `package` attribute"))?;
 
   Ok(quote! {
     #[doc(hidden)]

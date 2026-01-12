@@ -19,7 +19,7 @@ pub struct FieldData {
   pub ident: Ident,
   pub type_info: TypeInfo,
   pub ident_str: String,
-  pub tag: Option<i32>,
+  pub tag: Option<ParsedNum>,
   pub validator: Option<ValidatorTokens>,
   pub options: TokensOr<TokenStream2>,
   pub proto_name: String,
@@ -60,7 +60,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
   let field_span = field.ident()?.span();
 
   let mut validator: Option<ClosureOrExpr> = None;
-  let mut tag: Option<i32> = None;
+  let mut tag: Option<ParsedNum> = None;
   let mut options = TokensOr::<TokenStream2>::vec();
   let mut name: Option<String> = None;
   let mut proto_field: Option<ProtoField> = None;
@@ -97,7 +97,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
               options.set(meta.expr_value()?.into_token_stream());
             }
             "tag" => {
-              tag = Some(meta.expr_value()?.as_int::<i32>()?);
+              tag = Some(meta.parse_value::<ParsedNum>()?);
             }
             "name" => {
               name = Some(meta.expr_value()?.as_string()?);

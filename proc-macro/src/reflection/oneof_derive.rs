@@ -69,7 +69,7 @@ pub fn reflection_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, Erro
 
     let field_desc = message_desc
       .get_field_by_name(&proto_name)
-      .ok_or_else(|| error!(variant, "Field `{proto_name}` not found in the descriptor"))?;
+      .ok_or_else(|| error!(ident, "Field `{proto_name}` not found in the descriptor"))?;
 
     let type_info = TypeInfo::from_type(variant.type_()?)?;
     let proto_field = ProtoField::from_descriptor(&field_desc, &type_info, found_enum_path)?;
@@ -113,7 +113,9 @@ pub fn reflection_oneof_derive(item: &mut ItemEnum) -> Result<TokenStream2, Erro
       type_info,
       proto_name,
       ident_str,
-      tag: Some(field_desc.number().cast_signed()),
+      tag: Some(ParsedNum::with_default_span(
+        field_desc.number().cast_signed(),
+      )),
       validator: Some(validator),
       options: TokenStreamOr::vec(),
       proto_field,

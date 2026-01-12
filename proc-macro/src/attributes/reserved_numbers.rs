@@ -33,35 +33,21 @@ fn is_reserved(id: i32, sorted_ranges: &[Range<i32>]) -> bool {
   result.is_ok()
 }
 
-pub struct ManuallySetTag {
-  pub tag: i32,
-  pub field_span: Span,
-}
-
-impl ToTokens for ManuallySetTag {
-  fn to_tokens(&self, tokens: &mut TokenStream2) {
-    let mut literal = proc_macro2::Literal::i32_unsuffixed(self.tag);
-    literal.set_span(self.field_span);
-
-    tokens.extend(literal.to_token_stream());
-  }
-}
-
 pub fn sort_and_check_invalid_tags(
-  tags: &mut [ManuallySetTag],
+  tags: &mut [ParsedNum],
   reserved_numbers: &ReservedNumbers,
 ) -> syn::Result<()> {
-  tags.sort_unstable_by_key(|mt| mt.tag);
+  tags.sort_unstable_by_key(|t| t.num);
 
   for i in 0..tags.len() {
-    let ManuallySetTag { tag, field_span } = tags[i];
+    let ParsedNum { num, span } = tags[i];
 
-    if i > 0 && tag == tags[i - 1].tag {
-      bail_with_span!(field_span, "Tag {tag} is used multiple times");
+    if i > 0 && num == tags[i - 1].num {
+      bail_with_span!(span, "Tag {num} is used multiple times");
     }
 
-    if reserved_numbers.contains(tag) {
-      bail_with_span!(field_span, "Tag {tag} conflicts with a reserved range");
+    if reserved_numbers.contains(num) {
+      bail_with_span!(span, "Tag {num} conflicts with a reserved range");
     }
   }
 
@@ -70,7 +56,7 @@ pub fn sort_and_check_invalid_tags(
 
 pub fn build_unavailable_ranges(
   reserved_numbers: &ReservedNumbers,
-  manual_tags: &mut [ManuallySetTag],
+  manual_tags: &mut [ParsedNum],
 ) -> syn::Result<Vec<Range<i32>>> {
   sort_and_check_invalid_tags(manual_tags, reserved_numbers)?;
 
@@ -78,7 +64,7 @@ pub fn build_unavailable_ranges(
 
   let mut manual_iter = manual_tags
     .iter()
-    .map(|mt| mt.tag..mt.tag + 1)
+    .map(|mt| mt.num..mt.num + 1)
     .peekable();
 
   let mut merged = Vec::new();

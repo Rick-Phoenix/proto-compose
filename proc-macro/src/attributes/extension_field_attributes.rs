@@ -2,14 +2,14 @@ use crate::*;
 
 #[derive(Clone)]
 pub struct ExtensionFieldAttrs {
-  pub tag: Option<i32>,
+  pub tag: Option<ParsedNum>,
   pub options: TokensOr<TokenStream2>,
   pub proto_name: String,
   pub proto_field: ProtoField,
 }
 
 pub fn process_extension_field_attrs(field: &Field) -> Result<ExtensionFieldAttrs, Error> {
-  let mut tag: Option<i32> = None;
+  let mut tag: Option<ParsedNum> = None;
   let mut options = TokensOr::<TokenStream2>::vec();
   let mut name: Option<String> = None;
   let mut proto_field: Option<ProtoField> = None;
@@ -26,7 +26,7 @@ pub fn process_extension_field_attrs(field: &Field) -> Result<ExtensionFieldAttr
         options.set(meta.expr_value()?.into_token_stream());
       }
       "tag" => {
-        tag = Some(meta.expr_value()?.as_int::<i32>()?);
+        tag = Some(meta.parse_value::<ParsedNum>()?);
       }
       "name" => {
         name = Some(meta.expr_value()?.as_string()?);

@@ -1,8 +1,6 @@
 use crate::*;
 
 pub fn package_macro_impl(input: TokenStream2) -> syn::Result<TokenStream2> {
-  let input_span = input.span();
-
   let mut const_ident: Option<Ident> = None;
   let mut pkg_name: Option<String> = None;
   let mut include_cel_test = true;
@@ -25,14 +23,10 @@ pub fn package_macro_impl(input: TokenStream2) -> syn::Result<TokenStream2> {
 
   parser.parse2(input)?;
 
-  let const_ident = const_ident.ok_or_else(|| {
-    error_with_span!(
-      input_span,
-      "Missing const ident (must be the first argument)"
-    )
-  })?;
+  let const_ident = const_ident
+    .ok_or_else(|| error_call_site!("Missing const ident (must be the first argument)"))?;
 
-  let pkg_name = pkg_name.ok_or_else(|| error_with_span!(input_span, "package name is missing"))?;
+  let pkg_name = pkg_name.ok_or_else(|| error_call_site!("package name is missing"))?;
   let converted_name = to_snake_case(&pkg_name.replace(".", "_"));
 
   let test_impl = include_cel_test.then(|| {

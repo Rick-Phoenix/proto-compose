@@ -44,7 +44,12 @@ impl FieldData {
       ProtoField::Single(proto_type) => proto_type.as_prost_attr_type(self.span),
     };
 
-    let tag_as_str = self.tag.unwrap_or_default().to_string();
+    let tag_as_str = self
+      .tag
+      .as_ref()
+      .map(|t| t.num)
+      .unwrap_or_default()
+      .to_string();
 
     parse_quote_spanned! {self.span=> #[prost(#inner, tag = #tag_as_str)] }
   }

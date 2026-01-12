@@ -92,7 +92,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
       let oneof_desc = message_desc
         .oneofs()
         .find(|oneof| oneof.name() == proto_name)
-        .ok_or_else(|| error!(field, "Oneof `{proto_name}` missing in the descriptor"))?;
+        .ok_or_else(|| error!(ident, "Oneof `{proto_name}` missing in the descriptor"))?;
 
       if let ProstValue::Message(oneof_rules_msg) = oneof_desc
         .options()
@@ -100,7 +100,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
         .as_ref()
       {
         let oneof_rules = OneofRules::decode(oneof_rules_msg.encode_to_vec().as_slice())
-          .map_err(|e| error!(field, "Could not decode oneof rules: {}", e))?;
+          .map_err(|e| error!(ident, "Could not decode oneof rules: {}", e))?;
 
         oneof.required = oneof_rules.required();
 
@@ -110,7 +110,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
           type_info,
           proto_name: proto_name.to_string(),
           ident_str,
-          tag: Some(0),
+          tag: None,
           validator: None,
           options: TokensOr::<TokenStream2>::vec(),
           proto_field: ProtoField::Oneof(oneof),
@@ -124,7 +124,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
     } else {
       let field_desc = message_desc
         .get_field_by_name(proto_name)
-        .ok_or_else(|| error!(field, "Field `{proto_name}` not found in the descriptor"))?;
+        .ok_or_else(|| error!(ident, "Field `{proto_name}` not found in the descriptor"))?;
 
       let proto_field = ProtoField::from_descriptor(&field_desc, &type_info, found_enum_path)?;
 
@@ -167,7 +167,10 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
         type_info,
         proto_name: proto_name.to_string(),
         ident_str,
-        tag: Some(field_desc.number().cast_signed()),
+        tag: Some(ParsedNum {
+          num: field_desc.number().cast_signed(),
+          span: Span::call_site(),
+        }),
         validator: Some(validator),
         options: TokensOr::<TokenStream2>::vec(),
         proto_field,

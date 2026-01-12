@@ -118,7 +118,7 @@ pub fn message_macro_shadow(
   };
 
   let mut fields_data: Vec<FieldDataKind> = Vec::new();
-  let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
+  let mut manually_set_tags: Vec<ParsedNum> = Vec::new();
 
   for field in orig_struct.fields.iter_mut() {
     let field_data_kind = process_field_data(FieldOrVariant::Field(field))?;
@@ -132,16 +132,10 @@ pub fn message_macro_shadow(
 
       FieldDataKind::Normal(data) => {
         if let Some(tag) = data.tag {
-          manually_set_tags.push(ManuallySetTag {
-            tag,
-            field_span: data.span,
-          });
+          manually_set_tags.push(tag);
         } else if let ProtoField::Oneof(OneofInfo { tags, .. }) = &data.proto_field {
           for tag in tags.iter().copied() {
-            manually_set_tags.push(ManuallySetTag {
-              tag,
-              field_span: data.span,
-            });
+            manually_set_tags.push(tag);
           }
         }
       }
@@ -191,7 +185,10 @@ pub fn message_macro_shadow(
     if !field_data.proto_field.is_oneof() && field_data.tag.is_none() {
       let new_tag = tag_allocator.next_tag(field_data.span)?;
 
-      field_data.tag = Some(new_tag);
+      field_data.tag = Some(ParsedNum {
+        num: new_tag,
+        span: field_data.span,
+      });
     };
 
     let prost_attr = field_data.as_prost_attr();
@@ -243,7 +240,7 @@ pub fn message_macro_direct(
   message_attrs: &MessageAttrs,
 ) -> Result<TokenStream2, Error> {
   let mut fields_data: Vec<FieldData> = Vec::new();
-  let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
+  let mut manually_set_tags: Vec<ParsedNum> = Vec::new();
 
   for field in item.fields.iter_mut() {
     let field_data_kind = process_field_data(FieldOrVariant::Field(field))?;
@@ -276,23 +273,17 @@ pub fn message_macro_direct(
       };
 
       if let Some(tag) = data.tag {
-        manually_set_tags.push(ManuallySetTag {
-          tag,
-          field_span: data.span,
-        });
+        manually_set_tags.push(tag);
       } else if let ProtoField::Oneof(OneofInfo { tags, .. }) = &data.proto_field {
         for tag in tags.iter().copied() {
-          manually_set_tags.push(ManuallySetTag {
-            tag,
-            field_span: data.span,
-          });
+          manually_set_tags.push(tag);
         }
       }
 
       fields_data.push(data);
     } else {
       bail!(
-        field,
+        field.require_ident()?,
         "Cannot use `ignore` in a direct impl. Use a proxied impl instead"
       );
     }
@@ -307,7 +298,10 @@ pub fn message_macro_direct(
     if !field_data.proto_field.is_oneof() && field_data.tag.is_none() {
       let new_tag = tag_allocator.next_tag(field_data.span)?;
 
-      field_data.tag = Some(new_tag);
+      field_data.tag = Some(ParsedNum {
+        num: new_tag,
+        span: field_data.span,
+      });
     };
 
     let prost_attr = field_data.as_prost_attr();

@@ -5,7 +5,7 @@ pub struct OneofCtx<'a, T: Borrow<FieldData>> {
   pub orig_enum_ident: &'a Ident,
   pub shadow_enum_ident: Option<&'a Ident>,
   pub non_ignored_variants: Vec<T>,
-  pub tags: Vec<ManuallySetTag>,
+  pub tags: Vec<ParsedNum>,
 }
 
 impl<'a, T: Borrow<FieldData>> OneofCtx<'a, T> {
@@ -118,7 +118,7 @@ pub(crate) fn oneof_shadow_proc_macro(
     from_proto: ConversionData::new(oneof_attrs.from_proto.as_ref()),
   };
 
-  let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
+  let mut manually_set_tags: Vec<ParsedNum> = Vec::new();
   let mut fields_data: Vec<FieldDataKind> = Vec::new();
 
   for src_variant in item.variants.iter_mut() {
@@ -129,10 +129,7 @@ pub(crate) fn oneof_shadow_proc_macro(
       FieldDataKind::Ignored { ident, .. } => ignored_variants.push(ident.clone()),
       FieldDataKind::Normal(data) => {
         if let Some(tag) = data.tag {
-          manually_set_tags.push(ManuallySetTag {
-            tag,
-            field_span: src_variant.ident.span(),
-          });
+          manually_set_tags.push(tag);
         }
       }
     };
@@ -204,7 +201,7 @@ pub(crate) fn oneof_direct_proc_macro(
 ) -> Result<TokenStream2, Error> {
   let ItemEnum { variants, .. } = item;
 
-  let mut manually_set_tags: Vec<ManuallySetTag> = Vec::new();
+  let mut manually_set_tags: Vec<ParsedNum> = Vec::new();
   let mut fields_data: Vec<FieldData> = Vec::new();
 
   for variant in variants.iter_mut() {
@@ -213,10 +210,7 @@ pub(crate) fn oneof_direct_proc_macro(
 
     if let FieldDataKind::Normal(data) = field_attrs {
       if let Some(tag) = data.tag {
-        manually_set_tags.push(ManuallySetTag {
-          tag,
-          field_span: variant.ident.span(),
-        });
+        manually_set_tags.push(tag);
       }
 
       if data.proto_field.is_enum() && !data.type_info.inner().is_int() {
@@ -249,7 +243,7 @@ pub(crate) fn oneof_direct_proc_macro(
       fields_data.push(data);
     } else {
       bail!(
-        variant,
+        variant.ident,
         "Cannot use `ignore` in direct impls. Use a proxied impl instead"
       );
     }

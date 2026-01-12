@@ -6,8 +6,6 @@ pub fn process_extension_derive(
 ) -> Result<TokenStream2, Error> {
   let ItemStruct { ident, fields, .. } = item;
 
-  let args_span = args.span();
-
   let mut target: Option<Ident> = None;
   let mut fields_tokens: Vec<TokenStream2> = Vec::new();
 
@@ -48,7 +46,7 @@ pub fn process_extension_derive(
 
   parser.parse2(args)?;
 
-  let target = target.ok_or_else(|| error_with_span!(args_span, "Missing target attribute"))?;
+  let target = target.ok_or_else(|| error_call_site!("Missing target attribute"))?;
 
   for field in fields {
     let ExtensionFieldAttrs {
