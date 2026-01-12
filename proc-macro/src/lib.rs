@@ -27,8 +27,8 @@ use syn_utils::*;
 
 use crate::{
   enum_proc_macro::*, extension_derive::*, file_macro::*, impls::*, item_cloners::*,
-  message_proc_macro::*, message_schema_impl::*, oneof_proc_macro::*, package_macro::*,
-  path_utils::*, proto_field::*, proto_map::*, proto_types::*, service_derive::*,
+  message_proc_macro::*, oneof_proc_macro::*, package_macro::*, path_utils::*, proto_field::*,
+  proto_map::*, proto_types::*, service_derive::*,
 };
 
 mod attributes;
@@ -111,20 +111,7 @@ pub fn enum_derive(input: TokenStream) -> TokenStream {
 pub fn validated_message_derive(input: TokenStream) -> TokenStream {
   let mut item = parse_macro_input!(input as ItemStruct);
 
-  let validator_impl = match reflection::reflection_message_derive(&mut item) {
-    Ok(imp) => imp,
-    Err(e) => {
-      let err = e.into_compile_error();
-      let fallback_impl = fallback_message_validator_impl(&item.ident);
-
-      quote! {
-        #fallback_impl
-        #err
-      }
-    }
-  };
-
-  validator_impl.into()
+  reflection::reflection_message_derive(&mut item).into()
 }
 
 #[proc_macro]

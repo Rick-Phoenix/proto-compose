@@ -111,8 +111,8 @@ pub(crate) fn oneof_shadow_proc_macro(
   let mut ignored_variants: Vec<Ident> = Vec::new();
 
   let mut proto_conversion_data = ProtoConversionImpl {
-    source_ident: orig_enum_ident,
-    target_ident: shadow_enum_ident,
+    source_ident: orig_enum_ident.clone(),
+    target_ident: shadow_enum_ident.clone(),
     kind: InputItemKind::Oneof,
     into_proto: ConversionData::new(oneof_attrs.into_proto.as_ref()),
     from_proto: ConversionData::new(oneof_attrs.from_proto.as_ref()),

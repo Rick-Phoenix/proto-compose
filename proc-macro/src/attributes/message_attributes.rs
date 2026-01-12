@@ -3,6 +3,7 @@ use syn_utils::PunctuatedItems;
 
 use crate::*;
 
+#[derive(Default)]
 pub struct MessageAttrs {
   pub reserved_names: Vec<String>,
   pub reserved_numbers: ReservedNumbers,
@@ -19,32 +20,55 @@ pub struct MessageAttrs {
   pub deprecated: bool,
 }
 
+impl MessageAttrs {
+  pub fn has_custom_conversions(&self) -> bool {
+    self.from_proto.is_some() && self.into_proto.is_some()
+  }
+}
+
+#[derive(Default)]
+pub struct MessageMacroArgs {
+  pub is_proxied: bool,
+  pub no_auto_test: bool,
+  pub extern_path: Option<ParsedStr>,
+}
+
+impl MessageMacroArgs {
+  pub fn parse(macro_args: TokenStream2) -> syn::Result<Self> {
+    let mut is_proxied = false;
+    let mut no_auto_test = false;
+    let mut extern_path: Option<ParsedStr> = None;
+
+    let parser = syn::meta::parser(|meta| {
+      if let Some(ident) = meta.path.get_ident() {
+        let ident = ident.to_string();
+
+        match ident.as_str() {
+          "proxied" => is_proxied = true,
+          "no_auto_test" => no_auto_test = true,
+          "extern_path" => extern_path = Some(meta.parse_value::<ParsedStr>()?),
+          _ => {}
+        };
+      }
+
+      Ok(())
+    });
+
+    parser.parse2(macro_args)?;
+
+    Ok(Self {
+      is_proxied,
+      no_auto_test,
+      extern_path,
+    })
+  }
+}
+
 pub fn process_message_attrs(
   struct_ident: &Ident,
-  macro_args: TokenStream2,
+  macro_args: MessageMacroArgs,
   attrs: &[Attribute],
 ) -> Result<MessageAttrs, Error> {
-  let mut is_proxied = false;
-  let mut no_auto_test = false;
-  let mut extern_path: Option<ParsedStr> = None;
-
-  let parser = syn::meta::parser(|meta| {
-    if let Some(ident) = meta.path.get_ident() {
-      let ident = ident.to_string();
-
-      match ident.as_str() {
-        "proxied" => is_proxied = true,
-        "no_auto_test" => no_auto_test = true,
-        "extern_path" => extern_path = Some(meta.parse_value::<ParsedStr>()?),
-        _ => {}
-      };
-    }
-
-    Ok(())
-  });
-
-  parser.parse2(macro_args)?;
-
   let mut reserved_names: Vec<String> = Vec::new();
   let mut reserved_numbers = ReservedNumbers::default();
   let mut options = TokensOr::<TokenStream2>::vec();
@@ -145,9 +169,9 @@ pub fn process_message_attrs(
     into_proto,
     shadow_derives,
     cel_rules,
-    is_proxied,
-    no_auto_test,
-    extern_path,
+    is_proxied: macro_args.is_proxied,
+    no_auto_test: macro_args.no_auto_test,
+    extern_path: macro_args.extern_path,
     deprecated,
   })
 }

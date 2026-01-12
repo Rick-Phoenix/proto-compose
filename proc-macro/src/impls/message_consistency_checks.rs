@@ -1,22 +1,23 @@
-use std::borrow::Borrow;
-
 use crate::*;
 
-pub fn generate_message_consistency_checks<T: Borrow<FieldData>>(
+pub fn generate_message_consistency_checks(
   item_ident: &Ident,
-  fields: &[T],
+  fields_data: &[FieldDataKind],
   skip_auto_test: bool,
   skip_oneof_tags_check: bool,
   message_name: &str,
 ) -> TokenStream2 {
-  let consistency_checks = fields.iter().filter_map(|data| {
+  let consistency_checks = if fields_data.is_empty() {
+    quote! { unimplemented!() }
+  } else {
+    let tokens = fields_data.iter().filter_map(|d| d.as_normal()).filter_map(|data| {
     let FieldData {
       ident_str,
       validator,
       proto_field,
       span,
       ..
-    } = data.borrow();
+    } = data;
 
     if let ProtoField::Oneof(OneofInfo { path, tags, .. }) = proto_field
       && !skip_oneof_tags_check
@@ -47,6 +48,9 @@ pub fn generate_message_consistency_checks<T: Borrow<FieldData>>(
     }
   });
 
+    quote! { #(#tokens)* }
+  };
+
   let auto_test_fn = (!skip_auto_test).then(|| {
     let test_fn_ident = format_ident!(
       "{}_validators_consistency",
@@ -76,7 +80,7 @@ pub fn generate_message_consistency_checks<T: Borrow<FieldData>>(
         let mut field_errors: Vec<::prelude::FieldError> = Vec::new();
         let mut cel_errors: Vec<::prelude::CelError> = Vec::new();
 
-        #(#consistency_checks)*
+        #consistency_checks
 
         let top_level_programs = Self::cel_rules();
 
@@ -101,13 +105,13 @@ pub fn generate_message_consistency_checks<T: Borrow<FieldData>>(
   }
 }
 
-impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
+impl MessageCtx<'_> {
   pub fn generate_consistency_checks(&self) -> TokenStream2 {
     let item_ident = self.proto_struct_ident();
 
     generate_message_consistency_checks(
       item_ident,
-      &self.non_ignored_fields,
+      &self.fields_data,
       self.message_attrs.no_auto_test,
       false,
       &self.message_attrs.name,

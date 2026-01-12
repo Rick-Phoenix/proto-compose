@@ -1,6 +1,14 @@
 use super::*;
 
-pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, Error> {
+#[derive(Default)]
+pub struct ReflectionMsgData {
+  pub fields_data: Vec<FieldDataKind>,
+  pub top_level_rules: IterTokensOr<TokenStream2>,
+  pub no_auto_test: bool,
+  pub msg_name: String,
+}
+
+pub fn extract_fields_data_reflection(item: &mut ItemStruct) -> Result<ReflectionMsgData, Error> {
   let ItemStruct { fields, .. } = item;
 
   let mut msg_name: Option<String> = None;
@@ -35,7 +43,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
     }
   };
 
-  let mut fields_data: Vec<FieldData> = Vec::new();
+  let mut fields_data: Vec<FieldDataKind> = Vec::new();
 
   for field in fields {
     let field_span = field.ident.span();
@@ -104,7 +112,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
 
         oneof.required = oneof_rules.required();
 
-        fields_data.push(FieldData {
+        fields_data.push(FieldDataKind::Normal(FieldData {
           span: field_span,
           ident: ident.clone(),
           type_info,
@@ -117,7 +125,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
           from_proto: None,
           into_proto: None,
           deprecated: false,
-        });
+        }));
 
         continue;
       }
@@ -161,7 +169,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
         continue;
       };
 
-      fields_data.push(FieldData {
+      fields_data.push(FieldDataKind::Normal(FieldData {
         span: field_span,
         ident: ident.clone(),
         type_info,
@@ -177,7 +185,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
         from_proto: None,
         into_proto: None,
         deprecated: false,
-      });
+      }));
     }
   }
 
@@ -204,6 +212,24 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
     }
   }
 
+  Ok(ReflectionMsgData {
+    fields_data,
+    top_level_rules: cel_rules,
+    no_auto_test,
+    msg_name,
+  })
+}
+
+pub fn reflection_message_derive(item: &mut ItemStruct) -> TokenStream2 {
+  let mut errors: Vec<Error> = Vec::new();
+
+  let ReflectionMsgData {
+    fields_data,
+    top_level_rules: cel_rules,
+    no_auto_test,
+    msg_name,
+  } = extract_fields_data_reflection(item).unwrap_or_default_and_push_error(&mut errors);
+
   let validator_impl = wrap_with_imports(&[generate_message_validator(
     &item.ident,
     &fields_data,
@@ -212,8 +238,12 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> Result<TokenStream2, 
   let consistency_checks =
     generate_message_consistency_checks(&item.ident, &fields_data, no_auto_test, true, &msg_name);
 
-  Ok(quote! {
+  let errors = errors.iter().map(|e| e.to_compile_error());
+
+  quote! {
     #validator_impl
     #consistency_checks
-  })
+
+    #(#errors)*
+  }
 }

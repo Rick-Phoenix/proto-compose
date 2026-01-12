@@ -1,58 +1,6 @@
 use crate::*;
 
-pub fn fallback_message_schema_impl(
-  orig_struct_ident: &Ident,
-  shadow_struct_ident: Option<&Ident>,
-) -> TokenStream2 {
-  let proto_struct = shadow_struct_ident.unwrap_or(orig_struct_ident);
-
-  let mut output = quote! {
-    impl ::prelude::AsProtoType for #proto_struct {
-      fn proto_type() -> ::prelude::ProtoType {
-        unimplemented!()
-      }
-    }
-
-    impl ::prelude::ProtoMessage for #proto_struct {
-      const PACKAGE: &str = "";
-      const SHORT_NAME: &str = "";
-
-      fn type_url() -> &'static str {
-        unimplemented!()
-      }
-
-      fn full_name() -> &'static str {
-        unimplemented!()
-      }
-
-      fn proto_path() -> ::prelude::ProtoPath {
-        unimplemented!()
-      }
-
-      fn proto_name() -> &'static str {
-        unimplemented!()
-      }
-
-      fn proto_schema() -> ::prelude::Message {
-        unimplemented!()
-      }
-    }
-  };
-
-  if shadow_struct_ident.is_some() {
-    output.extend(quote! {
-      impl ::prelude::AsProtoType for #orig_struct_ident {
-        fn proto_type() -> ::prelude::ProtoType {
-          unimplemented!()
-        }
-      }
-    });
-  }
-
-  output
-}
-
-impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
+impl MessageCtx<'_> {
   pub fn generate_schema_impls(&self) -> TokenStream2 {
     let MessageAttrs {
       reserved_names,
@@ -65,61 +13,71 @@ impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
       ..
     } = &self.message_attrs;
 
-    let entries_tokens = self.non_ignored_fields.iter().map(|data| {
-      let FieldData {
-        tag,
-        validator,
-        options,
-        proto_name,
-        proto_field,
-        deprecated,
-        span,
-        ..
-      } = data.borrow();
+    let entries_tokens = if self.fields_data.is_empty() {
+      quote! { unimplemented!() }
+    } else {
+      let tokens = self
+        .fields_data
+        .iter()
+        .filter_map(|d| d.as_normal())
+        .map(|data| {
+          let FieldData {
+            tag,
+            validator,
+            options,
+            proto_name,
+            proto_field,
+            deprecated,
+            span,
+            ..
+          } = data;
 
-      if let ProtoField::Oneof(OneofInfo { path, required, .. }) = proto_field {
-        if options.is_default() {
-          quote_spanned! {*span=>
-            ::prelude::MessageEntry::Oneof {
-              oneof: <#path as ::prelude::ProtoOneof>::proto_schema(),
-              required: #required
+          if let ProtoField::Oneof(OneofInfo { path, required, .. }) = proto_field {
+            if options.is_default() {
+              quote_spanned! {*span=>
+                ::prelude::MessageEntry::Oneof {
+                  oneof: <#path as ::prelude::ProtoOneof>::proto_schema(),
+                  required: #required
+                }
+              }
+            } else {
+              quote_spanned! {*span=>
+                ::prelude::MessageEntry::Oneof {
+                  oneof: <#path as ::prelude::ProtoOneof>::proto_schema().with_options(#options),
+                  required: #required
+                }
+              }
+            }
+          } else {
+            let field_type_tokens = proto_field.field_proto_type_tokens(*span);
+
+            let validator_schema_tokens = validator
+              .as_ref()
+              // For default validators (messages only) we skip the schema generation
+              .filter(|v| !v.is_fallback)
+              .map_or_else(
+                || quote_spanned! {*span=> None },
+                |e| quote_spanned! {*span=> Some(#e.into_schema()) },
+              );
+
+            let options_tokens = options_tokens(*span, options, *deprecated);
+
+            quote_spanned! {*span=>
+              ::prelude::MessageEntry::Field(
+                ::prelude::Field {
+                  name: #proto_name,
+                  tag: #tag,
+                  options: #options_tokens.into_iter().collect(),
+                  type_: #field_type_tokens,
+                  validator: #validator_schema_tokens,
+                }
+              )
             }
           }
-        } else {
-          quote_spanned! {*span=>
-            ::prelude::MessageEntry::Oneof {
-              oneof: <#path as ::prelude::ProtoOneof>::proto_schema().with_options(#options),
-              required: #required
-            }
-          }
-        }
-      } else {
-        let field_type_tokens = proto_field.field_proto_type_tokens(*span);
+        });
 
-        let validator_schema_tokens = validator
-          .as_ref()
-          // For default validators (messages only) we skip the schema generation
-          .filter(|v| !v.is_fallback)
-          .map_or_else(
-            || quote_spanned! {*span=> None },
-            |e| quote_spanned! {*span=> Some(#e.into_schema()) },
-          );
-
-        let options_tokens = options_tokens(*span, options, *deprecated);
-
-        quote_spanned! {*span=>
-          ::prelude::MessageEntry::Field(
-            ::prelude::Field {
-              name: #proto_name,
-              tag: #tag,
-              options: #options_tokens.into_iter().collect(),
-              type_: #field_type_tokens,
-              validator: #validator_schema_tokens,
-            }
-          )
-        }
-      }
-    });
+      quote! { #(#tokens),* }
+    };
 
     let mut output = TokenStream2::new();
 
@@ -213,7 +171,7 @@ impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
             options: #options_tokens.into_iter().collect(),
             messages: vec![],
             enums: vec![],
-            entries: vec![ #(#entries_tokens,)* ],
+            entries: vec![ #entries_tokens ],
             cel_rules: #proto_struct::cel_rules().iter().map(|prog| prog.rule.clone()).collect(),
             rust_path: #rust_path_field
           }

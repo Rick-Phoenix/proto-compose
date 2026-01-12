@@ -71,47 +71,11 @@ pub struct FromImpl<'a> {
 }
 
 pub struct ProtoConversionImpl<'a> {
-  pub source_ident: &'a Ident,
-  pub target_ident: &'a Ident,
+  pub source_ident: Ident,
+  pub target_ident: Ident,
   pub kind: InputItemKind,
   pub into_proto: ConversionData<'a>,
   pub from_proto: ConversionData<'a>,
-}
-
-pub fn fallback_conversion_impls(
-  source_ident: &Ident,
-  target_ident: &Ident,
-  kind: InputItemKind,
-) -> TokenStream2 {
-  let conversion_trait = if kind.is_message() {
-    quote! {
-      impl ::prelude::MessageProxy for #source_ident {
-        type Message = #target_ident;
-      }
-    }
-  } else {
-    quote! {
-      impl ::prelude::OneofProxy for #source_ident {
-        type Oneof = #target_ident;
-      }
-    }
-  };
-
-  quote! {
-    impl From<#source_ident> for #target_ident {
-      fn from (_: #source_ident) -> Self {
-        unimplemented!()
-      }
-    }
-
-    impl From<#target_ident> for #source_ident {
-      fn from (_: #target_ident) -> Self {
-        unimplemented!()
-      }
-    }
-
-    #conversion_trait
-  }
 }
 
 impl ProtoConversionImpl<'_> {
@@ -119,18 +83,22 @@ impl ProtoConversionImpl<'_> {
     self.into_proto.has_custom_impl() && self.from_proto.has_custom_impl()
   }
 
-  pub fn generate_conversion_impls(&self) -> TokenStream2 {
+  pub fn generate_conversion_impls(&mut self, fields_data: &[FieldDataKind]) -> TokenStream2 {
+    for data in fields_data {
+      self.handle_field_conversions(data);
+    }
+
+    let mut tokens = TokenStream2::new();
+
+    tokens.extend(self.create_into_proto_impl());
+    tokens.extend(self.create_from_proto_impl());
+
     let Self {
       source_ident,
       target_ident,
       kind,
       ..
     } = self;
-
-    let mut tokens = TokenStream2::new();
-
-    tokens.extend(self.create_into_proto_impl());
-    tokens.extend(self.create_from_proto_impl());
 
     if kind.is_message() {
       tokens.extend(quote! {
@@ -149,7 +117,7 @@ impl ProtoConversionImpl<'_> {
     tokens
   }
 
-  pub fn create_into_proto_impl(&self) -> TokenStream2 {
+  fn create_into_proto_impl(&self) -> TokenStream2 {
     let Self {
       source_ident,
       target_ident,
@@ -166,7 +134,7 @@ impl ProtoConversionImpl<'_> {
     })
   }
 
-  pub fn create_from_proto_impl(&self) -> TokenStream2 {
+  fn create_from_proto_impl(&self) -> TokenStream2 {
     let Self {
       source_ident,
       target_ident,
@@ -186,7 +154,7 @@ impl ProtoConversionImpl<'_> {
     create_from_impl(&switched)
   }
 
-  pub fn handle_field_conversions(&mut self, field_attr_data: &FieldDataKind) {
+  fn handle_field_conversions(&mut self, field_attr_data: &FieldDataKind) {
     match field_attr_data {
       FieldDataKind::Ignored { from_proto, ident } => {
         if !self.from_proto.has_custom_impl() {
@@ -213,7 +181,7 @@ impl ProtoConversionImpl<'_> {
     }
   }
 
-  pub fn add_field_into_proto_impl(
+  fn add_field_into_proto_impl(
     &mut self,
     custom_expression: Option<&PathOrClosure>,
     proto_field: &ProtoField,
@@ -222,8 +190,8 @@ impl ProtoConversionImpl<'_> {
     let field_conversion_kind = match &self.kind {
       InputItemKind::Oneof => FieldConversionKind::EnumVariant {
         variant_ident: field_ident,
-        source_enum_ident: self.source_ident,
-        target_enum_ident: self.target_ident,
+        source_enum_ident: &self.source_ident,
+        target_enum_ident: &self.target_ident,
       },
       InputItemKind::Message => FieldConversionKind::StructField { ident: field_ident },
     };
@@ -241,7 +209,7 @@ impl ProtoConversionImpl<'_> {
     self.into_proto.tokens.extend(conversion);
   }
 
-  pub fn add_field_from_proto_impl(
+  fn add_field_from_proto_impl(
     &mut self,
     custom_expression: Option<&PathOrClosure>,
     proto_field: Option<&ProtoField>,
@@ -250,8 +218,8 @@ impl ProtoConversionImpl<'_> {
     let field_conversion_kind = match &self.kind {
       InputItemKind::Oneof => FieldConversionKind::EnumVariant {
         variant_ident: field_ident,
-        source_enum_ident: self.source_ident,
-        target_enum_ident: self.target_ident,
+        source_enum_ident: &self.source_ident,
+        target_enum_ident: &self.target_ident,
       },
       InputItemKind::Message => FieldConversionKind::StructField { ident: field_ident },
     };
@@ -338,6 +306,8 @@ fn create_from_impl(info: &FromImpl) -> TokenStream2 {
     let base_ident = quote! { value };
 
     process_custom_expression(expr, &base_ident)
+  } else if conversion_tokens.is_empty() {
+    quote! { unimplemented!() }
   } else {
     match kind {
       InputItemKind::Oneof => quote! {

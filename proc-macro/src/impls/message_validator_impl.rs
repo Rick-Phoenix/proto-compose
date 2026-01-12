@@ -1,31 +1,14 @@
 use crate::*;
 
-pub fn fallback_message_validator_impl(target_ident: &Ident) -> TokenStream2 {
-  quote! {
-    impl ::prelude::ValidatedMessage for #target_ident {
-      fn validate(&self) -> Result<(), ::prelude::Violations> {
-        unimplemented!()
-      }
-
-      fn nested_validate(&self, ctx: &mut ::prelude::ValidationCtx) {}
-    }
-
-    impl ::prelude::ProtoValidator for #target_ident {
-      type Target = Self;
-      type Validator = ::prelude::MessageValidator<Self>;
-      type Builder = ::prelude::MessageValidatorBuilder<Self>;
-    }
-  }
-}
-
-pub fn generate_message_validator<T: Borrow<FieldData>>(
+pub fn generate_message_validator(
   target_ident: &Ident,
-  fields: &[T],
+  fields: &[FieldDataKind],
   top_level_cel_rules: &IterTokensOr<TokenStream2>,
 ) -> TokenStream2 {
-  let validators_tokens = fields.iter().filter_map(|data| {
-    let data = data.borrow();
-
+  let validators_tokens = if fields.is_empty() {
+    quote! { unimplemented!() }
+  } else {
+    let tokens = fields.iter().filter_map(|d| d.as_normal()).filter_map(|data| {
     let FieldData {
       ident,
       type_info,
@@ -114,6 +97,9 @@ pub fn generate_message_validator<T: Borrow<FieldData>>(
     }
   });
 
+    quote! { #(#tokens)* }
+  };
+
   let has_cel_rules = !top_level_cel_rules.is_empty();
 
   let cel_rules_method = has_cel_rules.then(|| {
@@ -142,7 +128,7 @@ pub fn generate_message_validator<T: Borrow<FieldData>>(
       fn __validate_internal(&self, field_context: Option<&::prelude::FieldContext>, parent_elements: &mut Vec<::prelude::FieldPathElement>, violations: &mut ::prelude::ViolationsAcc) {
         #cel_rules_call
 
-        #(#validators_tokens)*
+        #validators_tokens
       }
     }
 
@@ -185,13 +171,13 @@ pub fn generate_message_validator<T: Borrow<FieldData>>(
   }
 }
 
-impl<T: Borrow<FieldData>> MessageCtx<'_, T> {
+impl MessageCtx<'_> {
   pub fn generate_validator(&self) -> TokenStream2 {
     let target_ident = self.proto_struct_ident();
 
     generate_message_validator(
       target_ident,
-      &self.non_ignored_fields,
+      &self.fields_data,
       &self.message_attrs.cel_rules,
     )
   }
