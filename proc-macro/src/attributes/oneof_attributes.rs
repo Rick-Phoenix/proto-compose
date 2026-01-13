@@ -1,7 +1,5 @@
 use crate::*;
 
-bool_enum!(pub SkipAutoTest);
-
 #[derive(Default)]
 pub struct OneofAttrs {
   pub options: TokensOr<TokenStream2>,

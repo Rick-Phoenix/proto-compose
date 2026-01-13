@@ -145,11 +145,7 @@ fn extract_fields_data(item: &mut ItemStruct) -> Result<ReflectionMsgData, Error
           span: field_span,
         }
       } else if let Some(fallback) = proto_field.default_validator_expr(field_span) {
-        ValidatorTokens {
-          expr: fallback,
-          is_fallback: true,
-          span: field_span,
-        }
+        fallback
       } else {
         continue;
       };

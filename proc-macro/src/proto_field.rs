@@ -96,9 +96,10 @@ impl ProtoField {
 
   // This one has to stay with `ProtoField` because it's used before
   // FieldData is fully created
-  pub fn default_validator_expr(&self, span: Span) -> Option<TokenStream2> {
-    match self {
+  pub fn default_validator_expr(&self, span: Span) -> Option<ValidatorTokens> {
+    let expr = match self {
       Self::Map(map) => {
+        // Only offers a default if values are messages
         if let ProtoType::Message(MessageInfo { path, .. }) = &map.values {
           let keys_type = map.keys.into_type().validator_target_type(span);
 
@@ -110,6 +111,7 @@ impl ProtoField {
         }
       }
       Self::Repeated(inner) => {
+        // Only offers a default if the items are messages
         if let ProtoType::Message(MessageInfo { path, .. }) = inner {
           Some(quote_spanned! {span=>
             RepeatedValidator::<#path>::default()
@@ -128,7 +130,13 @@ impl ProtoField {
         }
       }
       _ => None,
-    }
+    };
+
+    expr.map(|expr| ValidatorTokens {
+      expr,
+      is_fallback: true,
+      span,
+    })
   }
 
   // This one has to stay with `ProtoField` because it's used before

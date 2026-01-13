@@ -35,7 +35,7 @@ impl FieldData {
   }
 }
 
-// No sense in boxing since it's the most common path
+// No point in boxing `Normal` since it's the most common path
 #[allow(clippy::large_enum_variant)]
 pub enum FieldDataKind {
   Ignored {
@@ -142,16 +142,23 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
   }
 
   let proto_field = if let Some(mut field) = proto_field {
+    // We try to infer if a field is `Option` or `Vec` but
+    // wasn't explicitely marked as optional/repeated
     if let ProtoField::Single(proto_type) = &mut field
-      && type_info.is_option()
+      && (type_info.is_option() || type_info.is_vec())
     {
       let inner = std::mem::take(proto_type);
 
-      field = ProtoField::Optional(inner);
+      field = if type_info.is_option() {
+        ProtoField::Optional(inner)
+      } else {
+        ProtoField::Repeated(inner)
+      };
     }
 
     field
   } else {
+    // Field received no type information at all, we try to do some basic inference
     match type_info.type_.as_ref() {
       RustType::HashMap((k, v)) => {
         let keys = ProtoMapKeys::from_path(&k.require_path()?)?;
@@ -183,7 +190,12 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
       }
       RustType::Other(inner) => ProtoField::Single(ProtoType::from_primitive(&inner.path)?),
       _ => {
-        let path = type_info.as_path().unwrap();
+        let path = type_info.as_path().ok_or_else(|| {
+          error_with_span!(
+            field_span,
+            "Failed to infer the protobuf type. Please set it manually"
+          )
+        })?;
 
         ProtoField::Single(ProtoType::from_primitive(&path)?)
       }
@@ -191,13 +203,14 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
   };
 
   let validator = if let Some(expr) = validator {
-    let validator_target_type = proto_field.validator_target_type(field_span);
     let span = expr.span();
 
     let expr = match expr {
       ClosureOrExpr::Expr(expr) => expr.to_token_stream(),
 
       ClosureOrExpr::Closure(closure) => {
+        let validator_target_type = proto_field.validator_target_type(field_span);
+
         quote_spanned! {closure.span()=> <#validator_target_type as ::prelude::ProtoValidator>::validator_from_closure(#closure) }
       }
     };
@@ -208,13 +221,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
       span,
     })
   } else {
-    proto_field
-      .default_validator_expr(field_span)
-      .map(|expr| ValidatorTokens {
-        expr,
-        is_fallback: true,
-        span: field_span,
-      })
+    proto_field.default_validator_expr(field_span)
   };
 
   Ok(FieldDataKind::Normal(FieldData {

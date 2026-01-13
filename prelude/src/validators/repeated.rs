@@ -50,6 +50,8 @@ where
     Self {
       _inner_type: PhantomData,
       cel: vec![],
+      // If the items are messages, the items validator
+      // will be set no matter what
       items: T::default_validator(),
       min_items: None,
       max_items: None,
