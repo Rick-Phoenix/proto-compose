@@ -328,7 +328,7 @@ pub trait ListFormatter: Sized {
   fn format_list(items: &[Self]) -> String;
 }
 
-macro_rules! impl_standard_format {
+macro_rules! impl_format_for_nums {
   ($($t:ty),*) => {
     $(
       impl ListFormatter for $t {
@@ -340,7 +340,7 @@ macro_rules! impl_standard_format {
   }
 }
 
-impl_standard_format!(i32, i64, u32, u64, f32, f64);
+impl_format_for_nums!(i32, i64, u32, u64, f32, f64);
 
 impl<T: ordered_float::FloatCore + Debug> ListFormatter for OrderedFloat<T> {
   fn format_list(items: &[Self]) -> String {

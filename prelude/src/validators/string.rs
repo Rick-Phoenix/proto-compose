@@ -578,7 +578,7 @@ impl From<StringValidator> for ProtoOption {
       .set_ignore(validator.ignore);
 
     Self {
-      name: BUF_VALIDATE_FIELD.into(),
+      name: "(buf.validate.field)".into(),
       value: OptionValue::Message(outer_rules.into()),
     }
   }

@@ -1,8 +1,6 @@
 use crate::*;
-mod common_strings;
 use std::{fmt::Debug, hash::Hash, sync::Arc};
 
-pub(crate) use common_strings::*;
 use proto_types::protovalidate::*;
 
 // Here we use a generic for the target of the validator
