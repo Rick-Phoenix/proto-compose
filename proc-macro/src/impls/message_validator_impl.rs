@@ -127,38 +127,57 @@ pub fn generate_message_validator(
     }
   });
 
-  quote! {
-    #[allow(clippy::ptr_arg)]
-    impl #target_ident {
-      #[doc(hidden)]
-      fn __validate_internal(&self, field_context: Option<&::prelude::FieldContext>, parent_elements: &mut Vec<::prelude::FieldPathElement>, violations: &mut ::prelude::ViolationsAcc) {
-        #cel_rules_call
+  let validator_impl = if validators_tokens.is_empty() && !has_cel_rules {
+    quote! {
+      impl ::prelude::ValidatedMessage for #target_ident {
+        #[inline]
+        fn validate(&self) -> Result<(), ::prelude::Violations> {
+          Ok(())
+        }
 
-        #validators_tokens
+        #[doc(hidden)]
+        #[inline]
+        fn nested_validate(&self, ctx: &mut ::prelude::ValidationCtx) {}
       }
     }
+  } else {
+    quote! {
+      #[allow(clippy::ptr_arg)]
+      impl #target_ident {
+        #[doc(hidden)]
+        fn __validate_internal(&self, field_context: Option<&::prelude::FieldContext>, parent_elements: &mut Vec<::prelude::FieldPathElement>, violations: &mut ::prelude::ViolationsAcc) {
+          #cel_rules_call
 
-    impl ::prelude::ValidatedMessage for #target_ident {
-      #cel_rules_method
-
-      fn validate(&self) -> Result<(), ::prelude::Violations> {
-        let mut violations = ::prelude::ViolationsAcc::new();
-
-        self.__validate_internal(None, &mut vec![], &mut violations);
-
-        if violations.is_empty() {
-          Ok(())
-        } else {
-          Err(violations.to_vec())
+          #validators_tokens
         }
       }
 
-      #[doc(hidden)]
-      #[inline]
-      fn nested_validate(&self, ctx: &mut ::prelude::ValidationCtx) {
-        self.__validate_internal(Some(&ctx.field_context), ctx.parent_elements, ctx.violations)
+      impl ::prelude::ValidatedMessage for #target_ident {
+        #cel_rules_method
+
+        fn validate(&self) -> Result<(), ::prelude::Violations> {
+          let mut violations = ::prelude::ViolationsAcc::new();
+
+          self.__validate_internal(None, &mut vec![], &mut violations);
+
+          if violations.is_empty() {
+            Ok(())
+          } else {
+            Err(violations.to_vec())
+          }
+        }
+
+        #[doc(hidden)]
+        #[inline]
+        fn nested_validate(&self, ctx: &mut ::prelude::ValidationCtx) {
+          self.__validate_internal(Some(&ctx.field_context), ctx.parent_elements, ctx.violations)
+        }
       }
     }
+  };
+
+  quote! {
+    #validator_impl
 
     impl ::prelude::ProtoValidator for #target_ident {
       #[doc(hidden)]

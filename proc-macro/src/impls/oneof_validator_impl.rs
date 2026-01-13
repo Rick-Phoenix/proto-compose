@@ -31,8 +31,13 @@ pub fn generate_oneof_validator(
     }
   };
 
+  let inline_only_if_empty = validators_tokens
+    .is_empty()
+    .then(|| quote! { #[inline] });
+
   quote! {
     impl ::prelude::ValidatedOneof for #oneof_ident {
+      #inline_only_if_empty
       fn validate(&self, parent_elements: &mut Vec<::prelude::FieldPathElement>, violations: &mut ::prelude::ViolationsAcc) {
         #validators_tokens
       }
