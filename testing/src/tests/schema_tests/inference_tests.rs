@@ -37,7 +37,7 @@ fn enum_inference() {
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct ProxiedEnumInference {
+pub struct ProxiedEnumInference {
   #[proto(enum_)]
   single_enum: TestEnum,
 
@@ -73,7 +73,7 @@ fn proxied_enum_inference() {
 }
 
 #[proto_message(no_auto_test)]
-struct PrimitiveInference {
+pub struct PrimitiveInference {
   int32: i32,
   int64: i64,
   boolean: bool,
@@ -109,7 +109,7 @@ fn primitive_inference() {
 }
 
 #[proto_message(no_auto_test)]
-struct CardinalityInference {
+pub struct CardinalityInference {
   optional_inf: Option<String>,
   repeated_inf: Vec<String>,
   map_inf: HashMap<String, u64>,
@@ -168,7 +168,7 @@ fn message_inference() {
 }
 
 #[proto_oneof(proxied, no_auto_test)]
-enum ProxiedOneof {
+pub enum ProxiedOneof {
   #[proto(tag = 1)]
   A(String),
   #[proto(tag = 2)]
@@ -176,12 +176,12 @@ enum ProxiedOneof {
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct ProxiedMsg {
+pub struct ProxiedMsg {
   id: i32,
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct ProxiedInference {
+pub struct ProxiedInference {
   #[proto(oneof(proxied, tags(1, 2)))]
   oneof: Option<ProxiedOneof>,
   #[proto(message(proxied))]

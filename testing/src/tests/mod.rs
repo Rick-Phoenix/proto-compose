@@ -1,7 +1,8 @@
 #![allow(
   clippy::needless_pass_by_value,
   clippy::struct_field_names,
-  clippy::use_self
+  clippy::use_self,
+  clippy::derive_partial_eq_without_eq
 )]
 
 mod cel_tests;

@@ -1,7 +1,7 @@
 use super::*;
 
-#[derive(PartialEq)]
-struct IntWrapper(i32);
+#[derive(PartialEq, Eq)]
+pub struct IntWrapper(i32);
 
 impl From<i32> for IntWrapper {
   fn from(value: i32) -> Self {
@@ -18,7 +18,7 @@ impl From<IntWrapper> for i32 {
 // This implicitly checks the automatic conversion working
 #[proto_oneof(proxied, no_auto_test)]
 #[derive(PartialEq)]
-enum ProxiedOneofWithDefault {
+pub enum ProxiedOneofWithDefault {
   #[proto(tag = 1)]
   A(String),
   #[proto(tag = 2, int32)]
@@ -32,7 +32,7 @@ impl Default for ProxiedOneofWithDefaultProto {
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct WithProxiedDefaultOneof {
+pub struct WithProxiedDefaultOneof {
   #[proto(oneof(proxied, default, tags(1, 2)))]
   field: ProxiedOneofWithDefault,
 }
@@ -50,14 +50,14 @@ fn proxied_oneof_with_default() {
 // This should compile because using a oneof not wrapped with `Option` should be allowed
 // if a custom conversion impl is provided
 #[proto_message(proxied, no_auto_test)]
-struct DefaultOneofWithCustomImpl {
+pub struct DefaultOneofWithCustomImpl {
   #[proto(oneof(proxied, tags(1, 2)))]
   #[proto(from_proto = |_| ProxiedOneofWithDefault::B(IntWrapper(0)), into_proto = |_| Some(ProxiedOneofWithDefaultProto::default()))]
   oneof: ProxiedOneofWithDefault,
 }
 
 #[proto_oneof(no_auto_test)]
-enum DirectOneofWithDefault {
+pub enum DirectOneofWithDefault {
   #[proto(tag = 1)]
   A(String),
   #[proto(tag = 2)]
@@ -71,7 +71,7 @@ impl Default for DirectOneofWithDefault {
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct WithDirectDefaultOneof {
+pub struct WithDirectDefaultOneof {
   #[proto(oneof(default, tags(1, 2)))]
   field: DirectOneofWithDefault,
 }
@@ -80,14 +80,14 @@ struct WithDirectDefaultOneof {
 fn direct_oneof_with_default() {
   let msg = WithDirectDefaultOneofProto::default();
 
-  let proxy: WithDirectDefaultOneof = msg.into();
+  let proxy = msg.into_proxy();
 
   assert_eq_pretty!(proxy.field, DirectOneofWithDefault::default())
 }
 
 #[proto_oneof(proxied, no_auto_test)]
 #[derive(PartialEq)]
-enum OneofCustomFieldConversions {
+pub enum OneofCustomFieldConversions {
   #[proto(tag = 1, string, from_proto = |_| "from_proto".into(), into_proto = |_| "into_proto".to_string())]
   A(Arc<str>),
   #[proto(tag = 2, int32, from_proto = |_| IntWrapper(0), into_proto = |_| 1)]
@@ -95,7 +95,7 @@ enum OneofCustomFieldConversions {
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct WithOneofWithCustomFieldConversions {
+pub struct WithOneofWithCustomFieldConversions {
   #[proto(oneof(proxied, tags(1, 2)))]
   field: Option<OneofCustomFieldConversions>,
 }
@@ -113,7 +113,7 @@ fn oneof_with_custom_field_conversions() {
     Some(OneofCustomFieldConversionsProto::A("into_proto".into()))
   );
 
-  let new_proxy: WithOneofWithCustomFieldConversions = msg.into();
+  let new_proxy = msg.into_proxy();
 
   assert_eq_pretty!(
     new_proxy.field,
@@ -123,7 +123,7 @@ fn oneof_with_custom_field_conversions() {
 
 #[proto_oneof(proxied, no_auto_test)]
 #[derive(PartialEq)]
-enum OneofFieldIntoProtoOnly {
+pub enum OneofFieldIntoProtoOnly {
   #[proto(tag = 1, string, into_proto = |_| "into_proto".into())]
   A(Arc<str>),
   #[proto(tag = 2, int32)]
@@ -140,7 +140,7 @@ fn oneof_field_into_proto_only() {
 
 #[proto_oneof(proxied, no_auto_test)]
 #[derive(PartialEq)]
-enum OneofFieldFromProtoOnly {
+pub enum OneofFieldFromProtoOnly {
   #[proto(tag = 1, string)]
   A(String),
   #[proto(tag = 2, int32, from_proto = |_| IntWrapper(1))]
@@ -159,7 +159,7 @@ fn oneof_field_from_proto_only() {
 #[derive(PartialEq)]
 #[proto(from_proto = |_| OneofCustomConversions::A("from_proto".to_string()))]
 #[proto(into_proto = |_| OneofCustomConversionsProto::A("into_proto".to_string()))]
-enum OneofCustomConversions {
+pub enum OneofCustomConversions {
   #[proto(tag = 1, string)]
   A(String),
   #[allow(unused)]
@@ -178,7 +178,7 @@ fn oneof_custom_conversions() {
     OneofCustomConversionsProto::A("into_proto".to_string())
   );
 
-  proxy = oneof.into();
+  proxy = oneof.into_proxy();
 
   assert_eq_pretty!(proxy, OneofCustomConversions::A("from_proto".to_string()));
 }
@@ -186,7 +186,7 @@ fn oneof_custom_conversions() {
 #[proto_oneof(proxied, no_auto_test)]
 #[derive(PartialEq)]
 #[proto(into_proto = |_| OneofIntoProtoOnlyProto::A("into_proto".to_string()))]
-enum OneofIntoProtoOnly {
+pub enum OneofIntoProtoOnly {
   #[proto(tag = 1, string)]
   A(String),
   #[allow(unused)]
@@ -206,7 +206,7 @@ fn oneof_into_proto_only() {
 #[proto_oneof(proxied, no_auto_test)]
 #[derive(PartialEq)]
 #[proto(from_proto = |_| OneofFromProtoOnly::A("from_proto".to_string()))]
-enum OneofFromProtoOnly {
+pub enum OneofFromProtoOnly {
   #[proto(tag = 1, string)]
   A(String),
   #[allow(unused)]
@@ -218,27 +218,27 @@ enum OneofFromProtoOnly {
 fn oneof_from_proto_only() {
   let oneof = OneofFromProtoOnlyProto::A("abc".to_string());
 
-  let proxy: OneofFromProtoOnly = oneof.into();
+  let proxy = oneof.into_proxy();
 
   assert_eq_pretty!(proxy, OneofFromProtoOnly::A("from_proto".to_string()));
 }
 
 // This implicitly tests the automatic conversions
 #[proto_message(proxied, no_auto_test)]
-struct ProxiedMessage {
+pub struct ProxiedMessage1 {
   #[proto(int32)]
   id: IntWrapper,
 }
 
 // This just checks if the proxy is working
 #[proto_message(proxied, no_auto_test)]
-struct ProxiedMessage2 {
+pub struct ProxiedMessage2 {
   #[proto(message(proxied))]
-  msg: Option<ProxiedMessage>,
+  msg: Option<ProxiedMessage1>,
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct MessageFieldCustomConversions {
+pub struct MessageFieldCustomConversions {
   #[proto(int32)]
   #[proto(from_proto = |_| IntWrapper(1))]
   #[proto(into_proto = |_| 2)]
@@ -259,7 +259,7 @@ fn message_field_custom_conversions() {
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct MessageFieldCustomFromProtoOnly {
+pub struct MessageFieldCustomFromProtoOnly {
   #[proto(int32)]
   #[proto(from_proto = |_| IntWrapper(1))]
   id: IntWrapper,
@@ -275,7 +275,7 @@ fn message_field_custom_from_proto_only() {
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct MessageFieldCustomIntoProtoOnly {
+pub struct MessageFieldCustomIntoProtoOnly {
   #[proto(int32)]
   #[proto(into_proto = |_| 2)]
   id: IntWrapper,
@@ -293,7 +293,7 @@ fn message_field_custom_into_proto_only() {
 #[proto_message(proxied, no_auto_test)]
 #[proto(from_proto = |_| MessageCustomConversions { id: IntWrapper(1) })]
 #[proto(into_proto = |_| MessageCustomConversionsProto { id: 2 })]
-struct MessageCustomConversions {
+pub struct MessageCustomConversions {
   #[proto(int32)]
   id: IntWrapper,
 }
@@ -313,7 +313,7 @@ fn message_custom_conversions() {
 
 #[proto_message(proxied, no_auto_test)]
 #[proto(from_proto = |_| MessageCustomFromProtoOnly { id: IntWrapper(1) })]
-struct MessageCustomFromProtoOnly {
+pub struct MessageCustomFromProtoOnly {
   #[proto(int32)]
   id: IntWrapper,
 }
@@ -329,7 +329,7 @@ fn message_custom_from_proto_only() {
 
 #[proto_message(proxied, no_auto_test)]
 #[proto(into_proto = |_| MessageCustomIntoProtoOnlyProto { id: 2 })]
-struct MessageCustomIntoProtoOnly {
+pub struct MessageCustomIntoProtoOnly {
   #[allow(unused)]
   #[proto(int32)]
   id: IntWrapper,
@@ -345,7 +345,7 @@ fn message_custom_into_proto_only() {
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct ProxiedMessageWithDefault {
+pub struct ProxiedMessageWithDefault {
   #[proto(message(default, proxied))]
   recursive: Box<ProxiedMessageWithDefault>,
   #[proto(message(default))]
@@ -353,19 +353,19 @@ struct ProxiedMessageWithDefault {
 }
 
 #[proto_message(no_auto_test)]
-struct MessageWithDefault {
+pub struct MessageWithDefault {
   #[proto(message)]
   recursive: Option<Box<MessageWithDefault>>,
 }
 
 #[proto_message(no_auto_test)]
-struct WithDirectRecursiveOneof {
+pub struct WithDirectRecursiveOneof {
   #[proto(oneof(tags(1, 2)))]
   oneof: Option<DirectRecursiveOneof>,
 }
 
 #[proto_oneof(no_auto_test)]
-enum DirectRecursiveOneof {
+pub enum DirectRecursiveOneof {
   #[proto(tag = 1)]
   A(i32),
   #[proto(tag = 2, message)]
@@ -373,13 +373,13 @@ enum DirectRecursiveOneof {
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct WithProxiedRecursiveDefaultOneof {
+pub struct WithProxiedRecursiveDefaultOneof {
   #[proto(oneof(default, proxied, tags(1, 2)))]
   oneof: ProxiedRecursiveOneof,
 }
 
 #[proto_oneof(proxied, no_auto_test)]
-enum ProxiedRecursiveOneof {
+pub enum ProxiedRecursiveOneof {
   #[proto(tag = 1)]
   A(i32),
   #[proto(tag = 2, message(proxied))]
@@ -395,7 +395,7 @@ impl Default for ProxiedRecursiveOneofProto {
 // This should compile because a non-Option message should be allowed without `default`
 // if a custom conversion impl is provided
 #[proto_message(proxied, no_auto_test)]
-struct DefaultMsgWithCustomImpl {
+pub struct DefaultMsgWithCustomImpl {
   #[proto(message(proxied))]
   #[proto(from_proto = |_| Box::new(DefaultMsgWithCustomImpl { recursive: Box::new(DefaultMsgWithCustomImplProto::default().into()), normal: DirectMsg::default() }))]
   #[proto(into_proto = |_| Some(Box::new(DefaultMsgWithCustomImplProto::default())))]
@@ -413,7 +413,7 @@ impl Default for OneofIgnoredFieldDefaultConversionProto {
 }
 
 #[proto_oneof(proxied, no_auto_test)]
-enum OneofIgnoredFieldDefaultConversion {
+pub enum OneofIgnoredFieldDefaultConversion {
   // This will use Default
   #[allow(unused)]
   #[proto(ignore)]
@@ -434,7 +434,7 @@ fn oneof_ignored_field_default_conversion() {
 }
 
 #[proto_oneof(proxied, no_auto_test)]
-enum OneofIgnoredFieldCustomConversion {
+pub enum OneofIgnoredFieldCustomConversion {
   #[allow(unused)]
   #[proto(ignore)]
   #[proto(into_proto = |_| OneofIgnoredFieldCustomConversionProto::B(1))]
@@ -468,7 +468,7 @@ fn custom_global_conv(
 #[allow(unused)]
 #[proto_oneof(proxied, no_auto_test)]
 #[proto(into_proto = custom_global_conv)]
-enum OneofIgnoredGlobalCustomConversion {
+pub enum OneofIgnoredGlobalCustomConversion {
   #[allow(unused)]
   #[proto(ignore)]
   A(String),
@@ -488,7 +488,7 @@ fn oneof_ignored_global_custom_conversion() {
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct MessageIgnoredFieldDefault {
+pub struct MessageIgnoredFieldDefault {
   #[proto(ignore)]
   #[allow(unused)]
   ignored: i32,
@@ -505,7 +505,7 @@ fn message_ignored_field_default() {
 }
 
 #[proto_message(proxied, no_auto_test)]
-struct MessageIgnoredFieldCustom {
+pub struct MessageIgnoredFieldCustom {
   #[proto(ignore)]
   #[proto(from_proto = Default::default)]
   #[allow(unused)]
@@ -524,7 +524,7 @@ fn message_ignored_field_custom() {
 
 #[proto_message(proxied, no_auto_test)]
 #[proto(from_proto = |v| MessageIgnoredFieldCustomGlobal { other: v.other, ignored: 1 })]
-struct MessageIgnoredFieldCustomGlobal {
+pub struct MessageIgnoredFieldCustomGlobal {
   #[proto(ignore)]
   #[allow(unused)]
   ignored: i32,

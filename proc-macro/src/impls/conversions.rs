@@ -36,11 +36,19 @@ impl ProtoConversions<'_> {
         impl ::prelude::MessageProxy for #proxy_ident {
           type Message = #proto_ident;
         }
+
+        impl ::prelude::ProxiedMessage for #proto_ident {
+          type Proxy = #proxy_ident;
+        }
       }
     } else {
       quote! {
         impl ::prelude::OneofProxy for #proxy_ident {
           type Oneof = #proto_ident;
+        }
+
+        impl ::prelude::ProxiedOneof for #proto_ident {
+          type Proxy = #proxy_ident;
         }
       }
     };

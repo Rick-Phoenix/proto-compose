@@ -1,5 +1,14 @@
 use crate::*;
 
+pub trait ProxiedOneof: From<Self::Proxy> + Into<Self::Proxy> {
+  type Proxy: OneofProxy<Oneof = Self>;
+
+  #[inline]
+  fn into_proxy(self) -> Self::Proxy {
+    self.into()
+  }
+}
+
 pub trait OneofProxy: From<Self::Oneof> + Into<Self::Oneof> {
   type Oneof: ProtoOneof + From<Self>;
 

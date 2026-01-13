@@ -1,7 +1,16 @@
 use crate::{validators::CelRule, *};
 
+pub trait ProxiedMessage: From<Self::Proxy> + Into<Self::Proxy> {
+  type Proxy: MessageProxy<Message = Self> + From<Self>;
+
+  #[inline]
+  fn into_proxy(self) -> Self::Proxy {
+    self.into()
+  }
+}
+
 pub trait MessageProxy: From<Self::Message> + Into<Self::Message> {
-  type Message: ::prost::Message + ProtoMessage + ValidatedMessage + From<Self>;
+  type Message: ProtoMessage + ValidatedMessage + From<Self>;
 
   #[inline]
   fn into_message(self) -> Self::Message {
