@@ -72,7 +72,7 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
   let proto_derives = if !errors.is_empty() {
     FallbackImpls {
       orig_ident: &item.ident,
-      shadow_ident: proto_enum.as_ref().map(|se| &se.ident),
+      proto_ident: proto_enum.as_ref().map(|se| &se.ident),
       kind: ItemKind::Oneof,
     }
     .fallback_derive_impls()

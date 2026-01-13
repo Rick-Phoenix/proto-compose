@@ -12,7 +12,6 @@ pub fn generate_message_consistency_checks(
   let consistency_checks =  fields_data.iter().filter_map(|d| d.as_normal()).filter_map(|data| {
     let FieldData {
       ident_str,
-      validator,
       proto_field,
       span,
       ..
@@ -30,20 +29,7 @@ pub fn generate_message_consistency_checks(
         }
       })
     } else {
-      validator
-        .as_ref()
-        // Useless to check consistency for default validators
-        .filter(|v| !v.is_fallback)
-        .map(|validator| {
-          quote_spanned! {*span=>
-            if let Err(errs) = ::prelude::Validator::check_consistency(&#validator) {
-              field_errors.push(::prelude::FieldError {
-                field: #ident_str,
-                errors: errs
-              });
-            }
-          }
-        })
+      data.consistency_check_tokens()
     }
   });
 

@@ -2,13 +2,13 @@ use crate::*;
 
 pub struct FallbackImpls<'a> {
   pub orig_ident: &'a Ident,
-  pub shadow_ident: Option<&'a Ident>,
+  pub proto_ident: Option<&'a Ident>,
   pub kind: ItemKind,
 }
 
 impl<'a> FallbackImpls<'a> {
   fn proto_ident(&self) -> &'a Ident {
-    self.shadow_ident.unwrap_or(self.orig_ident)
+    self.proto_ident.unwrap_or(self.orig_ident)
   }
 
   pub fn fallback_derive_impls(&self) -> TokenStream2 {
@@ -105,13 +105,13 @@ impl<'a> FallbackImpls<'a> {
         ItemKind::Message => quote! {
           impl #target_ident {
             pub fn try_into_cel_recursive(self, _: usize) -> Result<::prelude::cel::Value, ::prelude::proto_types::cel::CelConversionError> {
-              Ok(::prelude::cel::Value::Null)
+              unimplemented!()
             }
           }
 
           impl ::prelude::TryIntoCel for #target_ident {
             fn try_into_cel(self) -> Result<::prelude::cel::Value, ::prelude::CelError> {
-              Ok(::prelude::cel::Value::Null)
+              unimplemented!()
             }
           }
         },

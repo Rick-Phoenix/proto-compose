@@ -57,7 +57,7 @@ pub fn message_proc_macro(mut item: ItemStruct, macro_attrs: TokenStream2) -> To
   let proto_derives = if !errors.is_empty() {
     FallbackImpls {
       orig_ident: &item.ident,
-      shadow_ident: proto_struct.as_ref().map(|ps| &ps.ident),
+      proto_ident: proto_struct.as_ref().map(|ps| &ps.ident),
       kind: ItemKind::Message,
     }
     .fallback_derive_impls()

@@ -151,7 +151,7 @@ impl Parse for ReservedNumbers {
           }
         } else {
           return Err(input.error(
-            "Reserved ranges cannot be open-ended. Use MAX to reserve up to the maximum protobuf range",
+            "Reserved ranges cannot be open-ended. Use `MAX` to reserve up to the maximum protobuf range",
           ));
         };
 

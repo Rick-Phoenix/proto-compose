@@ -171,7 +171,7 @@ pub fn generate_message_validator(
       #[doc(hidden)]
       #[inline]
       fn default_validator() -> Option<Self::Validator> {
-        Some(MessageValidator::default())
+        Some(::prelude::MessageValidator::default())
       }
     }
   }
@@ -181,9 +181,9 @@ impl MessageCtx<'_> {
   pub fn generate_validator(&self) -> TokenStream2 {
     let target_ident = self.proto_struct_ident();
 
-    // For non-reflection implementations we don't skip fields if they don't have
-    // validators, so empty fields = an error occurred
     generate_message_validator(
+      // For non-reflection implementations we don't skip fields if they don't have
+      // validators, so empty fields = an error occurred
       self.fields_data.is_empty().into(),
       target_ident,
       &self.fields_data,

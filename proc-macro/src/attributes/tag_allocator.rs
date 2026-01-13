@@ -7,8 +7,6 @@ pub struct TagAllocator<'a> {
   pub next_tag: i32,
 }
 
-pub const PROTOBUF_MAX_TAG: i32 = 536_870_911;
-
 impl<'a> TagAllocator<'a> {
   pub fn new(unavailable: &'a [Range<i32>]) -> Self {
     let reserved_to_max = unavailable
@@ -46,7 +44,7 @@ impl<'a> TagAllocator<'a> {
     if self.reserved_to_max {
       bail_with_span!(
         span,
-        "Protobuf tag limit exceeded! Check if you have set the reserved numbers range to infinity",
+        "Protobuf tag limit exceeded! Check if you have set the reserved numbers range to MAX",
       );
     }
 

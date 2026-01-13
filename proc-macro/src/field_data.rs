@@ -1,6 +1,26 @@
 use crate::*;
 
 impl FieldData {
+  pub fn consistency_check_tokens(&self) -> Option<TokenStream2> {
+    self
+      .validator
+      .as_ref()
+      // Useless to check consistency for default validators
+      .filter(|v| !v.is_fallback)
+      .map(|validator| {
+        let ident_str = &self.ident_str;
+
+        quote_spanned! {self.span=>
+          if let Err(errs) = ::prelude::Validator::check_consistency(&#validator) {
+            field_errors.push(::prelude::FieldError {
+              field: #ident_str,
+              errors: errs
+            });
+          }
+        }
+      })
+  }
+
   pub fn descriptor_type_tokens(&self) -> TokenStream2 {
     match &self.proto_field {
       ProtoField::Map(_) => {

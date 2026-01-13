@@ -8,29 +8,7 @@ pub fn generate_oneof_consistency_checks(
   let consistency_checks = variants
     .iter()
     .filter_map(|d| d.as_normal())
-    .filter_map(|data| {
-      let FieldData {
-        ident_str,
-        validator,
-        span,
-        ..
-      } = data;
-
-      validator
-        .as_ref()
-        // Useless to check consistency for default validators
-        .filter(|v| !v.is_fallback)
-        .map(|validator| {
-          quote_spanned! {*span=>
-            if let Err(errs) = ::prelude::Validator::check_consistency(&#validator) {
-              errors.push(::prelude::FieldError {
-                field: #ident_str,
-                errors: errs
-              });
-            }
-          }
-        })
-    });
+    .filter_map(|data| data.consistency_check_tokens());
 
   let auto_test_fn = (!*no_auto_test).then(|| {
     let test_fn_ident = format_ident!(
@@ -58,17 +36,17 @@ pub fn generate_oneof_consistency_checks(
       pub fn check_validators_consistency() -> Result<(), ::prelude::OneofErrors> {
         use ::prelude::*;
 
-        let mut errors: Vec<::prelude::FieldError> = Vec::new();
+        let mut field_errors: Vec<::prelude::FieldError> = Vec::new();
 
         #(#consistency_checks)*
 
-        if errors.is_empty() {
+        if field_errors.is_empty() {
           Ok(())
         } else {
           Err(
             ::prelude::OneofErrors {
               oneof_name: stringify!(#oneof_ident),
-              field_errors: errors
+              field_errors
             }
           )
         }
