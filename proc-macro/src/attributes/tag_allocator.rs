@@ -11,7 +11,7 @@ impl<'a> TagAllocator<'a> {
   pub fn new(unavailable: &'a [Range<i32>]) -> Self {
     let reserved_to_max = unavailable
       .last()
-      .is_some_and(|last| last.end > PROTOBUF_MAX_TAG + 1);
+      .is_some_and(|last| last.end > PROTOBUF_MAX_TAG);
 
     Self {
       unavailable,

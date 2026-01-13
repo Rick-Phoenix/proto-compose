@@ -471,7 +471,6 @@ fn custom_global_conv(
 enum OneofIgnoredGlobalCustomConversion {
   #[allow(unused)]
   #[proto(ignore)]
-  #[proto(into_proto = |_| OneofIgnoredFieldCustomConversionProto::B(1))]
   A(String),
   #[proto(tag = 1)]
   B(i32),
