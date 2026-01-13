@@ -19,7 +19,6 @@ impl<'a> OneofCtx<'a> {
 
 pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -> TokenStream2 {
   let mut errors: Vec<Error> = Vec::new();
-  let mut output = TokenStream2::new();
 
   let macro_attrs =
     OneofMacroAttrs::parse(macro_attrs).unwrap_or_default_and_push_error(&mut errors);
@@ -48,27 +47,28 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
   }
 
   let impl_kind = if is_proxied {
-    ImplKind::Shadow
+    ImplKind::Proxied
   } else {
     ImplKind::Direct
   };
 
   let enum_to_process = proto_enum.as_mut().unwrap_or(&mut item);
 
-  second_processing(
+  ProcessFieldsData {
     impl_kind,
-    enum_to_process
+    fields: enum_to_process
       .variants
       .iter_mut()
       .map(|v| FieldOrVariant::Variant(v)),
-    &mut fields_data,
-    None,
-    ContainerAttrs::Oneof(&oneof_attrs),
-    ItemKind::Oneof,
-  )
+    fields_data: &mut fields_data,
+    // Tags in oneofs must be set manually
+    tag_allocator: None,
+    container_attrs: ContainerAttrs::Oneof(&oneof_attrs),
+    item_kind: ItemKind::Oneof,
+  }
+  .process_fields_data()
   .unwrap_or_default_and_push_error(&mut errors);
 
-  // prost::Oneof already implements Debug and Default
   let proto_derives = if !errors.is_empty() {
     FallbackImpls {
       orig_ident: &item.ident,
@@ -77,6 +77,7 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
     }
     .fallback_derive_impls()
   } else if cfg!(feature = "cel") {
+    // prost::Oneof already implements Debug and Default
     quote! {
       #[allow(clippy::derive_partial_eq_without_eq)]
       #[derive(::prost::Oneof, Clone, PartialEq, ::prelude::CelOneof)]
@@ -89,10 +90,11 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
   };
 
   if !errors.is_empty() {
+    // This will trigger all of the fallback impls that expand to unimplemented!
     fields_data.clear();
   }
 
-  if let Some(proto_enum) = &mut proto_enum {
+  let main_enum_tokens = if let Some(proto_enum) = &mut proto_enum {
     // We strip away the ignored variants from the shadow enum
     let shadow_variants = std::mem::take(&mut proto_enum.variants);
     proto_enum.variants = shadow_variants
@@ -115,7 +117,7 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
     }
     .generate_proto_conversions();
 
-    output.extend(quote! {
+    quote! {
       #[derive(::prelude::macros::Oneof)]
       #item
 
@@ -125,14 +127,14 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
       #proto_enum
 
       #conversions
-    });
+    }
   } else {
-    output.extend(quote! {
+    quote! {
       #proto_derives
       #[derive(::prelude::macros::Oneof)]
       #item
-    });
-  }
+    }
+  };
 
   let oneof_ctx = OneofCtx {
     oneof_attrs: &oneof_attrs,
@@ -142,16 +144,20 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
     tags: manually_set_tags,
   };
 
-  let consistency_checks_impl = oneof_ctx.generate_consistency_checks();
+  let consistency_checks_impl = errors
+    .is_empty()
+    .then(|| oneof_ctx.generate_consistency_checks());
   let validator_impl = oneof_ctx.generate_validator();
   let schema_impls = oneof_ctx.generate_schema_impl();
 
   let wrapped_items = wrap_with_imports(&[schema_impls, validator_impl]);
 
-  output.extend(wrapped_items);
-  output.extend(consistency_checks_impl);
+  let errors = errors.iter().map(|e| e.to_compile_error());
 
-  output.extend(errors.iter().map(|e| e.to_compile_error()));
-
-  output
+  quote! {
+    #main_enum_tokens
+    #wrapped_items
+    #consistency_checks_impl
+    #(#errors)*
+  }
 }

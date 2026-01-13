@@ -1,12 +1,12 @@
 use super::*;
 
 #[derive(Default)]
-pub struct OneofDataReflection {
+struct OneofDataReflection {
   pub no_auto_test: SkipAutoTest,
   pub fields_data: Vec<FieldDataKind>,
 }
 
-pub fn extract_oneof_data_reflection(item: &mut ItemEnum) -> Result<OneofDataReflection, Error> {
+fn extract_oneof_data(item: &mut ItemEnum) -> Result<OneofDataReflection, Error> {
   let ItemEnum { variants, .. } = item;
 
   let mut parent_message: Option<String> = None;
@@ -135,7 +135,7 @@ pub fn reflection_oneof_derive(item: &mut ItemEnum) -> TokenStream2 {
   let OneofDataReflection {
     no_auto_test,
     fields_data,
-  } = extract_oneof_data_reflection(item).unwrap_or_default_and_push_error(&mut errors);
+  } = extract_oneof_data(item).unwrap_or_default_and_push_error(&mut errors);
 
   let use_fallback = if errors.is_empty() {
     UseFallback::No

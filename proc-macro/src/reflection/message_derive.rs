@@ -1,14 +1,14 @@
 use super::*;
 
 #[derive(Default)]
-pub struct ReflectionMsgData {
+struct ReflectionMsgData {
   pub fields_data: Vec<FieldDataKind>,
   pub top_level_rules: IterTokensOr<TokenStream2>,
   pub no_auto_test: SkipAutoTest,
   pub msg_name: String,
 }
 
-pub fn extract_fields_data_reflection(item: &mut ItemStruct) -> Result<ReflectionMsgData, Error> {
+fn extract_fields_data(item: &mut ItemStruct) -> Result<ReflectionMsgData, Error> {
   let ItemStruct { fields, .. } = item;
 
   let mut msg_name: Option<String> = None;
@@ -236,7 +236,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> TokenStream2 {
     top_level_rules: cel_rules,
     no_auto_test,
     msg_name,
-  } = extract_fields_data_reflection(item).unwrap_or_default_and_push_error(&mut errors);
+  } = extract_fields_data(item).unwrap_or_default_and_push_error(&mut errors);
 
   let use_fallback = if errors.is_empty() {
     UseFallback::No
