@@ -10,6 +10,12 @@ pub fn generate_oneof_consistency_checks(
     .filter_map(|d| d.as_normal())
     .filter_map(|data| data.consistency_check_tokens());
 
+  let consistency_checks_tokens = quote! { #(#consistency_checks)* };
+
+  if consistency_checks_tokens.is_empty() {
+    return TokenStream2::new();
+  }
+
   let auto_test_fn = (!*no_auto_test).then(|| {
     let test_fn_ident = format_ident!(
       "{}_validators_consistency",
@@ -38,7 +44,7 @@ pub fn generate_oneof_consistency_checks(
 
         let mut field_errors: Vec<::prelude::FieldError> = Vec::new();
 
-        #(#consistency_checks)*
+        #consistency_checks_tokens
 
         if field_errors.is_empty() {
           Ok(())

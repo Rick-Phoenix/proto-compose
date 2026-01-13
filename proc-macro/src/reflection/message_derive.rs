@@ -254,6 +254,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> TokenStream2 {
       no_auto_test,
       SkipOneofTagsCheck::Yes,
       &msg_name,
+      HasCelRules::from(!cel_rules.is_empty()),
     )
   });
 

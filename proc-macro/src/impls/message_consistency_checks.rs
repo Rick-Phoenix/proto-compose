@@ -1,6 +1,7 @@
 use crate::*;
 
 bool_enum!(pub SkipOneofTagsCheck);
+bool_enum!(pub HasCelRules);
 
 pub fn generate_message_consistency_checks(
   item_ident: &Ident,
@@ -8,8 +9,9 @@ pub fn generate_message_consistency_checks(
   skip_auto_test: SkipAutoTest,
   skip_oneof_tags_check: SkipOneofTagsCheck,
   message_name: &str,
+  has_top_level_rules: HasCelRules,
 ) -> TokenStream2 {
-  let consistency_checks =  fields_data.iter().filter_map(|d| d.as_normal()).filter_map(|data| {
+  let consistency_checks = fields_data.iter().filter_map(|d| d.as_normal()).filter_map(|data| {
     let FieldData {
       ident_str,
       proto_field,
@@ -32,6 +34,12 @@ pub fn generate_message_consistency_checks(
       data.consistency_check_tokens()
     }
   });
+
+  let consistency_checks_tokens = quote! { #(#consistency_checks)* };
+
+  if consistency_checks_tokens.is_empty() && !(*has_top_level_rules) {
+    return TokenStream2::new();
+  }
 
   let auto_test_fn = (!*skip_auto_test).then(|| {
     let test_fn_ident = format_ident!(
@@ -62,7 +70,7 @@ pub fn generate_message_consistency_checks(
         let mut field_errors: Vec<::prelude::FieldError> = Vec::new();
         let mut cel_errors: Vec<::prelude::CelError> = Vec::new();
 
-        #(#consistency_checks)*
+        #consistency_checks_tokens
 
         let top_level_programs = Self::cel_rules();
 
@@ -91,12 +99,15 @@ impl MessageCtx<'_> {
   pub fn generate_consistency_checks(&self) -> TokenStream2 {
     let item_ident = self.proto_struct_ident();
 
+    let has_cel_rules = !self.message_attrs.cel_rules.is_empty();
+
     generate_message_consistency_checks(
       item_ident,
       &self.fields_data,
       self.message_attrs.no_auto_test,
       SkipOneofTagsCheck::No,
       &self.message_attrs.name,
+      has_cel_rules.into(),
     )
   }
 }
