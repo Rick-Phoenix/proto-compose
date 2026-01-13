@@ -4,6 +4,7 @@ test-all: test-shared-schemas test-schemas
 
 test-schemas:
     cargo test -p testing -- --nocapture
+    cargo test -p test-schemas -- --nocapture
 
 test-shared-schemas: gen-schemas
     cargo test -p test-reflection -- --nocapture

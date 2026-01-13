@@ -1,6 +1,6 @@
 use crate::*;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 pub enum ConsistencyError {
   #[error("`const` cannot be used with other rules")]
   ConstWithOtherRules,
@@ -97,7 +97,7 @@ impl Display for MessageTestError {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct OverlappingListsError {
   pub overlapping: Vec<String>,
 }
@@ -146,7 +146,7 @@ where
     if let Some(gte) = gte
       && lt <= gte
     {
-      err = Some("Lte cannot be smaller than or equal to Gte");
+      err = Some("Lt cannot be smaller than or equal to Gte");
     }
   }
 
@@ -201,6 +201,47 @@ where
           .collect(),
       });
     }
+  }
+
+  Ok(())
+}
+
+pub(crate) struct LengthRuleValue {
+  pub name: &'static str,
+  pub value: Option<usize>,
+}
+
+pub(crate) fn check_length_rules(
+  exact: Option<&LengthRuleValue>,
+  min: &LengthRuleValue,
+  max: &LengthRuleValue,
+) -> Result<(), ConsistencyError> {
+  if let Some(exact) = exact
+    && exact.value.is_some()
+  {
+    if min.value.is_some() {
+      return Err(ConsistencyError::ContradictoryInput(format!(
+        "{} cannot be used with {}",
+        exact.name, min.name
+      )));
+    }
+
+    if max.value.is_some() {
+      return Err(ConsistencyError::ContradictoryInput(format!(
+        "{} cannot be used with {}",
+        exact.name, max.name
+      )));
+    }
+  }
+
+  if let Some(min_value) = min.value
+    && let Some(max_value) = max.value
+    && min_value > max_value
+  {
+    return Err(ConsistencyError::ContradictoryInput(format!(
+      "{} cannot be greater than {}",
+      min.name, max.name
+    )));
   }
 
   Ok(())

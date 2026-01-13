@@ -140,6 +140,60 @@ mod cel_impls {
     },
   }
 
+  const fn partial_eq_value_type(input: ValueType, other: ValueType) -> bool {
+    match input {
+      ValueType::List => matches!(other, ValueType::List),
+      ValueType::Map => matches!(other, ValueType::Map),
+      ValueType::Function => matches!(other, ValueType::Function),
+      ValueType::Int => matches!(other, ValueType::Int),
+      ValueType::UInt => matches!(other, ValueType::UInt),
+      ValueType::Float => matches!(other, ValueType::Float),
+      ValueType::String => matches!(other, ValueType::String),
+      ValueType::Bytes => matches!(other, ValueType::Bytes),
+      ValueType::Bool => matches!(other, ValueType::Bool),
+      ValueType::Duration => matches!(other, ValueType::Duration),
+      ValueType::Timestamp => matches!(other, ValueType::Timestamp),
+      ValueType::Opaque => matches!(other, ValueType::Opaque),
+      ValueType::Null => matches!(other, ValueType::Null),
+    }
+  }
+
+  impl PartialEq for CelError {
+    fn eq(&self, other: &Self) -> bool {
+      match self {
+        Self::NonBooleanResult { rule_id, value } => {
+          if let Self::NonBooleanResult {
+            rule_id: other_rule_id,
+            value: other_value,
+          } = other
+          {
+            rule_id == other_rule_id && partial_eq_value_type(*value, *other_value)
+          } else {
+            false
+          }
+        }
+        Self::ConversionError(err) => {
+          if let Self::ConversionError(other_err) = other {
+            err == other_err
+          } else {
+            false
+          }
+        }
+        Self::ExecutionError { rule_id, source } => {
+          if let Self::ExecutionError {
+            rule_id: other_rule_id,
+            source: other_source,
+          } = other
+          {
+            rule_id == other_rule_id && source == other_source
+          } else {
+            false
+          }
+        }
+      }
+    }
+  }
+
   impl From<Infallible> for CelError {
     #[inline]
     fn from(value: Infallible) -> Self {

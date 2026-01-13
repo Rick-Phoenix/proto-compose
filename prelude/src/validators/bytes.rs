@@ -69,47 +69,6 @@ impl BytesValidator {
   }
 }
 
-pub(crate) struct LengthRuleValue {
-  pub name: &'static str,
-  pub value: Option<usize>,
-}
-
-pub(crate) fn check_length_rules(
-  exact: Option<&LengthRuleValue>,
-  min: &LengthRuleValue,
-  max: &LengthRuleValue,
-) -> Result<(), ConsistencyError> {
-  if let Some(exact) = exact
-    && exact.value.is_some()
-  {
-    if min.value.is_some() {
-      return Err(ConsistencyError::ContradictoryInput(format!(
-        "{} cannot be used with {}",
-        exact.name, min.name
-      )));
-    }
-
-    if max.value.is_some() {
-      return Err(ConsistencyError::ContradictoryInput(format!(
-        "{} cannot be used with {}",
-        exact.name, max.name
-      )));
-    }
-  }
-
-  if let Some(min_value) = min.value
-    && let Some(max_value) = max.value
-    && min_value > max_value
-  {
-    return Err(ConsistencyError::ContradictoryInput(format!(
-      "{} cannot be greater than {}",
-      min.name, max.name
-    )));
-  }
-
-  Ok(())
-}
-
 impl Validator<Bytes> for BytesValidator {
   type Target = Bytes;
   type UniqueStore<'a>
