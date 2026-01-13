@@ -399,12 +399,11 @@ impl<S: State> BytesValidatorBuilder<S> {
   }
 
   #[inline]
-  pub fn not_in(
-    self,
-    list: impl IntoIterator<Item = &'static [u8]>,
-  ) -> BytesValidatorBuilder<SetNotIn<S>>
+  pub fn not_in<I>(self, list: I) -> BytesValidatorBuilder<SetNotIn<S>>
   where
     S::NotIn: IsUnset,
+    I: IntoIterator,
+    I::Item: AsStaticByteSlice,
   {
     BytesValidatorBuilder {
       _state: PhantomData,
@@ -421,15 +420,19 @@ impl<S: State> BytesValidatorBuilder<S> {
       suffix: self.suffix,
       contains: self.contains,
       in_: self.in_,
-      not_in: Some(StaticLookup::new(list)),
+      not_in: Some(StaticLookup::new(
+        list.into_iter().map(|b| b.as_static_slice()),
+      )),
       const_: self.const_,
     }
   }
 
   #[inline]
-  pub fn in_(self, list: impl IntoIterator<Item = &'static [u8]>) -> BytesValidatorBuilder<SetIn<S>>
+  pub fn in_<I>(self, list: I) -> BytesValidatorBuilder<SetIn<S>>
   where
     S::In: IsUnset,
+    I: IntoIterator,
+    I::Item: AsStaticByteSlice,
   {
     BytesValidatorBuilder {
       _state: PhantomData,
@@ -445,7 +448,9 @@ impl<S: State> BytesValidatorBuilder<S> {
       prefix: self.prefix,
       suffix: self.suffix,
       contains: self.contains,
-      in_: Some(StaticLookup::new(list)),
+      in_: Some(StaticLookup::new(
+        list.into_iter().map(|b| b.as_static_slice()),
+      )),
       not_in: self.not_in,
       const_: self.const_,
     }
@@ -520,5 +525,34 @@ impl<S: State> BytesValidatorBuilder<S> {
       not_in: self.not_in,
       const_: self.const_,
     }
+  }
+}
+
+#[doc(hidden)]
+#[allow(clippy::wrong_self_convention)]
+pub trait AsStaticByteSlice {
+  #[allow(private_interfaces)]
+  const SEALED: Sealed;
+
+  fn as_static_slice(self) -> &'static [u8];
+}
+
+impl<const N: usize> AsStaticByteSlice for &'static [u8; N] {
+  #[allow(private_interfaces)]
+  const SEALED: Sealed = Sealed;
+
+  #[inline]
+  fn as_static_slice(self) -> &'static [u8] {
+    self
+  }
+}
+
+impl AsStaticByteSlice for &'static [u8] {
+  #[allow(private_interfaces)]
+  const SEALED: Sealed = Sealed;
+
+  #[inline]
+  fn as_static_slice(self) -> &'static [u8] {
+    self
   }
 }

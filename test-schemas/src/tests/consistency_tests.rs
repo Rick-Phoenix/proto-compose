@@ -293,7 +293,7 @@ pub struct ListErrors {
   any: Option<Any>,
   #[proto(string, validate = |v| v.in_(["abc"]).not_in(["abc"]))]
   string: String,
-  #[proto(bytes, validate = |v| v.in_([&b"abc"[..]]).not_in([&b"abc"[..]]))]
+  #[proto(bytes, validate = |v| v.in_([b"abc"]).not_in([b"abc"]))]
   bytes: Bytes,
   #[proto(enum_(TestEnum), validate = |v| v.in_([1]).not_in([1]))]
   enum_: i32,
