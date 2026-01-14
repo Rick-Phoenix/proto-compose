@@ -5,16 +5,19 @@ use proto_types::{Duration, Timestamp};
 
 use super::*;
 
-#[derive(Clone, Debug)]
+#[non_exhaustive]
+#[derive(Clone, Debug, Default)]
 pub struct TimestampValidator {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   pub cel: Vec<CelProgram>,
 
   pub ignore: Ignore,
 
+  #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
   /// Specifies that this field's value will be valid only if it in the past.
   pub lt_now: bool,
 
+  #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
   /// Specifies that this field's value will be valid only if it in the future.
   pub gt_now: bool,
 
@@ -36,10 +39,32 @@ pub struct TimestampValidator {
   /// Specifies that this field's value will be valid only if it is greater than, or equal to, the specified amount.
   pub gte: Option<Timestamp>,
 
+  #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
   /// Specifies that this field's value will be valid only if it is within the specified Duration (either in the past or future) from the moment when it's being validated.
   pub within: Option<Duration>,
 
+  #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
   pub now_tolerance: Duration,
+}
+
+impl TimestampValidator {
+  const fn has_props(&self) -> bool {
+    let mut has_props =
+      self.lt.is_some() || self.lte.is_some() || self.gt.is_some() || self.gte.is_some();
+
+    #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
+    {
+      has_props =
+        has_props || !self.cel.is_empty() || self.lt_now || self.gt_now || self.within.is_some();
+    }
+
+    #[cfg(not(feature = "chrono"))]
+    {
+      has_props = has_props || !self.cel.is_empty();
+    }
+
+    has_props
+  }
 }
 
 impl Validator<Timestamp> for TimestampValidator {
@@ -59,18 +84,7 @@ impl Validator<Timestamp> for TimestampValidator {
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
     let mut errors = Vec::new();
 
-    macro_rules! check_prop_some {
-      ($($id:ident),*) => {
-        $(self.$id.is_some()) ||*
-      };
-    }
-
-    if self.const_.is_some()
-      && (!self.cel.is_empty()
-        || self.lt_now
-        || self.gt_now
-        || check_prop_some!(within, lt, lte, gt, gte))
-    {
+    if self.const_.is_some() && self.has_props() {
       errors.push(ConsistencyError::ConstWithOtherRules);
     }
 
@@ -83,18 +97,21 @@ impl Validator<Timestamp> for TimestampValidator {
       errors.push(e);
     }
 
+    #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
     if self.gt_now && self.lt_now {
       errors.push(ConsistencyError::ContradictoryInput(
         "`lt_now` and `gt_now` cannot be used together".to_string(),
       ));
     }
 
+    #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
     if self.gt_now && (self.gt.is_some() || self.gte.is_some()) {
       errors.push(ConsistencyError::ContradictoryInput(
         "`gt_now` cannot be used with `gt` or `gte`".to_string(),
       ));
     }
 
+    #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
     if self.lt_now && (self.lt.is_some() || self.lte.is_some()) {
       errors.push(ConsistencyError::ContradictoryInput(
         "`lt_now` cannot be used with `lt` or `lte`".to_string(),
@@ -208,12 +225,17 @@ impl From<TimestampValidator> for ProtoOption {
       };
     }
 
-    set_options!(lt, lte, gt, gte, within);
+    set_options!(lt, lte, gt, gte);
 
-    rules
-      .maybe_set("const", validator.const_)
-      .set_boolean("lt_now", validator.lt_now)
-      .set_boolean("gt_now", validator.gt_now);
+    #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
+    {
+      rules
+        .maybe_set("within", validator.within)
+        .set_boolean("lt_now", validator.lt_now)
+        .set_boolean("gt_now", validator.gt_now);
+    }
+
+    rules.maybe_set("const", validator.const_);
 
     let mut outer_rules = OptionMessageBuilder::new();
 

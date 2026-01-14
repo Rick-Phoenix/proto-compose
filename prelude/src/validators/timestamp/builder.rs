@@ -9,39 +9,7 @@ use proto_types::{Duration, Timestamp};
 pub struct TimestampValidatorBuilder<S: State = Empty> {
   _state: PhantomData<S>,
 
-  /// Adds custom validation using one or more [`CelRule`]s to this field.
-  cel: Vec<CelProgram>,
-
-  ignore: Ignore,
-
-  /// Specifies that this field's value will be valid only if it in the past.
-  lt_now: bool,
-
-  /// Specifies that this field's value will be valid only if it in the future.
-  gt_now: bool,
-
-  /// Specifies that the field must be set in order to be valid.
-  required: bool,
-
-  /// Specifies that only this specific value will be considered valid for this field.
-  const_: Option<Timestamp>,
-
-  /// Specifies that this field's value will be valid only if it is smaller than the specified amount.
-  lt: Option<Timestamp>,
-
-  /// Specifies that this field's value will be valid only if it is smaller than, or equal to, the specified amount.
-  lte: Option<Timestamp>,
-
-  /// Specifies that this field's value will be valid only if it is greater than the specified amount.
-  gt: Option<Timestamp>,
-
-  /// Specifies that this field's value will be valid only if it is greater than, or equal to, the specified amount.
-  gte: Option<Timestamp>,
-
-  /// Specifies that this field's value will be valid only if it is within the specified Duration (either in the past or future) from the moment when it's being validated.
-  within: Option<Duration>,
-
-  now_tolerance: Duration,
+  data: TimestampValidator,
 }
 
 impl_validator!(TimestampValidator, Timestamp);
@@ -51,18 +19,7 @@ impl<S: State> Default for TimestampValidatorBuilder<S> {
   fn default() -> Self {
     Self {
       _state: PhantomData,
-      cel: Default::default(),
-      ignore: Default::default(),
-      lt_now: Default::default(),
-      gt_now: Default::default(),
-      required: Default::default(),
-      const_: Default::default(),
-      lt: Default::default(),
-      lte: Default::default(),
-      gt: Default::default(),
-      gte: Default::default(),
-      within: Default::default(),
-      now_tolerance: Default::default(),
+      data: TimestampValidator::default(),
     }
   }
 }
@@ -89,282 +46,163 @@ impl<S: State> From<TimestampValidatorBuilder<S>> for ProtoOption {
 impl<S: State> TimestampValidatorBuilder<S> {
   #[inline]
   pub fn cel(mut self, program: CelProgram) -> TimestampValidatorBuilder<S> {
-    self.cel.push(program);
+    self.data.cel.push(program);
 
     TimestampValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      ignore: self.ignore,
-      lt_now: self.lt_now,
-      gt_now: self.gt_now,
-      required: self.required,
-      const_: self.const_,
-      lt: self.lt,
-      lte: self.lte,
-      gt: self.gt,
-      gte: self.gte,
-      within: self.within,
-      now_tolerance: self.now_tolerance,
+      ..self
     }
   }
 
   #[inline]
-  pub fn ignore_always(self) -> TimestampValidatorBuilder<SetIgnore<S>>
+  pub fn ignore_always(mut self) -> TimestampValidatorBuilder<SetIgnore<S>>
   where
     S::Ignore: IsUnset,
   {
+    self.data.ignore = Ignore::Always;
+
     TimestampValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      ignore: Ignore::Always,
-      lt_now: self.lt_now,
-      gt_now: self.gt_now,
-      required: self.required,
-      const_: self.const_,
-      lt: self.lt,
-      lte: self.lte,
-      gt: self.gt,
-      gte: self.gte,
-      within: self.within,
-      now_tolerance: self.now_tolerance,
+      data: self.data,
     }
   }
 
+  #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
   #[inline]
-  pub fn lt_now(self) -> TimestampValidatorBuilder<SetLtNow<S>>
+  pub fn lt_now(mut self) -> TimestampValidatorBuilder<SetLtNow<S>>
   where
     S::LtNow: IsUnset,
   {
+    self.data.lt_now = true;
+
     TimestampValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      ignore: self.ignore,
-      lt_now: true,
-      gt_now: self.gt_now,
-      required: self.required,
-      const_: self.const_,
-      lt: self.lt,
-      lte: self.lte,
-      gt: self.gt,
-      gte: self.gte,
-      within: self.within,
-      now_tolerance: self.now_tolerance,
+      data: self.data,
     }
   }
 
+  #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
   #[inline]
-  pub fn gt_now(self) -> TimestampValidatorBuilder<SetGtNow<S>>
+  pub fn gt_now(mut self) -> TimestampValidatorBuilder<SetGtNow<S>>
   where
     S::GtNow: IsUnset,
   {
+    self.data.gt_now = true;
+
     TimestampValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      ignore: self.ignore,
-      lt_now: self.lt_now,
-      gt_now: true,
-      required: self.required,
-      const_: self.const_,
-      lt: self.lt,
-      lte: self.lte,
-      gt: self.gt,
-      gte: self.gte,
-      within: self.within,
-      now_tolerance: self.now_tolerance,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn required(self) -> TimestampValidatorBuilder<SetRequired<S>>
+  pub fn required(mut self) -> TimestampValidatorBuilder<SetRequired<S>>
   where
     S::Required: IsUnset,
   {
+    self.data.required = true;
+
     TimestampValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      ignore: self.ignore,
-      lt_now: self.lt_now,
-      gt_now: self.gt_now,
-      required: true,
-      const_: self.const_,
-      lt: self.lt,
-      lte: self.lte,
-      gt: self.gt,
-      gte: self.gte,
-      within: self.within,
-      now_tolerance: self.now_tolerance,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn const_(self, val: Timestamp) -> TimestampValidatorBuilder<SetConst<S>>
+  pub fn const_(mut self, val: Timestamp) -> TimestampValidatorBuilder<SetConst<S>>
   where
     S::Const: IsUnset,
   {
+    self.data.const_ = Some(val);
+
     TimestampValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      ignore: self.ignore,
-      lt_now: self.lt_now,
-      gt_now: self.gt_now,
-      required: self.required,
-      const_: Some(val),
-      lt: self.lt,
-      lte: self.lte,
-      gt: self.gt,
-      gte: self.gte,
-      within: self.within,
-      now_tolerance: self.now_tolerance,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn lt(self, val: Timestamp) -> TimestampValidatorBuilder<SetLt<S>>
+  pub fn lt(mut self, val: Timestamp) -> TimestampValidatorBuilder<SetLt<S>>
   where
     S::Lt: IsUnset,
   {
+    self.data.lt = Some(val);
+
     TimestampValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      ignore: self.ignore,
-      lt_now: self.lt_now,
-      gt_now: self.gt_now,
-      required: self.required,
-      const_: self.const_,
-      lt: Some(val),
-      lte: self.lte,
-      gt: self.gt,
-      gte: self.gte,
-      within: self.within,
-      now_tolerance: self.now_tolerance,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn lte(self, val: Timestamp) -> TimestampValidatorBuilder<SetLte<S>>
+  pub fn lte(mut self, val: Timestamp) -> TimestampValidatorBuilder<SetLte<S>>
   where
     S::Lte: IsUnset,
   {
+    self.data.lte = Some(val);
+
     TimestampValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      ignore: self.ignore,
-      lt_now: self.lt_now,
-      gt_now: self.gt_now,
-      required: self.required,
-      const_: self.const_,
-      lt: self.lt,
-      lte: Some(val),
-      gt: self.gt,
-      gte: self.gte,
-      within: self.within,
-      now_tolerance: self.now_tolerance,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn gt(self, val: Timestamp) -> TimestampValidatorBuilder<SetGt<S>>
+  pub fn gt(mut self, val: Timestamp) -> TimestampValidatorBuilder<SetGt<S>>
   where
     S::Gt: IsUnset,
   {
+    self.data.gt = Some(val);
+
     TimestampValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      ignore: self.ignore,
-      lt_now: self.lt_now,
-      gt_now: self.gt_now,
-      required: self.required,
-      const_: self.const_,
-      lt: self.lt,
-      lte: self.lte,
-      gt: Some(val),
-      gte: self.gte,
-      within: self.within,
-      now_tolerance: self.now_tolerance,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn gte(self, val: Timestamp) -> TimestampValidatorBuilder<SetGte<S>>
+  pub fn gte(mut self, val: Timestamp) -> TimestampValidatorBuilder<SetGte<S>>
   where
     S::Gte: IsUnset,
   {
+    self.data.gte = Some(val);
+
     TimestampValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      ignore: self.ignore,
-      lt_now: self.lt_now,
-      gt_now: self.gt_now,
-      required: self.required,
-      const_: self.const_,
-      lt: self.lt,
-      lte: self.lte,
-      gt: self.gt,
-      gte: Some(val),
-      within: self.within,
-      now_tolerance: self.now_tolerance,
+      data: self.data,
     }
   }
 
+  #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
   #[inline]
-  pub fn within(self, val: Duration) -> TimestampValidatorBuilder<SetWithin<S>>
+  pub fn within(mut self, val: Duration) -> TimestampValidatorBuilder<SetWithin<S>>
   where
     S::Within: IsUnset,
   {
+    self.data.within = Some(val);
+
     TimestampValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      ignore: self.ignore,
-      lt_now: self.lt_now,
-      gt_now: self.gt_now,
-      required: self.required,
-      const_: self.const_,
-      lt: self.lt,
-      lte: self.lte,
-      gt: self.gt,
-      gte: self.gte,
-      within: Some(val),
-      now_tolerance: self.now_tolerance,
+      data: self.data,
     }
   }
 
+  #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
   #[inline]
-  pub fn now_tolerance(self, val: Duration) -> TimestampValidatorBuilder<SetNowTolerance<S>>
+  pub fn now_tolerance(mut self, val: Duration) -> TimestampValidatorBuilder<SetNowTolerance<S>>
   where
     S::NowTolerance: IsUnset,
   {
+    self.data.now_tolerance = val;
+
     TimestampValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      ignore: self.ignore,
-      lt_now: self.lt_now,
-      gt_now: self.gt_now,
-      required: self.required,
-      const_: self.const_,
-      lt: self.lt,
-      lte: self.lte,
-      gt: self.gt,
-      gte: self.gte,
-      within: self.within,
-      now_tolerance: val,
+      data: self.data,
     }
   }
 
   #[inline]
   pub fn build(self) -> TimestampValidator {
-    TimestampValidator {
-      cel: self.cel,
-      ignore: self.ignore,
-      lt_now: self.lt_now,
-      gt_now: self.gt_now,
-      required: self.required,
-      const_: self.const_,
-      lt: self.lt,
-      lte: self.lte,
-      gt: self.gt,
-      gte: self.gte,
-      within: self.within,
-      now_tolerance: self.now_tolerance,
-    }
+    self.data
   }
 }
