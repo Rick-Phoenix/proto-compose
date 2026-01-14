@@ -72,6 +72,7 @@ mod cel_impls {
   use ::cel::{Context, ExecutionError, Program, Value, objects::ValueType};
   use chrono::Utc;
   use core::convert::Infallible;
+  use std::sync::OnceLock;
 
   #[derive(Debug)]
   pub struct CelProgram {
@@ -214,6 +215,7 @@ mod cel_impls {
     let mut ctx = Context::default();
 
     ctx.add_variable_from_value("this", value.try_into_cel()?);
+    #[cfg(feature = "chrono")]
     ctx.add_variable_from_value("now", Value::Timestamp(Utc::now().into()));
 
     Ok(ctx)

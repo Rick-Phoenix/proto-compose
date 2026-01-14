@@ -17,7 +17,7 @@ option {{+ option.name +}} = {{+ option.value }};
 {%~ for extension in extensions ~%}
 extend {{+ extension.target +}} {
   {% for field in extension.fields ~%}
-  {%+ call macros::render_field(field, self.package, 2) %}
+  {%+ call macros::render_field(field, self.package, 2) %}{% endcall %}
   {% endfor ~%}
 }
 {%~ endfor %}

@@ -18,7 +18,7 @@ proc-macro2 = "1.0"
 quote = "1.0"
 syn = { version = "2", features = ["extra-traits", "full"] }
 convert_case = { workspace = true }
-proto-types = { workspace = true }
+proto-types = { workspace = true, features = ["default", "protovalidate"] }
 syn-utils = { path = "../../syn-utils/" }
 prost-reflect = { version = "0.16", optional = true }
 paste = "1"

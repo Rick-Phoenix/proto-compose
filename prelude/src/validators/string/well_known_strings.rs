@@ -91,11 +91,11 @@ impl WellKnownStrings {
 }
 
 use core::{
-  net::{IpAddr, Ipv6Addr},
+  net::{IpAddr, Ipv4Addr, Ipv6Addr},
   str::FromStr,
 };
 
-use ipnetwork::{IpNetwork, Ipv4Network, Ipv6Network};
+use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 #[cfg(feature = "regex")]
 pub(crate) use regex_checks::*;
 
@@ -203,12 +203,10 @@ pub(crate) fn is_valid_uri_ref(s: &str) -> bool {
 
 #[must_use]
 pub(crate) fn is_valid_ip_prefix(s: &str) -> bool {
-  match IpNetwork::from_str(s) {
+  match IpNet::from_str(s) {
     Ok(network) => {
-      //    Is the given IP address the same as the calculated network address?
-      //    The .network() method returns the true prefix.
-      //    The .ip() method returns the original IP from the string.
-      network.ip() == network.network()
+      // .network() returns the first address in the subnet
+      network.addr() == network.network()
     }
     Err(_) => false,
   }
@@ -216,48 +214,48 @@ pub(crate) fn is_valid_ip_prefix(s: &str) -> bool {
 
 #[must_use]
 pub(crate) fn is_valid_ipv4_prefix(s: &str) -> bool {
-  match Ipv4Network::from_str(s) {
-    Ok(network) => network.ip() == network.network(),
+  match Ipv4Net::from_str(s) {
+    Ok(network) => network.addr() == network.network(),
     Err(_) => false,
   }
 }
 
 #[must_use]
 pub(crate) fn is_valid_ipv6_prefix(s: &str) -> bool {
-  match Ipv6Network::from_str(s) {
-    Ok(network) => network.ip() == network.network(),
+  match Ipv6Net::from_str(s) {
+    Ok(network) => network.addr() == network.network(),
     Err(_) => false,
   }
 }
 
 #[must_use]
 pub(crate) fn is_valid_ip_with_prefixlen(s: &str) -> bool {
-  IpNetwork::from_str(s).is_ok()
+  IpNet::from_str(s).is_ok()
 }
 
 #[must_use]
 pub(crate) fn is_valid_ipv4_with_prefixlen(s: &str) -> bool {
-  Ipv4Network::from_str(s).is_ok()
+  Ipv4Net::from_str(s).is_ok()
 }
 
 #[must_use]
 pub(crate) fn is_valid_ipv6_with_prefixlen(s: &str) -> bool {
-  Ipv6Network::from_str(s).is_ok()
+  Ipv6Net::from_str(s).is_ok()
 }
 
 #[must_use]
 pub(crate) fn is_valid_ip(s: &str) -> bool {
-  s.parse::<IpAddr>().is_ok()
+  IpAddr::from_str(s).is_ok()
 }
 
 #[must_use]
 pub(crate) fn is_valid_ipv4(s: &str) -> bool {
-  s.parse::<IpAddr>().is_ok_and(|ip| ip.is_ipv4())
+  Ipv4Addr::from_str(s).is_ok()
 }
 
 #[must_use]
 pub(crate) fn is_valid_ipv6(s: &str) -> bool {
-  s.parse::<IpAddr>().is_ok_and(|ip| ip.is_ipv6())
+  Ipv6Addr::from_str(s).is_ok()
 }
 
 #[must_use]

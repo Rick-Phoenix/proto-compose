@@ -40,11 +40,11 @@ message {{+ self.short_name +}} {
     {% endif %}
 
     {%~ for field in oneof.fields ~%}
-    {%+ call macros::render_field(field, self.package, 4) %}
+    {%+ call macros::render_field(field, self.package, 4) %}{% endcall %}
     {% endfor +%}
   }
   {% when MessageEntry::Field(field) ~%}
-  {%+ call macros::render_field(field, self.package, 2) %}
+  {%+ call macros::render_field(field, self.package, 2) %}{% endcall %}
 {% endmatch %}
 {% endfor +%}
 }

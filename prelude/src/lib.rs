@@ -41,8 +41,6 @@ use hashbrown::HashMap;
 
 #[cfg(feature = "std")]
 use std::collections::HashMap;
-#[cfg(feature = "std")]
-use std::sync::OnceLock;
 
 use askama::Template;
 use float_eq::{FloatEq, float_eq};
@@ -52,7 +50,7 @@ pub use inventory;
 use ordered_float::{FloatCore, OrderedFloat};
 use owo_colors::OwoColorize;
 #[doc(hidden)]
-pub use paste::paste;
+use paste::paste;
 pub use proc_macro_impls as macros;
 pub use proc_macro_impls::*;
 pub use proto_types;
@@ -90,6 +88,7 @@ mod registry;
 pub use registry::*;
 mod extension;
 pub use extension::*;
+
 #[cfg(not(feature = "std"))]
 mod lazy;
 #[cfg(not(feature = "std"))]

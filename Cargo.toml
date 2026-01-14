@@ -30,9 +30,7 @@ maplit = "1"
 regex = "1"
 thiserror = "2"
 convert_case = "0.10"
-proto-types = { version = "0.1.11", path = "../protocheck/proto_types/", features = [
-  "protovalidate",
-] }
+proto-types = { version = "0.1.11", path = "../protocheck/proto_types/", default-features = false }
 tonic = "0.14"
 tonic-prost = "0.14"
 prost = "0.14"
