@@ -77,7 +77,8 @@ impl From<Arc<str>> for SharedStr {
   }
 }
 
-#[derive(Clone, Debug)]
+#[non_exhaustive]
+#[derive(Clone, Debug, Default)]
 pub struct StringValidator {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   pub cel: Vec<CelProgram>,

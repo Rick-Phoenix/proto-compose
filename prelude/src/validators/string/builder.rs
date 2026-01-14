@@ -4,64 +4,11 @@ use super::well_known_strings::WellKnownStrings;
 use crate::validators::*;
 pub(crate) use state::*;
 
-#[cfg(feature = "regex")]
-use regex::Regex;
-
 #[derive(Clone, Debug)]
 pub struct StringValidatorBuilder<S: State = Empty> {
   _state: PhantomData<S>,
-  /// Adds custom validation using one or more [`CelRule`]s to this field.
-  cel: Vec<CelProgram>,
 
-  well_known: Option<WellKnownStrings>,
-
-  ignore: Ignore,
-
-  /// Specifies that the field must be set in order to be valid.
-  required: bool,
-
-  /// Specifies that the given string field must be of this exact length.
-  len: Option<usize>,
-
-  /// Specifies that the given string field must have a length that is equal to or higher than the given value.
-  min_len: Option<usize>,
-
-  /// Specifies that the given string field must have a length that is equal to or lower than the given value.
-  max_len: Option<usize>,
-
-  /// Specifies the exact byte length that this field's value must have in order to be considered valid.
-  len_bytes: Option<usize>,
-
-  /// Specifies the minimum byte length for this field's value to be considered valid.
-  min_bytes: Option<usize>,
-
-  /// Specifies the minimum byte length for this field's value to be considered valid.
-  max_bytes: Option<usize>,
-
-  #[cfg(feature = "regex")]
-  /// Specifies a regex pattern that this field's value should match in order to be considered valid.
-  pattern: Option<Cow<'static, Regex>>,
-
-  /// Specifies the prefix that this field's value should contain in order to be considered valid.
-  prefix: Option<SharedStr>,
-
-  /// Specifies the suffix that this field's value should contain in order to be considered valid.
-  suffix: Option<SharedStr>,
-
-  /// Specifies a substring that this field's value should contain in order to be considered valid.
-  contains: Option<SharedStr>,
-
-  /// Specifies a substring that this field's value must not contain in order to be considered valid.
-  not_contains: Option<SharedStr>,
-
-  /// Specifies that only the values in this list will be considered valid for this field.
-  in_: Option<StaticLookup<SharedStr>>,
-
-  /// Specifies that the values in this list will be considered NOT valid for this field.
-  not_in: Option<StaticLookup<SharedStr>>,
-
-  /// Specifies that only this specific value will be considered valid for this field.
-  const_: Option<SharedStr>,
+  data: StringValidator,
 }
 
 impl_validator!(StringValidator, String);
@@ -71,25 +18,7 @@ impl<S: State> Default for StringValidatorBuilder<S> {
   fn default() -> Self {
     Self {
       _state: PhantomData,
-      cel: Default::default(),
-      well_known: Default::default(),
-      ignore: Default::default(),
-      required: Default::default(),
-      len: Default::default(),
-      min_len: Default::default(),
-      max_len: Default::default(),
-      len_bytes: Default::default(),
-      min_bytes: Default::default(),
-      max_bytes: Default::default(),
-      #[cfg(feature = "regex")]
-      pattern: Default::default(),
-      prefix: Default::default(),
-      suffix: Default::default(),
-      contains: Default::default(),
-      not_contains: Default::default(),
-      in_: Default::default(),
-      not_in: Default::default(),
-      const_: Default::default(),
+      data: StringValidator::default(),
     }
   }
 }
@@ -116,563 +45,257 @@ impl<S: State> From<StringValidatorBuilder<S>> for ProtoOption {
 impl<S: State> StringValidatorBuilder<S> {
   #[inline]
   pub fn cel(mut self, program: CelProgram) -> StringValidatorBuilder<S> {
-    self.cel.push(program);
+    self.data.cel.push(program);
 
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn ignore_always(self) -> StringValidatorBuilder<SetIgnore<S>>
+  pub fn ignore_always(mut self) -> StringValidatorBuilder<SetIgnore<S>>
   where
     S::Ignore: IsUnset,
   {
+    self.data.ignore = Ignore::Always;
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: Ignore::Always,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn ignore_if_zero_value(self) -> StringValidatorBuilder<SetIgnore<S>>
+  pub fn ignore_if_zero_value(mut self) -> StringValidatorBuilder<SetIgnore<S>>
   where
     S::Ignore: IsUnset,
   {
+    self.data.ignore = Ignore::IfZeroValue;
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: Ignore::IfZeroValue,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn required(self) -> StringValidatorBuilder<SetRequired<S>>
+  pub fn required(mut self) -> StringValidatorBuilder<SetRequired<S>>
   where
     S::Required: IsUnset,
   {
+    self.data.required = true;
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: true,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn len(self, val: usize) -> StringValidatorBuilder<SetLen<S>>
+  pub fn len(mut self, val: usize) -> StringValidatorBuilder<SetLen<S>>
   where
     S::Len: IsUnset,
   {
+    self.data.len = Some(val);
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: Some(val),
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn min_len(self, val: usize) -> StringValidatorBuilder<SetMinLen<S>>
+  pub fn min_len(mut self, val: usize) -> StringValidatorBuilder<SetMinLen<S>>
   where
     S::MinLen: IsUnset,
   {
+    self.data.min_len = Some(val);
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: Some(val),
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn max_len(self, val: usize) -> StringValidatorBuilder<SetMaxLen<S>>
+  pub fn max_len(mut self, val: usize) -> StringValidatorBuilder<SetMaxLen<S>>
   where
     S::MaxLen: IsUnset,
   {
+    self.data.max_len = Some(val);
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: Some(val),
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn len_bytes(self, val: usize) -> StringValidatorBuilder<SetLenBytes<S>>
+  pub fn len_bytes(mut self, val: usize) -> StringValidatorBuilder<SetLenBytes<S>>
   where
     S::LenBytes: IsUnset,
   {
+    self.data.len_bytes = Some(val);
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: Some(val),
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn min_bytes(self, val: usize) -> StringValidatorBuilder<SetMinBytes<S>>
+  pub fn min_bytes(mut self, val: usize) -> StringValidatorBuilder<SetMinBytes<S>>
   where
     S::MinBytes: IsUnset,
   {
+    self.data.min_bytes = Some(val);
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: Some(val),
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn max_bytes(self, val: usize) -> StringValidatorBuilder<SetMaxBytes<S>>
+  pub fn max_bytes(mut self, val: usize) -> StringValidatorBuilder<SetMaxBytes<S>>
   where
     S::MaxBytes: IsUnset,
   {
+    self.data.max_bytes = Some(val);
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: Some(val),
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
   #[cfg(feature = "regex")]
   #[track_caller]
-  pub fn pattern(self, val: impl IntoRegex) -> StringValidatorBuilder<SetPattern<S>>
+  pub fn pattern(mut self, val: impl IntoRegex) -> StringValidatorBuilder<SetPattern<S>>
   where
     S::Pattern: IsUnset,
   {
+    self.data.pattern = Some(val.into_regex());
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      pattern: Some(val.into_regex()),
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn prefix<T: Into<SharedStr>>(self, val: T) -> StringValidatorBuilder<SetPrefix<S>>
+  pub fn prefix<T: Into<SharedStr>>(mut self, val: T) -> StringValidatorBuilder<SetPrefix<S>>
   where
     S::Prefix: IsUnset,
   {
+    self.data.prefix = Some(val.into());
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: Some(val.into()),
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn suffix<T: Into<SharedStr>>(self, val: T) -> StringValidatorBuilder<SetSuffix<S>>
+  pub fn suffix<T: Into<SharedStr>>(mut self, val: T) -> StringValidatorBuilder<SetSuffix<S>>
   where
     S::Suffix: IsUnset,
   {
+    self.data.suffix = Some(val.into());
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: Some(val.into()),
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn contains<T: Into<SharedStr>>(self, val: T) -> StringValidatorBuilder<SetContains<S>>
+  pub fn contains<T: Into<SharedStr>>(mut self, val: T) -> StringValidatorBuilder<SetContains<S>>
   where
     S::Contains: IsUnset,
   {
+    self.data.contains = Some(val.into());
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: Some(val.into()),
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn not_contains<T: Into<SharedStr>>(self, val: T) -> StringValidatorBuilder<SetNotContains<S>>
+  pub fn not_contains<T: Into<SharedStr>>(
+    mut self,
+    val: T,
+  ) -> StringValidatorBuilder<SetNotContains<S>>
   where
     S::NotContains: IsUnset,
   {
+    self.data.not_contains = Some(val.into());
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: Some(val.into()),
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
   pub fn in_(
-    self,
+    mut self,
     val: impl IntoIterator<Item = impl Into<SharedStr>>,
   ) -> StringValidatorBuilder<SetIn<S>>
   where
     S::In: IsUnset,
   {
+    self.data.in_ = Some(StaticLookup::new(
+      val
+        .into_iter()
+        .map(|v| Into::<SharedStr>::into(v)),
+    ));
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: Some(StaticLookup::new(
-        val
-          .into_iter()
-          .map(|v| Into::<SharedStr>::into(v)),
-      )),
-      not_in: self.not_in,
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
   pub fn not_in(
-    self,
+    mut self,
     val: impl IntoIterator<Item = impl Into<SharedStr>>,
   ) -> StringValidatorBuilder<SetNotIn<S>>
   where
     S::NotIn: IsUnset,
   {
+    self.data.not_in = Some(StaticLookup::new(
+      val
+        .into_iter()
+        .map(|v| Into::<SharedStr>::into(v)),
+    ));
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: Some(StaticLookup::new(
-        val
-          .into_iter()
-          .map(|v| Into::<SharedStr>::into(v)),
-      )),
-      const_: self.const_,
+      data: self.data,
     }
   }
 
   #[inline]
-  pub fn const_<T: Into<SharedStr>>(self, val: T) -> StringValidatorBuilder<SetConst<S>>
+  pub fn const_<T: Into<SharedStr>>(mut self, val: T) -> StringValidatorBuilder<SetConst<S>>
   where
     S::Const: IsUnset,
   {
+    self.data.const_ = Some(val.into());
+
     StringValidatorBuilder {
       _state: PhantomData,
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: Some(val.into()),
+      data: self.data,
     }
   }
 
   #[inline]
   pub fn build(self) -> StringValidator {
-    StringValidator {
-      cel: self.cel,
-      well_known: self.well_known,
-      ignore: self.ignore,
-      required: self.required,
-      len: self.len,
-      min_len: self.min_len,
-      max_len: self.max_len,
-      len_bytes: self.len_bytes,
-      min_bytes: self.min_bytes,
-      max_bytes: self.max_bytes,
-      #[cfg(feature = "regex")]
-      pattern: self.pattern,
-      prefix: self.prefix,
-      suffix: self.suffix,
-      contains: self.contains,
-      not_contains: self.not_contains,
-      in_: self.in_,
-      not_in: self.not_in,
-      const_: self.const_,
-    }
+    self.data
   }
 }
 
@@ -680,31 +303,15 @@ macro_rules! well_known_impl {
   ($name:ident, $doc:literal) => {
     paste::paste! {
       #[doc = $doc]
-      pub fn [< $name:snake >](self) -> StringValidatorBuilder<SetWellKnown<S>>
+      pub fn [< $name:snake >](mut self) -> StringValidatorBuilder<SetWellKnown<S>>
         where
           S::WellKnown: IsUnset,
         {
+          self.data.well_known = Some(WellKnownStrings::$name);
+
           StringValidatorBuilder {
             _state: PhantomData,
-            cel: self.cel,
-            well_known: Some(WellKnownStrings::$name),
-            ignore: self.ignore,
-            required: self.required,
-            len: self.len,
-            min_len: self.min_len,
-            max_len: self.max_len,
-            len_bytes: self.len_bytes,
-            min_bytes: self.min_bytes,
-            max_bytes: self.max_bytes,
-            #[cfg(feature = "regex")]
-            pattern: self.pattern,
-            prefix: self.prefix,
-            suffix: self.suffix,
-            contains: self.contains,
-            not_contains: self.not_contains,
-            in_: self.in_,
-            not_in: self.not_in,
-            const_: self.const_,
+            data: self.data,
           }
         }
     }

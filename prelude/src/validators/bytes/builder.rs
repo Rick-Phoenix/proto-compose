@@ -138,6 +138,7 @@ impl<S: State> BytesValidatorBuilder<S> {
     Ipv6,
     "Specifies that the value must be a valid IPv6 address in byte format."
   );
+  #[cfg(feature = "regex")]
   well_known_impl!(
     Uuid,
     "Specifies that the value must be a valid UUID in byte format."

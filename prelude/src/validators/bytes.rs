@@ -246,9 +246,8 @@ impl Validator<Bytes> for BytesValidator {
         let byte_str = core::str::from_utf8(val.as_ref()).unwrap_or("");
 
         match well_known {
-          WellKnownBytes::Uuid =>
-          {
-            #[cfg(feature = "regex")]
+          #[cfg(feature = "regex")]
+          WellKnownBytes::Uuid => {
             if !is_valid_uuid(byte_str) {
               ctx.add_violation(BYTES_UUID_VIOLATION, "must be a valid UUID");
             }
@@ -358,6 +357,7 @@ impl From<BytesValidator> for ProtoOption {
 #[doc(hidden)]
 #[derive(Clone, Debug, Copy)]
 pub enum WellKnownBytes {
+  #[cfg(feature = "regex")]
   Uuid,
   Ip,
   Ipv4,
@@ -367,6 +367,7 @@ pub enum WellKnownBytes {
 impl WellKnownBytes {
   pub(crate) fn to_option(self) -> (SharedStr, OptionValue) {
     let name = match self {
+      #[cfg(feature = "regex")]
       Self::Uuid => "uuid",
       Self::Ip => "ip",
       Self::Ipv4 => "ipv4",
