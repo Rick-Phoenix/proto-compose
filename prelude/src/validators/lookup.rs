@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use ordered_float::OrderedFloat;
 use proto_types::Duration;
 
@@ -9,7 +7,7 @@ use super::*;
 fn clamp_capacity_for_unique_items_collection<T>(requested_cap: usize) -> usize {
   // 128KB Budget
   const MAX_BYTES: usize = 128 * 1024;
-  let item_size = std::mem::size_of::<T>();
+  let item_size = core::mem::size_of::<T>();
 
   // For ZSTs, uniqueness checks would fail after one insertion anyway
   if item_size == 0 {
@@ -290,7 +288,7 @@ where
       .is_ok()
   }
 
-  pub fn iter(&self) -> std::slice::Iter<'_, T> {
+  pub fn iter(&self) -> core::slice::Iter<'_, T> {
     self.into_iter()
   }
 
@@ -317,7 +315,7 @@ impl<T: Ord> AsRef<[T]> for SortedList<T> {
 
 impl<'a, T: Ord> IntoIterator for &'a SortedList<T> {
   type Item = &'a T;
-  type IntoIter = std::slice::Iter<'a, T>;
+  type IntoIter = core::slice::Iter<'a, T>;
 
   fn into_iter(self) -> Self::IntoIter {
     self.items.iter()

@@ -1,5 +1,4 @@
 use crate::*;
-use std::{fmt::Debug, hash::Hash, sync::Arc};
 
 use proto_types::protovalidate::*;
 
@@ -44,7 +43,7 @@ pub trait ValidatorBuilderFor<T>: Default {
   fn build_validator(self) -> Self::Validator;
 }
 
-pub trait ProtoValidator: std::marker::Sized {
+pub trait ProtoValidator: core::marker::Sized {
   type Target;
   type Validator: Validator<Self, Target = Self::Target> + Clone;
   type Builder: ValidatorBuilderFor<Self, Validator = Self::Validator>;

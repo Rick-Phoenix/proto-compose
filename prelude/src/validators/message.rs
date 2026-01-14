@@ -17,6 +17,7 @@ pub trait ValidatedMessage: Default {
   #[doc(hidden)]
   fn nested_validate(&self, ctx: &mut ValidationCtx);
 
+  #[cfg(feature = "cel")]
   #[doc(hidden)]
   fn validate_cel(
     &self,
@@ -41,6 +42,7 @@ pub trait ValidatedMessage: Default {
     }
   }
 
+  #[cfg(feature = "cel")]
   #[inline]
   #[must_use]
   #[doc(hidden)]

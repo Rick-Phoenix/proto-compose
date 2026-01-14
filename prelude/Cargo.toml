@@ -24,8 +24,7 @@ chrono = { workspace = true }
 log = "0.4"
 owo-colors = { version = "4.2" }
 inventory = "0.3"
-ordermap = "1"
-fxhash = "0.2"
+ordermap = { version = "1", default-features = false }
 prost = { workspace = true }
 similar-asserts = { version = "1.7" }
 float_eq = { workspace = true }
@@ -33,10 +32,13 @@ smallvec = "1"
 proc-macro-impls = { path = "../proc-macro/" }
 ipnetwork = "0.21"
 fluent-uri = "0.4"
+hashbrown = "0.16"
 
 [features]
-default = ["regex", "cel"]
+default = ["std", "regex", "cel"]
+
+std = ["ordermap/std"]
 
 reflection = ["proc-macro-impls/reflection"]
-cel = ["dep:cel", "proto-types/cel"]
+cel = ["std", "dep:cel", "proto-types/cel"]
 regex = ["dep:regex"]

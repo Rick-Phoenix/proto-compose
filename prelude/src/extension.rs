@@ -40,7 +40,7 @@ impl ExtensionTarget {
 }
 
 impl Display for ExtensionTarget {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     write!(f, "{}", self.as_str())
   }
 }

@@ -3,7 +3,6 @@ pub use builder::FloatValidatorBuilder;
 
 use float_eq::FloatEq;
 use float_eq::float_eq;
-use std::{fmt::Display, marker::PhantomData};
 
 use super::*;
 

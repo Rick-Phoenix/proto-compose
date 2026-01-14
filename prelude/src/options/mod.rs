@@ -1,11 +1,5 @@
 mod common_options;
 
-use std::{
-  collections::{BTreeMap, BTreeSet, HashMap},
-  ops::Deref,
-  sync::Arc,
-};
-
 use ::bytes::Bytes;
 use askama::Template;
 pub use common_options::*;
@@ -43,7 +37,7 @@ pub struct OptionMessage {
 
 impl<'a> IntoIterator for &'a OptionMessage {
   type Item = &'a ProtoOption;
-  type IntoIter = std::slice::Iter<'a, ProtoOption>;
+  type IntoIter = core::slice::Iter<'a, ProtoOption>;
 
   #[inline]
   fn into_iter(self) -> Self::IntoIter {
@@ -81,7 +75,7 @@ impl OptionMessage {
   }
 
   #[inline]
-  pub fn iter(&self) -> std::slice::Iter<'_, ProtoOption> {
+  pub fn iter(&self) -> core::slice::Iter<'_, ProtoOption> {
     self.inner.iter()
   }
 }
@@ -158,7 +152,7 @@ impl OptionMessageBuilder {
   }
 
   #[inline]
-  pub fn iter(&self) -> std::slice::Iter<'_, ProtoOption> {
+  pub fn iter(&self) -> core::slice::Iter<'_, ProtoOption> {
     self.inner.iter()
   }
 
@@ -193,7 +187,7 @@ impl From<Arc<[ProtoOption]>> for OptionMessage {
 
 impl From<ProtoOption> for OptionMessage {
   fn from(value: ProtoOption) -> Self {
-    std::iter::once(value).collect()
+    core::iter::once(value).collect()
   }
 }
 
@@ -297,7 +291,7 @@ impl From<OptionMessageBuilder> for OptionMessage {
 
 impl IntoIterator for OptionMessageBuilder {
   type Item = ProtoOption;
-  type IntoIter = std::vec::IntoIter<ProtoOption>;
+  type IntoIter = alloc::vec::IntoIter<ProtoOption>;
 
   #[inline]
   fn into_iter(self) -> Self::IntoIter {
@@ -307,7 +301,7 @@ impl IntoIterator for OptionMessageBuilder {
 
 impl<'a> IntoIterator for &'a OptionMessageBuilder {
   type Item = &'a ProtoOption;
-  type IntoIter = std::slice::Iter<'a, ProtoOption>;
+  type IntoIter = core::slice::Iter<'a, ProtoOption>;
 
   #[inline]
   fn into_iter(self) -> Self::IntoIter {
@@ -382,7 +376,7 @@ impl Deref for OptionList {
 }
 
 impl OptionList {
-  pub fn iter(&self) -> std::slice::Iter<'_, OptionValue> {
+  pub fn iter(&self) -> core::slice::Iter<'_, OptionValue> {
     self.inner.iter()
   }
 }
@@ -400,7 +394,7 @@ where
 
 impl<'a> IntoIterator for &'a OptionList {
   type Item = &'a OptionValue;
-  type IntoIter = std::slice::Iter<'a, OptionValue>;
+  type IntoIter = core::slice::Iter<'a, OptionValue>;
 
   fn into_iter(self) -> Self::IntoIter {
     self.inner.iter()
@@ -482,8 +476,8 @@ impl From<&'static str> for OptionValue {
   }
 }
 
-impl From<std::time::Duration> for OptionValue {
-  fn from(value: std::time::Duration) -> Self {
+impl From<core::time::Duration> for OptionValue {
+  fn from(value: core::time::Duration) -> Self {
     let seconds = value.as_secs().cast_signed();
     #[allow(clippy::cast_possible_truncation)]
     let nanos = value.as_nanos() as i32;

@@ -1,15 +1,9 @@
-use fxhash::FxBuildHasher;
+use hashbrown::DefaultHashBuilder;
 use ordermap::OrderMap;
 
 use crate::*;
 
-pub struct FileReference {
-  pub name: &'static str,
-  pub package: &'static str,
-  pub extern_path: &'static str,
-}
-
-type Map<K, V> = OrderMap<K, V, FxBuildHasher>;
+type Map<K, V> = OrderMap<K, V, DefaultHashBuilder>;
 
 fn process_msg(
   msg_name: &str,

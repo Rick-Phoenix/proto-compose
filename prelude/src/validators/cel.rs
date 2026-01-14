@@ -50,7 +50,7 @@ impl From<CelRule> for OptionValue {
 // Without the cel feature, this is just a wrapper for a cel rule
 
 #[cfg(not(feature = "cel"))]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct CelProgram {
   pub rule: CelRule,
 }
@@ -71,7 +71,7 @@ mod cel_impls {
 
   use ::cel::{Context, ExecutionError, Program, Value, objects::ValueType};
   use chrono::Utc;
-  use std::{convert::Infallible, sync::OnceLock};
+  use core::convert::Infallible;
 
   #[derive(Debug)]
   pub struct CelProgram {

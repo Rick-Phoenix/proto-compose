@@ -1,8 +1,6 @@
 mod builder;
 pub use builder::MapValidatorBuilder;
 
-use std::{collections::HashMap, marker::PhantomData};
-
 use proto_types::protovalidate::{
   field_path_element::Subscript, violations_data::map_violations::*,
 };

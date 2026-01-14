@@ -1,8 +1,5 @@
-use std::fmt::Display;
-
-use fxhash::FxHashSet;
-
 use crate::*;
+use hashbrown::HashSet;
 
 #[derive(Debug, PartialEq, Template)]
 #[template(path = "file.proto.j2")]
@@ -18,6 +15,12 @@ pub struct ProtoFile {
   pub extensions: Vec<Extension>,
 }
 
+pub struct FileReference {
+  pub name: &'static str,
+  pub package: &'static str,
+  pub extern_path: &'static str,
+}
+
 #[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Edition {
   Proto2,
@@ -27,7 +30,7 @@ pub enum Edition {
 }
 
 impl Display for Edition {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     match self {
       Self::Proto2 => write!(f, "syntax = \"proto2\""),
       Self::Proto3 => write!(f, "syntax = \"proto3\""),
@@ -39,7 +42,7 @@ impl Display for Edition {
 #[doc(hidden)]
 #[derive(PartialEq, Eq, Debug)]
 pub struct FileImports {
-  pub set: FxHashSet<&'static str>,
+  pub set: HashSet<&'static str>,
   pub file: &'static str,
   pub added_validate_proto: bool,
 }
@@ -52,7 +55,7 @@ impl Extend<&'static str> for FileImports {
 
 impl IntoIterator for FileImports {
   type Item = &'static str;
-  type IntoIter = std::collections::hash_set::IntoIter<&'static str>;
+  type IntoIter = hashbrown::hash_set::IntoIter<&'static str>;
 
   fn into_iter(self) -> Self::IntoIter {
     self.set.into_iter()

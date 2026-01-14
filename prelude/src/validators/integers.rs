@@ -1,8 +1,6 @@
 mod builder;
 pub use builder::IntValidatorBuilder;
 
-use std::{fmt::Display, marker::PhantomData};
-
 pub use proto_types::num_wrappers::*;
 use proto_types::protovalidate::violations_data::*;
 

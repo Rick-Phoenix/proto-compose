@@ -6,6 +6,7 @@ pub enum ConsistencyError {
   ConstWithOtherRules,
   #[error(transparent)]
   OverlappingLists(#[from] OverlappingListsError),
+  #[cfg(feature = "cel")]
   #[error(transparent)]
   CelError(#[from] CelError),
   #[error("{0}")]
@@ -29,7 +30,7 @@ pub struct OneofErrors {
 impl core::error::Error for OneofErrors {}
 
 impl Display for OneofErrors {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     let _ = writeln!(
       f,
       "❌ Validator consistency check for oneof `{}` has failed:",
@@ -57,14 +58,16 @@ impl Display for OneofErrors {
 pub struct MessageTestError {
   pub message_full_name: &'static str,
   pub field_errors: Vec<FieldError>,
+  #[cfg(feature = "cel")]
   pub cel_errors: Vec<CelError>,
 }
 
 impl Display for MessageTestError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     let Self {
       message_full_name,
       field_errors,
+      #[cfg(feature = "cel")]
       cel_errors,
     } = self;
 
@@ -86,6 +89,7 @@ impl Display for MessageTestError {
       }
     }
 
+    #[cfg(feature = "cel")]
     if !cel_errors.is_empty() {
       let _ = writeln!(f, "  CEL rules errors:");
       for err in cel_errors {
@@ -105,7 +109,7 @@ pub struct OverlappingListsError {
 impl core::error::Error for OverlappingListsError {}
 
 impl Display for OverlappingListsError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     writeln!(f, "The following values are both allowed and forbidden:")?;
 
     for item in &self.overlapping {
@@ -176,7 +180,7 @@ pub(crate) fn check_list_rules<T>(
   not_in_list: Option<&StaticLookup<T>>,
 ) -> Result<(), OverlappingListsError>
 where
-  T: Debug + PartialEq + Eq + std::hash::Hash + Ord + Clone + ListFormatter,
+  T: Debug + PartialEq + Eq + core::hash::Hash + Ord + Clone + ListFormatter,
 {
   if let Some(in_list) = in_list
     && let Some(not_in_list) = not_in_list

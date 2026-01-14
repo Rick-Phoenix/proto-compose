@@ -1,3 +1,14 @@
+// no_std support is planned at a certain point
+#![no_std]
+#![deny(clippy::alloc_instead_of_core)]
+#![deny(clippy::std_instead_of_alloc)]
+#![deny(clippy::std_instead_of_core)]
+
+#[cfg(any(test, feature = "std"))]
+extern crate std;
+
+extern crate alloc;
+
 #[cfg(feature = "cel")]
 pub use ::cel;
 
@@ -5,14 +16,38 @@ pub use ::cel;
 mod decl_macros;
 
 use ::bytes::Bytes;
-use std::borrow::{Borrow, Cow};
-use std::fmt::{Debug, Display};
-use std::sync::Arc;
+use alloc::{
+  borrow::Cow,
+  collections::{BTreeMap, BTreeSet},
+  format,
+  string::{String, ToString},
+  sync::Arc,
+  vec,
+  vec::Vec,
+};
+use core::borrow::Borrow;
+use core::fmt::{Debug, Display};
+use core::{
+  fmt::Write,
+  hash::Hash,
+  marker::{PhantomData, Sized},
+  ops::Deref,
+  ops::DerefMut,
+  ops::Range,
+};
+
+#[cfg(not(feature = "std"))]
+use hashbrown::HashMap;
+
+#[cfg(feature = "std")]
+use std::collections::HashMap;
+#[cfg(feature = "std")]
+use std::sync::OnceLock;
 
 use askama::Template;
 use float_eq::{FloatEq, float_eq};
-use fxhash::FxHashMap;
 #[doc(hidden)]
+#[cfg(feature = "std")]
 pub use inventory;
 use ordered_float::{FloatCore, OrderedFloat};
 use owo_colors::OwoColorize;
@@ -26,7 +61,7 @@ use thiserror::Error;
 mod oneof;
 mod options;
 pub mod validators;
-use std::{collections::HashSet, fmt::Write, marker::PhantomData, ops::Range, sync::LazyLock};
+use std::{collections::HashSet, sync::LazyLock};
 mod field;
 mod file;
 mod package;
@@ -49,7 +84,9 @@ pub use proto_type::*;
 use rendering_utils::*;
 pub use service::*;
 pub use validators::*;
+#[cfg(feature = "std")]
 mod registry;
+#[cfg(feature = "std")]
 pub use registry::*;
 mod extension;
 pub use extension::*;

@@ -1,6 +1,6 @@
 #![allow(private_interfaces)]
 
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use crate::validators::builder_internals::*;
 

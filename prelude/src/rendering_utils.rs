@@ -1,5 +1,3 @@
-use std::fmt::Write;
-
 use crate::*;
 
 pub(crate) const PROTOBUF_MAX_TAG: i32 = 536_870_911;

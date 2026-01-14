@@ -90,7 +90,7 @@ impl WellKnownStrings {
   }
 }
 
-use std::{
+use core::{
   net::{IpAddr, Ipv6Addr},
   str::FromStr,
 };

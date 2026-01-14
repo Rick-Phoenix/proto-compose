@@ -1,5 +1,3 @@
-use std::ops::{Deref, DerefMut};
-
 use super::*;
 
 use proto_types::field_descriptor_proto::Type as ProtoPrimitive;
@@ -146,7 +144,7 @@ impl DerefMut for ViolationsAcc {
 }
 
 impl<'a> IntoIterator for &'a ViolationsAcc {
-  type IntoIter = std::slice::Iter<'a, Violation>;
+  type IntoIter = core::slice::Iter<'a, Violation>;
   type Item = &'a Violation;
 
   #[inline]
@@ -164,7 +162,7 @@ impl Extend<Violation> for ViolationsAcc {
 
 impl ViolationsAcc {
   #[inline]
-  pub fn iter(&self) -> std::slice::Iter<'_, Violation> {
+  pub fn iter(&self) -> core::slice::Iter<'_, Violation> {
     self.inner.iter()
   }
   #[inline]

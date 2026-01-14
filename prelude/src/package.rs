@@ -1,4 +1,4 @@
-use std::{collections::hash_map::Entry, fs::File, path::Path};
+use hashbrown::hash_map::{Entry, HashMap};
 
 use crate::*;
 
@@ -78,9 +78,10 @@ impl Package {
     entries
   }
 
+  #[cfg(feature = "std")]
   pub fn render_files<P>(&self, output_root: P) -> std::io::Result<()>
   where
-    P: AsRef<Path>,
+    P: AsRef<std::path::Path>,
   {
     let output_root = output_root.as_ref();
 
@@ -89,7 +90,7 @@ impl Package {
     for file in &self.files {
       let file_path = output_root.join(file.name);
 
-      let mut file_buf = File::create(file_path)?;
+      let mut file_buf = std::fs::File::create(file_path)?;
 
       file.write_into(&mut file_buf)?;
     }
@@ -110,8 +111,8 @@ impl Package {
   }
 
   pub fn check_unique_cel_rules(self) -> Result<(), String> {
-    let mut rules: FxHashMap<SharedStr, CelRule> = FxHashMap::default();
-    let mut duplicates: FxHashMap<SharedStr, Vec<CelRule>> = FxHashMap::default();
+    let mut rules: HashMap<SharedStr, CelRule> = HashMap::default();
+    let mut duplicates: HashMap<SharedStr, Vec<CelRule>> = HashMap::default();
 
     for rule in self
       .files

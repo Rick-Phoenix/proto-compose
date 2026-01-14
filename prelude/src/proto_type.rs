@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use crate::*;
 
 pub trait AsProtoType {
@@ -103,7 +101,7 @@ impl From<ProtoMapKey> for ProtoScalar {
 }
 
 impl Display for ProtoMapKey {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     match self {
       Self::Int32 => write!(f, "int32"),
       Self::Int64 => write!(f, "int64"),
@@ -141,7 +139,7 @@ pub enum ProtoScalar {
 }
 
 impl Display for ProtoScalar {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     match self {
       Self::Double => write!(f, "double"),
       Self::Float => write!(f, "float"),
@@ -170,7 +168,7 @@ pub enum ProtoType {
 }
 
 impl Display for ProtoType {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     match self {
       Self::Scalar(proto_scalar) => write!(f, "{proto_scalar}"),
       Self::Message(proto_path) | Self::Enum(proto_path) => write!(f, "{proto_path}"),
@@ -268,7 +266,7 @@ pub struct ProtoPath {
 }
 
 impl Display for ProtoPath {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     let Self { name, package, .. } = self;
 
     write!(f, "{package}.{name}")
