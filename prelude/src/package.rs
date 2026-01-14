@@ -12,6 +12,7 @@ impl PackageReference {
     Self { name }
   }
 
+  #[cfg(feature = "std")]
   #[must_use]
   pub fn get_package(&self) -> Package {
     collect_package(self.name)

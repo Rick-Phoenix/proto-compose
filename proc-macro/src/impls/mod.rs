@@ -17,18 +17,27 @@ pub const fn is_no_std() -> bool {
   cfg!(not(feature = "std"))
 }
 
-pub fn wrap_with_imports(tokens: &[TokenStream2]) -> TokenStream2 {
+pub fn guard_inventory_on_no_std() -> Option<TokenStream2> {
+  is_no_std().then(|| quote! { #[cfg(feature = "std")] })
+}
+
+pub fn wrap_with_imports(tokens: &TokenStream2) -> TokenStream2 {
   quote! {
     const _: () = {
       use ::prelude::*;
+      use ::prelude::alloc::{vec, vec::Vec, format, string::String};
       use ::prelude::proto_types::{
         protovalidate::{Violations, FieldPathElement},
         field_descriptor_proto::Type,
       };
 
-      #(#tokens)*
+      #tokens
     };
   }
+}
+
+pub fn wrap_multiple_with_imports(tokens: &[TokenStream2]) -> TokenStream2 {
+  wrap_with_imports(&quote! { #(#tokens)* })
 }
 
 pub fn options_tokens(

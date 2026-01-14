@@ -240,7 +240,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> TokenStream2 {
     UseFallback::Yes
   };
 
-  let validator_impl = wrap_with_imports(&[generate_message_validator(
+  let validator_impl = wrap_multiple_with_imports(&[generate_message_validator(
     use_fallback,
     &item.ident,
     &fields_data,

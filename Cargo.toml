@@ -6,7 +6,7 @@ members = [
   "test-reflection",
   "test-server",
   "testing",
-  "builder",
+  "builder", "test-no-std",
 ]
 resolver = "3"
 

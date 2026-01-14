@@ -215,7 +215,7 @@ mod cel_impls {
     let mut ctx = Context::default();
 
     ctx.add_variable_from_value("this", value.try_into_cel()?);
-    #[cfg(feature = "chrono")]
+    #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
     ctx.add_variable_from_value("now", Value::Timestamp(Utc::now().into()));
 
     Ok(ctx)

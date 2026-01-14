@@ -246,8 +246,9 @@ impl Validator<Bytes> for BytesValidator {
         let byte_str = core::str::from_utf8(val.as_ref()).unwrap_or("");
 
         match well_known {
-          #[cfg(feature = "regex")]
-          WellKnownBytes::Uuid => {
+          WellKnownBytes::Uuid =>
+          {
+            #[cfg(feature = "regex")]
             if !is_valid_uuid(byte_str) {
               ctx.add_violation(BYTES_UUID_VIOLATION, "must be a valid UUID");
             }

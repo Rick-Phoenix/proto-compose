@@ -81,6 +81,7 @@ impl<S: State> Default for StringValidatorBuilder<S> {
       len_bytes: Default::default(),
       min_bytes: Default::default(),
       max_bytes: Default::default(),
+      #[cfg(feature = "regex")]
       pattern: Default::default(),
       prefix: Default::default(),
       suffix: Default::default(),

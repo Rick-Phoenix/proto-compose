@@ -4,8 +4,9 @@ pub trait ProtoService {
   fn as_proto_service() -> Service;
 }
 
-#[derive(Debug, PartialEq, Template)]
-#[template(path = "service.proto.j2")]
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "std", derive(Template))]
+#[cfg_attr(feature = "std", template(path = "service.proto.j2"))]
 pub struct Service {
   pub name: &'static str,
   pub file: &'static str,

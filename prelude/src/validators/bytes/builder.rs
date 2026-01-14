@@ -67,6 +67,7 @@ impl<S: State> Default for BytesValidatorBuilder<S> {
       len: Default::default(),
       min_len: Default::default(),
       max_len: Default::default(),
+      #[cfg(feature = "regex")]
       pattern: Default::default(),
       prefix: Default::default(),
       suffix: Default::default(),

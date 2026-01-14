@@ -244,11 +244,14 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
 
   let options_tokens = options_tokens(Span::call_site(), &enum_options, deprecated);
 
+  let inventory_cfg_guard = guard_inventory_on_no_std();
+
   quote! {
     #[repr(i32)]
     #[derive(::prelude::macros::Enum, Hash, PartialEq, Eq, Debug, Clone, Copy)]
     #item
 
+    #inventory_cfg_guard
     ::prelude::inventory::submit! {
       ::prelude::RegistryEnum {
         parent_message: #parent_message_registry,

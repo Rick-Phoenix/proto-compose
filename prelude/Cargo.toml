@@ -49,6 +49,7 @@ chrono = { version = "0.4", default-features = false, features = [
 default = ["std", "regex", "cel", "chrono"]
 
 chrono = ["proto-types/chrono", "dep:chrono"]
+chrono-wasm = ["chrono", "chrono/wasmbind", "proto-types/chrono-wasm"]
 
 std = [
   "dep:inventory",
@@ -63,6 +64,7 @@ std = [
   "proc-macro-impls/std",
   "fluent-uri/std",
   "ipnet/std",
+  "chrono?/std",
   "chrono?/now",
 ]
 

@@ -139,7 +139,7 @@ pub fn reflection_oneof_derive(item: &mut ItemEnum) -> TokenStream2 {
     UseFallback::Yes
   };
 
-  let validator_impl = wrap_with_imports(&[generate_oneof_validator(
+  let validator_impl = wrap_multiple_with_imports(&[generate_oneof_validator(
     use_fallback,
     &item.ident,
     &fields_data,

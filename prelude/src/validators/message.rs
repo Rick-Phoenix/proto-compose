@@ -42,7 +42,6 @@ pub trait ValidatedMessage: Default {
     }
   }
 
-  #[cfg(feature = "cel")]
   #[inline]
   #[must_use]
   #[doc(hidden)]

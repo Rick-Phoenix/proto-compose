@@ -4,12 +4,16 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
   let mut const_ident: Option<Ident> = None;
   let mut name: Option<String> = None;
   let mut package: Option<Path> = None;
-  let mut options = TokenStreamOr::vec();
-  let mut extern_path = TokensOr::<LitStr>::new(|span| quote_spanned! (span=> std::module_path!()));
+  let mut options = TokenStreamOr::new(|_| quote! { ::prelude::vec![] });
+  let mut extern_path =
+    TokensOr::<LitStr>::new(|span| quote_spanned! (span=> core::module_path!()));
   let mut imports: Vec<String> = Vec::new();
-  let mut extensions = IterTokensOr::<Path>::vec().with_formatter(|_, items| {
-    quote! { vec![ #(<#items as ::prelude::ProtoExtension>::as_proto_extension()),* ] }
-  });
+  let mut extensions = IterTokensOr::<Path>::new(
+    |_| quote! { ::prelude::vec![] },
+    |_, items| {
+      quote! { ::prelude::vec![ #(<#items as ::prelude::ProtoExtension>::as_proto_extension()),* ] }
+    },
+  );
   let mut edition = TokenStreamOr::new(|_| quote! { ::prelude::Edition::Proto3 });
 
   let parser = syn::meta::parser(|meta| {
@@ -53,6 +57,8 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
   let file = name.ok_or_else(|| error_call_site!("Missing `file` attribute"))?;
   let package = package.ok_or_else(|| error_call_site!("Missing `package` attribute"))?;
 
+  let inventory_cfg_guard = guard_inventory_on_no_std();
+
   Ok(quote! {
     #[doc(hidden)]
     #[allow(unused)]
@@ -66,13 +72,14 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
     #[allow(unused)]
     const __PROTO_FILE: ::prelude::FileReference = #const_ident;
 
+    #inventory_cfg_guard
     ::prelude::inventory::submit! {
       ::prelude::RegistryFile {
         name: __PROTO_FILE.name,
         package: __PROTO_FILE.package,
         edition: #edition,
         options: || #options.into_iter().collect(),
-        imports: || vec![ #(#imports),* ],
+        imports: || ::prelude::vec![ #(#imports),* ],
         extensions: || #extensions
       }
     }

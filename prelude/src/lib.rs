@@ -7,7 +7,10 @@
 #[cfg(any(test, feature = "std"))]
 extern crate std;
 
-extern crate alloc;
+pub use alloc::{format, string::String, string::ToString, vec, vec::Vec};
+
+#[doc(hidden)]
+pub extern crate alloc;
 
 #[cfg(feature = "cel")]
 pub use ::cel;
@@ -19,11 +22,7 @@ use ::bytes::Bytes;
 use alloc::{
   borrow::Cow,
   collections::{BTreeMap, BTreeSet},
-  format,
-  string::{String, ToString},
   sync::Arc,
-  vec,
-  vec::Vec,
 };
 use core::borrow::Borrow;
 use core::fmt::{Debug, Display};
@@ -59,6 +58,9 @@ use thiserror::Error;
 mod oneof;
 mod options;
 pub mod validators;
+#[cfg(not(feature = "std"))]
+use hashbrown::HashSet;
+#[cfg(feature = "std")]
 use std::collections::HashSet;
 mod field;
 mod file;

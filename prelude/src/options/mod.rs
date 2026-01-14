@@ -14,8 +14,9 @@ pub struct ProtoOption {
 }
 
 /// An enum representing values for protobuf options.
-#[derive(Clone, Debug, PartialEq, Template)]
-#[template(path = "option_value.proto.j2")]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "std", derive(Template))]
+#[cfg_attr(feature = "std", template(path = "option_value.proto.j2"))]
 pub enum OptionValue {
   Bool(bool),
   Int(i64),

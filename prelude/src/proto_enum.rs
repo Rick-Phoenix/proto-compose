@@ -24,8 +24,9 @@ pub trait ProtoEnumSchema: TryFrom<i32> + Default + ProtoEnum {
   }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Template)]
-#[template(path = "enum.proto.j2")]
+#[derive(Debug, Default, Clone, PartialEq)]
+#[cfg_attr(feature = "std", derive(Template))]
+#[cfg_attr(feature = "std", template(path = "enum.proto.j2"))]
 pub struct Enum {
   pub short_name: &'static str,
   pub name: &'static str,

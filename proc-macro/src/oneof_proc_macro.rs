@@ -150,7 +150,7 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
   let validator_impl = oneof_ctx.generate_validator();
   let schema_impls = oneof_ctx.generate_schema_impl();
 
-  let wrapped_items = wrap_with_imports(&[schema_impls, validator_impl]);
+  let wrapped_items = wrap_multiple_with_imports(&[schema_impls, validator_impl]);
 
   let errors = errors.iter().map(|e| e.to_compile_error());
 

@@ -124,21 +124,24 @@ impl Validator<Timestamp> for TimestampValidator {
         return;
       }
 
-      if self.gt_now && !(val + self.now_tolerance).is_future() {
-        ctx.add_violation(TIMESTAMP_GT_NOW_VIOLATION, "must be in the future");
-      }
-
-      if self.lt_now && !val.is_past() {
-        ctx.add_violation(TIMESTAMP_LT_NOW_VIOLATION, "must be in the past");
-      }
-
-      if let Some(range) = self.within
-        && !val.is_within_range_from_now(range)
+      #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
       {
-        ctx.add_violation(
-          TIMESTAMP_WITHIN_VIOLATION,
-          &format!("must be within {range} from now"),
-        );
+        if self.gt_now && !(val + self.now_tolerance).is_future() {
+          ctx.add_violation(TIMESTAMP_GT_NOW_VIOLATION, "must be in the future");
+        }
+
+        if self.lt_now && !val.is_past() {
+          ctx.add_violation(TIMESTAMP_LT_NOW_VIOLATION, "must be in the past");
+        }
+
+        if let Some(range) = self.within
+          && !val.is_within_range_from_now(range)
+        {
+          ctx.add_violation(
+            TIMESTAMP_WITHIN_VIOLATION,
+            &format!("must be within {range} from now"),
+          );
+        }
       }
 
       if let Some(gt) = self.gt

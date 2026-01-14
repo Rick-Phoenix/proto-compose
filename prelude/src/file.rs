@@ -1,8 +1,9 @@
 use crate::*;
 use hashbrown::HashSet;
 
-#[derive(Debug, PartialEq, Template)]
-#[template(path = "file.proto.j2")]
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "std", derive(Template))]
+#[cfg_attr(feature = "std", template(path = "file.proto.j2"))]
 pub struct ProtoFile {
   pub name: &'static str,
   pub package: &'static str,

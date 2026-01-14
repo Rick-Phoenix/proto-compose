@@ -53,8 +53,9 @@ pub trait ProtoMessage: Default {
   fn type_url() -> &'static str;
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Template)]
-#[template(path = "message.proto.j2")]
+#[derive(Debug, Default, Clone, PartialEq)]
+#[cfg_attr(feature = "std", derive(Template))]
+#[cfg_attr(feature = "std", template(path = "message.proto.j2"))]
 pub struct Message {
   pub short_name: &'static str,
   pub name: &'static str,

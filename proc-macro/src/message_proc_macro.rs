@@ -136,7 +136,7 @@ pub fn message_proc_macro(mut item: ItemStruct, macro_attrs: TokenStream2) -> To
   let validator_impl = message_ctx.generate_validator();
   let schema_impls = message_ctx.generate_schema_impls();
 
-  let wrapped_items = wrap_with_imports(&[schema_impls, validator_impl]);
+  let wrapped_items = wrap_multiple_with_imports(&[schema_impls, validator_impl]);
 
   let errors = errors.iter().map(|e| e.to_compile_error());
 
