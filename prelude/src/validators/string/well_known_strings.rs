@@ -101,11 +101,11 @@ pub(crate) use regex_checks::*;
 
 #[cfg(feature = "regex")]
 mod regex_checks {
-  use std::sync::LazyLock;
+  use crate::Lazy;
 
   use regex::Regex;
 
-  static EMAIL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+  static EMAIL_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$").expect("Failed to create email regex")
   });
 
@@ -113,17 +113,17 @@ mod regex_checks {
     EMAIL_REGEX.is_match(s)
   }
 
-  static HTTP_HEADER_NAME_STRICT_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^:?[0-9a-zA-Z!#$%&'*+-.^_|~`]+$").unwrap());
+  static HTTP_HEADER_NAME_STRICT_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^:?[0-9a-zA-Z!#$%&'*+-.^_|~`]+$").unwrap());
 
-  static HTTP_HEADER_NAME_LOOSE_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^[^\u0000\u000A\u000D]+$").unwrap());
+  static HTTP_HEADER_NAME_LOOSE_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[^\u0000\u000A\u000D]+$").unwrap());
 
-  static HTTP_HEADER_VALUE_STRICT_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^[^\x00-\x08\x0A-\x1F\x7F]*$").unwrap());
+  static HTTP_HEADER_VALUE_STRICT_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[^\x00-\x08\x0A-\x1F\x7F]*$").unwrap());
 
-  static HTTP_HEADER_VALUE_LOOSE_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^[^\u0000\u000A\u000D]*$").unwrap());
+  static HTTP_HEADER_VALUE_LOOSE_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[^\u0000\u000A\u000D]*$").unwrap());
 
   #[must_use]
   pub(crate) fn is_valid_http_header_name(s: &str, strict: bool) -> bool {
@@ -160,15 +160,15 @@ mod regex_checks {
       return false;
     }
 
-    static ULID_REGEX: LazyLock<Regex> =
+    static ULID_REGEX: Lazy<Regex> =
       // Case insensitive (?i), strict first char check
-      LazyLock::new(|| Regex::new(r"(?i)^[0-7][0-9A-HJKMNP-TV-Z]{25}$").unwrap());
+      Lazy::new(|| Regex::new(r"(?i)^[0-7][0-9A-HJKMNP-TV-Z]{25}$").unwrap());
 
     ULID_REGEX.is_match(val)
   }
 
   pub(crate) fn is_valid_uuid(s: &str) -> bool {
-    static UUID_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    static UUID_REGEX: Lazy<Regex> = Lazy::new(|| {
       Regex::new(r"^(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$").unwrap()
     });
 
@@ -180,8 +180,7 @@ mod regex_checks {
   }
 
   pub(crate) fn is_valid_tuuid(s: &str) -> bool {
-    static TUUID_REGEX: LazyLock<Regex> =
-      LazyLock::new(|| Regex::new(r"^(?i)[0-9a-f]{32}$").unwrap());
+    static TUUID_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(?i)[0-9a-f]{32}$").unwrap());
 
     if s.is_empty() {
       return false;

@@ -64,7 +64,7 @@ pub fn field_validator_tokens(field_data: &FieldData, item_kind: ItemKind) -> Op
       };
 
       quote_spanned! {*span=>
-        static #validator_static_ident: LazyLock<#validator_name> = LazyLock::new(|| {
+        static #validator_static_ident: ::prelude::Lazy<#validator_name> = ::prelude::Lazy::new(|| {
           #validator_expr
         });
 
@@ -109,17 +109,17 @@ pub fn generate_message_validator(
   let has_cel_rules = !top_level_cel_rules.is_empty();
 
   let cel_rules_method = has_cel_rules.then(|| {
-      quote_spanned! {top_level_cel_rules.span()=>
-        #[inline]
-        fn cel_rules() -> &'static [::prelude::CelProgram] {
-          static PROGRAMS: std::sync::LazyLock<Vec<::prelude::CelProgram>> = std::sync::LazyLock::new(|| {
-            #top_level_cel_rules
-          });
+    quote_spanned! {top_level_cel_rules.span()=>
+      #[inline]
+      fn cel_rules() -> &'static [::prelude::CelProgram] {
+        static PROGRAMS: ::prelude::Lazy<Vec<::prelude::CelProgram>> = ::prelude::Lazy::new(|| {
+          #top_level_cel_rules
+        });
 
-          &PROGRAMS
-        }
+        &PROGRAMS
       }
-    });
+    }
+  });
 
   let cel_rules_call = has_cel_rules.then(|| {
     quote_spanned! {top_level_cel_rules.span()=>

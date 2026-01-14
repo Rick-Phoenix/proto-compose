@@ -20,7 +20,6 @@ pub const fn is_no_std() -> bool {
 pub fn wrap_with_imports(tokens: &[TokenStream2]) -> TokenStream2 {
   quote! {
     const _: () = {
-      use std::sync::LazyLock;
       use ::prelude::*;
       use ::prelude::proto_types::{
         protovalidate::{Violations, FieldPathElement},

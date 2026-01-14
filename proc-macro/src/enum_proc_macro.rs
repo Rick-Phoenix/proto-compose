@@ -131,7 +131,7 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
 
   let proto_name_method = if let Some(parent) = &parent_message {
     quote_spanned! {parent.span()=>
-      static __FULL_NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+      static __FULL_NAME: ::prelude::Lazy<String> = ::prelude::Lazy::new(|| {
         format!("{}.{}", <#parent as ::prelude::ProtoMessage>::proto_name(), #proto_name)
       });
 

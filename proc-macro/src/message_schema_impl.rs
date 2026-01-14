@@ -97,7 +97,7 @@ impl MessageCtx<'_> {
 
     let name_method = if let Some(parent) = parent_message {
       quote_spanned! {parent.span()=>
-        static __NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+        static __NAME: ::prelude::Lazy<String> = ::prelude::Lazy::new(|| {
           format!("{}.{}", <#parent as ::prelude::ProtoMessage>::proto_name(), #proto_name)
         });
 
@@ -145,7 +145,7 @@ impl MessageCtx<'_> {
         const SHORT_NAME: &str = #proto_name;
 
         fn type_url() -> &'static str {
-          static URL: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+          static URL: ::prelude::Lazy<String> = ::prelude::Lazy::new(|| {
             format!("/{}.{}", <#proto_struct as ::prelude::ProtoMessage>::PACKAGE, <#proto_struct as ::prelude::ProtoMessage>::proto_name())
           });
 
@@ -153,7 +153,7 @@ impl MessageCtx<'_> {
         }
 
         fn full_name() -> &'static str {
-          static NAME: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+          static NAME: ::prelude::Lazy<String> = ::prelude::Lazy::new(|| {
             format!("{}.{}", <#proto_struct as ::prelude::ProtoMessage>::PACKAGE, <#proto_struct as ::prelude::ProtoMessage>::proto_name())
           });
 
