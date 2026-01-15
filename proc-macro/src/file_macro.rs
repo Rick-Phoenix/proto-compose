@@ -221,10 +221,7 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
   let package = package.ok_or_else(|| error_call_site!("Missing `package` attribute"))?;
 
   let inventory_call = has_inventory_feat().then(|| {
-    let inventory_cfg_guard = guard_inventory_on_no_std();
-
     quote! {
-      #inventory_cfg_guard
       ::prelude::inventory::submit! {
         ::prelude::RegistryFile {
           name: __PROTO_FILE.name,

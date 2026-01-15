@@ -107,10 +107,7 @@ pub fn process_service_derive(item: &ItemEnum) -> Result<TokenStream2, Error> {
   let options_tokens = options_tokens(Span::call_site(), &service_options, deprecated);
 
   let inventory_call = has_inventory_feat().then(|| {
-    let inventory_cfg_guard = guard_inventory_on_no_std();
-
     quote! {
-      #inventory_cfg_guard
       ::prelude::inventory::submit! {
         ::prelude::RegistryService {
           package: __PROTO_FILE.package,

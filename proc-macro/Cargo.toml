@@ -26,9 +26,8 @@ bytes = "1"
 bool-enum = { workspace = true }
 
 [features]
-default = ["std", "inventory", "cel"]
+default = ["inventory", "cel"]
 
 reflection = ["dep:prost-reflect"]
 inventory = []
-cel = ["std"]
-std = []
+cel = []

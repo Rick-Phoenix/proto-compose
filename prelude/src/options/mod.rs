@@ -1,7 +1,6 @@
 mod common_options;
 
 use ::bytes::Bytes;
-use askama::Template;
 pub use common_options::*;
 use proto_types::{Duration, Timestamp, protovalidate::Ignore};
 

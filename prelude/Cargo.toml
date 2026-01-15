@@ -63,7 +63,6 @@ std = [
   "askama/std",
   "thiserror/std",
   "float_eq/std",
-  "proc-macro-impls/std",
   "fluent-uri/std",
   "ipnet/std",
   "chrono?/std",

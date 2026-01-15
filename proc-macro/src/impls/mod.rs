@@ -13,20 +13,12 @@ pub use message_validator_impl::*;
 mod oneof_consistency_checks;
 pub use oneof_consistency_checks::*;
 
-pub const fn is_no_std() -> bool {
-  cfg!(not(feature = "std"))
-}
-
 pub const fn has_cel_feature() -> bool {
   cfg!(feature = "cel")
 }
 
 pub const fn has_inventory_feat() -> bool {
   cfg!(feature = "inventory")
-}
-
-pub fn guard_inventory_on_no_std() -> Option<TokenStream2> {
-  is_no_std().then(|| quote! { #[cfg(feature = "std")] })
 }
 
 pub fn wrap_with_imports(tokens: &TokenStream2) -> TokenStream2 {
