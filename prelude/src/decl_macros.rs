@@ -1,4 +1,11 @@
 #[macro_export]
+macro_rules! package_schema {
+  ($name:expr, files = $files:expr) => {
+    $crate::Package::new($name).with_files($files)
+  };
+}
+
+#[macro_export]
 macro_rules! proto_option {
   ( $name:expr => { $($key:expr => $val:expr),* $(,)? } ) => {
     $crate::ProtoOption {

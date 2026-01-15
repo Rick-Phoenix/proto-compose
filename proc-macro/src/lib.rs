@@ -107,6 +107,14 @@ pub fn define_proto_file(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
+pub fn file_schema(input: TokenStream) -> TokenStream {
+  match schema_file_macro(input.into()) {
+    Ok(output) => output.into(),
+    Err(e) => e.into_compile_error().into(),
+  }
+}
+
+#[proc_macro]
 pub fn proto_package(input: TokenStream) -> TokenStream {
   match package_macro_impl(input.into()) {
     Ok(output) => output.into(),

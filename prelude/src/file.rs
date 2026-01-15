@@ -112,12 +112,23 @@ impl ProtoFile {
     }
   }
 
-  pub const fn edition(&mut self, edition: Edition) {
+  pub fn with_options(&mut self, options: impl IntoIterator<Item = ProtoOption>) -> &mut Self {
+    self.options.extend(options);
+    self
+  }
+
+  pub fn with_imports(&mut self, imports: impl IntoIterator<Item = &'static str>) -> &mut Self {
+    self.imports.extend(imports);
+    self
+  }
+
+  pub const fn with_edition(&mut self, edition: Edition) -> &mut Self {
     self.edition = edition;
+    self
   }
 
   #[track_caller]
-  pub fn merge_with(&mut self, other: Self) {
+  pub fn merge_with(&mut self, other: Self) -> &mut Self {
     if self.name != other.name {
       panic!(
         "Cannot merge file `{}` with file `{}` as they have different names",
@@ -138,26 +149,32 @@ impl ProtoFile {
     self.services.extend(other.services);
     self.extensions.extend(other.extensions);
     self.options.extend(other.options);
+
+    self
   }
 
-  pub fn add_messages<I: IntoIterator<Item = Message>>(&mut self, messages: I) {
+  pub fn with_messages<I: IntoIterator<Item = Message>>(&mut self, messages: I) -> &mut Self {
     for mut message in messages {
       message.register_imports(&mut self.imports);
       message.file = self.name;
 
       self.messages.push(message);
     }
+
+    self
   }
 
-  pub fn add_enums<I: IntoIterator<Item = Enum>>(&mut self, enums: I) {
+  pub fn with_enums<I: IntoIterator<Item = Enum>>(&mut self, enums: I) -> &mut Self {
     for mut enum_ in enums {
       enum_.file = self.name;
 
       self.enums.push(enum_);
     }
+
+    self
   }
 
-  pub fn add_services<I: IntoIterator<Item = Service>>(&mut self, services: I) {
+  pub fn with_services<I: IntoIterator<Item = Service>>(&mut self, services: I) -> &mut Self {
     for service in services {
       for (request, response) in service
         .handlers
@@ -174,9 +191,11 @@ impl ProtoFile {
 
       self.services.push(service);
     }
+
+    self
   }
 
-  pub fn add_extensions<I: IntoIterator<Item = Extension>>(&mut self, extensions: I) {
+  pub fn with_extensions<I: IntoIterator<Item = Extension>>(&mut self, extensions: I) -> &mut Self {
     self
       .imports
       .set
@@ -185,5 +204,7 @@ impl ProtoFile {
     for ext in extensions {
       self.extensions.push(ext);
     }
+
+    self
   }
 }

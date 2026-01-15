@@ -4,7 +4,7 @@
   clippy::struct_field_names
 )]
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fs, path::PathBuf};
 
 use prelude::proto_types::{Duration, Timestamp};
 
@@ -35,9 +35,28 @@ fn file_schema_output() {
 fn test_renders() {
   let pkg = RENDERING_PKG.get_package();
 
-  let output = concat!(env!("CARGO_MANIFEST_DIR"), "/proto_test");
+  let output1 = PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/proto_test"));
 
-  pkg.render_files(output).unwrap();
+  pkg.render_files(&output1).unwrap();
+
+  let manual_file = file_schema!(
+    name = "rendering.proto",
+    messages = [TestMessage = { messages = [Nested1 = { messages = [Nested2] }] }],
+    extensions = [TestExtension],
+    options = test_options(),
+    services = [TestService],
+    enums = [TestEnum]
+  );
+
+  let manual_pkg = package_schema!("rendering", files = [manual_file]);
+  let output2 = PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/proto_test2"));
+
+  manual_pkg.render_files(&output2).unwrap();
+
+  let first_content = fs::read_to_string(output1.join("rendering.proto")).unwrap();
+  let second_content = fs::read_to_string(output2.join("rendering.proto")).unwrap();
+
+  assert_eq_pretty!(first_content, second_content);
 }
 
 fn test_option() -> OptionMessage {

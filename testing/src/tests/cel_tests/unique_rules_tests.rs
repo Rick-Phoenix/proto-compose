@@ -18,7 +18,7 @@ struct FieldDuplicateRules {
 fn field_duplicate_rules() {
   let mut file = ProtoFile::new("abc", "abc");
 
-  file.add_messages([FieldDuplicateRules::proto_schema()]);
+  file.with_messages([FieldDuplicateRules::proto_schema()]);
 
   let package = Package {
     name: "abc",
@@ -39,7 +39,7 @@ struct MsgDuplicateRules {
 fn msg_duplicate_rules() {
   let mut file = ProtoFile::new("abc", "abc");
 
-  file.add_messages([MsgDuplicateRules::proto_schema()]);
+  file.with_messages([MsgDuplicateRules::proto_schema()]);
 
   let package = Package {
     name: "abc",
@@ -60,7 +60,7 @@ struct MsgAndFieldDuplicateRules {
 fn msg_and_field_duplicate_rules() {
   let mut file = ProtoFile::new("abc", "abc");
 
-  file.add_messages([MsgAndFieldDuplicateRules::proto_schema()]);
+  file.with_messages([MsgAndFieldDuplicateRules::proto_schema()]);
 
   let package = Package {
     name: "abc",
@@ -89,7 +89,7 @@ struct MsgAndOneofDuplicateRules {
 fn msg_and_oneof_duplicate_rules() {
   let mut file = ProtoFile::new("abc", "abc");
 
-  file.add_messages([MsgAndOneofDuplicateRules::proto_schema()]);
+  file.with_messages([MsgAndOneofDuplicateRules::proto_schema()]);
 
   let package = Package {
     name: "abc",
@@ -111,7 +111,7 @@ struct FieldAndOneofDuplicateRules {
 fn field_and_oneof_duplicate_rules() {
   let mut file = ProtoFile::new("abc", "abc");
 
-  file.add_messages([FieldAndOneofDuplicateRules::proto_schema()]);
+  file.with_messages([FieldAndOneofDuplicateRules::proto_schema()]);
 
   let package = Package {
     name: "abc",
@@ -139,7 +139,7 @@ struct OneofDuplicateRules {
 fn oneof_duplicate_rules() {
   let mut file = ProtoFile::new("abc", "abc");
 
-  file.add_messages([OneofDuplicateRules::proto_schema()]);
+  file.with_messages([OneofDuplicateRules::proto_schema()]);
 
   let package = Package {
     name: "abc",
@@ -162,7 +162,7 @@ struct BenignDuplicateRules {
 fn benign_duplicate_rules() {
   let mut file = ProtoFile::new("abc", "abc");
 
-  file.add_messages([BenignDuplicateRules::proto_schema()]);
+  file.with_messages([BenignDuplicateRules::proto_schema()]);
 
   let package = Package {
     name: "abc",

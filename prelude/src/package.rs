@@ -107,8 +107,13 @@ impl Package {
     }
   }
 
-  pub fn add_files(&mut self, files: impl IntoIterator<Item = ProtoFile>) {
-    self.files.extend(files);
+  #[must_use]
+  pub fn with_files(mut self, files: impl IntoIterator<Item = ProtoFile>) -> Self {
+    self.files.extend(files.into_iter().map(|mut f| {
+      f.package = self.name;
+      f
+    }));
+    self
   }
 
   #[cfg(feature = "cel")]

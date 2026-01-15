@@ -99,6 +99,18 @@ impl Message {
         .chain(oneof_vec.into_iter().flatten())
     })
   }
+
+  #[must_use]
+  pub fn with_nested_messages(mut self, messages: impl IntoIterator<Item = Self>) -> Self {
+    self.messages.extend(messages);
+    self
+  }
+
+  #[must_use]
+  pub fn with_nested_enums(mut self, enums: impl IntoIterator<Item = Enum>) -> Self {
+    self.enums.extend(enums);
+    self
+  }
 }
 
 #[derive(Debug, Clone, PartialEq)]

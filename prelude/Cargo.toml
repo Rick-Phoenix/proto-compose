@@ -24,7 +24,7 @@ bytes = { version = "1", default-features = false }
 askama = { version = "0.15", default-features = false, features = [
   "derive",
   "config",
-] }
+], optional = true }
 thiserror = { version = "2", default-features = false }
 log = "0.4"
 owo-colors = { version = "4" }
@@ -52,6 +52,7 @@ chrono = ["proto-types/chrono", "dep:chrono"]
 chrono-wasm = ["chrono", "chrono/wasmbind", "proto-types/chrono-wasm"]
 
 std = [
+  "dep:askama",
   "dep:inventory",
   "ordermap/std",
   "ordered-float/std",

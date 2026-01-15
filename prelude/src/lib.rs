@@ -37,6 +37,7 @@ use hashbrown::HashMap;
 #[cfg(feature = "std")]
 use std::collections::HashMap;
 
+#[cfg(feature = "std")]
 use askama::Template;
 use float_eq::{FloatEq, float_eq};
 #[doc(hidden)]
