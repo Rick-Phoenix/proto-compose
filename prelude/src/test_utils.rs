@@ -6,7 +6,6 @@ pub enum ConsistencyError {
   ConstWithOtherRules,
   #[error(transparent)]
   OverlappingLists(#[from] OverlappingListsError),
-  #[cfg(feature = "cel")]
   #[error(transparent)]
   CelError(#[from] CelError),
   #[error("{0}")]
@@ -58,7 +57,6 @@ impl Display for OneofErrors {
 pub struct MessageTestError {
   pub message_full_name: &'static str,
   pub field_errors: Vec<FieldError>,
-  #[cfg(feature = "cel")]
   pub cel_errors: Vec<CelError>,
 }
 
@@ -67,7 +65,6 @@ impl Display for MessageTestError {
     let Self {
       message_full_name,
       field_errors,
-      #[cfg(feature = "cel")]
       cel_errors,
     } = self;
 

@@ -132,7 +132,7 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
   let proto_name_method = if let Some(parent) = &parent_message {
     quote_spanned! {parent.span()=>
       static __FULL_NAME: ::prelude::Lazy<String> = ::prelude::Lazy::new(|| {
-        format!("{}.{}", <#parent as ::prelude::ProtoMessage>::proto_name(), #proto_name)
+        ::prelude::format!("{}.{}", <#parent as ::prelude::ProtoMessage>::proto_name(), #proto_name)
       });
 
       &*__FULL_NAME
@@ -152,7 +152,7 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
   } else {
     let rust_ident_str = enum_ident.to_string();
 
-    quote! { format!("::{}::{}", __PROTO_FILE.extern_path, #rust_ident_str) }
+    quote! { ::prelude::format!("::{}::{}", __PROTO_FILE.extern_path, #rust_ident_str) }
   };
 
   let variants_tokens = if error.is_some() {
@@ -331,8 +331,8 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
           name: <Self as ::prelude::ProtoEnum>::proto_name(),
           file: __PROTO_FILE.name,
           package: __PROTO_FILE.package,
-          variants: vec! [ #variants_tokens ],
-          reserved_names: vec![ #(#reserved_names),* ],
+          variants: ::prelude::vec! [ #variants_tokens ],
+          reserved_names: ::prelude::vec![ #(#reserved_names),* ],
           reserved_numbers: #reserved_numbers,
           options: #options_tokens.into_iter().collect(),
           rust_path: #rust_path_field

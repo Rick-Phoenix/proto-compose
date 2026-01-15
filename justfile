@@ -2,6 +2,9 @@
 test-all: test-shared-schemas test-schemas
     cargo test -p prelude -- --nocapture
 
+test-no-std:
+    cargo run -p test-no-std -- --nocapture
+
 test-schemas:
     cargo test -p testing -- --nocapture
     cargo test -p test-schemas -- --nocapture

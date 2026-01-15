@@ -61,7 +61,7 @@ pub fn process_extension_derive(
       fn as_proto_extension() -> ::prelude::Extension {
         ::prelude::Extension {
           target: ::prelude::ExtensionTarget::#target,
-          fields: vec![ #(#fields_tokens),* ]
+          fields: ::prelude::vec![ #(#fields_tokens),* ]
         }
       }
     }

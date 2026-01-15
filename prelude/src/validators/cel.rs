@@ -62,6 +62,11 @@ impl CelProgram {
   }
 }
 
+#[cfg(not(feature = "cel"))]
+#[derive(PartialEq, Eq, Debug, Clone, Error)]
+#[error("")]
+pub struct CelError;
+
 #[cfg(feature = "cel")]
 pub use cel_impls::*;
 

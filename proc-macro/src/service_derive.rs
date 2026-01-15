@@ -125,7 +125,7 @@ pub fn process_service_derive(item: &ItemEnum) -> Result<TokenStream2, Error> {
           name: #service_name,
           file: __PROTO_FILE.name,
           package: __PROTO_FILE.package,
-          handlers: vec![ #(#handlers_tokens),* ],
+          handlers: ::prelude::vec![ #(#handlers_tokens),* ],
           options: #options_tokens.into_iter().collect()
         }
       }

@@ -58,6 +58,18 @@ pub fn generate_message_consistency_checks(
     }
   });
 
+  let cel_programs_check = has_cel_feature().then(|| {
+    quote! {
+      let top_level_programs = Self::cel_rules();
+
+      if !top_level_programs.is_empty() {
+        if let Err(errs) = ::prelude::test_programs(top_level_programs, Self::default()) {
+          cel_errors.extend(errs);
+        }
+      }
+    }
+  });
+
   quote! {
     #auto_test_fn
 
@@ -71,14 +83,7 @@ pub fn generate_message_consistency_checks(
         let mut cel_errors: Vec<::prelude::CelError> = Vec::new();
 
         #consistency_checks_tokens
-
-        let top_level_programs = Self::cel_rules();
-
-        if !top_level_programs.is_empty() {
-          if let Err(errs) = ::prelude::test_programs(top_level_programs, Self::default()) {
-            cel_errors.extend(errs);
-          }
-        }
+        #cel_programs_check
 
         if !field_errors.is_empty() || !cel_errors.is_empty() {
           return Err(::prelude::MessageTestError {

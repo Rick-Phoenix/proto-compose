@@ -17,6 +17,10 @@ pub const fn is_no_std() -> bool {
   cfg!(not(feature = "std"))
 }
 
+pub const fn has_cel_feature() -> bool {
+  cfg!(feature = "cel")
+}
+
 pub fn guard_inventory_on_no_std() -> Option<TokenStream2> {
   is_no_std().then(|| quote! { #[cfg(feature = "std")] })
 }

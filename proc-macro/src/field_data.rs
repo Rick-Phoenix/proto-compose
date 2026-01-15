@@ -120,7 +120,7 @@ impl FieldData {
         let values = map.values.output_proto_type(self.span);
 
         if map.is_btree_map {
-          parse_quote_spanned! {self.span=> ::prelude::BTreeMap<#keys, #values> }
+          parse_quote_spanned! {self.span=> BTreeMap<#keys, #values> }
         } else {
           parse_quote_spanned! {self.span=> ::std::collections::HashMap<#keys, #values> }
         }

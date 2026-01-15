@@ -71,7 +71,7 @@ impl ProtoField {
         let values = map.values.field_proto_type_tokens(span);
 
         if map.is_btree_map {
-          quote_spanned! {span=> ::prelude::BTreeMap<#keys, #values> }
+          quote_spanned! {span=> BTreeMap<#keys, #values> }
         } else {
           quote_spanned! {span=> HashMap<#keys, #values> }
         }
@@ -149,7 +149,7 @@ impl ProtoField {
         let values = map.values.validator_target_type(span);
 
         if map.is_btree_map {
-          quote_spanned! {span=> ::prelude::BTreeMap<#keys, #values> }
+          quote_spanned! {span=> BTreeMap<#keys, #values> }
         } else {
           quote_spanned! {span=> ::std::collections::HashMap<#keys, #values> }
         }

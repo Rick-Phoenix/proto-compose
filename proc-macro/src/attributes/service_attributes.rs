@@ -8,7 +8,7 @@ pub struct ServiceOrHandlerAttrs {
 pub fn process_service_or_handler_attrs(
   attrs: &[Attribute],
 ) -> Result<ServiceOrHandlerAttrs, Error> {
-  let mut options = TokensOr::<TokenStream2>::vec();
+  let mut options = TokensOr::<TokenStream2>::new(|_| quote! { ::prelude::vec![] });
   let mut deprecated = false;
 
   for attr in attrs {
