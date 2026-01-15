@@ -41,7 +41,7 @@ use std::collections::HashMap;
 use askama::Template;
 use float_eq::{FloatEq, float_eq};
 #[doc(hidden)]
-#[cfg(feature = "std")]
+#[cfg(feature = "inventory")]
 pub use inventory;
 use ordered_float::{FloatCore, OrderedFloat};
 use owo_colors::OwoColorize;
@@ -81,9 +81,9 @@ pub use proto_type::*;
 use rendering_utils::*;
 pub use service::*;
 pub use validators::*;
-#[cfg(feature = "std")]
+#[cfg(feature = "inventory")]
 mod registry;
-#[cfg(feature = "std")]
+#[cfg(feature = "inventory")]
 pub use registry::*;
 mod extension;
 pub use extension::*;

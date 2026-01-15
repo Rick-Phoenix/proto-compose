@@ -244,21 +244,27 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
 
   let options_tokens = options_tokens(Span::call_site(), &enum_options, deprecated);
 
-  let inventory_cfg_guard = guard_inventory_on_no_std();
+  let inventory_call = has_inventory_feat().then(|| {
+    let inventory_cfg_guard = guard_inventory_on_no_std();
+
+    quote! {
+      #inventory_cfg_guard
+      ::prelude::inventory::submit! {
+        ::prelude::RegistryEnum {
+          parent_message: #parent_message_registry,
+          package: __PROTO_FILE.package,
+          enum_: || <#enum_ident as ::prelude::ProtoEnumSchema>::proto_schema()
+        }
+      }
+    }
+  });
 
   quote! {
     #[repr(i32)]
     #[derive(::prelude::macros::Enum, Hash, PartialEq, Eq, Debug, Clone, Copy)]
     #item
 
-    #inventory_cfg_guard
-    ::prelude::inventory::submit! {
-      ::prelude::RegistryEnum {
-        parent_message: #parent_message_registry,
-        package: __PROTO_FILE.package,
-        enum_: || <#enum_ident as ::prelude::ProtoEnumSchema>::proto_schema()
-      }
-    }
+    #inventory_call
 
     impl TryFrom<i32> for #enum_ident {
       type Error = ::prost::UnknownEnumValue;

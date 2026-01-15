@@ -220,7 +220,23 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
   let file = name.ok_or_else(|| error_call_site!("Missing `file` attribute"))?;
   let package = package.ok_or_else(|| error_call_site!("Missing `package` attribute"))?;
 
-  let inventory_cfg_guard = guard_inventory_on_no_std();
+  let inventory_call = has_inventory_feat().then(|| {
+    let inventory_cfg_guard = guard_inventory_on_no_std();
+
+    quote! {
+      #inventory_cfg_guard
+      ::prelude::inventory::submit! {
+        ::prelude::RegistryFile {
+          name: __PROTO_FILE.name,
+          package: __PROTO_FILE.package,
+          edition: #edition,
+          options: || #options.into_iter().collect(),
+          imports: || ::prelude::vec![ #(#imports),* ],
+          extensions: || #extensions
+        }
+      }
+    }
+  });
 
   Ok(quote! {
     #[doc(hidden)]
@@ -235,16 +251,6 @@ pub fn process_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
     #[allow(unused)]
     const __PROTO_FILE: ::prelude::FileReference = #const_ident;
 
-    #inventory_cfg_guard
-    ::prelude::inventory::submit! {
-      ::prelude::RegistryFile {
-        name: __PROTO_FILE.name,
-        package: __PROTO_FILE.package,
-        edition: #edition,
-        options: || #options.into_iter().collect(),
-        imports: || ::prelude::vec![ #(#imports),* ],
-        extensions: || #extensions
-      }
-    }
+    #inventory_call
   })
 }

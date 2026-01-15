@@ -133,17 +133,24 @@ impl MessageCtx<'_> {
     };
 
     let options_tokens = options_tokens(Span::call_site(), message_options, *deprecated);
-    let inventory_cfg_guard = guard_inventory_on_no_std();
 
-    output.extend(quote! {
-      #inventory_cfg_guard
-      ::prelude::inventory::submit! {
-        ::prelude::RegistryMessage {
-          package: __PROTO_FILE.package,
-          parent_message: #registry_parent_message,
-          message: || <#proto_struct as ::prelude::ProtoMessage>::proto_schema()
+    let inventory_call = has_inventory_feat().then(|| {
+      let inventory_cfg_guard = guard_inventory_on_no_std();
+
+      quote! {
+        #inventory_cfg_guard
+        ::prelude::inventory::submit! {
+          ::prelude::RegistryMessage {
+            package: __PROTO_FILE.package,
+            parent_message: #registry_parent_message,
+            message: || <#proto_struct as ::prelude::ProtoMessage>::proto_schema()
+          }
         }
       }
+    });
+
+    output.extend(quote! {
+      #inventory_call
 
       impl ::prelude::AsProtoType for #proto_struct {
         fn proto_type() -> ::prelude::ProtoType {

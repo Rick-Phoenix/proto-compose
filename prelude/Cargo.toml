@@ -46,14 +46,15 @@ chrono = { version = "0.4", default-features = false, features = [
 ], optional = true }
 
 [features]
-default = ["std", "regex", "cel", "chrono"]
+default = ["std", "regex", "cel", "chrono", "inventory"]
+
+inventory = ["std", "dep:inventory", "proc-macro-impls/inventory"]
 
 chrono = ["proto-types/chrono", "dep:chrono"]
 chrono-wasm = ["chrono", "chrono/wasmbind", "proto-types/chrono-wasm"]
 
 std = [
   "dep:askama",
-  "dep:inventory",
   "ordermap/std",
   "ordered-float/std",
   "regex?/std",
