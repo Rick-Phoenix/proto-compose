@@ -29,7 +29,7 @@ pub fn field_schema_tokens(data: &FieldData) -> TokenStream2 {
       }
     }
   } else {
-    let field_type_tokens = proto_field.field_proto_type_tokens(*span);
+    let field_type_tokens = proto_field.proto_field_target_type(*span);
 
     let validator_schema_tokens = validator
       .as_ref()
@@ -37,7 +37,18 @@ pub fn field_schema_tokens(data: &FieldData) -> TokenStream2 {
       .filter(|v| !v.is_fallback)
       .map_or_else(
         || quote_spanned! {*span=> None },
-        |e| quote_spanned! {*span=> Some(#e.into_schema()) },
+        |e| {
+          if let ProtoField::Map(_) = proto_field {
+            let validator_name = data.validator_name();
+            let validator_target_type = proto_field.validator_target_type(*span);
+
+            quote_spanned! {*span=>
+              Some(<#validator_name as ::prelude::Validator<#validator_target_type>>::into_schema(#e))
+            }
+          } else {
+            quote_spanned! {*span=> Some(#e.into_schema()) }
+          }
+        },
       );
 
     let options_tokens = options_tokens(*span, options, *deprecated);

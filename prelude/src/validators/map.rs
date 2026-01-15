@@ -7,48 +7,6 @@ use proto_types::protovalidate::{
 
 use super::*;
 
-pub struct ProtoMap<K, V>(PhantomData<K>, PhantomData<V>);
-
-impl<K: AsProtoMapKey, V: AsProtoType> AsProtoField for ProtoMap<K, V> {
-  fn as_proto_field() -> FieldType {
-    FieldType::Map {
-      keys: K::as_proto_map_key(),
-      values: V::proto_type(),
-    }
-  }
-}
-
-impl<K, V> ProtoValidator for ProtoMap<K, V>
-where
-  K: ProtoValidator,
-  V: ProtoValidator,
-  K::Target: Clone + Into<Subscript> + Default + Eq + Hash + IntoCelKey,
-  V::Target: Default + TryIntoCel,
-{
-  type Target = HashMap<K::Target, V::Target>;
-
-  type Validator = MapValidator<K, V>;
-  type Builder = MapValidatorBuilder<K, V>;
-}
-
-impl<K, V, S: builder::state::State> ValidatorBuilderFor<ProtoMap<K, V>>
-  for MapValidatorBuilder<K, V, S>
-where
-  K: ProtoValidator,
-  V: ProtoValidator,
-  K::Target: Clone + Into<Subscript> + Default + Eq + Hash + IntoCelKey,
-  V::Target: Default + TryIntoCel,
-{
-  type Target = HashMap<K::Target, V::Target>;
-  type Validator = MapValidator<K, V>;
-
-  #[inline]
-  #[doc(hidden)]
-  fn build_validator(self) -> Self::Validator {
-    self.build()
-  }
-}
-
 #[non_exhaustive]
 #[derive(Debug)]
 pub struct MapValidator<K, V>
@@ -71,6 +29,84 @@ where
   /// The maximum amount of key-value pairs that this field should have in order to be valid.
   pub max_pairs: Option<usize>,
   pub ignore: Ignore,
+}
+
+impl<K: AsProtoMapKey, V: AsProtoType> AsProtoField for HashMap<K, V> {
+  fn as_proto_field() -> FieldType {
+    FieldType::Map {
+      keys: K::as_proto_map_key(),
+      values: V::proto_type(),
+    }
+  }
+}
+
+impl<K: AsProtoMapKey, V: AsProtoType> AsProtoField for BTreeMap<K, V> {
+  fn as_proto_field() -> FieldType {
+    FieldType::Map {
+      keys: K::as_proto_map_key(),
+      values: V::proto_type(),
+    }
+  }
+}
+
+impl<K, V> ProtoValidator for HashMap<K, V>
+where
+  K: ProtoValidator,
+  V: ProtoValidator,
+  K::Target: Clone + Into<Subscript> + Default + Eq + Hash + IntoCelKey,
+  V::Target: Default + TryIntoCel,
+{
+  type Target = HashMap<K::Target, V::Target>;
+
+  type Validator = MapValidator<K, V>;
+  type Builder = MapValidatorBuilder<K, V>;
+}
+
+impl<K, V> ProtoValidator for BTreeMap<K, V>
+where
+  K: ProtoValidator,
+  V: ProtoValidator,
+  K::Target: Clone + Into<Subscript>,
+{
+  type Target = BTreeMap<K::Target, V::Target>;
+
+  type Validator = MapValidator<K, V>;
+  type Builder = MapValidatorBuilder<K, V>;
+}
+
+impl<K, V, S: builder::state::State> ValidatorBuilderFor<BTreeMap<K, V>>
+  for MapValidatorBuilder<K, V, S>
+where
+  K: ProtoValidator,
+  V: ProtoValidator,
+  K::Target: Clone + Into<Subscript>,
+{
+  type Target = BTreeMap<K::Target, V::Target>;
+  type Validator = MapValidator<K, V>;
+
+  #[inline]
+  #[doc(hidden)]
+  fn build_validator(self) -> Self::Validator {
+    self.build()
+  }
+}
+
+impl<K, V, S: builder::state::State> ValidatorBuilderFor<HashMap<K, V>>
+  for MapValidatorBuilder<K, V, S>
+where
+  K: ProtoValidator,
+  V: ProtoValidator,
+  K::Target: Clone + Into<Subscript> + Default + Eq + Hash + IntoCelKey,
+  V::Target: Default + TryIntoCel,
+{
+  type Target = HashMap<K::Target, V::Target>;
+  type Validator = MapValidator<K, V>;
+
+  #[inline]
+  #[doc(hidden)]
+  fn build_validator(self) -> Self::Validator {
+    self.build()
+  }
 }
 
 impl<K, V> Default for MapValidator<K, V>
@@ -130,7 +166,119 @@ where
   }))
 }
 
-impl<K, V> Validator<ProtoMap<K, V>> for MapValidator<K, V>
+impl<K, V> Validator<BTreeMap<K, V>> for MapValidator<K, V>
+where
+  K: ProtoValidator,
+  V: ProtoValidator,
+  K::Target: Clone + Into<Subscript>,
+{
+  type Target = BTreeMap<K::Target, V::Target>;
+  type UniqueStore<'a>
+    = UnsupportedStore<Self::Target>
+  where
+    Self: 'a;
+
+  #[inline]
+  #[doc(hidden)]
+  fn make_unique_store<'a>(&self, _: usize) -> Self::UniqueStore<'a>
+  where
+    Self: 'a,
+  {
+    UnsupportedStore::default()
+  }
+
+  fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
+    let mut errors = Vec::new();
+
+    if let Err(e) = check_length_rules(
+      None,
+      length_rule_value!("min_pairs", self.min_pairs),
+      length_rule_value!("max_pairs", self.max_pairs),
+    ) {
+      errors.push(e);
+    }
+
+    if let Some(keys_validator) = &self.keys
+      && let Err(e) = keys_validator.check_consistency()
+    {
+      errors.extend(e);
+    }
+
+    if let Some(values_validator) = &self.values
+      && let Err(e) = values_validator.check_consistency()
+    {
+      errors.extend(e);
+    }
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(errors)
+    }
+  }
+
+  #[doc(hidden)]
+  fn cel_rules(&self) -> Vec<CelRule> {
+    vec![]
+  }
+
+  #[cfg(feature = "cel")]
+  fn check_cel_programs_with(&self, _val: Self::Target) -> Result<(), Vec<CelError>> {
+    Ok(())
+  }
+
+  fn validate(&self, ctx: &mut ValidationCtx, val: Option<&Self::Target>) {
+    handle_ignore_always!(&self.ignore);
+    handle_ignore_if_zero_value!(&self.ignore, val.is_none_or(|v| v.is_empty()));
+
+    if let Some(val) = val {
+      if let Some(min_pairs) = self.min_pairs
+        && val.len() < min_pairs
+      {
+        ctx.add_violation(
+          MAP_MIN_PAIRS_VIOLATION,
+          &format!("must contain at least {min_pairs} pairs"),
+        );
+      }
+
+      if let Some(max_pairs) = self.max_pairs
+        && val.len() > max_pairs
+      {
+        ctx.add_violation(
+          MAP_MAX_PAIRS_VIOLATION,
+          &format!("cannot contain more than {max_pairs} pairs"),
+        );
+      }
+
+      let keys_validator = self.keys.as_ref();
+
+      let values_validator = self.values.as_ref();
+
+      if keys_validator.is_some() || values_validator.is_some() {
+        for (k, v) in val {
+          ctx.field_context.subscript = Some(k.clone().into());
+
+          if let Some(validator) = keys_validator {
+            ctx.field_context.field_kind = FieldKind::MapKey;
+
+            validator.validate(ctx, Some(k));
+          }
+
+          if let Some(validator) = values_validator {
+            ctx.field_context.field_kind = FieldKind::MapValue;
+
+            validator.validate(ctx, Some(v));
+          }
+        }
+
+        ctx.field_context.subscript = None;
+        ctx.field_context.field_kind = FieldKind::Map;
+      }
+    }
+  }
+}
+
+impl<K, V> Validator<HashMap<K, V>> for MapValidator<K, V>
 where
   K: ProtoValidator,
   V: ProtoValidator,
@@ -156,7 +304,7 @@ where
     let mut errors = Vec::new();
 
     #[cfg(feature = "cel")]
-    if let Err(e) = self.check_cel_programs() {
+    if let Err(e) = <Self as Validator<HashMap<K, V>>>::check_cel_programs(self) {
       errors.extend(e.into_iter().map(ConsistencyError::from));
     }
 

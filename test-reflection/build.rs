@@ -19,6 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   config
     .file_descriptor_set_path(&descriptor_path)
     .bytes(["."])
+    .btree_map([".test_schemas.v1.BTreeMapTest.map"])
     .out_dir(&out_dir);
 
   let desc_data = set_up_validators(&mut config, files, include_paths, &["test_schemas.v1"])?;

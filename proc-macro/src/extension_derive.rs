@@ -41,7 +41,7 @@ pub fn process_extension_derive(
       );
     }
 
-    let field_type_tokens = proto_field.field_proto_type_tokens(field.ident.span());
+    let field_type_tokens = proto_field.proto_field_target_type(field.ident.span());
 
     fields_tokens.push(quote_spanned! {field.ident.span()=>
       ::prelude::Field {

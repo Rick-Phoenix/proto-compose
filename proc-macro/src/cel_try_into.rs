@@ -140,15 +140,14 @@ pub(crate) fn derive_cel_value_struct(item: &ItemStruct) -> Result<TokenStream2,
           });
         }
 
-        RustType::HashMap((k, v)) => {
-          let keys_conversion_tokens = get_conversion_tokens(k, &quote_spanned! {span=> key });
+        RustType::HashMap((_, v)) | RustType::BTreeMap((_, v)) => {
           let values_conversion_tokens = get_conversion_tokens(v, &val_tokens);
 
           tokens.extend(quote_spanned! {span=>
             let mut field_map: ::std::collections::HashMap<::prelude::cel::objects::Key, ::prelude::cel::Value> = ::std::collections::HashMap::new();
 
             for (key, val) in self.#field_ident {
-              field_map.insert(#keys_conversion_tokens, #values_conversion_tokens);
+              field_map.insert(key.into(), #values_conversion_tokens);
             }
 
             fields.insert(#field_name.into(), ::prelude::cel::Value::Map(field_map.into()));

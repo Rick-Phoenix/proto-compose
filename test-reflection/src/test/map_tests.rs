@@ -1,6 +1,22 @@
-use maplit::hashmap;
+use maplit::{btreemap, hashmap};
 
 use super::*;
+
+// Nothing much to test here other than the BTreeMap
+// compiling successfully and having a working validator
+#[test]
+fn btree_map_tests() {
+  let mut msg = BTreeMapTest {
+    map: btreemap! { 1 => 1 },
+  };
+
+  assert!(msg.validate().is_ok(), "basic validation");
+
+  msg.map.insert(2, 2);
+  msg.map.insert(3, 3);
+
+  assert!(msg.validate().is_err());
+}
 
 #[test]
 fn map_tests() {

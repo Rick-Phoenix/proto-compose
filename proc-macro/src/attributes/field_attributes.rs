@@ -172,12 +172,16 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
   } else {
     // Field received no type information at all, we try to do some basic inference
     match type_info.type_.as_ref() {
-      RustType::HashMap((k, v)) => {
+      RustType::HashMap((k, v)) | RustType::BTreeMap((k, v)) => {
         let keys = ProtoMapKeys::from_path(&k.require_path()?)?;
 
         let values = ProtoType::from_primitive(&v.require_path()?)?;
 
-        let proto_map = ProtoMap { keys, values };
+        let proto_map = ProtoMap {
+          keys,
+          values,
+          is_btree_map: type_info.is_btree_map(),
+        };
 
         ProtoField::Map(proto_map)
       }

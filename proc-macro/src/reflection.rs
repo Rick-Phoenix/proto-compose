@@ -179,10 +179,17 @@ impl ProtoField {
     } else if desc.is_map()
       && let Kind::Message(map_desc) = desc.kind()
     {
+      let mut is_btree_map = false;
+
       let keys = ProtoMapKeys::from_descriptor(map_desc.map_entry_key_field().kind());
 
-      let RustType::HashMap((_, rust_values)) = type_info.type_.as_ref() else {
-        bail!(type_info, "Found map descriptor on a non HashMap field");
+      let rust_values = match type_info.type_.as_ref() {
+        RustType::HashMap((_, v)) => v,
+        RustType::BTreeMap((_, v)) => {
+          is_btree_map = true;
+          v
+        }
+        _ => bail!(type_info, "Found map descriptor on a non HashMap field"),
       };
 
       let values = ProtoType::from_descriptor(
@@ -191,7 +198,11 @@ impl ProtoField {
         found_enum_path,
       )?;
 
-      Self::Map(ProtoMap { keys, values })
+      Self::Map(ProtoMap {
+        keys,
+        values,
+        is_btree_map,
+      })
     } else if desc.supports_presence() {
       Self::Optional(ProtoType::from_descriptor(
         desc.kind(),

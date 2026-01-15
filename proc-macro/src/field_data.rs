@@ -10,8 +10,20 @@ impl FieldData {
       .map(|validator| {
         let ident_str = &self.ident_str;
 
+        let call = if let ProtoField::Map(_) = &self.proto_field {
+
+          let validator_name = self.validator_name();
+          let validator_target_type = self.proto_field.validator_target_type(self.span);
+
+          quote_spanned! {self.span=>
+            <#validator_name as ::prelude::Validator<#validator_target_type>>::check_consistency(&#validator)
+          }
+        } else {
+          quote_spanned! {self.span=> ::prelude::Validator::check_consistency(&#validator)}
+        };
+
         quote_spanned! {self.span=>
-          if let Err(errs) = ::prelude::Validator::check_consistency(&#validator) {
+          if let Err(errs) = #call {
             field_errors.push(::prelude::FieldError {
               field: #ident_str,
               errors: errs
@@ -48,7 +60,11 @@ impl FieldData {
       ProtoField::Map(map) => {
         let map_attr = format!("{}, {}", map.keys, map.values.as_prost_map_value());
 
-        quote_spanned! {self.span=> map = #map_attr }
+        if map.is_btree_map {
+          quote_spanned! {self.span=> btree_map = #map_attr }
+        } else {
+          quote_spanned! {self.span=> map = #map_attr }
+        }
       }
 
       ProtoField::Repeated(proto_type) => {
@@ -103,7 +119,11 @@ impl FieldData {
         let keys = map.keys.into_type().output_proto_type(self.span);
         let values = map.values.output_proto_type(self.span);
 
-        parse_quote_spanned! {self.span=> std::collections::HashMap<#keys, #values> }
+        if map.is_btree_map {
+          parse_quote_spanned! {self.span=> ::prelude::BTreeMap<#keys, #values> }
+        } else {
+          parse_quote_spanned! {self.span=> ::std::collections::HashMap<#keys, #values> }
+        }
       }
       ProtoField::Oneof(OneofInfo { path, .. }) => {
         parse_quote_spanned! {self.span=> Option<#path> }

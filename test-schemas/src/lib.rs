@@ -23,6 +23,12 @@ define_proto_file!(
   package = TEST_SCHEMAS
 );
 
+#[proto_message(no_auto_test)]
+pub struct BTreeMapTest {
+  #[proto(map(int32, int32), validate = |v| v.min_pairs(1).max_pairs(2))]
+  pub map: BTreeMap<i32, i32>,
+}
+
 #[proto_oneof(no_auto_test)]
 pub enum TestOneof2 {
   #[proto(tag = 1)]

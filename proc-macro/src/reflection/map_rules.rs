@@ -3,7 +3,7 @@ use super::*;
 impl RulesCtx {
   pub fn get_map_validator(self, map_data: &ProtoMap) -> BuilderTokens {
     let span = self.field_span;
-    let ProtoMap { keys, values } = map_data;
+    let ProtoMap { keys, values, .. } = map_data;
 
     let keys_validator_type = keys.into_type().validator_target_type(span);
     let values_validator_type = values.validator_target_type(span);

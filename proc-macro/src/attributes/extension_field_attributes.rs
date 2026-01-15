@@ -52,12 +52,16 @@ pub fn process_extension_field_attrs(field: &Field) -> Result<ExtensionFieldAttr
     field
   } else {
     match type_info.type_.as_ref() {
-      RustType::HashMap((k, v)) => {
+      RustType::HashMap((k, v)) | RustType::BTreeMap((k, v)) => {
         let keys = ProtoMapKeys::from_path(&k.require_path()?)?;
 
         let values = ProtoType::from_primitive(&v.require_path()?)?;
 
-        let proto_map = ProtoMap { keys, values };
+        let proto_map = ProtoMap {
+          keys,
+          values,
+          is_btree_map: type_info.is_btree_map(),
+        };
 
         ProtoField::Map(proto_map)
       }

@@ -64,16 +64,17 @@ impl ProtoField {
 
   // This one has to stay with `ProtoField` because it's used by the extension
   // macro which does not create FieldData
-  pub fn field_proto_type_tokens(&self, span: Span) -> TokenStream2 {
+  pub fn proto_field_target_type(&self, span: Span) -> TokenStream2 {
     let target_type = match self {
-      Self::Map(proto_map) => {
-        let keys = proto_map
-          .keys
-          .into_type()
-          .field_proto_type_tokens(span);
-        let values = proto_map.values.field_proto_type_tokens(span);
+      Self::Map(map) => {
+        let keys = map.keys.into_type().field_proto_type_tokens(span);
+        let values = map.values.field_proto_type_tokens(span);
 
-        quote_spanned! {span=> ::prelude::ProtoMap<#keys, #values> }
+        if map.is_btree_map {
+          quote_spanned! {span=> ::prelude::BTreeMap<#keys, #values> }
+        } else {
+          quote_spanned! {span=> HashMap<#keys, #values> }
+        }
       }
       Self::Oneof { .. } => quote! {
          compile_error!("Proto type tokens should not be called for oneofs, if you see this please report it as a bug")
@@ -147,7 +148,11 @@ impl ProtoField {
         let keys = map.keys.into_type().validator_target_type(span);
         let values = map.values.validator_target_type(span);
 
-        quote_spanned! {span=> ::prelude::ProtoMap<#keys, #values> }
+        if map.is_btree_map {
+          quote_spanned! {span=> ::prelude::BTreeMap<#keys, #values> }
+        } else {
+          quote_spanned! {span=> ::std::collections::HashMap<#keys, #values> }
+        }
       }
       Self::Oneof { .. } => quote! {
         compile_error!("validator target type should not be triggered for oneofs, please report the bug if you see this")

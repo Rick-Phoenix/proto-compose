@@ -83,6 +83,7 @@ impl Display for ProtoMapKeys {
 pub struct ProtoMap {
   pub keys: ProtoMapKeys,
   pub values: ProtoType,
+  pub is_btree_map: bool,
 }
 
 pub fn parse_map_with_context(
@@ -99,6 +100,8 @@ pub fn parse_map_with_context(
       0 => keys = Some(ProtoMapKeys::from_path(&meta.path)?),
       1 => {
         let values_type_info = if let RustType::HashMap((_, v)) = rust_type {
+          Some(v.as_ref())
+        } else if let RustType::BTreeMap((_, v)) = rust_type {
           Some(v.as_ref())
         } else {
           None
@@ -123,5 +126,9 @@ pub fn parse_map_with_context(
   let keys = keys.ok_or_else(|| meta.error("Missing key type"))?;
   let values = values.ok_or_else(|| meta.error("Missing values type"))?;
 
-  Ok(ProtoMap { keys, values })
+  Ok(ProtoMap {
+    keys,
+    values,
+    is_btree_map: rust_type.is_btree_map(),
+  })
 }
