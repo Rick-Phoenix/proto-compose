@@ -145,29 +145,6 @@ impl Validator<Timestamp> for TimestampValidator {
         return is_valid;
       }
 
-      #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
-      {
-        if self.gt_now && !(val + self.now_tolerance).is_future() {
-          ctx.add_violation(TIMESTAMP_GT_NOW_VIOLATION, "must be in the future");
-          handle_violation!(is_valid, ctx);
-        }
-
-        if self.lt_now && !val.is_past() {
-          ctx.add_violation(TIMESTAMP_LT_NOW_VIOLATION, "must be in the past");
-          handle_violation!(is_valid, ctx);
-        }
-
-        if let Some(range) = self.within
-          && !val.is_within_range_from_now(range)
-        {
-          ctx.add_violation(
-            TIMESTAMP_WITHIN_VIOLATION,
-            &format!("must be within {range} from now"),
-          );
-          handle_violation!(is_valid, ctx);
-        }
-      }
-
       if let Some(gt) = self.gt
         && val <= gt
       {
@@ -203,6 +180,29 @@ impl Validator<Timestamp> for TimestampValidator {
           &format!("must be earlier than or equal to {lte}"),
         );
         handle_violation!(is_valid, ctx);
+      }
+
+      #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
+      {
+        if self.gt_now && !(val + self.now_tolerance).is_future() {
+          ctx.add_violation(TIMESTAMP_GT_NOW_VIOLATION, "must be in the future");
+          handle_violation!(is_valid, ctx);
+        }
+
+        if self.lt_now && !val.is_past() {
+          ctx.add_violation(TIMESTAMP_LT_NOW_VIOLATION, "must be in the past");
+          handle_violation!(is_valid, ctx);
+        }
+
+        if let Some(range) = self.within
+          && !val.is_within_range_from_now(range)
+        {
+          ctx.add_violation(
+            TIMESTAMP_WITHIN_VIOLATION,
+            &format!("must be within {range} from now"),
+          );
+          handle_violation!(is_valid, ctx);
+        }
       }
 
       #[cfg(feature = "cel")]

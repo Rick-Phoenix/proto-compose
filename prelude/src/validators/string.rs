@@ -323,17 +323,6 @@ impl Validator<String> for StringValidator {
         handle_violation!(is_valid, ctx);
       }
 
-      #[cfg(feature = "regex")]
-      if let Some(pattern) = &self.pattern
-        && !pattern.is_match(val)
-      {
-        ctx.add_violation(
-          STRING_PATTERN_VIOLATION,
-          &format!("must match the pattern `{pattern}`"),
-        );
-        handle_violation!(is_valid, ctx);
-      }
-
       if let Some(prefix) = &self.prefix
         && !val.starts_with(&**prefix)
       {
@@ -367,6 +356,17 @@ impl Validator<String> for StringValidator {
         ctx.add_violation(
           STRING_NOT_CONTAINS_VIOLATION,
           &format!("cannot contain {substring}"),
+        );
+        handle_violation!(is_valid, ctx);
+      }
+
+      #[cfg(feature = "regex")]
+      if let Some(pattern) = &self.pattern
+        && !pattern.is_match(val)
+      {
+        ctx.add_violation(
+          STRING_PATTERN_VIOLATION,
+          &format!("must match the pattern `{pattern}`"),
         );
         handle_violation!(is_valid, ctx);
       }

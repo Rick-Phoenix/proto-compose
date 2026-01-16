@@ -196,17 +196,6 @@ impl Validator<Bytes> for BytesValidator {
         handle_violation!(is_valid, ctx);
       }
 
-      #[cfg(feature = "regex")]
-      if let Some(pattern) = &self.pattern
-        && !pattern.is_match(val)
-      {
-        ctx.add_violation(
-          BYTES_PATTERN_VIOLATION,
-          &format!("must match the pattern `{pattern}`"),
-        );
-        handle_violation!(is_valid, ctx);
-      }
-
       if let Some(prefix) = &self.prefix
         && !val.starts_with(prefix)
       {
@@ -235,6 +224,17 @@ impl Validator<Bytes> for BytesValidator {
         ctx.add_violation(
           BYTES_CONTAINS_VIOLATION,
           &format!("must contain {}", substring.escape_ascii()),
+        );
+        handle_violation!(is_valid, ctx);
+      }
+
+      #[cfg(feature = "regex")]
+      if let Some(pattern) = &self.pattern
+        && !pattern.is_match(val)
+      {
+        ctx.add_violation(
+          BYTES_PATTERN_VIOLATION,
+          &format!("must match the pattern `{pattern}`"),
         );
         handle_violation!(is_valid, ctx);
       }

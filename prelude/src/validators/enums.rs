@@ -136,6 +136,11 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
         return is_valid;
       }
 
+      if self.defined_only && T::try_from(val).is_err() {
+        ctx.add_violation(ENUM_DEFINED_ONLY_VIOLATION, "must be a known enum value");
+        handle_violation!(is_valid, ctx);
+      }
+
       if let Some(allowed_list) = &self.in_
         && !allowed_list.items.contains(&val)
       {
@@ -151,11 +156,6 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
         let err = ["cannot be one of these values: ", &forbidden_list.items_str].concat();
 
         ctx.add_violation(ENUM_NOT_IN_VIOLATION, &err);
-        handle_violation!(is_valid, ctx);
-      }
-
-      if self.defined_only && T::try_from(val).is_err() {
-        ctx.add_violation(ENUM_DEFINED_ONLY_VIOLATION, "must be a known enum value");
         handle_violation!(is_valid, ctx);
       }
 
