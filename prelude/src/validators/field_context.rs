@@ -2,7 +2,6 @@ use super::*;
 
 use proto_types::field_descriptor_proto::Type as ProtoPrimitive;
 use proto_types::protovalidate::field_path_element::Subscript;
-use smallvec::SmallVec;
 
 /// The context for the field being validated.
 #[derive(Clone, Debug)]
@@ -116,11 +115,11 @@ impl ValidationCtx<'_> {
 }
 
 pub struct ViolationsAcc {
-  inner: SmallVec<[Violation; 1]>,
+  inner: Vec<Violation>,
 }
 
 impl IntoIterator for ViolationsAcc {
-  type IntoIter = smallvec::IntoIter<[Violation; 1]>;
+  type IntoIter = vec::IntoIter<Violation>;
   type Item = Violation;
 
   #[inline]
@@ -197,17 +196,15 @@ impl ViolationsAcc {
   }
 
   #[must_use]
-  pub fn new() -> Self {
-    Self {
-      inner: SmallVec::new(),
-    }
+  pub const fn new() -> Self {
+    Self { inner: Vec::new() }
   }
 
   #[inline]
   #[must_use]
   pub fn to_vec(self) -> Violations {
     Violations {
-      violations: self.inner.to_vec(),
+      violations: self.inner,
     }
   }
 
@@ -218,16 +215,8 @@ impl ViolationsAcc {
 
   #[inline]
   #[must_use]
-  pub fn is_empty(&self) -> bool {
+  pub const fn is_empty(&self) -> bool {
     self.inner.is_empty()
-  }
-
-  pub fn into_result(self) -> Result<(), Vec<Violation>> {
-    if self.inner.is_empty() {
-      Ok(())
-    } else {
-      Err(self.inner.into_vec())
-    }
   }
 }
 

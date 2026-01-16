@@ -1192,7 +1192,6 @@ dependencies = [
  "proto-types",
  "regex",
  "similar-asserts",
- "smallvec",
  "thiserror 2.0.17",
 ]
 

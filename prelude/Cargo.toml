@@ -32,7 +32,6 @@ inventory = { version = "0.3", optional = true }
 ordermap = { version = "1", default-features = false }
 similar-asserts = { version = "1" }
 float_eq = { version = "1", default-features = false }
-smallvec = "1"
 proc-macro-impls = { path = "../proc-macro/", default-features = false }
 ipnet = { version = "2", default-features = false }
 fluent-uri = { version = "0.4", default-features = false }
