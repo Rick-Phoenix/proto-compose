@@ -9,7 +9,7 @@ macro_rules! bytes {
 }
 
 #[test]
-fn string_test() {
+fn bytes_test() {
   let ipv6: Bytes = bytes!("91bd:9c4e:f03a:e782:cdbc:96ba:7241:9f00");
 
   let mut msg = BytesRules {

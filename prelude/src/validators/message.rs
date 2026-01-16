@@ -5,7 +5,7 @@ use super::*;
 
 pub trait ValidatedMessage: Default {
   #[inline]
-  fn validate(&self) -> Result<(), Violations> {
+  fn validate_all(&self) -> Result<(), Violations> {
     let mut violations = ViolationsAcc::new();
 
     let mut ctx = ValidationCtx {
@@ -13,6 +13,26 @@ pub trait ValidatedMessage: Default {
       parent_elements: &mut vec![],
       violations: &mut violations,
       fail_fast: false,
+    };
+
+    self.nested_validate(&mut ctx);
+
+    if violations.is_empty() {
+      Ok(())
+    } else {
+      Err(violations.to_vec())
+    }
+  }
+
+  #[inline]
+  fn validate(&self) -> Result<(), Violations> {
+    let mut violations = ViolationsAcc::new();
+
+    let mut ctx = ValidationCtx {
+      field_context: None,
+      parent_elements: &mut vec![],
+      violations: &mut violations,
+      fail_fast: true,
     };
 
     self.nested_validate(&mut ctx);

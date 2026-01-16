@@ -201,10 +201,12 @@ where
             Num::CONST_VIOLATION,
             &format!("must be equal to {const_val}"),
           );
+
+          is_valid = false;
         }
 
         // Using `const` implies no other rules
-        return false;
+        return is_valid;
       }
 
       if self.finite && !val.is_finite() {

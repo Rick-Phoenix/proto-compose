@@ -122,10 +122,12 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
             ENUM_CONST_VIOLATION,
             &format!("must be equal to {const_val}"),
           );
+
+          is_valid = false;
         }
 
         // Using `const` implies no other rules
-        return false;
+        return is_valid;
       }
 
       if let Some(allowed_list) = &self.in_
