@@ -26,6 +26,8 @@ mod test {
   #[cfg(not(feature = "reflection"))]
   use test_schemas::TestOneof;
 
+  use prelude::proto_types::*;
+
   #[allow(unused)]
   pub(crate) fn full_rule_id_path<T: ValidatedMessage>(msg: &T) -> String {
     let violations = msg.validate().unwrap_err();
@@ -65,8 +67,10 @@ mod test {
   mod any_tests;
   mod bool_tests;
   mod bytes_tests;
+  mod const_rules_tests;
   mod duration_tests;
   mod enums_tests;
+  mod fail_fast_tests;
   mod field_mask_tests;
   mod map_tests;
   mod message_tests;

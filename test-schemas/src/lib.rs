@@ -23,6 +23,66 @@ define_proto_file!(
   package = TEST_SCHEMAS
 );
 
+#[proto_oneof(no_auto_test)]
+pub enum SimpleOneof {
+  #[proto(tag = 1, validate = |v| v.const_(1))]
+  A(i32),
+  #[proto(tag = 2)]
+  B(u32),
+}
+
+#[proto_message(no_auto_test)]
+pub struct SimpleMsg {
+  #[proto(validate = |v| v.const_(1))]
+  pub id: i32,
+  #[proto(validate = |v| v.min_len(2))]
+  pub name: String,
+}
+
+#[proto_message(no_auto_test)]
+pub struct FailFastTest {
+  #[proto(validate = |v| v.max_len(1).not_in(["abc"]))]
+  pub string: String,
+  #[proto(bytes, validate = |v| v.max_len(1).not_in([b"abc"]))]
+  pub bytes: Bytes,
+  #[proto(validate = |v| v.gt(1).not_in([1]))]
+  pub int: i32,
+  #[proto(validate = |v| v.gt(1.0).not_in([1.0]))]
+  pub float: f32,
+  #[proto(duration, validate = |v| v.gt(Duration::default()).not_in([Duration::default()]))]
+  pub duration: Option<Duration>,
+  #[proto(timestamp, validate = |v| v.gt_now().within(Duration::new(10, 0)))]
+  pub timestamp: Option<Timestamp>,
+  #[proto(field_mask, validate = |v| v.in_(["abc"]).not_in(["abcde"]))]
+  pub field_mask: Option<FieldMask>,
+  #[proto(enum_(TestEnum), validate = |v| v.defined_only().not_in([45]))]
+  pub enum_field: i32,
+  #[proto(oneof(tags(1, 2)))]
+  pub simple_oneof: Option<SimpleOneof>,
+  #[proto(message)]
+  pub message: Option<SimpleMsg>,
+}
+
+#[proto_message(no_auto_test)]
+pub struct ConstRulesTest {
+  #[proto(validate = |v| v.const_("abc").min_len(3))]
+  pub string: String,
+  #[proto(bytes, validate = |v| v.const_(b"abc").min_len(3))]
+  pub bytes: Bytes,
+  #[proto(validate = |v| v.const_(3).gt(2))]
+  pub int: i32,
+  #[proto(validate = |v| v.const_(3.0).gt(2.0))]
+  pub float: f32,
+  #[proto(duration, validate = |v| v.const_(Duration::new(1, 0)).gt(Duration::default()))]
+  pub duration: Option<Duration>,
+  #[proto(timestamp, validate = |v| v.const_(Timestamp::new(1, 0)).gt(Timestamp::default()))]
+  pub timestamp: Option<Timestamp>,
+  #[proto(field_mask, validate = |v| v.const_(["abc"]).in_(["abc"]))]
+  pub field_mask: Option<FieldMask>,
+  #[proto(enum_(TestEnum), validate = |v| v.const_(1).defined_only())]
+  pub enum_field: i32,
+}
+
 // Placing it here so I can check if reflection for these works fine
 #[proto_message(no_auto_test)]
 pub struct RustKeywords {
