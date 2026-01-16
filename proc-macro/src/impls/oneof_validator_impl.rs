@@ -31,10 +31,13 @@ pub fn generate_oneof_validator(
     }
   };
 
+  // Validators will always be populated if at least one field
+  // is a message, because we cannot know if it has validators
+  // of its own
   if validators_tokens.is_empty() {
     quote! {
       impl ::prelude::ValidatedOneof for #oneof_ident {
-        #[inline]
+        #[inline(always)]
         fn validate(&self, _: &mut ::prelude::ValidationCtx) -> bool {
           true
         }

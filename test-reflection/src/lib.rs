@@ -29,6 +29,7 @@ mod test {
   use prelude::proto_types::*;
 
   #[allow(unused)]
+  #[track_caller]
   pub(crate) fn full_rule_id_path<T: ValidatedMessage>(msg: &T) -> String {
     let violations = msg.validate().unwrap_err();
 
@@ -38,6 +39,7 @@ mod test {
   }
 
   #[allow(unused)]
+  #[track_caller]
   pub(crate) fn inspect_violations<T: ValidatedMessage>(msg: &T) {
     let violations = msg.validate().unwrap_err();
 
@@ -45,6 +47,7 @@ mod test {
   }
 
   #[allow(unused)]
+  #[track_caller]
   pub(crate) fn get_rules_ids<T: ValidatedMessage>(msg: &T) -> Vec<String> {
     let violations = msg.validate().unwrap_err();
 

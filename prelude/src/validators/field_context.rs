@@ -209,13 +209,14 @@ impl ViolationsAcc {
   }
 
   #[must_use]
+  #[inline]
   pub const fn new() -> Self {
     Self { inner: Vec::new() }
   }
 
   #[inline]
   #[must_use]
-  pub fn to_vec(self) -> Violations {
+  pub fn into_violations(self) -> Violations {
     Violations {
       violations: self.inner,
     }

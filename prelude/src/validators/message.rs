@@ -20,7 +20,7 @@ pub trait ValidatedMessage: Default {
     if violations.is_empty() {
       Ok(())
     } else {
-      Err(violations.to_vec())
+      Err(violations.into_violations())
     }
   }
 
@@ -40,7 +40,7 @@ pub trait ValidatedMessage: Default {
     if violations.is_empty() {
       Ok(())
     } else {
-      Err(violations.to_vec())
+      Err(violations.into_violations())
     }
   }
 

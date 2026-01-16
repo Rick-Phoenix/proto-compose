@@ -162,7 +162,7 @@ pub fn generate_message_validator(
 
   let has_cel_rules = !top_level_cel_rules.is_empty();
 
-  let cel_rules_method = has_cel_rules.then(|| {
+  let cel_methods = if has_cel_rules {
     quote_spanned! {top_level_cel_rules.span()=>
       #[inline]
       fn cel_rules() -> &'static [::prelude::CelProgram] {
@@ -173,39 +173,31 @@ pub fn generate_message_validator(
         &PROGRAMS
       }
     }
-  });
-
-  let cel_rules_call = has_cel_rules.then(|| {
-    quote_spanned! {top_level_cel_rules.span()=>
-      ::prelude::ValidatedMessage::validate_cel(self, ctx);
-    }
-  });
-
-  let validator_impl = if validators_tokens.is_empty() && !has_cel_rules {
+  } else {
+    // `cel_rules` will use the default impl
     quote! {
-      impl ::prelude::ValidatedMessage for #target_ident {
-        #[inline]
-        fn validate(&self) -> Result<(), ::prelude::Violations> {
-          Ok(())
-        }
-
-        #[doc(hidden)]
-        #[inline]
-        fn nested_validate(&self, ctx: &mut ::prelude::ValidationCtx) -> bool {
-          true
-        }
+      #[inline(always)]
+      fn validate_cel(&self, _: &mut ::prelude::ValidationCtx) -> bool {
+        true
       }
     }
-  } else {
+  };
+
+  // Validators will always be populated if a field is marked
+  // as a message (or vec/map of messages), or as a oneof,
+  // because we cannot know if it has validators of its own.
+  let has_validators = !validators_tokens.is_empty() || has_cel_rules;
+
+  let validator_impl = if has_validators {
     quote! {
       impl ::prelude::ValidatedMessage for #target_ident {
-        #cel_rules_method
+        #cel_methods
 
         #[doc(hidden)]
         fn nested_validate(&self, ctx: &mut ::prelude::ValidationCtx) -> bool {
           let mut is_valid = true;
 
-          #cel_rules_call
+          ::prelude::ValidatedMessage::validate_cel(self, ctx);
 
           #validators_tokens
 
@@ -213,6 +205,31 @@ pub fn generate_message_validator(
         }
       }
     }
+  } else {
+    quote! {
+      impl ::prelude::ValidatedMessage for #target_ident {
+        #cel_methods
+
+        #[inline(always)]
+        fn validate(&self) -> Result<(), ::prelude::Violations> {
+          Ok(())
+        }
+
+        #[doc(hidden)]
+        #[inline(always)]
+        fn nested_validate(&self, ctx: &mut ::prelude::ValidationCtx) -> bool {
+          true
+        }
+      }
+    }
+  };
+
+  let default_validator_call = if has_validators {
+    quote! {
+      Some(::prelude::MessageValidator::default())
+    }
+  } else {
+    quote! { None }
   };
 
   quote! {
@@ -229,7 +246,7 @@ pub fn generate_message_validator(
       #[doc(hidden)]
       #[inline]
       fn default_validator() -> Option<Self::Validator> {
-        Some(::prelude::MessageValidator::default())
+        #default_validator_call
       }
     }
   }
