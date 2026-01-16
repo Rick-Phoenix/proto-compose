@@ -16,14 +16,16 @@ pub fn field_schema_tokens(data: &FieldData) -> TokenStream2 {
     if options.is_default() {
       quote_spanned! {*span=>
         ::prelude::MessageEntry::Oneof {
-          oneof: <#path as ::prelude::ProtoOneof>::proto_schema(),
+          oneof: <#path as ::prelude::ProtoOneof>::proto_schema().with_name(#proto_name),
           required: #required
         }
       }
     } else {
       quote_spanned! {*span=>
         ::prelude::MessageEntry::Oneof {
-          oneof: <#path as ::prelude::ProtoOneof>::proto_schema().with_options(#options),
+          oneof: <#path as ::prelude::ProtoOneof>::proto_schema()
+            .with_name(#proto_name)
+            .with_options(#options),
           required: #required
         }
       }

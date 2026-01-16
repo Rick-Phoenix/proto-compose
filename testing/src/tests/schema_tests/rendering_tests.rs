@@ -351,7 +351,7 @@ pub struct Nested1 {
 }
 
 #[test]
-fn added_oneof_options() {
+fn reusable_oneofs() {
   let mut base_options = OneofA::proto_schema().options;
 
   let msg = Nested1::proto_schema();
@@ -359,6 +359,9 @@ fn added_oneof_options() {
   let MessageEntry::Oneof { oneof, .. } = msg.entries.first().unwrap() else {
     panic!()
   };
+
+  // The name of the oneof should correspond to that of the field
+  assert_eq_pretty!(oneof.name, "reused_oneof");
 
   assert_ne!(
     base_options, oneof.options,

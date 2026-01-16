@@ -76,6 +76,14 @@ pub struct Oneof {
 
 impl Oneof {
   #[must_use]
+  pub const fn with_name(mut self, name: &'static str) -> Self {
+    self.name = name;
+    self
+  }
+}
+
+impl Oneof {
+  #[must_use]
   pub fn with_options<I: IntoIterator<Item = ProtoOption>>(mut self, options: I) -> Self {
     self.options.extend(options);
     self

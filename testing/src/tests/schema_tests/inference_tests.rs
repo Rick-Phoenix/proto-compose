@@ -197,7 +197,8 @@ fn proxied_inference() {
   assert_eq_pretty!(
     oneof,
     &MessageEntry::Oneof {
-      oneof: ProxiedOneofProto::proto_schema(),
+      // The name should be overridden
+      oneof: ProxiedOneofProto::proto_schema().with_name("oneof"),
       required: false
     }
   );
