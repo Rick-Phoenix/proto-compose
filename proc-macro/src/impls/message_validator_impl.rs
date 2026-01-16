@@ -52,7 +52,7 @@ pub fn field_validator_tokens(field_data: &FieldData, item_kind: ItemKind) -> Op
       let field_type = field_data.descriptor_type_tokens();
 
       let argument = match item_kind {
-        ItemKind::Oneof => quote! { Some(v) },
+        ItemKind::Oneof => quote_spanned! {*span=> Some(v) },
         ItemKind::Message => match type_info.type_.as_ref() {
           RustType::Option(inner) => {
             if inner.is_box() {
@@ -76,7 +76,7 @@ pub fn field_validator_tokens(field_data: &FieldData, item_kind: ItemKind) -> Op
         let validator_name = field_data.validator_name();
         let validator_target_type = proto_field.validator_target_type(*span);
 
-        quote! {
+        quote_spanned! {*span=>
           <#validator_name as ::prelude::Validator<#validator_target_type>>::validate(
             &#validator_static_ident,
             ctx.with_field_context(
@@ -94,7 +94,7 @@ pub fn field_validator_tokens(field_data: &FieldData, item_kind: ItemKind) -> Op
           )
         }
       } else {
-        quote! {
+        quote_spanned! {*span=>
           #validator_static_ident.validate(
             ctx.with_field_context(
               ::prelude::FieldContext {
@@ -137,17 +137,19 @@ pub fn generate_message_validator(
       .filter_map(|d| d.as_normal())
       .filter_map(|data| {
         field_validator_tokens(data, ItemKind::Message).map(|validator| {
+          let span = data.span;
+
           let check = if data.proto_field.is_oneof() {
             validator
           } else {
-            quote! {
+            quote_spanned! {span=>
               if !{ #validator } {
                 is_valid = false;
               }
             }
           };
 
-          quote! {
+          quote_spanned! {span=>
             #check
 
             if !is_valid && ctx.fail_fast {
