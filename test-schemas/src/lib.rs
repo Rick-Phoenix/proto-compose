@@ -45,13 +45,20 @@ fn abc() {
   let validator = String::validator_builder().email().build();
 
   let _ = msg.name.validate_with(&validator);
-  let _ = validator.validate(&mut ValidationCtx::default(), Some(&"abc".to_string()));
+  let _ = validator.validate(&mut ValidationCtx::default(), Some("abc"));
 
   let _msg_v = msg.validate_with(&SimpleMsg::validator_builder().build());
 
-  let _str = "abc"
-    .to_string()
-    .validate_from_closure(|v| v.min_len(25));
+  let _str = "abc".validate_with_closure(|v| v.min_len(25));
+
+  let dur = &Duration::default();
+
+  let _ = dur.validate_with_closure(|v| v.gt(Duration::default()));
+
+  let _ = 1i32.validate_with_closure(|v| v.gt(2));
+  let _ = msg.id.validate_with_closure(|v| v.gt(2));
+
+  let _ = Some(1i32).validate_with_closure(|v| v.gt(0));
 }
 
 #[proto_message(no_auto_test)]

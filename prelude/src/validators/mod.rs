@@ -58,57 +58,6 @@ pub trait ProtoValidator {
   }
 
   #[inline]
-  fn validate_with(
-    &self,
-    validator: &impl Validator<Self, Target = Self::Target>,
-  ) -> Result<(), Violations>
-  where
-    Self: Borrow<Self::Target>,
-  {
-    let mut ctx = ValidationCtx {
-      field_context: None,
-      parent_elements: vec![],
-      violations: ViolationsAcc::new(),
-      fail_fast: false,
-    };
-
-    validator.validate(&mut ctx, Some(self.borrow()));
-
-    if ctx.violations.is_empty() {
-      Ok(())
-    } else {
-      Err(ctx.violations.into_violations())
-    }
-  }
-
-  fn validate_from_closure<F, FinalBuilder, V>(&self, config_fn: F) -> Result<(), Violations>
-  where
-    F: FnOnce(Self::Builder) -> FinalBuilder,
-    FinalBuilder: ValidatorBuilderFor<Self, Validator = V>,
-    V: Validator<Self, Target = Self::Target>,
-    Self: Borrow<Self::Target>,
-  {
-    let initial_builder = Self::validator_builder();
-
-    let validator = config_fn(initial_builder).build_validator();
-
-    let mut ctx = ValidationCtx {
-      field_context: None,
-      parent_elements: vec![],
-      violations: ViolationsAcc::new(),
-      fail_fast: false,
-    };
-
-    validator.validate(&mut ctx, Some(self.borrow()));
-
-    if ctx.violations.is_empty() {
-      Ok(())
-    } else {
-      Err(ctx.violations.into_violations())
-    }
-  }
-
-  #[inline]
   #[must_use]
   fn validator_builder() -> Self::Builder {
     Self::Builder::default()
@@ -122,6 +71,90 @@ pub trait ProtoValidator {
     let initial_builder = Self::validator_builder();
 
     config_fn(initial_builder).build_validator()
+  }
+}
+
+pub trait ValidateWith: Sized {
+  type Item: ProtoValidator;
+
+  fn validate_with<V, S>(&self, validator: &V) -> Result<(), Violations>
+  where
+    V: Validator<S, Target = <Self::Item as ProtoValidator>::Target>;
+
+  fn validate_with_closure<F, FinalBuilder>(&self, config: F) -> Result<(), Violations>
+  where
+    F: FnOnce(<Self::Item as ProtoValidator>::Builder) -> FinalBuilder,
+    FinalBuilder:
+      ValidatorBuilderFor<Self::Item, Validator = <Self::Item as ProtoValidator>::Validator>,
+  {
+    let builder = <Self::Item as ProtoValidator>::validator_builder();
+    let validator = config(builder).build_validator();
+    self.validate_with(&validator)
+  }
+}
+
+impl<T> ValidateWith for Option<T>
+where
+  T: ValidateWith + Borrow<<T::Item as ProtoValidator>::Target>,
+{
+  type Item = T::Item;
+
+  fn validate_with<V, S>(&self, validator: &V) -> Result<(), Violations>
+  where
+    V: Validator<S, Target = <T::Item as ProtoValidator>::Target>,
+  {
+    let mut ctx = ValidationCtx::default();
+
+    let val_ref = self.as_ref().map(|v| v.borrow());
+
+    validator.validate(&mut ctx, val_ref);
+
+    if ctx.violations.is_empty() {
+      Ok(())
+    } else {
+      Err(ctx.violations.into_violations())
+    }
+  }
+}
+
+impl ValidateWith for &str {
+  type Item = String;
+
+  fn validate_with<V, S>(&self, validator: &V) -> Result<(), Violations>
+  where
+    V: Validator<S, Target = <Self::Item as ProtoValidator>::Target>,
+  {
+    let mut ctx = ValidationCtx::default();
+
+    validator.validate(&mut ctx, Some(self));
+
+    if ctx.violations.is_empty() {
+      Ok(())
+    } else {
+      Err(ctx.violations.into_violations())
+    }
+  }
+}
+
+impl<T> ValidateWith for T
+where
+  T: ProtoValidator + Borrow<T::Target>,
+{
+  type Item = Self;
+
+  fn validate_with<V, S>(&self, validator: &V) -> Result<(), Violations>
+  where
+    V: Validator<S, Target = T::Target>,
+  {
+    let mut ctx = ValidationCtx::default();
+
+    validator.validate(&mut ctx, Some(self.borrow()));
+
+    if ctx.violations.is_empty() {
+      Ok(())
+    } else {
+      Err(ctx.violations.into_violations())
+    }
   }
 }
 

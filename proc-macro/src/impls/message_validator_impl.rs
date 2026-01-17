@@ -72,30 +72,13 @@ pub fn field_validator_tokens(field_data: &FieldData, item_kind: ItemKind) -> Op
         },
       };
 
-      let validate_method = if let ProtoField::Map(_) = proto_field {
+      let validate_method = {
         let validator_name = field_data.validator_name();
         let validator_target_type = proto_field.validator_target_type(*span);
 
         quote_spanned! {*span=>
           <#validator_name as ::prelude::Validator<#validator_target_type>>::validate(
             &#validator_static_ident,
-            ctx.with_field_context(
-              ::prelude::FieldContext {
-                proto_name: #proto_name,
-                tag: #tag,
-                field_type: #field_type,
-                map_key_type: None,
-                map_value_type: None,
-                subscript: None,
-                field_kind: Default::default(),
-              }
-            ),
-            #argument
-          )
-        }
-      } else {
-        quote_spanned! {*span=>
-          #validator_static_ident.validate(
             ctx.with_field_context(
               ::prelude::FieldContext {
                 proto_name: #proto_name,
