@@ -13,6 +13,11 @@ impl Validator<bool> for BoolValidator {
   where
     Self: 'a;
 
+  #[cfg(feature = "cel")]
+  fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
+    self.check_cel_programs_with(false)
+  }
+
   #[doc(hidden)]
   fn cel_rules(&self) -> Vec<CelRule> {
     Vec::new()

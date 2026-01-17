@@ -6,8 +6,8 @@ use proto_types::protovalidate::*;
 // AND an assoc. type for the actual type being validated
 // so that it can be proxied by wrappers (like with Sint32, Fixed32, enums, etc...).
 // Same for `ValidatorBuilderFor`.
-pub trait Validator<T>: Into<ProtoOption> {
-  type Target: Default;
+pub trait Validator<T: ?Sized>: Into<ProtoOption> {
+  type Target: ToOwned + ?Sized;
   type UniqueStore<'a>: UniqueStore<'a, Item = Self::Target>
   where
     Self: 'a;
@@ -26,43 +26,88 @@ pub trait Validator<T>: Into<ProtoOption> {
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>>;
 
   #[cfg(feature = "cel")]
-  fn check_cel_programs_with(&self, _val: Self::Target) -> Result<(), Vec<CelError>>;
+  fn check_cel_programs_with(
+    &self,
+    _val: <Self::Target as ToOwned>::Owned,
+  ) -> Result<(), Vec<CelError>>;
 
   #[cfg(feature = "cel")]
-  fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
-    self.check_cel_programs_with(Self::Target::default())
-  }
+  fn check_cel_programs(&self) -> Result<(), Vec<CelError>>;
 
   fn validate(&self, ctx: &mut ValidationCtx, val: Option<&Self::Target>) -> bool;
 }
 
-pub trait ValidatorBuilderFor<T>: Default {
-  type Target;
+pub trait ValidatorBuilderFor<T: ?Sized>: Default {
+  type Target: ?Sized;
   type Validator: Validator<T, Target = Self::Target>;
 
   fn build_validator(self) -> Self::Validator;
 }
 
-pub trait ProtoValidator: core::marker::Sized {
-  type Target;
+pub trait ProtoValidator {
+  type Target: ?Sized;
   type Validator: Validator<Self, Target = Self::Target> + Clone;
   type Builder: ValidatorBuilderFor<Self, Validator = Self::Validator>;
 
-  #[doc(hidden)]
   #[must_use]
   #[inline]
   fn default_validator() -> Option<Self::Validator> {
     None
   }
 
-  #[doc(hidden)]
+  #[inline]
+  fn validate_with(
+    &self,
+    validator: &impl Validator<Self, Target = Self>,
+  ) -> Result<(), Violations> {
+    let mut ctx = ValidationCtx {
+      field_context: None,
+      parent_elements: vec![],
+      violations: ViolationsAcc::new(),
+      fail_fast: false,
+    };
+
+    validator.validate(&mut ctx, Some(self));
+
+    if ctx.violations.is_empty() {
+      Ok(())
+    } else {
+      Err(ctx.violations.into_violations())
+    }
+  }
+
+  fn validate_from_closure<F, FinalBuilder, V>(&self, config_fn: F) -> Result<(), Violations>
+  where
+    F: FnOnce(Self::Builder) -> FinalBuilder,
+    FinalBuilder: ValidatorBuilderFor<Self, Validator = V>,
+    V: Validator<Self, Target = Self>,
+  {
+    let initial_builder = Self::validator_builder();
+
+    let validator = config_fn(initial_builder).build_validator();
+
+    let mut ctx = ValidationCtx {
+      field_context: None,
+      parent_elements: vec![],
+      violations: ViolationsAcc::new(),
+      fail_fast: false,
+    };
+
+    validator.validate(&mut ctx, Some(self));
+
+    if ctx.violations.is_empty() {
+      Ok(())
+    } else {
+      Err(ctx.violations.into_violations())
+    }
+  }
+
   #[inline]
   #[must_use]
   fn validator_builder() -> Self::Builder {
     Self::Builder::default()
   }
 
-  #[doc(hidden)]
   fn validator_from_closure<F, FinalBuilder>(config_fn: F) -> Self::Validator
   where
     F: FnOnce(Self::Builder) -> FinalBuilder,

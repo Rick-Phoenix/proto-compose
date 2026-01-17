@@ -131,6 +131,11 @@ impl Validator<Bytes> for BytesValidator {
   }
 
   #[cfg(feature = "cel")]
+  fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
+    self.check_cel_programs_with(Bytes::default())
+  }
+
+  #[cfg(feature = "cel")]
   fn check_cel_programs_with(&self, val: Self::Target) -> Result<(), Vec<CelError>> {
     if self.cel.is_empty() {
       Ok(())

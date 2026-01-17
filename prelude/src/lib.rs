@@ -22,7 +22,7 @@ pub use ::cel;
 mod decl_macros;
 
 use ::bytes::Bytes;
-use alloc::{borrow::Cow, collections::BTreeSet};
+use alloc::{borrow::Cow, borrow::ToOwned, collections::BTreeSet};
 use core::borrow::Borrow;
 use core::fmt::{Debug, Display};
 use core::{

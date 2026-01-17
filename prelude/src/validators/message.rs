@@ -3,7 +3,7 @@ pub use builder::MessageValidatorBuilder;
 
 use super::*;
 
-pub trait ValidatedMessage: Default {
+pub trait ValidatedMessage: Default + Clone {
   #[inline]
   fn validate_all(&self) -> Result<(), Violations> {
     let mut ctx = ValidationCtx {

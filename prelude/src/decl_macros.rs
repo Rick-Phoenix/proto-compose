@@ -115,6 +115,11 @@ macro_rules! impl_testing_methods {
       }
     }
 
+    #[cfg(feature = "cel")]
+    fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
+      self.check_cel_programs_with(Self::Target::default())
+    }
+
     #[doc(hidden)]
     fn cel_rules(&self) -> Vec<CelRule> {
       self.cel.iter().map(|p| p.rule.clone()).collect()

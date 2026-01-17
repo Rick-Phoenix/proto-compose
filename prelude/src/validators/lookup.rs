@@ -147,25 +147,25 @@ where
 }
 
 #[doc(hidden)]
-pub struct UnsupportedStore<T> {
+pub struct UnsupportedStore<T: ?Sized> {
   _marker: PhantomData<T>,
 }
 
-impl<T> Default for UnsupportedStore<T> {
+impl<T: ?Sized> UnsupportedStore<T> {
   #[inline]
-  fn default() -> Self {
+  pub const fn new() -> Self {
     Self {
       _marker: PhantomData,
     }
   }
 }
 
-impl<'a, T> UniqueStore<'a> for UnsupportedStore<T> {
+impl<'a, T: ?Sized> UniqueStore<'a> for UnsupportedStore<T> {
   type Item = T;
 
   #[inline]
   fn default_with_capacity(_size: usize) -> Self {
-    Self::default()
+    Self::new()
   }
 
   #[inline]

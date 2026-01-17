@@ -54,7 +54,7 @@ where
   K: ProtoValidator,
   V: ProtoValidator,
   K::Target: Clone + Into<Subscript> + Default + Eq + Hash + IntoCelKey,
-  V::Target: Default + TryIntoCel,
+  V::Target: Default + TryIntoCel + Clone,
 {
   type Target = HashMap<K::Target, V::Target>;
 
@@ -66,7 +66,8 @@ impl<K, V> ProtoValidator for BTreeMap<K, V>
 where
   K: ProtoValidator,
   V: ProtoValidator,
-  K::Target: Clone + Into<Subscript>,
+  K::Target: Clone + Into<Subscript> + Sized,
+  V::Target: Sized + Clone,
 {
   type Target = BTreeMap<K::Target, V::Target>;
 
@@ -79,7 +80,8 @@ impl<K, V, S: builder::state::State> ValidatorBuilderFor<BTreeMap<K, V>>
 where
   K: ProtoValidator,
   V: ProtoValidator,
-  K::Target: Clone + Into<Subscript>,
+  K::Target: Clone + Into<Subscript> + Sized,
+  V::Target: Sized + Clone,
 {
   type Target = BTreeMap<K::Target, V::Target>;
   type Validator = MapValidator<K, V>;
@@ -97,7 +99,7 @@ where
   K: ProtoValidator,
   V: ProtoValidator,
   K::Target: Clone + Into<Subscript> + Default + Eq + Hash + IntoCelKey,
-  V::Target: Default + TryIntoCel,
+  V::Target: Default + TryIntoCel + Clone,
 {
   type Target = HashMap<K::Target, V::Target>;
   type Validator = MapValidator<K, V>;
@@ -170,7 +172,8 @@ impl<K, V> Validator<BTreeMap<K, V>> for MapValidator<K, V>
 where
   K: ProtoValidator,
   V: ProtoValidator,
-  K::Target: Clone + Into<Subscript>,
+  K::Target: Clone + Into<Subscript> + Sized,
+  V::Target: Sized + Clone,
 {
   type Target = BTreeMap<K::Target, V::Target>;
   type UniqueStore<'a>
@@ -178,13 +181,18 @@ where
   where
     Self: 'a;
 
+  #[cfg(feature = "cel")]
+  fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
+    self.check_cel_programs_with(BTreeMap::default())
+  }
+
   #[inline]
   #[doc(hidden)]
   fn make_unique_store<'a>(&self, _: usize) -> Self::UniqueStore<'a>
   where
     Self: 'a,
   {
-    UnsupportedStore::default()
+    UnsupportedStore::new()
   }
 
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
@@ -312,7 +320,7 @@ where
   K: ProtoValidator,
   V: ProtoValidator,
   K::Target: Clone + Into<Subscript> + Default + Eq + Hash + IntoCelKey,
-  V::Target: Default + TryIntoCel,
+  V::Target: Default + TryIntoCel + Clone,
 {
   type Target = HashMap<K::Target, V::Target>;
   type UniqueStore<'a>
@@ -320,13 +328,18 @@ where
   where
     Self: 'a;
 
+  #[cfg(feature = "cel")]
+  fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
+    <Self as Validator<HashMap<K, V>>>::check_cel_programs_with(self, HashMap::default())
+  }
+
   #[inline]
   #[doc(hidden)]
   fn make_unique_store<'a>(&self, _: usize) -> Self::UniqueStore<'a>
   where
     Self: 'a,
   {
-    UnsupportedStore::default()
+    UnsupportedStore::new()
   }
 
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {

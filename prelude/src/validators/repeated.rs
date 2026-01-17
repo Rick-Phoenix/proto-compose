@@ -71,9 +71,9 @@ impl<T: AsProtoType> AsProtoField for Vec<T> {
 impl<T> ProtoValidator for Vec<T>
 where
   T: ProtoValidator,
-  T::Target: TryIntoCel,
+  T::Target: TryIntoCel + Sized + Clone,
 {
-  type Target = Vec<T::Target>;
+  type Target = [T::Target];
   type Validator = RepeatedValidator<T>;
   type Builder = RepeatedValidatorBuilder<T>;
 }
@@ -82,9 +82,9 @@ impl<T, S> ValidatorBuilderFor<Vec<T>> for RepeatedValidatorBuilder<T, S>
 where
   S: builder::State,
   T: ProtoValidator,
-  T::Target: TryIntoCel,
+  T::Target: TryIntoCel + Sized + Clone,
 {
-  type Target = Vec<T::Target>;
+  type Target = [T::Target];
   type Validator = RepeatedValidator<T>;
 
   #[inline]
@@ -107,13 +107,18 @@ fn try_convert_to_cel<T: TryIntoCel>(list: Vec<T>) -> Result<::cel::Value, CelEr
 impl<T> Validator<Vec<T>> for RepeatedValidator<T>
 where
   T: ProtoValidator,
-  T::Target: TryIntoCel,
+  T::Target: TryIntoCel + Sized + Clone,
 {
-  type Target = Vec<T::Target>;
+  type Target = [T::Target];
   type UniqueStore<'a>
     = UnsupportedStore<Self::Target>
   where
     Self: 'a;
+
+  #[cfg(feature = "cel")]
+  fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
+    self.check_cel_programs_with(Vec::new())
+  }
 
   #[inline]
   #[doc(hidden)]
@@ -121,7 +126,7 @@ where
   where
     T: 'a,
   {
-    UnsupportedStore::default()
+    UnsupportedStore::new()
   }
 
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
@@ -163,7 +168,10 @@ where
   }
 
   #[cfg(feature = "cel")]
-  fn check_cel_programs_with(&self, val: Self::Target) -> Result<(), Vec<CelError>> {
+  fn check_cel_programs_with(
+    &self,
+    val: <Self::Target as ToOwned>::Owned,
+  ) -> Result<(), Vec<CelError>> {
     let mut errors = Vec::new();
 
     if !self.cel.is_empty() {
@@ -286,7 +294,7 @@ where
 
       #[cfg(feature = "cel")]
       if !self.cel.is_empty() {
-        match try_convert_to_cel(val.clone()) {
+        match try_convert_to_cel(val.to_owned()) {
           Ok(cel_value) => {
             let cel_ctx = ProgramsExecutionCtx {
               programs: &self.cel,
