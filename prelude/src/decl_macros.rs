@@ -1,3 +1,9 @@
+macro_rules! pluralize {
+  ($count:expr) => {
+    if $count != 1 { "s" } else { "" }
+  };
+}
+
 macro_rules! custom_error_messages_method {
   ($kind:ident) => {
     paste! {

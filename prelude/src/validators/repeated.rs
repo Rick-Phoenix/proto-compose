@@ -234,16 +234,22 @@ where
         };
       }
 
-      if let Some(min) = &self.min_items
-        && val.len() < *min
+      if let Some(min) = self.min_items
+        && val.len() < min
       {
-        handle_violation!(MinItems, format!("must contain at least {min} items"));
+        handle_violation!(
+          MinItems,
+          format!("must contain at least {min} item{}", pluralize!(min))
+        );
       }
 
-      if let Some(max) = &self.max_items
-        && val.len() > *max
+      if let Some(max) = self.max_items
+        && val.len() > max
       {
-        handle_violation!(MaxItems, format!("cannot contain more than {max} items"));
+        handle_violation!(
+          MaxItems,
+          format!("cannot contain more than {max} item{}", pluralize!(max))
+        );
       }
 
       let items_validator = self.items.as_ref();

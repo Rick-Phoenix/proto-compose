@@ -199,19 +199,34 @@ impl Validator<Bytes> for BytesValidator {
       if let Some(len) = self.len
         && val.len() != len
       {
-        handle_violation!(Len, format!("must be exactly {len} bytes long"));
+        handle_violation!(
+          Len,
+          format!("must be exactly {len} byte{} long", pluralize!(len))
+        );
       }
 
       if let Some(min_len) = self.min_len
         && val.len() < min_len
       {
-        handle_violation!(MinLen, format!("must be at least {min_len} bytes long"));
+        handle_violation!(
+          MinLen,
+          format!(
+            "must be at least {min_len} byte{} long",
+            pluralize!(min_len)
+          )
+        );
       }
 
       if let Some(max_len) = self.max_len
         && val.len() > max_len
       {
-        handle_violation!(MaxLen, format!("cannot be longer than {max_len} bytes"));
+        handle_violation!(
+          MaxLen,
+          format!(
+            "cannot be longer than {max_len} byte{}",
+            pluralize!(max_len)
+          )
+        );
       }
 
       if let Some(prefix) = &self.prefix

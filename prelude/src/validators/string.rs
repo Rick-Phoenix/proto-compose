@@ -321,7 +321,10 @@ impl Validator<String> for StringValidator {
       if let Some(len) = self.len
         && val.chars().count() != len
       {
-        handle_violation!(Len, format!("must be exactly {len} characters long"));
+        handle_violation!(
+          Len,
+          format!("must be exactly {len} character{} long", pluralize!(len))
+        );
       }
 
       if let Some(min_len) = self.min_len
@@ -329,7 +332,10 @@ impl Validator<String> for StringValidator {
       {
         handle_violation!(
           MinLen,
-          format!("must be at least {min_len} characters long")
+          format!(
+            "must be at least {min_len} character{} long",
+            pluralize!(min_len)
+          )
         );
       }
 
@@ -338,26 +344,47 @@ impl Validator<String> for StringValidator {
       {
         handle_violation!(
           MaxLen,
-          format!("cannot be longer than {max_len} characters")
+          format!(
+            "cannot be longer than {max_len} character{}",
+            pluralize!(max_len)
+          )
         );
       }
 
       if let Some(len_bytes) = self.len_bytes
         && val.len() != len_bytes
       {
-        handle_violation!(LenBytes, format!("must be exactly {len_bytes} bytes long"));
+        handle_violation!(
+          LenBytes,
+          format!(
+            "must be exactly {len_bytes} byte{} long",
+            pluralize!(len_bytes)
+          )
+        );
       }
 
       if let Some(min_bytes) = self.min_bytes
         && val.len() < min_bytes
       {
-        handle_violation!(MinBytes, format!("must be at least {min_bytes} bytes long"));
+        handle_violation!(
+          MinBytes,
+          format!(
+            "must be at least {min_bytes} byte{} long",
+            pluralize!(min_bytes)
+          )
+        );
       }
 
       if let Some(max_bytes) = self.max_bytes
         && val.len() > max_bytes
       {
-        handle_violation!(MaxBytes, format!("cannot be longer than {max_bytes} bytes"));
+        handle_violation!(
+          MaxBytes,
+          format!(
+            "cannot be longer than {max_bytes} byte{}",
+            pluralize!(max_bytes)
+          )
+        );
       }
 
       if let Some(prefix) = &self.prefix

@@ -274,7 +274,13 @@ where
       if let Some(min_pairs) = self.min_pairs
         && val.len() < min_pairs
       {
-        handle_violation!(MinPairs, format!("must contain at least {min_pairs} pairs"));
+        handle_violation!(
+          MinPairs,
+          format!(
+            "must contain at least {min_pairs} pair{}",
+            pluralize!(min_pairs)
+          )
+        );
       }
 
       if let Some(max_pairs) = self.max_pairs
@@ -282,7 +288,10 @@ where
       {
         handle_violation!(
           MaxPairs,
-          format!("cannot contain more than {max_pairs} pairs")
+          format!(
+            "cannot contain more than {max_pairs} pair{}",
+            pluralize!(max_pairs)
+          )
         );
       }
 
