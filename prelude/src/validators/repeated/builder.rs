@@ -87,23 +87,11 @@ where
   }
 
   #[inline]
-  pub fn cel(mut self, program: CelProgram) -> RepeatedValidatorBuilder<T, SetCel<S>>
-  where
-    S::Cel: IsUnset,
-  {
+  #[must_use]
+  pub fn cel(mut self, program: CelProgram) -> Self {
     self.cel.push(program);
 
-    RepeatedValidatorBuilder {
-      _state: PhantomData,
-      _inner_type: self._inner_type,
-      items: self.items,
-      cel: self.cel,
-      min_items: self.min_items,
-      max_items: self.max_items,
-      unique: self.unique,
-      ignore: self.ignore,
-      error_messages: self.error_messages,
-    }
+    self
   }
 
   /// Specifies the rules that will be applied to the individual items of this repeated field.

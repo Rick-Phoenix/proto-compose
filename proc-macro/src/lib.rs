@@ -29,6 +29,7 @@ use crate::{
 };
 
 mod attributes;
+mod builder_macro;
 #[cfg(feature = "cel")]
 mod cel_try_into;
 #[cfg(feature = "reflection")]
@@ -96,6 +97,14 @@ pub fn validated_message_derive(input: TokenStream) -> TokenStream {
   let mut item = parse_macro_input!(input as ItemStruct);
 
   reflection::reflection_message_derive(&mut item).into()
+}
+
+#[proc_macro]
+pub fn builder_state_macro(input: TokenStream) -> TokenStream {
+  match builder_macro::builder_macro(input.into()) {
+    Ok(output) => output.into(),
+    Err(e) => e.into_compile_error().into(),
+  }
 }
 
 #[proc_macro]

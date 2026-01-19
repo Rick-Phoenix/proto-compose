@@ -101,24 +101,11 @@ where
   }
 
   #[inline]
-  pub fn cel(mut self, program: CelProgram) -> MapValidatorBuilder<K, V, SetCel<S>>
-  where
-    S::Cel: IsUnset,
-  {
+  #[must_use]
+  pub fn cel(mut self, program: CelProgram) -> Self {
     self.cel.push(program);
 
-    MapValidatorBuilder {
-      _state: PhantomData,
-      cel: self.cel,
-      keys: self.keys,
-      _key_type: self._key_type,
-      _value_type: self._value_type,
-      values: self.values,
-      min_pairs: self.min_pairs,
-      max_pairs: self.max_pairs,
-      ignore: self.ignore,
-      error_messages: self.error_messages,
-    }
+    self
   }
 
   #[inline]
