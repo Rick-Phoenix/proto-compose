@@ -104,18 +104,6 @@ where
   Num: IntWrapper,
 {
   type Target = Num::RustType;
-  type UniqueStore<'a>
-    = CopyHybridStore<Num::RustType>
-  where
-    Self: 'a;
-
-  #[inline]
-  fn make_unique_store<'a>(&self, cap: usize) -> Self::UniqueStore<'a>
-  where
-    Num: 'a,
-  {
-    CopyHybridStore::default_with_capacity(cap)
-  }
 
   impl_testing_methods!();
 
@@ -409,6 +397,20 @@ macro_rules! impl_int_validator {
         type Target = $rust_type;
         type Validator = IntValidator<$wrapper>;
         type Builder = IntValidatorBuilder<$wrapper>;
+
+        type UniqueStore<'a>
+          = CopyHybridStore<$rust_type>
+        where
+          Self: 'a;
+
+        #[inline]
+        fn make_unique_store<'a>(
+          _: &Self::Validator,
+          cap: usize,
+        ) -> Self::UniqueStore<'a>
+        {
+          CopyHybridStore::default_with_capacity(cap)
+        }
       }
     }
   };

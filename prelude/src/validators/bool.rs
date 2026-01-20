@@ -8,10 +8,6 @@ impl_proto_map_key!(bool, Bool);
 
 impl Validator<bool> for BoolValidator {
   type Target = bool;
-  type UniqueStore<'a>
-    = CopyHybridStore<bool>
-  where
-    Self: 'a;
 
   #[cfg(feature = "cel")]
   fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
@@ -21,14 +17,6 @@ impl Validator<bool> for BoolValidator {
   #[doc(hidden)]
   fn cel_rules(&self) -> Vec<CelRule> {
     Vec::new()
-  }
-
-  #[inline]
-  #[doc(hidden)]
-  fn make_unique_store<'a>(&self, _: usize) -> Self::UniqueStore<'a> {
-    // This is likely to never be used in the first place, but
-    // uniqueness checks would fail after more than 2 elements anyway
-    CopyHybridStore::default_with_capacity(2)
   }
 
   #[inline]

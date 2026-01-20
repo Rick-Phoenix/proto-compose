@@ -11,7 +11,29 @@ pub struct BytesValidatorBuilder<S: State = Empty> {
   data: BytesValidator,
 }
 
-impl_validator!(BytesValidator, Bytes);
+impl ProtoValidator for Bytes {
+  type Target = Bytes;
+  type Validator = BytesValidator;
+  type Builder = BytesValidatorBuilder;
+
+  type UniqueStore<'a>
+    = RefHybridStore<'a, Bytes>
+  where
+    Self: 'a;
+
+  #[inline]
+  fn make_unique_store<'a>(_: &Self::Validator, cap: usize) -> Self::UniqueStore<'a> {
+    RefHybridStore::default_with_capacity(cap)
+  }
+}
+impl<S: State> ValidatorBuilderFor<Bytes> for BytesValidatorBuilder<S> {
+  type Target = Bytes;
+  type Validator = BytesValidator;
+  #[inline]
+  fn build_validator(self) -> BytesValidator {
+    self.build()
+  }
+}
 
 impl<S: State> Default for BytesValidatorBuilder<S> {
   #[inline]

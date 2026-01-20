@@ -62,6 +62,11 @@ where
 
   type Validator = MapValidator<K, V>;
   type Builder = MapValidatorBuilder<K, V>;
+
+  type UniqueStore<'a>
+    = UnsupportedStore<Self::Target>
+  where
+    Self: 'a;
 }
 
 impl<K, V> ProtoValidator for BTreeMap<K, V>
@@ -75,6 +80,11 @@ where
 
   type Validator = MapValidator<K, V>;
   type Builder = MapValidatorBuilder<K, V>;
+
+  type UniqueStore<'a>
+    = UnsupportedStore<Self::Target>
+  where
+    Self: 'a;
 }
 
 impl<K, V, S: builder::state::State> ValidatorBuilderFor<BTreeMap<K, V>>
@@ -180,23 +190,10 @@ where
   V::Target: Sized + Clone,
 {
   type Target = BTreeMap<K::Target, V::Target>;
-  type UniqueStore<'a>
-    = UnsupportedStore<Self::Target>
-  where
-    Self: 'a;
 
   #[cfg(feature = "cel")]
   fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
     self.check_cel_programs_with(BTreeMap::default())
-  }
-
-  #[inline]
-  #[doc(hidden)]
-  fn make_unique_store<'a>(&self, _: usize) -> Self::UniqueStore<'a>
-  where
-    Self: 'a,
-  {
-    UnsupportedStore::new()
   }
 
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
@@ -360,23 +357,10 @@ where
   V::Target: Default + TryIntoCel + Clone,
 {
   type Target = HashMap<K::Target, V::Target>;
-  type UniqueStore<'a>
-    = UnsupportedStore<Self::Target>
-  where
-    Self: 'a;
 
   #[cfg(feature = "cel")]
   fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
     <Self as Validator<HashMap<K, V>>>::check_cel_programs_with(self, HashMap::default())
-  }
-
-  #[inline]
-  #[doc(hidden)]
-  fn make_unique_store<'a>(&self, _: usize) -> Self::UniqueStore<'a>
-  where
-    Self: 'a,
-  {
-    UnsupportedStore::new()
   }
 
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {

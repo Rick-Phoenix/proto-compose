@@ -233,6 +233,11 @@ pub fn generate_message_validator(
       #[doc(hidden)]
       type Builder = ::prelude::MessageValidatorBuilder<Self>;
 
+      type UniqueStore<'a>
+        = ::prelude::LinearRefStore<'a, Self>
+      where
+        Self: 'a;
+
       #default_validator_method
     }
   }

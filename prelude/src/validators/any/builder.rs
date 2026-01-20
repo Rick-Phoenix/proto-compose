@@ -29,7 +29,30 @@ impl AnyValidator {
   }
 }
 
-impl_validator!(AnyValidator, Any);
+impl ProtoValidator for Any {
+  type Target = Any;
+  type Validator = AnyValidator;
+  type Builder = AnyValidatorBuilder;
+
+  type UniqueStore<'a>
+    = LinearRefStore<'a, Any>
+  where
+    Self: 'a;
+
+  #[inline]
+  fn make_unique_store<'a>(_: &Self::Validator, cap: usize) -> Self::UniqueStore<'a> {
+    LinearRefStore::default_with_capacity(cap)
+  }
+}
+
+impl<S: State> ValidatorBuilderFor<Any> for AnyValidatorBuilder<S> {
+  type Target = Any;
+  type Validator = AnyValidator;
+  #[inline]
+  fn build_validator(self) -> AnyValidator {
+    self.build()
+  }
+}
 
 #[allow(
   clippy::must_use_candidate,

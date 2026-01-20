@@ -173,18 +173,6 @@ where
   Num: FloatWrapper,
 {
   type Target = Num::RustType;
-  type UniqueStore<'a>
-    = FloatEpsilonStore<Num::RustType>
-  where
-    Self: 'a;
-
-  #[inline]
-  fn make_unique_store<'a>(&self, size: usize) -> Self::UniqueStore<'a>
-  where
-    Num: 'a,
-  {
-    FloatEpsilonStore::new(size, self.abs_tolerance, self.rel_tolerance)
-  }
 
   impl_testing_methods!();
 
@@ -477,6 +465,20 @@ macro_rules! impl_float_wrapper {
         type Target = $target_type;
         type Validator = FloatValidator<$target_type>;
         type Builder = FloatValidatorBuilder<$target_type>;
+
+        type UniqueStore<'a>
+          = FloatEpsilonStore<$target_type>
+        where
+          Self: 'a;
+
+        #[inline]
+        fn make_unique_store<'a>(
+          validator: &Self::Validator,
+          size: usize,
+        ) -> Self::UniqueStore<'a>
+        {
+          FloatEpsilonStore::new(size, validator.abs_tolerance, validator.rel_tolerance)
+        }
       }
 
       impl<S: builder::state::State> ValidatorBuilderFor<$target_type> for FloatValidatorBuilder<$target_type, S> {

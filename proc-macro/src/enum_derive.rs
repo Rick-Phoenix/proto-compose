@@ -42,6 +42,11 @@ pub fn named_enum_derive(item: &ItemEnum) -> TokenStream2 {
       type Validator = ::prelude::EnumValidator<#ident>;
       #[doc(hidden)]
       type Builder = ::prelude::EnumValidatorBuilder<#ident>;
+
+      type UniqueStore<'a>
+        = ::prelude::CopyHybridStore<i32>
+        where
+          Self: 'a;
     }
   }
 }

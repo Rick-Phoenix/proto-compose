@@ -31,21 +31,22 @@ impl ProtoValidator for FieldMask {
   type Target = Self;
   type Validator = FieldMaskValidator;
   type Builder = FieldMaskValidatorBuilder;
-}
 
-impl Validator<FieldMask> for FieldMaskValidator {
-  type Target = FieldMask;
   type UniqueStore<'a>
     = LinearRefStore<'a, FieldMask>
   where
     Self: 'a;
 
-  impl_testing_methods!();
-
   #[inline]
-  fn make_unique_store<'a>(&self, cap: usize) -> Self::UniqueStore<'a> {
+  fn make_unique_store<'a>(_: &Self::Validator, cap: usize) -> Self::UniqueStore<'a> {
     LinearRefStore::default_with_capacity(cap)
   }
+}
+
+impl Validator<FieldMask> for FieldMaskValidator {
+  type Target = FieldMask;
+
+  impl_testing_methods!();
 
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
     let mut errors = Vec::new();

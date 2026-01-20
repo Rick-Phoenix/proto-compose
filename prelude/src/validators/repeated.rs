@@ -80,6 +80,11 @@ where
   type Target = [T::Target];
   type Validator = RepeatedValidator<T>;
   type Builder = RepeatedValidatorBuilder<T>;
+
+  type UniqueStore<'a>
+    = UnsupportedStore<Self::Target>
+  where
+    Self: 'a;
 }
 
 impl<T, S> ValidatorBuilderFor<Vec<T>> for RepeatedValidatorBuilder<T, S>
@@ -114,23 +119,10 @@ where
   T::Target: TryIntoCel + Sized + Clone,
 {
   type Target = [T::Target];
-  type UniqueStore<'a>
-    = UnsupportedStore<Self::Target>
-  where
-    Self: 'a;
 
   #[cfg(feature = "cel")]
   fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
     self.check_cel_programs_with(Vec::new())
-  }
-
-  #[inline]
-  #[doc(hidden)]
-  fn make_unique_store<'a>(&self, _size: usize) -> Self::UniqueStore<'a>
-  where
-    T: 'a,
-  {
-    UnsupportedStore::new()
   }
 
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
@@ -259,12 +251,8 @@ where
         let size = val.len();
 
         let store = match &self.items {
-          Some(v) => v.make_unique_store(size),
-          None => {
-            <<T as ProtoValidator>::Validator as Validator<T>>::UniqueStore::default_with_capacity(
-              size,
-            )
-          }
+          Some(v) => <T as ProtoValidator>::make_unique_store(v, size),
+          None => <T as ProtoValidator>::UniqueStore::default_with_capacity(size),
         };
 
         Some(store)

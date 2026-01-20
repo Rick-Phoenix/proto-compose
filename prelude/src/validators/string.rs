@@ -170,15 +170,6 @@ impl_proto_map_key!(String, String);
 
 impl Validator<String> for StringValidator {
   type Target = str;
-  type UniqueStore<'a>
-    = RefHybridStore<'a, str>
-  where
-    Self: 'a;
-
-  #[inline]
-  fn make_unique_store<'a>(&self, cap: usize) -> Self::UniqueStore<'a> {
-    RefHybridStore::default_with_capacity(cap)
-  }
 
   #[cfg(feature = "cel")]
   fn check_cel_programs_with(

@@ -71,17 +71,8 @@ impl TimestampValidator {
 
 impl Validator<Timestamp> for TimestampValidator {
   type Target = Timestamp;
-  type UniqueStore<'a>
-    = CopyHybridStore<Timestamp>
-  where
-    Self: 'a;
 
   impl_testing_methods!();
-
-  #[inline]
-  fn make_unique_store<'a>(&self, size: usize) -> Self::UniqueStore<'a> {
-    CopyHybridStore::default_with_capacity(size)
-  }
 
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
     let mut errors = Vec::new();

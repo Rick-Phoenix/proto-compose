@@ -50,20 +50,8 @@ impl<T: ProtoEnum> Default for EnumValidator<T> {
 
 impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
   type Target = i32;
-  type UniqueStore<'a>
-    = CopyHybridStore<i32>
-  where
-    Self: 'a;
 
   impl_testing_methods!();
-
-  #[inline]
-  fn make_unique_store<'a>(&self, cap: usize) -> Self::UniqueStore<'a>
-  where
-    T: 'a,
-  {
-    CopyHybridStore::default_with_capacity(cap)
-  }
 
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
     let mut errors = Vec::new();

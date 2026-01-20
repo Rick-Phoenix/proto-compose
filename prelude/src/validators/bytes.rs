@@ -74,15 +74,6 @@ impl BytesValidator {
 
 impl Validator<Bytes> for BytesValidator {
   type Target = Bytes;
-  type UniqueStore<'a>
-    = RefHybridStore<'a, Bytes>
-  where
-    Self: 'a;
-
-  #[inline]
-  fn make_unique_store<'a>(&self, cap: usize) -> Self::UniqueStore<'a> {
-    RefHybridStore::default_with_capacity(cap)
-  }
 
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
     let mut errors = Vec::new();

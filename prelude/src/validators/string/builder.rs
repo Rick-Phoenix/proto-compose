@@ -15,6 +15,11 @@ impl ProtoValidator for String {
   type Target = str;
   type Validator = StringValidator;
   type Builder = StringValidatorBuilder;
+
+  type UniqueStore<'a>
+    = RefHybridStore<'a, str>
+  where
+    Self: 'a;
 }
 impl<S: State> ValidatorBuilderFor<String> for StringValidatorBuilder<S> {
   type Target = str;

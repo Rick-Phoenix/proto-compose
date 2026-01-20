@@ -9,7 +9,32 @@ pub struct BoolValidatorBuilder<S: State = Empty> {
   data: BoolValidator,
 }
 
-impl_validator!(BoolValidator, bool);
+impl ProtoValidator for bool {
+  type Target = bool;
+  type Validator = BoolValidator;
+  type Builder = BoolValidatorBuilder;
+
+  type UniqueStore<'a>
+    = CopyHybridStore<bool>
+  where
+    Self: 'a;
+
+  #[inline]
+  #[doc(hidden)]
+  fn make_unique_store<'a>(_: &Self::Validator, _: usize) -> Self::UniqueStore<'a> {
+    // This is likely to never be used in the first place, but
+    // uniqueness checks would fail after more than 2 elements anyway
+    CopyHybridStore::default_with_capacity(2)
+  }
+}
+impl<S: State> ValidatorBuilderFor<bool> for BoolValidatorBuilder<S> {
+  type Target = bool;
+  type Validator = BoolValidator;
+  #[inline]
+  fn build_validator(self) -> BoolValidator {
+    self.build()
+  }
+}
 
 impl<S: State> Default for BoolValidatorBuilder<S> {
   #[inline]

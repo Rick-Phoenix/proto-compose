@@ -42,15 +42,6 @@ pub struct DurationValidator {
 
 impl Validator<Duration> for DurationValidator {
   type Target = Duration;
-  type UniqueStore<'a>
-    = CopyHybridStore<Duration>
-  where
-    Self: 'a;
-
-  #[inline]
-  fn make_unique_store<'a>(&self, cap: usize) -> Self::UniqueStore<'a> {
-    CopyHybridStore::default_with_capacity(cap)
-  }
 
   impl_testing_methods!();
 

@@ -13,10 +13,6 @@ where
   F: Fn(&mut ValidationCtx, Option<&T>) -> bool,
 {
   type Target = T;
-  type UniqueStore<'a>
-    = UnsupportedStore<T>
-  where
-    Self: 'a;
 
   fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> bool
   where
@@ -38,32 +34,34 @@ where
   }
 }
 
-struct Test;
+#[cfg(test)]
+#[allow(unused)]
+mod test {
+  use super::*;
 
-fn validator(ctx: &mut ValidationCtx, val: Option<&str>) -> bool {
-  true
-}
+  struct Test;
 
-fn abc() {
-  let x = Test.validate("abc");
+  fn validator(ctx: &mut ValidationCtx, val: Option<&str>) -> bool {
+    true
+  }
 
-  let v = from_fn(validator);
+  fn abc() {
+    let x = Test.validate("abc");
 
-  let z = v.validate("abc");
-}
+    let v = from_fn(validator);
 
-impl Validator<String> for Test {
-  type Target = str;
-  type UniqueStore<'a>
-    = RefHybridStore<'a, str>
-  where
-    Self: 'a;
+    let z = v.validate("abc");
+  }
 
-  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> bool
-  where
-    V: Borrow<Self::Target> + ?Sized,
-  {
-    unimplemented!()
+  impl Validator<String> for Test {
+    type Target = str;
+
+    fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> bool
+    where
+      V: Borrow<Self::Target> + ?Sized,
+    {
+      unimplemented!()
+    }
   }
 }
 
@@ -73,13 +71,6 @@ impl Validator<String> for Test {
 // Same for `ValidatorBuilderFor`.
 pub trait Validator<T: ?Sized>: Sized {
   type Target: ToOwned + ?Sized;
-  type UniqueStore<'a>: UniqueStore<'a, Item = Self::Target>
-  where
-    Self: 'a;
-
-  fn make_unique_store<'a>(&self, cap: usize) -> Self::UniqueStore<'a> {
-    Self::UniqueStore::default_with_capacity(cap)
-  }
 
   fn cel_rules(&self) -> Vec<CelRule> {
     vec![]
@@ -197,6 +188,17 @@ pub trait ProtoValidator {
   type Target: ?Sized;
   type Validator: Validator<Self, Target = Self::Target> + Clone;
   type Builder: ValidatorBuilderFor<Self, Validator = Self::Validator>;
+
+  type UniqueStore<'a>: UniqueStore<'a, Item = Self::Target>
+  where
+    Self: 'a;
+
+  fn make_unique_store<'a>(_validator: &Self::Validator, cap: usize) -> Self::UniqueStore<'a>
+  where
+    Self: 'a,
+  {
+    Self::UniqueStore::default_with_capacity(cap)
+  }
 
   #[must_use]
   #[inline]

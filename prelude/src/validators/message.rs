@@ -105,10 +105,6 @@ where
   T: ValidatedMessage + PartialEq + TryIntoCel,
 {
   type Target = T;
-  type UniqueStore<'a>
-    = LinearRefStore<'a, T>
-  where
-    Self: 'a;
 
   impl_testing_methods!();
 
@@ -125,11 +121,6 @@ where
     } else {
       Err(errors)
     }
-  }
-
-  #[inline]
-  fn make_unique_store<'a>(&self, cap: usize) -> Self::UniqueStore<'a> {
-    LinearRefStore::default_with_capacity(cap)
   }
 
   fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> bool

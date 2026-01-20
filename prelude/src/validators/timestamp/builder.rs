@@ -12,7 +12,24 @@ pub struct TimestampValidatorBuilder<S: State = Empty> {
   data: TimestampValidator,
 }
 
-impl_validator!(TimestampValidator, Timestamp);
+impl ProtoValidator for Timestamp {
+  type Target = Self;
+  type Validator = TimestampValidator;
+  type Builder = TimestampValidatorBuilder;
+
+  type UniqueStore<'a>
+    = CopyHybridStore<Self>
+  where
+    Self: 'a;
+}
+impl<S: State> ValidatorBuilderFor<Timestamp> for TimestampValidatorBuilder<S> {
+  type Target = Timestamp;
+  type Validator = TimestampValidator;
+  #[inline]
+  fn build_validator(self) -> TimestampValidator {
+    self.build()
+  }
+}
 
 impl<S: State> Default for TimestampValidatorBuilder<S> {
   #[inline]

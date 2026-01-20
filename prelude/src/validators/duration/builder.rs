@@ -5,7 +5,29 @@ pub(crate) use state::*;
 
 use proto_types::Duration;
 
-impl_validator!(DurationValidator, Duration);
+impl ProtoValidator for Duration {
+  type Target = Duration;
+  type Validator = DurationValidator;
+  type Builder = DurationValidatorBuilder;
+
+  type UniqueStore<'a>
+    = CopyHybridStore<Duration>
+  where
+    Self: 'a;
+
+  #[inline]
+  fn make_unique_store<'a>(_: &Self::Validator, cap: usize) -> Self::UniqueStore<'a> {
+    CopyHybridStore::default_with_capacity(cap)
+  }
+}
+impl<S: State> ValidatorBuilderFor<Duration> for DurationValidatorBuilder<S> {
+  type Target = Duration;
+  type Validator = DurationValidator;
+  #[inline]
+  fn build_validator(self) -> DurationValidator {
+    self.build()
+  }
+}
 
 #[derive(Clone, Debug)]
 pub struct DurationValidatorBuilder<S: State = Empty> {
