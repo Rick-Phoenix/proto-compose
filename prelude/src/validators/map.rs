@@ -63,7 +63,9 @@ where
 
     let mut outer_rules = OptionMessageBuilder::new();
 
-    outer_rules.set("map", OptionValue::Message(rules.into()));
+    if !rules.is_empty() {
+      outer_rules.set("map", OptionValue::Message(rules.into()));
+    }
 
     outer_rules
       .add_cel_options(self.cel.clone())

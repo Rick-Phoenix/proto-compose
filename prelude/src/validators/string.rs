@@ -629,7 +629,9 @@ impl From<StringValidator> for ProtoOption {
     let mut outer_rules = OptionMessageBuilder::new();
 
     // (buf.validate.field).string .et_cetera...
-    outer_rules.set("string", OptionValue::Message(rules.into()));
+    if !rules.is_empty() {
+      outer_rules.set("string", OptionValue::Message(rules.into()));
+    }
 
     // These must be added on the outer grouping, as they are generic rules
     // It's (buf.validate.field).required, NOT (buf.validate.field).string.required

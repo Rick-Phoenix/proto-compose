@@ -84,7 +84,9 @@ impl From<BoolValidator> for ProtoOption {
 
     let mut outer_rules = OptionMessageBuilder::new();
 
-    outer_rules.set("bool", OptionValue::Message(rules.build()));
+    if !rules.is_empty() {
+      outer_rules.set("bool", OptionValue::Message(rules.build()));
+    }
 
     outer_rules
       .set_required(validator.required)

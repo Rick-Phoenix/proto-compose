@@ -1,7 +1,11 @@
 use crate::*;
 
-pub trait ProtoEnum: TryFrom<i32> + Copy + Default {
+pub trait ProtoEnum: TryFrom<i32> + Copy + Default + Into<i32> {
   fn proto_name() -> &'static str;
+
+  fn into_int(self) -> i32 {
+    self.into()
+  }
 }
 
 pub trait ProtoEnumSchema: TryFrom<i32> + Default + ProtoEnum {

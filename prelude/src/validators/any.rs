@@ -148,7 +148,9 @@ impl From<AnyValidator> for ProtoOption {
 
     let mut outer_rules = OptionMessageBuilder::new();
 
-    outer_rules.set("any", OptionValue::Message(rules.build()));
+    if !rules.is_empty() {
+      outer_rules.set("any", OptionValue::Message(rules.build()));
+    }
 
     outer_rules
       .add_cel_options(validator.cel)

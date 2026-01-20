@@ -270,7 +270,9 @@ impl From<FieldMaskValidator> for ProtoOption {
 
     let mut outer_rules = OptionMessageBuilder::new();
 
-    outer_rules.set("field_mask", OptionValue::Message(rules.into()));
+    if !rules.is_empty() {
+      outer_rules.set("field_mask", OptionValue::Message(rules.into()));
+    }
 
     outer_rules
       .add_cel_options(validator.cel)

@@ -58,12 +58,12 @@ pub trait ValidatedMessage: Default + Clone {
   }
 }
 
-impl<T, S: builder::State> ValidatorBuilderFor<T> for MessageValidatorBuilder<T, S>
+impl<T, S: builder::State> ValidatorBuilderFor<T> for MessageValidatorBuilder<S>
 where
   T: ValidatedMessage + PartialEq + TryIntoCel,
 {
   type Target = T;
-  type Validator = MessageValidator<T>;
+  type Validator = MessageValidator;
 
   #[inline]
   #[doc(hidden)]
@@ -72,19 +72,34 @@ where
   }
 }
 
-impl<T> Validator<T> for MessageValidator<T>
+impl<T> Validator<T> for MessageValidator
 where
   T: ValidatedMessage + PartialEq + TryIntoCel,
 {
   type Target = T;
 
-  impl_testing_methods!();
+  #[cfg(feature = "cel")]
+  fn check_cel_programs_with(&self, val: Self::Target) -> Result<(), Vec<CelError>> {
+    if !self.cel.is_empty() {
+      test_programs(&self.cel, val)
+    } else {
+      Ok(())
+    }
+  }
+  #[cfg(feature = "cel")]
+  fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
+    <Self as Validator<T>>::check_cel_programs_with(self, Self::Target::default())
+  }
+  #[doc(hidden)]
+  fn cel_rules(&self) -> Vec<CelRule> {
+    self.cel.iter().map(|p| p.rule.clone()).collect()
+  }
 
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
     let mut errors = Vec::new();
 
     #[cfg(feature = "cel")]
-    if let Err(e) = self.check_cel_programs() {
+    if let Err(e) = <Self as Validator<T>>::check_cel_programs(self) {
       errors.extend(e.into_iter().map(ConsistencyError::from));
     }
 
@@ -235,35 +250,31 @@ where
 
 impl From<CelValidator> for ProtoOption {
   fn from(value: CelValidator) -> Self {
-    let rule_options: Vec<OptionValue> = value
-      .programs
-      .into_iter()
-      .map(|program| program.rule.into())
-      .collect();
+    let mut rules = OptionMessageBuilder::new();
+
+    rules.add_cel_options(value.programs);
 
     Self {
-      name: "(buf.validate.message).cel".into(),
-      value: OptionValue::List(rule_options.into()),
+      name: "(buf.validate.message)".into(),
+      value: OptionValue::Message(rules.into()),
     }
   }
 }
 
 #[non_exhaustive]
 #[derive(Debug, Clone, Default)]
-pub struct MessageValidator<T: ValidatedMessage> {
+pub struct MessageValidator {
   /// Adds custom validation using one or more [`CelRule`]s to this field.
   pub cel: Vec<CelProgram>,
 
   pub ignore: Ignore,
 
-  _message: PhantomData<T>,
-
   /// Specifies that the field must be set in order to be valid.
   pub required: bool,
 }
 
-impl<T: ValidatedMessage> From<MessageValidator<T>> for ProtoOption {
-  fn from(validator: MessageValidator<T>) -> Self {
+impl From<MessageValidator> for ProtoOption {
+  fn from(validator: MessageValidator) -> Self {
     let mut rules = OptionMessageBuilder::new();
 
     rules

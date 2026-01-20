@@ -86,6 +86,11 @@ pub struct OptionMessageBuilder {
 }
 
 impl OptionMessageBuilder {
+  #[must_use]
+  pub const fn is_empty(&self) -> bool {
+    self.inner.is_empty()
+  }
+
   pub(crate) fn maybe_set(
     &mut self,
     name: impl Into<SharedStr>,

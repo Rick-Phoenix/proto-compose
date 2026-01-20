@@ -216,7 +216,9 @@ impl From<DurationValidator> for ProtoOption {
 
     let mut outer_rules = OptionMessageBuilder::new();
 
-    outer_rules.set("duration", OptionValue::Message(rules.build()));
+    if !rules.is_empty() {
+      outer_rules.set("duration", OptionValue::Message(rules.build()));
+    }
 
     outer_rules
       .add_cel_options(validator.cel)

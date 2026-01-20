@@ -4,13 +4,13 @@ use crate::validators::*;
 pub(crate) use state::*;
 
 #[derive(Debug, Clone)]
-pub struct MessageValidatorBuilder<T: ValidatedMessage, S: State = Empty> {
+pub struct MessageValidatorBuilder<S: State = Empty> {
   _state: PhantomData<S>,
 
-  data: MessageValidator<T>,
+  data: MessageValidator,
 }
 
-impl<T: ValidatedMessage, S: State> Default for MessageValidatorBuilder<T, S> {
+impl<S: State> Default for MessageValidatorBuilder<S> {
   #[inline]
   fn default() -> Self {
     Self {
@@ -20,16 +20,16 @@ impl<T: ValidatedMessage, S: State> Default for MessageValidatorBuilder<T, S> {
   }
 }
 
-impl<T: ValidatedMessage> MessageValidator<T> {
+impl MessageValidator {
   #[must_use]
   #[inline]
-  pub fn builder() -> MessageValidatorBuilder<T> {
+  pub fn builder() -> MessageValidatorBuilder {
     MessageValidatorBuilder::default()
   }
 }
 
-impl<T: ValidatedMessage, S: State> From<MessageValidatorBuilder<T, S>> for ProtoOption {
-  fn from(value: MessageValidatorBuilder<T, S>) -> Self {
+impl<S: State> From<MessageValidatorBuilder<S>> for ProtoOption {
+  fn from(value: MessageValidatorBuilder<S>) -> Self {
     value.build().into()
   }
 }
@@ -39,9 +39,9 @@ impl<T: ValidatedMessage, S: State> From<MessageValidatorBuilder<T, S>> for Prot
   clippy::use_self,
   clippy::return_self_not_must_use
 )]
-impl<T: ValidatedMessage, S: State> MessageValidatorBuilder<T, S> {
+impl<S: State> MessageValidatorBuilder<S> {
   #[inline]
-  pub fn cel(mut self, program: CelProgram) -> MessageValidatorBuilder<T, S> {
+  pub fn cel(mut self, program: CelProgram) -> MessageValidatorBuilder<S> {
     self.data.cel.push(program);
 
     MessageValidatorBuilder {
@@ -51,7 +51,7 @@ impl<T: ValidatedMessage, S: State> MessageValidatorBuilder<T, S> {
   }
 
   #[inline]
-  pub fn ignore_always(mut self) -> MessageValidatorBuilder<T, SetIgnore<S>>
+  pub fn ignore_always(mut self) -> MessageValidatorBuilder<SetIgnore<S>>
   where
     S::Ignore: IsUnset,
   {
@@ -64,7 +64,7 @@ impl<T: ValidatedMessage, S: State> MessageValidatorBuilder<T, S> {
   }
 
   #[inline]
-  pub fn required(mut self) -> MessageValidatorBuilder<T, SetRequired<S>>
+  pub fn required(mut self) -> MessageValidatorBuilder<SetRequired<S>>
   where
     S::Required: IsUnset,
   {
@@ -77,7 +77,7 @@ impl<T: ValidatedMessage, S: State> MessageValidatorBuilder<T, S> {
   }
 
   #[inline]
-  pub fn build(self) -> MessageValidator<T> {
+  pub fn build(self) -> MessageValidator {
     self.data
   }
 }
