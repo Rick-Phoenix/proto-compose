@@ -225,6 +225,10 @@ impl Validator<Timestamp> for TimestampValidator {
 
     is_valid
   }
+
+  fn into_proto_option(self) -> Option<ProtoOption> {
+    Some(self.into())
+  }
 }
 
 impl From<TimestampValidator> for ProtoOption {

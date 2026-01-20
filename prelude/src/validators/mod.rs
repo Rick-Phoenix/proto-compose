@@ -6,7 +6,7 @@ use proto_types::protovalidate::*;
 // AND an assoc. type for the actual type being validated
 // so that it can be proxied by wrappers (like with Sint32, Fixed32, enums, etc...).
 // Same for `ValidatorBuilderFor`.
-pub trait Validator<T: ?Sized>: Into<ProtoOption> {
+pub trait Validator<T: ?Sized>: Sized {
   type Target: ToOwned + ?Sized;
   type UniqueStore<'a>: UniqueStore<'a, Item = Self::Target>
   where
@@ -16,11 +16,19 @@ pub trait Validator<T: ?Sized>: Into<ProtoOption> {
 
   fn cel_rules(&self) -> Vec<CelRule>;
 
-  fn into_schema(self) -> FieldValidatorSchema {
-    FieldValidatorSchema {
-      cel_rules: self.cel_rules(),
-      schema: self.into(),
-    }
+  fn into_proto_option(self) -> Option<ProtoOption> {
+    None
+  }
+
+  fn into_schema(self) -> Option<FieldValidatorSchema> {
+    let cel_rules = self.cel_rules();
+
+    self
+      .into_proto_option()
+      .map(|opt| FieldValidatorSchema {
+        schema: opt,
+        cel_rules,
+      })
   }
 
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>>;

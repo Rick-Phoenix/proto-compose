@@ -575,6 +575,10 @@ impl Validator<String> for StringValidator {
 
     is_valid
   }
+
+  fn into_proto_option(self) -> Option<ProtoOption> {
+    Some(self.into())
+  }
 }
 
 impl From<StringValidator> for ProtoOption {

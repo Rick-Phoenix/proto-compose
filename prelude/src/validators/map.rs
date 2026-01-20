@@ -346,6 +346,10 @@ where
 
     is_valid
   }
+
+  fn into_proto_option(self) -> Option<ProtoOption> {
+    Some(self.into())
+  }
 }
 
 impl<K, V> Validator<HashMap<K, V>> for MapValidator<K, V>
@@ -577,6 +581,10 @@ where
 
     is_valid
   }
+
+  fn into_proto_option(self) -> Option<ProtoOption> {
+    Some(self.into())
+  }
 }
 
 impl<K, V> From<MapValidator<K, V>> for ProtoOption
@@ -591,16 +599,15 @@ where
       .maybe_set("min_pairs", validator.min_pairs)
       .maybe_set("max_pairs", validator.max_pairs);
 
-    if let Some(keys_option) = validator.keys {
-      let keys_schema: Self = keys_option.into();
-
-      rules.set("keys", keys_schema.value);
+    if let Some(keys_option) = validator.keys.and_then(|k| k.into_proto_option()) {
+      rules.set("keys", keys_option.value);
     }
 
-    if let Some(values_option) = validator.values {
-      let values_schema: Self = values_option.into();
-
-      rules.set("values", values_schema.value);
+    if let Some(values_option) = validator
+      .values
+      .and_then(|v| v.into_proto_option())
+    {
+      rules.set("values", values_option.value);
     }
 
     let mut outer_rules = OptionMessageBuilder::new();
