@@ -56,7 +56,7 @@ where
       cel: vec![],
       // If the items are messages, the items validator
       // will be set no matter what
-      items: T::default_validator(),
+      items: T::HAS_DEFAULT_VALIDATOR.then(|| T::Validator::default()),
       min_items: None,
       max_items: None,
       unique: false,
@@ -85,6 +85,8 @@ where
     = UnsupportedStore<Self::Target>
   where
     Self: 'a;
+
+  const HAS_DEFAULT_VALIDATOR: bool = T::HAS_DEFAULT_VALIDATOR;
 }
 
 impl<T, S> ValidatorBuilderFor<Vec<T>> for RepeatedValidatorBuilder<T, S>

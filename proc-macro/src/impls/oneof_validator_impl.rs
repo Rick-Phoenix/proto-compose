@@ -21,22 +21,12 @@ pub fn generate_oneof_validator(
 
         quote_spanned! {data.span=>
           Self::#ident(v) => {
-            #(
-              is_valid &= #validators?;
-            )*
+            #(#validators)*
           }
         }
       });
 
-    quote! {
-      let mut is_valid = ::prelude::IsValid::Yes;
-      match self {
-        #(#tokens,)*
-        _ => {}
-      };
-
-      Ok(is_valid)
-    }
+    quote! { #(#tokens),* }
   };
 
   // Validators will always be populated if at least one field
@@ -55,7 +45,14 @@ pub fn generate_oneof_validator(
     quote! {
       impl ::prelude::ValidatedOneof for #oneof_ident {
         fn validate(&self, ctx: &mut ::prelude::ValidationCtx) -> ::prelude::ValidatorResult {
-          #validators_tokens
+          let mut is_valid = ::prelude::IsValid::Yes;
+
+          match self {
+            #validators_tokens,
+            _ => {}
+          };
+
+          Ok(is_valid)
         }
       }
     }

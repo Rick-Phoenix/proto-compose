@@ -112,6 +112,8 @@ where
     = UnsupportedStore<Self::Target>
   where
     Self: 'a;
+
+  const HAS_DEFAULT_VALIDATOR: bool = V::HAS_DEFAULT_VALIDATOR;
 }
 
 impl<K, V> ProtoValidator for BTreeMap<K, V>
@@ -130,6 +132,8 @@ where
     = UnsupportedStore<Self::Target>
   where
     Self: 'a;
+
+  const HAS_DEFAULT_VALIDATOR: bool = V::HAS_DEFAULT_VALIDATOR;
 }
 
 impl<K, V, S: builder::state::State> ValidatorBuilderFor<BTreeMap<K, V>>
@@ -180,7 +184,7 @@ where
       _key_type: PhantomData,
       _value_type: PhantomData,
       cel: vec![],
-      values: V::default_validator(),
+      values: V::HAS_DEFAULT_VALIDATOR.then(|| V::Validator::default()),
       min_pairs: None,
       max_pairs: None,
       ignore: Ignore::Unspecified,

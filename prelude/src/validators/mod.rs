@@ -161,8 +161,10 @@ pub trait ValidatorBuilderFor<T: ?Sized>: Default {
 
 pub trait ProtoValidator {
   type Target: ?Sized;
-  type Validator: Validator<Self, Target = Self::Target> + Clone;
+  type Validator: Validator<Self, Target = Self::Target> + Clone + Default;
   type Builder: ValidatorBuilderFor<Self, Validator = Self::Validator>;
+
+  const HAS_DEFAULT_VALIDATOR: bool = false;
 
   type UniqueStore<'a>: UniqueStore<'a, Item = Self::Target>
   where
@@ -173,12 +175,6 @@ pub trait ProtoValidator {
     Self: 'a,
   {
     Self::UniqueStore::default_with_capacity(cap)
-  }
-
-  #[must_use]
-  #[inline]
-  fn default_validator() -> Option<Self::Validator> {
-    None
   }
 
   #[inline]

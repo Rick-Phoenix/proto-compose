@@ -92,7 +92,7 @@ where
       _key_type,
       _value_type,
       cel,
-      values: values.or_else(|| V::default_validator()),
+      values: values.or_else(|| V::HAS_DEFAULT_VALIDATOR.then(|| V::Validator::default())),
       min_pairs,
       max_pairs,
       ignore,

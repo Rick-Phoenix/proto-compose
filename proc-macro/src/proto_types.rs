@@ -329,4 +329,12 @@ impl ProtoType {
       _ => quote_spanned! {span=> message },
     }
   }
+
+  pub fn as_message(&self) -> Option<&MessageInfo> {
+    if let Self::Message(v) = self {
+      Some(v)
+    } else {
+      None
+    }
+  }
 }

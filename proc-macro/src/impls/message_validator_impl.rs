@@ -19,7 +19,7 @@ pub fn field_validator_tokens(field_data: &FieldData, item_kind: ItemKind) -> Ve
 
   if let ProtoField::Oneof(OneofInfo { required, .. }) = proto_field {
     tokens.push(quote_spanned! {*span=>
-      ::prelude::validate_oneof(self.#ident.as_ref(), ctx, #required)
+      is_valid &= ::prelude::validate_oneof(self.#ident.as_ref(), ctx, #required)?;
     });
   } else {
     tokens = validators.iter().map(|validator| {
@@ -71,25 +71,40 @@ pub fn field_validator_tokens(field_data: &FieldData, item_kind: ItemKind) -> Ve
 
       if kind.is_custom() {
         quote_spanned! {*span=>
-          ::prelude::Validator::<#validator_target_type>::validate_core(
+          is_valid &= ::prelude::Validator::<#validator_target_type>::validate_core(
             &(#validator_expr),
             #validate_args
-          )
+          )?;
         }
       } else {
         let validator_static_ident = format_ident!("{}_VALIDATOR", to_upper_snake_case(ident_str));
         let validator_name = field_data.validator_name();
 
-        quote_spanned! {*span=>
-          {
-            static #validator_static_ident: ::prelude::Lazy<#validator_name> = ::prelude::Lazy::new(|| {
-              #validator_expr
-            });
+        if kind.is_default() {
+          quote_spanned! {*span=>
+            if <#validator_target_type as ::prelude::ProtoValidator>::HAS_DEFAULT_VALIDATOR {
+              static #validator_static_ident: ::prelude::Lazy<#validator_name> = ::prelude::Lazy::new(|| {
+                #validator_expr
+              });
 
-            ::prelude::Validator::<#validator_target_type>::validate_core(
-              &*#validator_static_ident,
-              #validate_args
-            )
+              is_valid &= ::prelude::Validator::<#validator_target_type>::validate_core(
+                &*#validator_static_ident,
+                #validate_args
+              )?;
+            }
+          }
+        } else {
+          quote_spanned! {*span=>
+            is_valid &= {
+              static #validator_static_ident: ::prelude::Lazy<#validator_name> = ::prelude::Lazy::new(|| {
+                #validator_expr
+              });
+
+              ::prelude::Validator::<#validator_target_type>::validate_core(
+                &*#validator_static_ident,
+                #validate_args
+              )?
+            };
           }
         }
       }
@@ -105,23 +120,28 @@ pub fn generate_message_validator(
   fields: &[FieldDataKind],
   top_level_validators: &Validators,
 ) -> TokenStream2 {
+  let mut maybe_default_validators = 0;
+  let mut non_default_validators = 0;
+
   let validators_tokens = if *use_fallback {
     quote! { unimplemented!(); }
   } else {
     let top_level = top_level_validators.iter().enumerate().map(|(i, v)| {
-      let validator = if v.kind.is_custom() {
+      non_default_validators += 1;
+
+      if v.kind.is_custom() {
         quote_spanned! {v.span=>
-          ::prelude::Validator::<#target_ident>::validate_core(
+          is_valid &= ::prelude::Validator::<#target_ident>::validate_core(
             &(#v),
             ctx,
             Some(self)
-          )
+          )?;
         }
       } else {
         let validator_static_ident = format_ident!("__VALIDATOR_{i}");
 
         quote_spanned! {v.span=>
-          {
+          is_valid &= {
             static #validator_static_ident: ::prelude::Lazy<::prelude::CelValidator> = ::prelude::Lazy::new(|| {
               #v
             });
@@ -130,33 +150,16 @@ pub fn generate_message_validator(
               &*#validator_static_ident,
               ctx,
               Some(self)
-            )
-          }
+            )?
+          };
         }
-      };
-
-      quote_spanned! {v.span=>
-        is_valid &= #validator?;
       }
     });
 
     let field_validators = fields
       .iter()
       .filter_map(|d| d.as_normal())
-      .filter_map(|d| {
-        let tokens = field_validator_tokens(d, ItemKind::Message);
-
-        (!tokens.is_empty()).then_some((d, tokens))
-      })
-      .map(|(data, validators)| {
-        let span = data.span;
-
-        quote_spanned! {span=>
-          #(
-            is_valid &= #validators?;
-          )*
-        }
-      });
+      .flat_map(|d| field_validator_tokens(d, ItemKind::Message));
 
     let all_validators = top_level.chain(field_validators);
 
@@ -168,49 +171,63 @@ pub fn generate_message_validator(
   // because we cannot know if it has validators of its own.
   let has_validators = !validators_tokens.is_empty();
 
-  let validator_impl = if has_validators {
-    quote! {
-      impl ::prelude::ValidatedMessage for #target_ident {
-        #[doc(hidden)]
-        fn nested_validate(&self, ctx: &mut ::prelude::ValidationCtx) -> ::prelude::ValidatorResult {
-          let mut is_valid = ::prelude::IsValid::Yes;
+  let inline_if_empty = (!has_validators).then(|| quote! { #[inline(always)] });
 
-          #validators_tokens
-
-          Ok(is_valid)
-        }
-      }
+  for v in fields
+    .iter()
+    .filter_map(|f| f.as_normal())
+    .flat_map(|d| &d.validators)
+  {
+    if v.kind.is_default() {
+      maybe_default_validators += 1;
+    } else {
+      non_default_validators += 1;
     }
+  }
+
+  let total_validators = maybe_default_validators + non_default_validators;
+
+  let has_default_validator_tokens = if total_validators == 0 {
+    quote! { false }
+  } else if non_default_validators > 0 {
+    quote! { true }
   } else {
-    quote! {
-      impl ::prelude::ValidatedMessage for #target_ident {
-        #[inline(always)]
-        fn validate(&self) -> Result<(), ::prelude::ViolationsAcc> {
-          Ok(())
-        }
+    let message_paths = fields
+      .iter()
+      .filter_map(|f| f.as_normal())
+      .filter_map(|f| f.message_path())
+      .filter(|p| p.get_ident().is_none_or(|i| i != target_ident));
 
-        #[doc(hidden)]
-        #[inline(always)]
-        fn nested_validate(&self, ctx: &mut ::prelude::ValidationCtx) -> ::prelude::ValidatorResult {
-          Ok(::prelude::IsValid::Yes)
-        }
+    let mut has_default_validator_tokens = TokenStream2::new();
+
+    for (i, path) in message_paths.enumerate() {
+      if i != 0 {
+        has_default_validator_tokens.extend(quote! { && });
       }
+
+      has_default_validator_tokens
+        .extend(quote! { <#path as ::prelude::ProtoValidator>::HAS_DEFAULT_VALIDATOR });
     }
+
+    if has_default_validator_tokens.is_empty() {
+      has_default_validator_tokens = quote! { false };
+    }
+
+    has_default_validator_tokens
   };
 
-  // The default impl will be used otherwise
-  let default_validator_method = has_validators.then(|| {
-    quote! {
+  quote! {
+    impl ::prelude::ValidatedMessage for #target_ident {
       #[doc(hidden)]
-      #[inline]
-      fn default_validator() -> Option<Self::Validator> {
-        Some(::prelude::MessageValidator::default())
+      #inline_if_empty
+      fn nested_validate(&self, ctx: &mut ::prelude::ValidationCtx) -> ::prelude::ValidatorResult {
+        let mut is_valid = ::prelude::IsValid::Yes;
+
+        #validators_tokens
+
+        Ok(is_valid)
       }
     }
-  });
-
-  quote! {
-    #validator_impl
 
     impl ::prelude::ProtoValidator for #target_ident {
       #[doc(hidden)]
@@ -225,7 +242,7 @@ pub fn generate_message_validator(
       where
         Self: 'a;
 
-      #default_validator_method
+      const HAS_DEFAULT_VALIDATOR: bool = #has_default_validator_tokens;
     }
   }
 }
