@@ -154,5 +154,11 @@ fn custom_top_level_validators() {
 
   let violations = msg.validate_all().unwrap_err().into_violations();
 
+  let mapvalidator = MapValidator::<Sint32, Sint32>::builder()
+    .min_pairs(1)
+    .build();
+
+  let _ = mapvalidator.validate(&BTreeMap::new());
+
   assert_eq_pretty!(violations.len(), 4);
 }
