@@ -5,8 +5,11 @@ pub fn generate_oneof_validator(
   oneof_ident: &Ident,
   variants: &[FieldDataKind],
 ) -> TokenStream2 {
-  let mut maybe_default_validators = 0;
-  let mut non_default_validators = 0;
+  let mut validators_data = ValidatorsData {
+    non_default_validators: 0,
+    maybe_default_validators: 0,
+    paths_to_check: vec![],
+  };
 
   let validators_tokens = if *use_fallback {
     quote! { unimplemented!() }
@@ -15,7 +18,7 @@ pub fn generate_oneof_validator(
       .iter()
       .filter_map(|d| d.as_normal())
       .filter_map(|d| {
-        let tokens = field_validator_tokens(d, ItemKind::Oneof);
+        let tokens = field_validator_tokens(&mut validators_data, d, ItemKind::Oneof);
 
         (!tokens.is_empty()).then_some((d, tokens))
       })
@@ -32,36 +35,19 @@ pub fn generate_oneof_validator(
     quote! { #(#tokens,)* }
   };
 
-  for v in variants
-    .iter()
-    .filter_map(|f| f.as_normal())
-    .flat_map(|d| &d.validators)
-  {
-    if v.kind.is_default() {
-      maybe_default_validators += 1;
-    } else {
-      non_default_validators += 1;
-    }
-  }
-
-  let has_validators = maybe_default_validators + non_default_validators != 0;
+  let has_validators =
+    validators_data.maybe_default_validators + validators_data.non_default_validators != 0;
 
   let inline_if_empty = (!has_validators).then(|| quote! { #[inline(always)] });
 
   let has_default_validator_tokens = if !has_validators {
     quote! { false }
-  } else if non_default_validators > 0 {
+  } else if validators_data.non_default_validators > 0 {
     quote! { true }
   } else {
-    let message_paths = variants
-      .iter()
-      .filter_map(|f| f.as_normal())
-      .filter_map(|f| f.message_info())
-      .filter_map(|m| (!m.boxed).then_some(&m.path));
-
     let mut has_default_validator_tokens = TokenStream2::new();
 
-    for (i, path) in message_paths.enumerate() {
+    for (i, path) in validators_data.paths_to_check.iter().enumerate() {
       if i != 0 {
         has_default_validator_tokens.extend(quote! { && });
       }

@@ -99,6 +99,25 @@ impl ProtoField {
   // FieldData is fully created
   pub fn default_validator_expr(&self, span: Span) -> Option<ValidatorTokens> {
     let expr = match self {
+      Self::Oneof(OneofInfo { required, .. }) => {
+        // If a oneof is required, it shouldn't be treated as a default impl.
+        // The basic validation should be triggered regardless, as it's not cached
+        // and the oneof validator will actually skip any validation beyond checking
+        // if it's Some in case there is no default validator on the oneof
+        let kind = if *required {
+          ValidatorKind::RequiredOneof
+        } else {
+          ValidatorKind::DefaultOneof
+        };
+
+        return Some(ValidatorTokens {
+          expr: quote_spanned! {span=>
+            ::prelude::OneofValidator::new(#required)
+          },
+          kind,
+          span,
+        });
+      }
       Self::Map(map) => {
         // Only offers a default if values are messages
         if let ProtoType::Message(MessageInfo { path, .. }) = &map.values {
@@ -130,7 +149,6 @@ impl ProtoField {
           None
         }
       }
-      _ => None,
     };
 
     expr.map(|expr| ValidatorTokens {
@@ -154,9 +172,7 @@ impl ProtoField {
           quote_spanned! {span=> ::std::collections::HashMap<#keys, #values> }
         }
       }
-      Self::Oneof { .. } => quote! {
-        compile_error!("validator target type should not be triggered for oneofs, please report the bug if you see this")
-      },
+      Self::Oneof(OneofInfo { path, .. }) => path.to_token_stream(),
       Self::Repeated(proto_type) => {
         let inner = proto_type.validator_target_type(span);
 

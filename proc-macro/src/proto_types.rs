@@ -330,7 +330,7 @@ impl ProtoType {
     }
   }
 
-  pub fn as_message(&self) -> Option<&MessageInfo> {
+  pub const fn as_message(&self) -> Option<&MessageInfo> {
     if let Self::Message(v) = self {
       Some(v)
     } else {

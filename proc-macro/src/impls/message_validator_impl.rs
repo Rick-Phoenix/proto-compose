@@ -2,7 +2,17 @@ use crate::*;
 
 bool_enum!(pub UseFallback);
 
-pub fn field_validator_tokens(field_data: &FieldData, item_kind: ItemKind) -> Vec<TokenStream2> {
+pub struct ValidatorsData<'a> {
+  pub non_default_validators: usize,
+  pub maybe_default_validators: usize,
+  pub paths_to_check: Vec<&'a Path>,
+}
+
+pub fn field_validator_tokens<'a>(
+  validators_data: &mut ValidatorsData<'a>,
+  field_data: &'a FieldData,
+  item_kind: ItemKind,
+) -> Vec<TokenStream2> {
   let FieldData {
     ident,
     ident_str,
@@ -10,57 +20,69 @@ pub fn field_validator_tokens(field_data: &FieldData, item_kind: ItemKind) -> Ve
     validators,
     proto_name,
     proto_field,
-    span,
     type_info,
     ..
   } = field_data;
 
-  let mut tokens: Vec<TokenStream2> = Vec::new();
+  let mut tokens: Vec<TokenStream2> = Vec::with_capacity(validators.validators.len());
 
-  if let ProtoField::Oneof(OneofInfo { required, path, .. }) = proto_field {
-    tokens.push(quote_spanned! {*span=>
-      if <#path as ::prelude::ProtoValidator>::HAS_DEFAULT_VALIDATOR {
-        is_valid &= ::prelude::Validator::<#path>::validate_core(
-          & ::prelude::OneofValidator::new(#required),
-          ctx,
-          self.#ident.as_ref(),
-        )?;
+  for v in validators {
+    let ValidatorTokens {
+      expr: validator_expr,
+      kind,
+      span,
+    } = v;
+
+    if kind.is_default() {
+      validators_data.maybe_default_validators += 1;
+
+      if let Some(msg_info) = field_data.message_info()
+        && !msg_info.boxed
+      {
+        validators_data
+          .paths_to_check
+          .push(&msg_info.path);
+      } else if let ProtoField::Oneof(oneof) = proto_field {
+        validators_data.paths_to_check.push(&oneof.path);
       }
-    });
-  } else {
-    tokens = validators.iter().map(|validator| {
-      let ValidatorTokens {
-        expr: validator_expr,
-        span,
-        kind,
-        ..
-      } = validator;
+    } else {
+      validators_data.non_default_validators += 1;
+    }
 
-      let argument = match item_kind {
-        ItemKind::Oneof => quote_spanned! {*span=> Some(v) },
-        ItemKind::Message => match type_info.type_.as_ref() {
-          RustType::Option(inner) => {
-            if inner.is_box() {
-              quote_spanned! (*span=> self.#ident.as_deref())
-            } else {
-              quote_spanned! (*span=> self.#ident.as_ref())
-            }
+    let argument = match item_kind {
+      ItemKind::Oneof => quote_spanned! {*span=> Some(v) },
+      ItemKind::Message => match type_info.type_.as_ref() {
+        RustType::Option(inner) => {
+          if inner.is_box() {
+            quote_spanned! (*span=> self.#ident.as_deref())
+          } else {
+            quote_spanned! (*span=> self.#ident.as_ref())
           }
-          RustType::Box(_) => quote_spanned! (*span=> self.#ident.as_deref()),
-          _ => {
-            if let ProtoField::Single(ProtoType::Message(MessageInfo { .. })) = proto_field {
-              quote_spanned! (*span=> self.#ident.as_ref())
-            } else {
-              quote_spanned! (*span=> Some(&self.#ident))
-            }
+        }
+        RustType::Box(_) => quote_spanned! (*span=> self.#ident.as_deref()),
+        _ => {
+          if matches!(
+            proto_field,
+            ProtoField::Single(ProtoType::Message(MessageInfo { .. })) | ProtoField::Oneof(_)
+          ) {
+            quote_spanned! (*span=> self.#ident.as_ref())
+          } else {
+            quote_spanned! (*span=> Some(&self.#ident))
           }
-        },
-      };
+        }
+      },
+    };
 
-      let field_type = field_data.descriptor_type_tokens();
-      let validator_target_type = proto_field.validator_target_type(*span);
+    let field_type = field_data.descriptor_type_tokens();
+    let validator_target_type = proto_field.validator_target_type(*span);
 
-      let validate_args = quote! {
+    let validate_args = if proto_field.is_oneof() {
+      quote_spanned! {*span=>
+        ctx,
+        #argument
+      }
+    } else {
+      quote_spanned! {*span=>
         ctx.with_field_context(
           ::prelude::FieldContext {
             proto_name: #proto_name,
@@ -73,48 +95,45 @@ pub fn field_validator_tokens(field_data: &FieldData, item_kind: ItemKind) -> Ve
           }
         ),
         #argument
-      };
+      }
+    };
 
-      if kind.is_custom() {
-        quote_spanned! {*span=>
-          is_valid &= ::prelude::Validator::<#validator_target_type>::validate_core(
-            &(#validator_expr),
+    let validator_call = if kind.should_be_cached() {
+      let static_ident = format_ident!("{}_VALIDATOR", to_upper_snake_case(ident_str));
+      let validator_name = field_data.validator_name();
+
+      quote_spanned! {*span=>
+        is_valid &= {
+          static #static_ident: ::prelude::Lazy<#validator_name> = ::prelude::Lazy::new(|| {
+            #validator_expr
+          });
+
+          ::prelude::Validator::<#validator_target_type>::validate_core(
+            &*#static_ident,
             #validate_args
-          )?;
-        }
-      } else {
-        let validator_static_ident = format_ident!("{}_VALIDATOR", to_upper_snake_case(ident_str));
-        let validator_name = field_data.validator_name();
+          )?
+        };
+      }
+    } else {
+      quote_spanned! {*span=>
+        is_valid &= ::prelude::Validator::<#validator_target_type>::validate_core(
+          &(#validator_expr),
+          #validate_args
+        )?;
+      }
+    };
 
-        if kind.is_default() {
-          quote_spanned! {*span=>
-            if <#validator_target_type as ::prelude::ProtoValidator>::HAS_DEFAULT_VALIDATOR {
-              static #validator_static_ident: ::prelude::Lazy<#validator_name> = ::prelude::Lazy::new(|| {
-                #validator_expr
-              });
-
-              is_valid &= ::prelude::Validator::<#validator_target_type>::validate_core(
-                &*#validator_static_ident,
-                #validate_args
-              )?;
-            }
-          }
-        } else {
-          quote_spanned! {*span=>
-            is_valid &= {
-              static #validator_static_ident: ::prelude::Lazy<#validator_name> = ::prelude::Lazy::new(|| {
-                #validator_expr
-              });
-
-              ::prelude::Validator::<#validator_target_type>::validate_core(
-                &*#validator_static_ident,
-                #validate_args
-              )?
-            };
-          }
+    let output = if kind.is_default() {
+      quote_spanned! {*span=>
+        if <#validator_target_type as ::prelude::ProtoValidator>::HAS_DEFAULT_VALIDATOR {
+          #validator_call
         }
       }
-    }).collect();
+    } else {
+      validator_call
+    };
+
+    tokens.push(output);
   }
 
   tokens
@@ -126,15 +145,16 @@ pub fn generate_message_validator(
   fields: &[FieldDataKind],
   top_level_validators: &Validators,
 ) -> TokenStream2 {
-  let mut maybe_default_validators = 0;
-  let mut non_default_validators = 0;
+  let mut validators_data = ValidatorsData {
+    non_default_validators: top_level_validators.len(),
+    maybe_default_validators: 0,
+    paths_to_check: vec![],
+  };
 
   let validators_tokens = if *use_fallback {
     quote! { unimplemented!(); }
   } else {
     let top_level = top_level_validators.iter().enumerate().map(|(i, v)| {
-      non_default_validators += 1;
-
       if v.kind.is_custom() {
         quote_spanned! {v.span=>
           is_valid &= ::prelude::Validator::<#target_ident>::validate_core(
@@ -165,62 +185,26 @@ pub fn generate_message_validator(
     let field_validators = fields
       .iter()
       .filter_map(|d| d.as_normal())
-      .flat_map(|d| field_validator_tokens(d, ItemKind::Message));
+      .flat_map(|d| field_validator_tokens(&mut validators_data, d, ItemKind::Message));
 
     let all_validators = top_level.chain(field_validators);
 
     quote! { #(#all_validators)* }
   };
 
-  // Validators will always be populated if a field is marked
-  // as a message (or vec/map of messages), or as a oneof,
-  // because we cannot know if it has validators of its own.
-  let has_validators = !validators_tokens.is_empty();
+  let has_validators =
+    validators_data.maybe_default_validators + validators_data.non_default_validators != 0;
 
   let inline_if_empty = (!has_validators).then(|| quote! { #[inline(always)] });
 
-  for f in fields.iter().filter_map(|f| f.as_normal()) {
-    if f.proto_field.is_oneof() {
-      maybe_default_validators += 1;
-    }
-
-    for v in &f.validators {
-      if v.kind.is_default() {
-        maybe_default_validators += 1;
-      } else {
-        non_default_validators += 1;
-      }
-    }
-  }
-
-  let total_validators = maybe_default_validators + non_default_validators;
-
-  let has_default_validator_tokens = if total_validators == 0 {
+  let has_default_validator_tokens = if !has_validators {
     quote! { false }
-  } else if non_default_validators > 0 {
+  } else if validators_data.non_default_validators > 0 {
     quote! { true }
   } else {
-    let paths_to_check = fields
-      .iter()
-      .filter_map(|f| f.as_normal())
-      .filter_map(|f| match &f.proto_field {
-        ProtoField::Map(map) => map
-          .values
-          .as_message()
-          .filter(|m| !m.boxed)
-          .map(|m| &m.path),
-        ProtoField::Oneof(oneof) => Some(&oneof.path),
-        ProtoField::Repeated(inner) | ProtoField::Optional(inner) | ProtoField::Single(inner) => {
-          inner
-            .as_message()
-            .filter(|m| !m.boxed)
-            .map(|m| &m.path)
-        }
-      });
-
     let mut has_default_validator_tokens = TokenStream2::new();
 
-    for (i, path) in paths_to_check.enumerate() {
+    for (i, path) in validators_data.paths_to_check.iter().enumerate() {
       if i != 0 {
         has_default_validator_tokens.extend(quote! { && });
       }
@@ -231,7 +215,7 @@ pub fn generate_message_validator(
 
     // This can still happen if the only element in the paths_to_check
     // is this same message, which was boxed. In that case,
-    // if we got to this point, non_default_validators is > 0,
+    // if we got to this point, non_default_validators is 0,
     // so this should be false
     if has_default_validator_tokens.is_empty() {
       has_default_validator_tokens = quote! { false };
@@ -277,8 +261,8 @@ impl MessageCtx<'_> {
 
     generate_message_validator(
       // For non-reflection implementations we don't skip fields if they don't have
-      // validators, so empty fields = an error occurred
-      self.fields_data.is_empty().into(),
+      // validators, so having empty fields means an error occurred
+      UseFallback::from(self.fields_data.is_empty()),
       target_ident,
       &self.fields_data,
       &self.message_attrs.validators,

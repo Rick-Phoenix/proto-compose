@@ -224,7 +224,7 @@ pub struct OneofValidator {
   pub required: bool,
 }
 
-impl<T: ValidatedOneof> ValidatorBuilderFor<T> for OneofValidator {
+impl<T: ValidatedOneof + ProtoValidator> ValidatorBuilderFor<T> for OneofValidator {
   type Target = T;
   type Validator = Self;
 
@@ -233,7 +233,7 @@ impl<T: ValidatedOneof> ValidatorBuilderFor<T> for OneofValidator {
   }
 }
 
-impl<T: ValidatedOneof> Validator<T> for OneofValidator {
+impl<T: ValidatedOneof + ProtoValidator> Validator<T> for OneofValidator {
   type Target = T;
 
   // This one should have into<protooption>
@@ -244,7 +244,13 @@ impl<T: ValidatedOneof> Validator<T> for OneofValidator {
     V: Borrow<Self::Target> + ?Sized,
   {
     match val {
-      Some(oneof) => oneof.borrow().validate(ctx),
+      Some(oneof) => {
+        if T::HAS_DEFAULT_VALIDATOR {
+          oneof.borrow().validate(ctx)
+        } else {
+          Ok(IsValid::Yes)
+        }
+      }
       None => {
         if self.required {
           ctx.add_required_oneof_violation()
@@ -260,5 +266,11 @@ impl OneofValidator {
   #[must_use]
   pub const fn new(required: bool) -> Self {
     Self { required }
+  }
+
+  #[must_use]
+  pub const fn required(mut self) -> Self {
+    self.required = true;
+    self
   }
 }

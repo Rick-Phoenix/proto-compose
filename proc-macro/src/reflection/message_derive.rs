@@ -105,6 +105,8 @@ fn extract_fields_data(item: &mut ItemStruct) -> Result<ReflectionMsgData, Error
       if let Some(oneof_rules) = get_oneof_rules(&oneof_desc) {
         oneof.required = oneof_rules.required();
 
+        let proto_field = ProtoField::Oneof(oneof);
+
         fields_data.push(FieldDataKind::Normal(FieldData {
           span: field_span,
           ident: ident.clone(),
@@ -112,9 +114,13 @@ fn extract_fields_data(item: &mut ItemStruct) -> Result<ReflectionMsgData, Error
           proto_name: proto_name.to_string(),
           ident_str,
           tag: None,
-          validators: Validators::default(),
+          validators: Validators::from_single(
+            proto_field
+              .default_validator_expr(field_span)
+              .expect("Failed to get the default oneof validator, this shouldn't have happened"),
+          ),
           options: TokensOr::<TokenStream2>::vec(),
-          proto_field: ProtoField::Oneof(oneof),
+          proto_field,
           from_proto: None,
           into_proto: None,
           deprecated: false,

@@ -1,19 +1,7 @@
 use crate::*;
 
 impl FieldData {
-  pub fn message_path(&self) -> Option<&Path> {
-    let msg_info = match &self.proto_field {
-      ProtoField::Map(map) => map.values.as_message(),
-      ProtoField::Oneof(_) => None,
-      ProtoField::Repeated(inner) | ProtoField::Optional(inner) | ProtoField::Single(inner) => {
-        inner.as_message()
-      }
-    };
-
-    msg_info.map(|m| &m.path)
-  }
-
-  pub fn message_info(&self) -> Option<&MessageInfo> {
+  pub const fn message_info(&self) -> Option<&MessageInfo> {
     match &self.proto_field {
       ProtoField::Map(map) => map.values.as_message(),
       ProtoField::Oneof(_) => None,
