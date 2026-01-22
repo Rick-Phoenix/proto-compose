@@ -271,13 +271,40 @@ impl Validator<String> for StringValidator {
       errors.extend(e.into_iter().map(ConsistencyError::from));
     }
 
-    if let Some(contains) = self.contains.as_ref()
-      && let Some(not_contains) = self.not_contains.as_ref()
-      && contains == not_contains
-    {
-      errors.push(ConsistencyError::ContradictoryInput(
-        "`contains` and `not_contains` have the same value".to_string(),
-      ));
+    if let Some(forbidden_substr) = self.not_contains.as_deref() {
+      if let Some(required_substr) = self.contains.as_deref()
+        && required_substr.contains(forbidden_substr)
+      {
+        errors.push(ConsistencyError::ContradictoryInput(
+          "`not_contains` is a substring of `contains`".to_string(),
+        ));
+      }
+
+      if let Some(prefix) = self.prefix.as_deref()
+        && prefix.contains(forbidden_substr)
+      {
+        errors.push(ConsistencyError::ContradictoryInput(
+          "`not_contains` is a substring of `prefix`".to_string(),
+        ));
+      }
+
+      if let Some(suffix) = self.suffix.as_deref()
+        && suffix.contains(forbidden_substr)
+      {
+        errors.push(ConsistencyError::ContradictoryInput(
+          "`not_contains` is a substring of `suffix`".to_string(),
+        ));
+      }
+
+      if let Some(allowed_values) = self.in_.as_ref() {
+        for str in allowed_values {
+          if str.contains(forbidden_substr) {
+            errors.push(ConsistencyError::ContradictoryInput(
+              format!("The `in` list contains '{str}', which matches the `not_contains` substring '{forbidden_substr}'")
+            ));
+          }
+        }
+      }
     }
 
     if let Err(e) = check_list_rules(self.in_.as_ref(), self.not_in.as_ref()) {
