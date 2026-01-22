@@ -51,9 +51,41 @@ struct CustomValidatorsMsg {
   custom_fn: i32,
   #[proto(validate = *CUSTOM_STATIC)]
   custom_static: i32,
-  #[proto(oneof(tags(1, 2)))]
+  #[proto(oneof(tags(1, 2)), validate = [ CustomOneofValidator, from_fn(custom_oneof_validator), *CUSTOM_ONEOF_STATIC ])]
   oneof: Option<CustomValidatorOneof>,
 }
+
+struct CustomOneofValidator;
+
+impl Validator<CustomValidatorOneof> for CustomOneofValidator {
+  type Target = CustomValidatorOneof;
+
+  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidatorResult
+  where
+    V: std::borrow::Borrow<Self::Target> + ?Sized,
+  {
+    custom_oneof_validator(ctx, val.map(|v| v.borrow()))
+  }
+}
+
+fn custom_oneof_validator(
+  ctx: &mut ValidationCtx,
+  val: Option<&CustomValidatorOneof>,
+) -> ValidatorResult {
+  match val.unwrap() {
+    CustomValidatorOneof::CustomFn(1) => Ok(IsValid::Yes),
+    _ => {
+      ctx.violations.push(ViolationCtx {
+        data: test_violation(),
+        kind: ViolationKind::Cel,
+      });
+
+      Ok(IsValid::No)
+    }
+  }
+}
+
+static CUSTOM_ONEOF_STATIC: LazyLock<CustomOneofValidator> = LazyLock::new(|| CustomOneofValidator);
 
 #[proto_oneof(no_auto_test)]
 enum CustomValidatorOneof {
@@ -74,7 +106,7 @@ fn custom_validators() {
 
   let violations = msg.validate_all().unwrap_err().into_violations();
 
-  assert_eq_pretty!(violations.len(), 4);
+  assert_eq_pretty!(violations.len(), 7);
 
   for v in violations {
     assert_eq_pretty!(v, test_violation());

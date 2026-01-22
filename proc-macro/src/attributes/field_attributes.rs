@@ -353,10 +353,12 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
     }
   };
 
+  if let Some(default) = proto_field.default_validator_expr(field_span) {
+    validators.validators.push(default);
+  }
+
   if !validators.validators.is_empty() {
     validators.adjust_closures(&proto_field);
-  } else if let Some(default) = proto_field.default_validator_expr(field_span) {
-    validators.validators.push(default);
   }
 
   let proto_name = name.unwrap_or_else(|| {
