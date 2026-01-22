@@ -144,7 +144,6 @@ where
           RepeatedViolation::MinItems => self.min_items.is_some(),
           RepeatedViolation::MaxItems => self.max_items.is_some(),
           RepeatedViolation::Unique => self.unique,
-          RepeatedViolation::Items => self.items.is_some(),
           _ => true,
         };
 

@@ -196,8 +196,6 @@ where
         let is_used = match key {
           MapViolation::MinPairs => self.min_pairs.is_some(),
           MapViolation::MaxPairs => self.max_pairs.is_some(),
-          MapViolation::Keys => self.keys.is_some(),
-          MapViolation::Values => self.values.is_some(),
           _ => true,
         };
 
