@@ -9,6 +9,7 @@ pub struct ValidatorsData<'a> {
 }
 
 pub fn field_validator_tokens<'a>(
+  input_ident: &Ident,
   validators_data: &mut ValidatorsData<'a>,
   field_data: &'a FieldData,
   item_kind: ItemKind,
@@ -38,6 +39,10 @@ pub fn field_validator_tokens<'a>(
 
       if let Some(msg_info) = field_data.message_info()
         && !msg_info.boxed
+        && msg_info
+          .path
+          .get_ident()
+          .is_none_or(|i| i != input_ident)
       {
         validators_data
           .paths_to_check
@@ -185,7 +190,9 @@ pub fn generate_message_validator(
     let field_validators = fields
       .iter()
       .filter_map(|d| d.as_normal())
-      .flat_map(|d| field_validator_tokens(&mut validators_data, d, ItemKind::Message));
+      .flat_map(|d| {
+        field_validator_tokens(target_ident, &mut validators_data, d, ItemKind::Message)
+      });
 
     let all_validators = top_level.chain(field_validators);
 

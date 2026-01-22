@@ -3,9 +3,13 @@ pub use builder::MessageValidatorBuilder;
 
 use super::*;
 
-pub trait ValidatedMessage: Default + Clone {
+pub trait ValidatedMessage: ProtoValidator + Default + Clone {
   #[inline]
   fn validate_all(&self) -> Result<(), ViolationsAcc> {
+    if !Self::HAS_DEFAULT_VALIDATOR {
+      return Ok(());
+    }
+
     let mut ctx = ValidationCtx {
       field_context: None,
       parent_elements: vec![],
@@ -24,6 +28,10 @@ pub trait ValidatedMessage: Default + Clone {
 
   #[inline]
   fn validate(&self) -> Result<(), ViolationsAcc> {
+    if !Self::HAS_DEFAULT_VALIDATOR {
+      return Ok(());
+    }
+
     let mut ctx = ValidationCtx::default();
 
     let _ = self.nested_validate(&mut ctx);
@@ -37,11 +45,19 @@ pub trait ValidatedMessage: Default + Clone {
 
   #[inline]
   fn is_valid(&self) -> bool {
-    self.validate().is_ok()
+    if Self::HAS_DEFAULT_VALIDATOR {
+      self.validate().is_ok()
+    } else {
+      true
+    }
   }
 
   #[inline]
   fn validated(self) -> Result<Self, ViolationsAcc> {
+    if !Self::HAS_DEFAULT_VALIDATOR {
+      return Ok(self);
+    }
+
     match self.validate() {
       Ok(()) => Ok(self),
       Err(e) => Err(e),

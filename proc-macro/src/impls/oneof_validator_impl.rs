@@ -18,7 +18,7 @@ pub fn generate_oneof_validator(
       .iter()
       .filter_map(|d| d.as_normal())
       .filter_map(|d| {
-        let tokens = field_validator_tokens(&mut validators_data, d, ItemKind::Oneof);
+        let tokens = field_validator_tokens(oneof_ident, &mut validators_data, d, ItemKind::Oneof);
 
         (!tokens.is_empty()).then_some((d, tokens))
       })
@@ -91,9 +91,9 @@ pub fn generate_oneof_validator(
       type Builder = ::prelude::OneofValidator;
 
       type UniqueStore<'a>
-      = ::prelude::LinearRefStore<'a, Self>
-    where
-      Self: 'a;
+        = ::prelude::LinearRefStore<'a, Self>
+      where
+        Self: 'a;
 
       const HAS_DEFAULT_VALIDATOR: bool = #has_default_validator_tokens;
     }
@@ -105,7 +105,11 @@ impl OneofCtx<'_> {
     let oneof_ident = self.proto_enum_ident();
 
     // For non-reflection implementations we don't skip fields if they don't have
-    // validators, so empty fields = an error occurred
-    generate_oneof_validator(self.variants.is_empty().into(), oneof_ident, &self.variants)
+    // validators, so having empty fields means an error occurred
+    generate_oneof_validator(
+      UseFallback::from(self.variants.is_empty()),
+      oneof_ident,
+      &self.variants,
+    )
   }
 }
