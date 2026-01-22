@@ -234,6 +234,8 @@ impl Validator<String> for StringValidator {
                 StringViolation::In => self.in_.is_some(),
                 StringViolation::Const => self.const_.is_some(),
                 StringViolation::WellKnownRegex => self.well_known.is_some(),
+                #[cfg(feature = "regex")]
+                StringViolation::Pattern => self.pattern.is_some(),
                 $(StringViolation::[< $name:camel >] => self.$name.is_some(),)*
                 _ => true,
               }
@@ -248,7 +250,6 @@ impl Validator<String> for StringValidator {
           len_bytes,
           min_bytes,
           max_bytes,
-          pattern,
           prefix,
           suffix,
           contains,

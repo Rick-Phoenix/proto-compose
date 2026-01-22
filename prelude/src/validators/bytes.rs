@@ -109,6 +109,8 @@ impl Validator<Bytes> for BytesValidator {
                 | BytesViolation::Ipv4
                 | BytesViolation::Ipv6
                 | BytesViolation::Uuid => self.well_known.is_some(),
+                #[cfg(feature = "regex")]
+                BytesViolation::Pattern => self.pattern.is_some(),
                 $(BytesViolation::[< $name:camel >] => self.$name.is_some(),)*
                 _ => true,
               }
@@ -116,9 +118,8 @@ impl Validator<Bytes> for BytesValidator {
           };
         }
 
-        let is_used = check_unused_messages!(
-          len, min_len, max_len, contains, pattern, prefix, suffix, not_in
-        );
+        let is_used =
+          check_unused_messages!(len, min_len, max_len, contains, prefix, suffix, not_in);
 
         if !is_used {
           unused_messages.push(format!("{key:?}"));

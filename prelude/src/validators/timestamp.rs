@@ -91,8 +91,12 @@ impl Validator<Timestamp> for TimestampValidator {
               match key {
                 TimestampViolation::Required => self.required,
                 TimestampViolation::Const => self.const_.is_some(),
+                #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
                 TimestampViolation::LtNow => self.lt_now,
+                #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
                 TimestampViolation::GtNow => self.gt_now,
+                #[cfg(all(feature = "chrono", any(feature = "std", feature = "chrono-wasm")))]
+                TimestampViolation::Within => self.within.is_some(),
                 $(TimestampViolation::[< $name:camel >] => self.$name.is_some(),)*
                 _ => true,
               }
@@ -100,7 +104,7 @@ impl Validator<Timestamp> for TimestampValidator {
           };
         }
 
-        let is_used = check_unused_messages!(lt, lte, gt, gte, within);
+        let is_used = check_unused_messages!(lt, lte, gt, gte);
 
         if !is_used {
           unused_messages.push(format!("{key:?}"));

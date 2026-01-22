@@ -415,9 +415,7 @@ fn string_errors() {
 
   assert_eq_pretty!(
     field_errors[0].errors[0],
-    ConsistencyError::ContradictoryInput(
-      "`contains` and `not_contains` have the same value".to_string()
-    )
+    ConsistencyError::ContradictoryInput("`not_contains` is a substring of `contains`".to_string())
   );
 }
 
