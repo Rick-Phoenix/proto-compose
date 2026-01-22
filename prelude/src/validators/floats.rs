@@ -458,12 +458,13 @@ macro_rules! impl_float_wrapper {
       }
 
       impl ProtoValidator for $target_type {
-        type Target = $target_type;
-        type Validator = FloatValidator<$target_type>;
-        type Builder = FloatValidatorBuilder<$target_type>;
+        type Target = Self;
+        type Stored = Self;
+        type Validator = FloatValidator<Self>;
+        type Builder = FloatValidatorBuilder<Self>;
 
         type UniqueStore<'a>
-          = FloatEpsilonStore<$target_type>
+          = FloatEpsilonStore<Self>
         where
           Self: 'a;
 

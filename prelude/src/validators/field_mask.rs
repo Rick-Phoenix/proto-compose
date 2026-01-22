@@ -29,6 +29,7 @@ pub struct FieldMaskValidator {
 
 impl ProtoValidator for FieldMask {
   type Target = Self;
+  type Stored = Self;
   type Validator = FieldMaskValidator;
   type Builder = FieldMaskValidatorBuilder;
 

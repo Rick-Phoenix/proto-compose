@@ -284,6 +284,8 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
       #[doc(hidden)]
       type Target = i32;
       #[doc(hidden)]
+      type Stored = i32;
+      #[doc(hidden)]
       type Validator = ::prelude::EnumValidator<#enum_ident>;
       #[doc(hidden)]
       type Builder = ::prelude::EnumValidatorBuilder<#enum_ident>;

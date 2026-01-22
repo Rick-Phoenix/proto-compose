@@ -13,6 +13,7 @@ pub struct StringValidatorBuilder<S: State = Empty> {
 
 impl ProtoValidator for String {
   type Target = str;
+  type Stored = Self;
   type Validator = StringValidator;
   type Builder = StringValidatorBuilder;
 

@@ -84,6 +84,8 @@ pub fn generate_oneof_validator(
       #[doc(hidden)]
       type Target = Self;
       #[doc(hidden)]
+      type Stored = Self;
+      #[doc(hidden)]
       type Validator = ::prelude::OneofValidator;
       #[doc(hidden)]
       type Builder = ::prelude::OneofValidator;

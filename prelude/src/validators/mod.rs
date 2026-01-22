@@ -161,6 +161,7 @@ pub trait ValidatorBuilderFor<T: ?Sized>: Default {
 
 pub trait ProtoValidator {
   type Target: ?Sized;
+  type Stored: Borrow<Self::Target>;
   type Validator: Validator<Self, Target = Self::Target> + Clone + Default;
   type Builder: ValidatorBuilderFor<Self, Validator = Self::Validator>;
 

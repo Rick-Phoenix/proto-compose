@@ -75,9 +75,10 @@ impl<T: AsProtoType> AsProtoField for Vec<T> {
 impl<T> ProtoValidator for Vec<T>
 where
   T: ProtoValidator,
-  T::Target: TryIntoCel + Sized + Clone,
+  T::Stored: TryIntoCel + Sized + Clone,
 {
-  type Target = [T::Target];
+  type Target = [T::Stored];
+  type Stored = Vec<T::Stored>;
   type Validator = RepeatedValidator<T>;
   type Builder = RepeatedValidatorBuilder<T>;
 
@@ -93,9 +94,9 @@ impl<T, S> ValidatorBuilderFor<Vec<T>> for RepeatedValidatorBuilder<T, S>
 where
   S: builder::State,
   T: ProtoValidator,
-  T::Target: TryIntoCel + Sized + Clone,
+  T::Stored: TryIntoCel + Sized + Clone,
 {
-  type Target = [T::Target];
+  type Target = [T::Stored];
   type Validator = RepeatedValidator<T>;
 
   #[inline]
@@ -118,9 +119,9 @@ fn try_convert_to_cel<T: TryIntoCel>(list: Vec<T>) -> Result<::cel::Value, CelEr
 impl<T> Validator<Vec<T>> for RepeatedValidator<T>
 where
   T: ProtoValidator,
-  T::Target: TryIntoCel + Sized + Clone,
+  T::Stored: TryIntoCel + Sized + Clone,
 {
-  type Target = [T::Target];
+  type Target = [T::Stored];
 
   #[cfg(feature = "cel")]
   fn check_cel_programs(&self) -> Result<(), Vec<CelError>> {
@@ -263,7 +264,7 @@ where
           if let Some(unique_store) = unique_store.as_mut()
             && has_unique_values_so_far
           {
-            has_unique_values_so_far = unique_store.insert(value);
+            has_unique_values_so_far = unique_store.insert(value.borrow());
 
             if !has_unique_values_so_far && ctx.fail_fast {
               break;

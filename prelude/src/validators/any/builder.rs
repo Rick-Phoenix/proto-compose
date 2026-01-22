@@ -31,6 +31,7 @@ impl AnyValidator {
 
 impl ProtoValidator for Any {
   type Target = Self;
+  type Stored = Self;
   type Validator = AnyValidator;
   type Builder = AnyValidatorBuilder;
 

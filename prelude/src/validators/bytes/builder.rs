@@ -13,6 +13,7 @@ pub struct BytesValidatorBuilder<S: State = Empty> {
 
 impl ProtoValidator for Bytes {
   type Target = Self;
+  type Stored = Self;
   type Validator = BytesValidator;
   type Builder = BytesValidatorBuilder;
 

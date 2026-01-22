@@ -39,6 +39,8 @@ pub fn named_enum_derive(item: &ItemEnum) -> TokenStream2 {
       #[doc(hidden)]
       type Target = i32;
       #[doc(hidden)]
+      type Stored = i32;
+      #[doc(hidden)]
       type Validator = ::prelude::EnumValidator<#ident>;
       #[doc(hidden)]
       type Builder = ::prelude::EnumValidatorBuilder<#ident>;

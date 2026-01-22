@@ -7,6 +7,7 @@ use proto_types::Duration;
 
 impl ProtoValidator for Duration {
   type Target = Self;
+  type Stored = Self;
   type Validator = DurationValidator;
   type Builder = DurationValidatorBuilder;
 

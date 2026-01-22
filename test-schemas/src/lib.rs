@@ -269,6 +269,9 @@ pub struct OneofTests {
 
 #[proto_message(no_auto_test)]
 pub struct MapTests {
+  // Just to check that the associated types are resolving correctly for String
+  #[proto(map(string, string), validate = |v| v.min_pairs(1))]
+  pub string_test: HashMap<String, String>,
   #[proto(map(int32, int32), validate = |v| v.min_pairs(1))]
   pub min_pairs_test: HashMap<i32, i32>,
   #[proto(map(int32, int32), validate = |v| v.max_pairs(1))]
@@ -283,6 +286,9 @@ pub struct MapTests {
 
 #[proto_message(no_auto_test)]
 pub struct RepeatedTests {
+  // Just to check that the associated types are resolving correctly for String
+  #[proto(repeated(string), validate = |v| v.min_items(1))]
+  pub string_test: Vec<String>,
   #[proto(repeated(int32), validate = |v| v.items(|i| i.const_(15)))]
   pub items_test: Vec<i32>,
   #[proto(repeated(int32), validate = |v| v.items(|i| i.cel(cel_program!(id = "cel_rule", msg = "abc", expr = "this == 1"))))]

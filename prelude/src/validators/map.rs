@@ -77,20 +77,20 @@ pub trait ProtoMap<K, V>
 where
   K: ProtoValidator,
   V: ProtoValidator,
-  K::Target: Sized,
-  V::Target: Sized,
+  K::Stored: Sized,
+  V::Stored: Sized,
 {
-  type Target: Map<K::Target, V::Target>;
+  type Target: Map<K::Stored, V::Stored>;
 }
 
 impl<K, V> ProtoMap<K, V> for BTreeMap<K, V>
 where
   K: ProtoValidator,
   V: ProtoValidator,
-  K::Target: Sized,
-  V::Target: Sized,
+  K::Stored: Sized,
+  V::Stored: Sized,
 {
-  type Target = BTreeMap<K::Target, V::Target>;
+  type Target = BTreeMap<K::Stored, V::Stored>;
 }
 
 impl<K, V, S> ProtoMap<K, V> for HashMap<K, V, S>
@@ -98,10 +98,10 @@ where
   S: BuildHasher,
   K: ProtoValidator,
   V: ProtoValidator,
-  K::Target: Sized,
-  V::Target: Sized,
+  K::Stored: Sized,
+  V::Stored: Sized,
 {
-  type Target = HashMap<K::Target, V::Target, S>;
+  type Target = HashMap<K::Stored, V::Stored, S>;
 }
 
 impl<K, V> ProtoValidator for BTreeMap<K, V>
@@ -109,10 +109,11 @@ where
   Self: Clone,
   K: ProtoValidator,
   V: ProtoValidator,
-  K::Target: Sized + Clone + IntoCelKey + Into<Subscript>,
-  V::Target: Sized + Clone + TryIntoCel,
+  K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
+  V::Stored: Sized + Clone + TryIntoCel,
 {
-  type Target = BTreeMap<K::Target, V::Target>;
+  type Target = BTreeMap<K::Stored, V::Stored>;
+  type Stored = BTreeMap<K::Stored, V::Stored>;
   type Validator = MapValidator<K, V>;
   type Builder = MapValidatorBuilder<K, V>;
 
@@ -130,10 +131,11 @@ where
   Self: Clone,
   K: ProtoValidator,
   V: ProtoValidator,
-  K::Target: Sized + Clone + IntoCelKey + Into<Subscript>,
-  V::Target: Sized + Clone + TryIntoCel,
+  K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
+  V::Stored: Sized + Clone + TryIntoCel,
 {
-  type Target = HashMap<K::Target, V::Target, S>;
+  type Target = HashMap<K::Stored, V::Stored, S>;
+  type Stored = HashMap<K::Stored, V::Stored, S>;
   type Validator = MapValidator<K, V>;
   type Builder = MapValidatorBuilder<K, V>;
 
@@ -152,8 +154,8 @@ where
   V: ProtoValidator,
   M: ProtoMap<K, V> + ToOwned,
   M::Target: Clone + Default,
-  K::Target: Sized + Clone + IntoCelKey + Into<Subscript>,
-  V::Target: Sized + Clone + TryIntoCel,
+  K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
+  V::Stored: Sized + Clone + TryIntoCel,
 {
   type Target = M::Target;
   type Validator = MapValidator<K, V>;
@@ -169,8 +171,8 @@ where
   V: ProtoValidator,
   M: ProtoMap<K, V> + ToOwned,
   M::Target: Clone + Default,
-  K::Target: Sized + Clone + IntoCelKey + Into<Subscript>,
-  V::Target: Sized + Clone + TryIntoCel,
+  K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
+  V::Stored: Sized + Clone + TryIntoCel,
 {
   type Target = M::Target;
 

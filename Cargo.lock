@@ -291,9 +291,6 @@ dependencies = [
 [[package]]
 name = "bool-enum"
 version = "0.1.0"
-dependencies = [
- "paste",
-]
 
 [[package]]
 name = "borrow-or-share"

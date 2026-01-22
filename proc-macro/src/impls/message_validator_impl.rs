@@ -241,6 +241,8 @@ pub fn generate_message_validator(
       #[doc(hidden)]
       type Target = Self;
       #[doc(hidden)]
+      type Stored = Self;
+      #[doc(hidden)]
       type Validator = ::prelude::MessageValidator;
       #[doc(hidden)]
       type Builder = ::prelude::MessageValidatorBuilder;

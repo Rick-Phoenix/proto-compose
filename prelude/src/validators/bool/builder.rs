@@ -11,6 +11,7 @@ pub struct BoolValidatorBuilder<S: State = Empty> {
 
 impl ProtoValidator for bool {
   type Target = Self;
+  type Stored = Self;
   type Validator = BoolValidator;
   type Builder = BoolValidatorBuilder;
 

@@ -21,6 +21,7 @@ fn btree_map_tests() {
 #[test]
 fn map_tests() {
   let mut msg = MapTests {
+    string_test: hashmap! { "abc".to_string() => "abc".to_string() },
     min_pairs_test: hashmap! { 1 => 1 },
     max_pairs_test: hashmap! { 1 => 1 },
     keys_test: hashmap! { 15 => 1 },
