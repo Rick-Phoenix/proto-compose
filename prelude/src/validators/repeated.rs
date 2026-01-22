@@ -136,6 +136,28 @@ where
       errors.extend(e.into_iter().map(ConsistencyError::from));
     }
 
+    if let Some(custom_messages) = self.error_messages.as_deref() {
+      let mut unused_messages: Vec<String> = Vec::new();
+
+      for key in custom_messages.keys() {
+        let is_used = match key {
+          RepeatedViolation::MinItems => self.min_items.is_some(),
+          RepeatedViolation::MaxItems => self.max_items.is_some(),
+          RepeatedViolation::Unique => self.unique,
+          RepeatedViolation::Items => self.items.is_some(),
+          _ => true,
+        };
+
+        if !is_used {
+          unused_messages.push(format!("{key:?}"));
+        }
+      }
+
+      if !unused_messages.is_empty() {
+        errors.push(ConsistencyError::UnusedCustomMessages(unused_messages));
+      }
+    }
+
     if let Err(e) = check_length_rules(
       None,
       length_rule_value!("min_items", self.min_items),

@@ -142,13 +142,13 @@ mod cel_impls {
       rule_id: SharedStr,
       value: ValueType,
     },
-    // SHould use FieldPath here to at least get the context of the value
+    // Should use FieldPath here to at least get the context of the value?
     #[error("Failed to inject value in CEL program: {0}")]
     ConversionError(String),
     #[error("Failed to execute CEL program with id `{rule_id}`: {source}")]
     ExecutionError {
       rule_id: SharedStr,
-      source: ExecutionError,
+      source: Box<ExecutionError>,
     },
   }
 
@@ -325,7 +325,7 @@ mod cel_impls {
         .execute(ctx)
         .map_err(|e| CelError::ExecutionError {
           rule_id: self.rule.id.clone(),
-          source: e,
+          source: Box::new(e),
         })?;
 
       if let Value::Bool(result) = result {

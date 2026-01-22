@@ -189,6 +189,28 @@ where
       errors.extend(e.into_iter().map(ConsistencyError::from));
     }
 
+    if let Some(custom_messages) = self.error_messages.as_deref() {
+      let mut unused_messages: Vec<String> = Vec::new();
+
+      for key in custom_messages.keys() {
+        let is_used = match key {
+          MapViolation::MinPairs => self.min_pairs.is_some(),
+          MapViolation::MaxPairs => self.max_pairs.is_some(),
+          MapViolation::Keys => self.keys.is_some(),
+          MapViolation::Values => self.values.is_some(),
+          _ => true,
+        };
+
+        if !is_used {
+          unused_messages.push(format!("{key:?}"));
+        }
+      }
+
+      if !unused_messages.is_empty() {
+        errors.push(ConsistencyError::UnusedCustomMessages(unused_messages));
+      }
+    }
+
     if let Err(e) = check_length_rules(
       None,
       length_rule_value!("min_pairs", self.min_pairs),

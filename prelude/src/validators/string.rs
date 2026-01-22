@@ -222,6 +222,50 @@ impl Validator<String> for StringValidator {
       errors.push(ConsistencyError::ConstWithOtherRules);
     }
 
+    if let Some(custom_messages) = self.error_messages.as_deref() {
+      let mut unused_messages: Vec<String> = Vec::new();
+
+      for key in custom_messages.keys() {
+        macro_rules! check_unused_messages {
+          ($($name:ident),*) => {
+            paste! {
+              match key {
+                StringViolation::Required => self.required,
+                StringViolation::In => self.in_.is_some(),
+                StringViolation::Const => self.const_.is_some(),
+                StringViolation::WellKnownRegex => self.well_known.is_some(),
+                $(StringViolation::[< $name:camel >] => self.$name.is_some(),)*
+                _ => true,
+              }
+            }
+          };
+        }
+
+        let is_used = check_unused_messages!(
+          len,
+          min_len,
+          max_len,
+          len_bytes,
+          min_bytes,
+          max_bytes,
+          pattern,
+          prefix,
+          suffix,
+          contains,
+          not_contains,
+          not_in
+        );
+
+        if !is_used {
+          unused_messages.push(format!("{key:?}"));
+        }
+      }
+
+      if !unused_messages.is_empty() {
+        errors.push(ConsistencyError::UnusedCustomMessages(unused_messages));
+      }
+    }
+
     #[cfg(feature = "cel")]
     if let Err(e) = self.check_cel_programs() {
       errors.extend(e.into_iter().map(ConsistencyError::from));

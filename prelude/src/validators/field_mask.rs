@@ -62,6 +62,28 @@ impl Validator<FieldMask> for FieldMaskValidator {
       errors.push(ConsistencyError::ConstWithOtherRules);
     }
 
+    if let Some(custom_messages) = self.error_messages.as_deref() {
+      let mut unused_messages: Vec<String> = Vec::new();
+
+      for key in custom_messages.keys() {
+        let is_used = match key {
+          FieldMaskViolation::Required => self.required,
+          FieldMaskViolation::In => self.in_.is_some(),
+          FieldMaskViolation::Const => self.const_.is_some(),
+          FieldMaskViolation::NotIn => self.not_in.is_some(),
+          _ => true,
+        };
+
+        if !is_used {
+          unused_messages.push(format!("{key:?}"));
+        }
+      }
+
+      if !unused_messages.is_empty() {
+        errors.push(ConsistencyError::UnusedCustomMessages(unused_messages));
+      }
+    }
+
     #[cfg(feature = "cel")]
     if let Err(e) = self.check_cel_programs() {
       errors.extend(e.into_iter().map(ConsistencyError::from));

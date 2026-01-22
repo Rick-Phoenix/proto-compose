@@ -94,6 +94,42 @@ impl Validator<Bytes> for BytesValidator {
       errors.push(ConsistencyError::ConstWithOtherRules);
     }
 
+    if let Some(custom_messages) = self.error_messages.as_deref() {
+      let mut unused_messages: Vec<String> = Vec::new();
+
+      for key in custom_messages.keys() {
+        macro_rules! check_unused_messages {
+          ($($name:ident),*) => {
+            paste! {
+              match key {
+                BytesViolation::Required => self.required,
+                BytesViolation::In => self.in_.is_some(),
+                BytesViolation::Const => self.const_.is_some(),
+                BytesViolation::Ip
+                | BytesViolation::Ipv4
+                | BytesViolation::Ipv6
+                | BytesViolation::Uuid => self.well_known.is_some(),
+                $(BytesViolation::[< $name:camel >] => self.$name.is_some(),)*
+                _ => true,
+              }
+            }
+          };
+        }
+
+        let is_used = check_unused_messages!(
+          len, min_len, max_len, contains, pattern, prefix, suffix, not_in
+        );
+
+        if !is_used {
+          unused_messages.push(format!("{key:?}"));
+        }
+      }
+
+      if !unused_messages.is_empty() {
+        errors.push(ConsistencyError::UnusedCustomMessages(unused_messages));
+      }
+    }
+
     #[cfg(feature = "cel")]
     if let Err(e) = self.check_cel_programs() {
       errors.extend(e.into_iter().map(ConsistencyError::from));

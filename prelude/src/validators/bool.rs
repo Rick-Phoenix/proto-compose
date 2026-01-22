@@ -22,7 +22,33 @@ impl Validator<bool> for BoolValidator {
   #[inline]
   #[doc(hidden)]
   fn check_consistency(&self) -> Result<(), Vec<ConsistencyError>> {
-    Ok(())
+    let mut errors = Vec::new();
+
+    if let Some(custom_messages) = self.error_messages.as_deref() {
+      let mut unused_messages: Vec<String> = Vec::new();
+
+      for key in custom_messages.keys() {
+        let is_used = match key {
+          BoolViolation::Required => self.required,
+          BoolViolation::Const => self.const_.is_some(),
+          _ => true,
+        };
+
+        if !is_used {
+          unused_messages.push(format!("{key:?}"));
+        }
+      }
+
+      if !unused_messages.is_empty() {
+        errors.push(ConsistencyError::UnusedCustomMessages(unused_messages));
+      }
+    }
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(errors)
+    }
   }
 
   #[cfg(feature = "cel")]
@@ -72,6 +98,8 @@ pub struct BoolValidator {
   /// Specifies that the field must be set in order to be valid.
   pub required: bool,
   pub ignore: Ignore,
+
+  pub error_messages: Option<ErrorMessages<BoolViolation>>,
 }
 
 impl From<BoolValidator> for ProtoOption {

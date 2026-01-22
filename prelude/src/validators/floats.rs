@@ -191,6 +191,36 @@ where
       errors.push(ConsistencyError::ConstWithOtherRules);
     }
 
+    if let Some(custom_messages) = self.error_messages.as_deref() {
+      let mut unused_messages: Vec<String> = Vec::new();
+
+      for key in custom_messages.keys() {
+        macro_rules! check_unused_messages {
+          ($($name:ident),*) => {
+            paste! {
+              $(
+                (*key == Num::[< $name:snake:upper _VIOLATION >] && self.$name.is_some())
+              ) ||*
+            }
+          };
+        }
+
+        let is_used = check_unused_messages!(gt, gte, lt, lte, not_in)
+          || (*key == Num::REQUIRED_VIOLATION && self.required)
+          || (*key == Num::CONST_VIOLATION && self.const_.is_some())
+          || (*key == Num::IN_VIOLATION && self.in_.is_some())
+          || (*key == Num::FINITE_VIOLATION && self.finite);
+
+        if !is_used {
+          unused_messages.push(format!("{key:?}"));
+        }
+      }
+
+      if !unused_messages.is_empty() {
+        errors.push(ConsistencyError::UnusedCustomMessages(unused_messages));
+      }
+    }
+
     #[cfg(feature = "cel")]
     if let Err(e) = self.check_cel_programs() {
       errors.extend(e.into_iter().map(ConsistencyError::from));
@@ -429,6 +459,7 @@ pub trait FloatWrapper: AsProtoType + Default + Copy {
   const NOT_IN_VIOLATION: Self::ViolationEnum;
   const CONST_VIOLATION: Self::ViolationEnum;
   const FINITE_VIOLATION: Self::ViolationEnum;
+  const REQUIRED_VIOLATION: Self::ViolationEnum;
   #[allow(private_interfaces)]
   const SEALED: Sealed;
 
@@ -449,6 +480,7 @@ macro_rules! impl_float_wrapper {
         const FINITE_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Finite;
         const IN_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::In;
         const NOT_IN_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::NotIn;
+        const REQUIRED_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Required;
         #[allow(private_interfaces)]
         const SEALED: Sealed = Sealed;
 

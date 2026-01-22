@@ -38,6 +38,27 @@ impl Validator<Any> for AnyValidator {
       errors.extend(e.into_iter().map(ConsistencyError::from));
     }
 
+    if let Some(custom_messages) = self.error_messages.as_deref() {
+      let mut unused_messages: Vec<String> = Vec::new();
+
+      for key in custom_messages.keys() {
+        let is_used = match key {
+          AnyViolation::Required => self.required,
+          AnyViolation::In => self.in_.is_some(),
+          AnyViolation::NotIn => self.not_in.is_some(),
+          _ => true,
+        };
+
+        if !is_used {
+          unused_messages.push(format!("{key:?}"));
+        }
+      }
+
+      if !unused_messages.is_empty() {
+        errors.push(ConsistencyError::UnusedCustomMessages(unused_messages));
+      }
+    }
+
     if let Err(e) = check_list_rules(self.in_.as_ref(), self.not_in.as_ref()) {
       errors.push(e.into());
     }

@@ -68,6 +68,29 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
       errors.push(ConsistencyError::ConstWithOtherRules);
     }
 
+    if let Some(custom_messages) = self.error_messages.as_deref() {
+      let mut unused_messages: Vec<String> = Vec::new();
+
+      for key in custom_messages.keys() {
+        let is_used = match key {
+          EnumViolation::Required => self.required,
+          EnumViolation::In => self.in_.is_some(),
+          EnumViolation::Const => self.const_.is_some(),
+          EnumViolation::NotIn => self.not_in.is_some(),
+          EnumViolation::DefinedOnly => self.defined_only,
+          _ => true,
+        };
+
+        if !is_used {
+          unused_messages.push(format!("{key:?}"));
+        }
+      }
+
+      if !unused_messages.is_empty() {
+        errors.push(ConsistencyError::UnusedCustomMessages(unused_messages));
+      }
+    }
+
     #[cfg(feature = "cel")]
     if let Err(e) = self.check_cel_programs() {
       errors.extend(e.into_iter().map(ConsistencyError::from));

@@ -67,8 +67,10 @@ impl<S: State> From<BoolValidatorBuilder<S>> for ProtoOption {
   clippy::return_self_not_must_use
 )]
 impl<S: State> BoolValidatorBuilder<S> {
+  custom_error_messages_method!(Bool);
+
   #[inline]
-  pub const fn ignore_always(mut self) -> BoolValidatorBuilder<SetIgnore<S>>
+  pub fn ignore_always(mut self) -> BoolValidatorBuilder<SetIgnore<S>>
   where
     S::Ignore: IsUnset,
   {
@@ -81,7 +83,7 @@ impl<S: State> BoolValidatorBuilder<S> {
   }
 
   #[inline]
-  pub const fn ignore_if_zero_value(mut self) -> BoolValidatorBuilder<SetIgnore<S>>
+  pub fn ignore_if_zero_value(mut self) -> BoolValidatorBuilder<SetIgnore<S>>
   where
     S::Ignore: IsUnset,
   {
@@ -94,7 +96,7 @@ impl<S: State> BoolValidatorBuilder<S> {
   }
 
   #[inline]
-  pub const fn required(mut self) -> BoolValidatorBuilder<SetRequired<S>>
+  pub fn required(mut self) -> BoolValidatorBuilder<SetRequired<S>>
   where
     S::Required: IsUnset,
   {
@@ -107,7 +109,7 @@ impl<S: State> BoolValidatorBuilder<S> {
   }
 
   #[inline]
-  pub const fn const_(mut self, val: bool) -> BoolValidatorBuilder<SetConst<S>>
+  pub fn const_(mut self, val: bool) -> BoolValidatorBuilder<SetConst<S>>
   where
     S::Const: IsUnset,
   {
@@ -120,7 +122,7 @@ impl<S: State> BoolValidatorBuilder<S> {
   }
 
   #[inline]
-  pub const fn build(self) -> BoolValidator {
+  pub fn build(self) -> BoolValidator {
     self.data
   }
 }

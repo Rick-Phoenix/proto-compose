@@ -1,3 +1,9 @@
+macro_rules! escaped_camel_case {
+  (in_) => { In };
+  (const_) => { Const };
+  ($other:ident) => { paste!([< $other:camel >]) }
+}
+
 macro_rules! pluralize {
   ($count:expr) => {
     if $count != 1 { "s" } else { "" }
