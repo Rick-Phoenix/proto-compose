@@ -23,34 +23,34 @@ where
   pub required: bool,
 
   /// The absolute tolerance to use for equality operations
-  pub abs_tolerance: Num::RustType,
+  pub abs_tolerance: Num,
 
   /// The relative tolerance to use for equality operations, scaled to the precision of the number being validated
-  pub rel_tolerance: Num::RustType,
+  pub rel_tolerance: Num,
 
   /// Specifies that this field must be finite (i.e. it can't represent Infinity or NaN)
   pub finite: bool,
 
   /// Specifies that only this specific value will be considered valid for this field.
-  pub const_: Option<Num::RustType>,
+  pub const_: Option<Num>,
 
   /// Specifies that this field's value will be valid only if it is smaller than the specified amount
-  pub lt: Option<Num::RustType>,
+  pub lt: Option<Num>,
 
   /// Specifies that this field's value will be valid only if it is smaller than, or equal to, the specified amount
-  pub lte: Option<Num::RustType>,
+  pub lte: Option<Num>,
 
   /// Specifies that this field's value will be valid only if it is greater than the specified amount
-  pub gt: Option<Num::RustType>,
+  pub gt: Option<Num>,
 
   /// Specifies that this field's value will be valid only if it is smaller than, or equal to, the specified amount
-  pub gte: Option<Num::RustType>,
+  pub gte: Option<Num>,
 
   /// Specifies that only the values in this list will be considered valid for this field.
-  pub in_: Option<SortedList<OrderedFloat<Num::RustType>>>,
+  pub in_: Option<SortedList<OrderedFloat<Num>>>,
 
   /// Specifies that the values in this list will be considered NOT valid for this field.
-  pub not_in: Option<SortedList<OrderedFloat<Num::RustType>>>,
+  pub not_in: Option<SortedList<OrderedFloat<Num>>>,
 
   pub error_messages: Option<ErrorMessages<Num::ViolationEnum>>,
 }
@@ -172,7 +172,7 @@ impl<Num> Validator<Num> for FloatValidator<Num>
 where
   Num: FloatWrapper,
 {
-  type Target = Num::RustType;
+  type Target = Num;
 
   impl_testing_methods!();
 
@@ -321,7 +321,7 @@ where
           In,
           format!(
             "must be one of these values: {}",
-            OrderedFloat::<Num::RustType>::format_list(allowed_list)
+            OrderedFloat::<Num>::format_list(allowed_list)
           )
         );
       }
@@ -333,7 +333,7 @@ where
           NotIn,
           format!(
             "cannot be one of these values: {}",
-            OrderedFloat::<Num::RustType>::format_list(forbidden_list)
+            OrderedFloat::<Num>::format_list(forbidden_list)
           )
         );
       }
@@ -369,7 +369,7 @@ where
   }
 
   #[inline]
-  fn float_is_eq(&self, first: Num::RustType, second: Num::RustType) -> bool {
+  fn float_is_eq(&self, first: Num, second: Num) -> bool {
     float_eq!(
       first,
       second,
@@ -437,19 +437,20 @@ impl_proto_type!(f64, Double);
 #[allow(private_interfaces)]
 struct Sealed;
 
-pub trait FloatWrapper: AsProtoType + Default + Copy {
-  type RustType: PartialOrd
-    + PartialEq
-    + Copy
-    + Into<OptionValue>
-    + Debug
-    + Display
-    + Default
-    + IntoCel
-    + ordered_float::FloatCore
-    + ordered_float::PrimitiveFloat
-    + float_eq::FloatEq<Tol = Self::RustType>
-    + 'static;
+pub trait FloatWrapper:
+  AsProtoType
+  + Default
+  + Copy
+  + PartialOrd
+  + PartialEq
+  + Into<OptionValue>
+  + Debug
+  + Display
+  + IntoCel
+  + ordered_float::FloatCore
+  + ordered_float::PrimitiveFloat
+  + float_eq::FloatEq<Tol = Self>
+{
   type ViolationEnum: Copy + Ord + Into<ViolationKind> + Debug;
   const LT_VIOLATION: Self::ViolationEnum;
   const LTE_VIOLATION: Self::ViolationEnum;
@@ -470,7 +471,6 @@ macro_rules! impl_float_wrapper {
   ($target_type:ty, $proto_type:ident) => {
     paste::paste! {
       impl FloatWrapper for $target_type {
-        type RustType = $target_type;
         type ViolationEnum = [< $proto_type Violation >];
         const LT_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Lt;
         const LTE_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Lte;

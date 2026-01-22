@@ -110,10 +110,7 @@ where
   }
 
   #[inline]
-  pub fn abs_tolerance(
-    mut self,
-    val: Num::RustType,
-  ) -> FloatValidatorBuilder<Num, SetAbsTolerance<S>>
+  pub fn abs_tolerance(mut self, val: Num) -> FloatValidatorBuilder<Num, SetAbsTolerance<S>>
   where
     S::AbsTolerance: IsUnset,
   {
@@ -127,10 +124,7 @@ where
   }
 
   #[inline]
-  pub fn rel_tolerance(
-    mut self,
-    val: Num::RustType,
-  ) -> FloatValidatorBuilder<Num, SetRelTolerance<S>>
+  pub fn rel_tolerance(mut self, val: Num) -> FloatValidatorBuilder<Num, SetRelTolerance<S>>
   where
     S::RelTolerance: IsUnset,
   {
@@ -158,7 +152,7 @@ where
   }
 
   #[inline]
-  pub fn const_(mut self, val: Num::RustType) -> FloatValidatorBuilder<Num, SetConst<S>>
+  pub fn const_(mut self, val: Num) -> FloatValidatorBuilder<Num, SetConst<S>>
   where
     S::Const: IsUnset,
   {
@@ -172,7 +166,7 @@ where
   }
 
   #[inline]
-  pub fn lt(mut self, val: Num::RustType) -> FloatValidatorBuilder<Num, SetLt<S>>
+  pub fn lt(mut self, val: Num) -> FloatValidatorBuilder<Num, SetLt<S>>
   where
     S::Lt: IsUnset,
   {
@@ -186,7 +180,7 @@ where
   }
 
   #[inline]
-  pub fn lte(mut self, val: Num::RustType) -> FloatValidatorBuilder<Num, SetLte<S>>
+  pub fn lte(mut self, val: Num) -> FloatValidatorBuilder<Num, SetLte<S>>
   where
     S::Lte: IsUnset,
   {
@@ -200,7 +194,7 @@ where
   }
 
   #[inline]
-  pub fn gt(mut self, val: Num::RustType) -> FloatValidatorBuilder<Num, SetGt<S>>
+  pub fn gt(mut self, val: Num) -> FloatValidatorBuilder<Num, SetGt<S>>
   where
     S::Gt: IsUnset,
   {
@@ -214,7 +208,7 @@ where
   }
 
   #[inline]
-  pub fn gte(mut self, val: Num::RustType) -> FloatValidatorBuilder<Num, SetGte<S>>
+  pub fn gte(mut self, val: Num) -> FloatValidatorBuilder<Num, SetGte<S>>
   where
     S::Gte: IsUnset,
   {
@@ -230,7 +224,7 @@ where
   #[inline]
   pub fn not_in(
     mut self,
-    list: impl IntoSortedList<OrderedFloat<Num::RustType>>,
+    list: impl IntoSortedList<OrderedFloat<Num>>,
   ) -> FloatValidatorBuilder<Num, SetNotIn<S>>
   where
     S::NotIn: IsUnset,
@@ -247,7 +241,7 @@ where
   #[inline]
   pub fn in_(
     mut self,
-    list: impl IntoSortedList<OrderedFloat<Num::RustType>>,
+    list: impl IntoSortedList<OrderedFloat<Num>>,
   ) -> FloatValidatorBuilder<Num, SetIn<S>>
   where
     S::In: IsUnset,
