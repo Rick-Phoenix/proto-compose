@@ -10,7 +10,7 @@ define_proto_file!(TESTING, name = "testing.proto", package = TESTING_PKG);
 #[proto_message(no_auto_test)]
 struct MsgWithNoValidator {
   id: i32,
-  #[proto(oneof(tags(1, 2)))]
+  #[proto(oneof(tags(1, 2, 3)))]
   oneof: Option<OneofWithNoValidator>,
   #[proto(message)]
   recursive: Option<Box<MsgWithNoValidator>>,
@@ -18,6 +18,16 @@ struct MsgWithNoValidator {
   vec: Vec<MsgWithNoValidator>,
   #[proto(map(int32, message))]
   map: HashMap<i32, MsgWithNoValidator>,
+  #[proto(message)]
+  second_degree_recursion: Option<SecondDegreeRecursion>,
+}
+
+#[proto_message(no_auto_test)]
+struct SecondDegreeRecursion {
+  #[proto(message)]
+  recursive: Option<Box<MsgWithNoValidator>>,
+  #[proto(oneof(tags(1, 2, 3)))]
+  third_degree_recursion: Option<OneofWithNoValidator>,
 }
 
 #[proto_oneof(no_auto_test)]
@@ -26,6 +36,8 @@ enum OneofWithNoValidator {
   A(i32),
   #[proto(tag = 2)]
   B(i32),
+  #[proto(tag = 3, message)]
+  Recursive(Box<MsgWithNoValidator>),
 }
 
 // If the validator is being correctly detected as empty, the assembly output should be more or less like this:

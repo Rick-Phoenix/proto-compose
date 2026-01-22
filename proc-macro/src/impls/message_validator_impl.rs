@@ -2,16 +2,16 @@ use crate::*;
 
 bool_enum!(pub UseFallback);
 
-pub struct ValidatorsData<'a> {
-  pub non_default_validators: usize,
-  pub maybe_default_validators: usize,
-  pub paths_to_check: Vec<&'a Path>,
+#[derive(Default)]
+pub struct ValidatorsData {
+  pub has_non_default_validators: bool,
+  pub default_check_tokens: Vec<TokenStream2>,
 }
 
-pub fn field_validator_tokens<'a>(
+pub fn field_validator_tokens(
   input_ident: &Ident,
-  validators_data: &mut ValidatorsData<'a>,
-  field_data: &'a FieldData,
+  validators_data: &mut ValidatorsData,
+  field_data: &FieldData,
   item_kind: ItemKind,
 ) -> Vec<TokenStream2> {
   let FieldData {
@@ -34,24 +34,37 @@ pub fn field_validator_tokens<'a>(
       span,
     } = v;
 
-    if kind.is_default() {
-      validators_data.maybe_default_validators += 1;
+    if !validators_data.has_non_default_validators {
+      if kind.is_default() {
+        if let Some(msg_info) = field_data.message_info()
+          && msg_info
+            .path
+            .get_ident()
+            .is_none_or(|i| i != input_ident)
+        {
+          let path = &msg_info.path;
 
-      if let Some(msg_info) = field_data.message_info()
-        && !msg_info.boxed
-        && msg_info
-          .path
-          .get_ident()
-          .is_none_or(|i| i != input_ident)
-      {
-        validators_data
-          .paths_to_check
-          .push(&msg_info.path);
-      } else if let ProtoField::Oneof(oneof) = proto_field {
-        validators_data.paths_to_check.push(&oneof.path);
+          validators_data
+            .default_check_tokens
+            .push(if msg_info.boxed {
+              quote! {
+                <#path as ::prelude::ProtoValidator>::HAS_SHALLOW_VALIDATION
+              }
+            } else {
+              quote! {
+                <#path as ::prelude::ProtoValidator>::HAS_DEFAULT_VALIDATOR
+              }
+            });
+        } else if let ProtoField::Oneof(oneof) = proto_field {
+          let path = &oneof.path;
+
+          validators_data.default_check_tokens.push(quote! {
+            <#path as ::prelude::ProtoValidator>::HAS_DEFAULT_VALIDATOR
+          });
+        }
+      } else {
+        validators_data.has_non_default_validators = true;
       }
-    } else {
-      validators_data.non_default_validators += 1;
     }
 
     let argument = match item_kind {
@@ -151,9 +164,8 @@ pub fn generate_message_validator(
   top_level_validators: &Validators,
 ) -> TokenStream2 {
   let mut validators_data = ValidatorsData {
-    non_default_validators: top_level_validators.len(),
-    maybe_default_validators: 0,
-    paths_to_check: vec![],
+    has_non_default_validators: !top_level_validators.is_empty(),
+    default_check_tokens: Vec::new(),
   };
 
   let validators_tokens = if *use_fallback {
@@ -199,36 +211,32 @@ pub fn generate_message_validator(
     quote! { #(#all_validators)* }
   };
 
-  let has_validators =
-    validators_data.maybe_default_validators + validators_data.non_default_validators != 0;
+  let has_validators = !validators_tokens.is_empty();
+
+  let ValidatorsData {
+    has_non_default_validators,
+    default_check_tokens,
+  } = validators_data;
 
   let inline_if_empty = (!has_validators).then(|| quote! { #[inline(always)] });
 
-  let has_default_validator_tokens = if !has_validators {
-    quote! { false }
-  } else if validators_data.non_default_validators > 0 {
+  let has_default_validator_tokens = if has_non_default_validators {
     quote! { true }
+    // Means we only encountered boxed self for defaults, so it's false
+  } else if default_check_tokens.is_empty() {
+    quote! { false }
   } else {
-    let mut has_default_validator_tokens = TokenStream2::new();
+    let mut tokens = TokenStream2::new();
 
-    for (i, path) in validators_data.paths_to_check.iter().enumerate() {
+    for (i, expr) in default_check_tokens.into_iter().enumerate() {
       if i != 0 {
-        has_default_validator_tokens.extend(quote! { && });
+        tokens.extend(quote! { || });
       }
 
-      has_default_validator_tokens
-        .extend(quote! { <#path as ::prelude::ProtoValidator>::HAS_DEFAULT_VALIDATOR });
+      tokens.extend(expr);
     }
 
-    // This can still happen if the only element in the paths_to_check
-    // is this same message, which was boxed. In that case,
-    // if we got to this point, non_default_validators is 0,
-    // so this should be false
-    if has_default_validator_tokens.is_empty() {
-      has_default_validator_tokens = quote! { false };
-    }
-
-    has_default_validator_tokens
+    tokens
   };
 
   quote! {
@@ -260,6 +268,7 @@ pub fn generate_message_validator(
         Self: 'a;
 
       const HAS_DEFAULT_VALIDATOR: bool = #has_default_validator_tokens;
+      const HAS_SHALLOW_VALIDATION: bool = #has_non_default_validators;
     }
   }
 }

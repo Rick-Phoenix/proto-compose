@@ -5,11 +5,7 @@ pub fn generate_oneof_validator(
   oneof_ident: &Ident,
   variants: &[FieldDataKind],
 ) -> TokenStream2 {
-  let mut validators_data = ValidatorsData {
-    non_default_validators: 0,
-    maybe_default_validators: 0,
-    paths_to_check: vec![],
-  };
+  let mut validators_data = ValidatorsData::default();
 
   let validators_tokens = if *use_fallback {
     quote! { unimplemented!() }
@@ -35,34 +31,32 @@ pub fn generate_oneof_validator(
     quote! { #(#tokens,)* }
   };
 
-  let has_validators =
-    validators_data.maybe_default_validators + validators_data.non_default_validators != 0;
+  let has_validators = !validators_tokens.is_empty();
 
   let inline_if_empty = (!has_validators).then(|| quote! { #[inline(always)] });
 
-  let has_default_validator_tokens = if !has_validators {
-    quote! { false }
-  } else if validators_data.non_default_validators > 0 {
-    quote! { true }
-  } else {
-    let mut has_default_validator_tokens = TokenStream2::new();
+  let ValidatorsData {
+    has_non_default_validators,
+    default_check_tokens,
+  } = validators_data;
 
-    for (i, path) in validators_data.paths_to_check.iter().enumerate() {
+  let has_default_validator_tokens = if has_non_default_validators {
+    quote! { true }
+    // Means we only encountered boxed self for defaults, which shouldn't happen for oneofs
+  } else if default_check_tokens.is_empty() {
+    quote! { false }
+  } else {
+    let mut tokens = TokenStream2::new();
+
+    for (i, expr) in default_check_tokens.into_iter().enumerate() {
       if i != 0 {
-        has_default_validator_tokens.extend(quote! { && });
+        tokens.extend(quote! { || });
       }
 
-      has_default_validator_tokens
-        .extend(quote! { <#path as ::prelude::ProtoValidator>::HAS_DEFAULT_VALIDATOR });
+      tokens.extend(expr);
     }
 
-    // If we got this far, we only met Boxed messages which we cannot check
-    // without causing an infinite loop, so we are forced to fall back to `true`
-    if has_default_validator_tokens.is_empty() {
-      has_default_validator_tokens = quote! { true };
-    }
-
-    has_default_validator_tokens
+    tokens
   };
 
   quote! {
@@ -96,6 +90,7 @@ pub fn generate_oneof_validator(
         Self: 'a;
 
       const HAS_DEFAULT_VALIDATOR: bool = #has_default_validator_tokens;
+      const HAS_SHALLOW_VALIDATION: bool = #has_non_default_validators;
     }
   }
 }

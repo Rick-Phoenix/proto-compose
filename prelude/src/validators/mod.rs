@@ -166,6 +166,7 @@ pub trait ProtoValidator {
   type Builder: ValidatorBuilderFor<Self, Validator = Self::Validator>;
 
   const HAS_DEFAULT_VALIDATOR: bool = false;
+  const HAS_SHALLOW_VALIDATION: bool = false;
 
   type UniqueStore<'a>: UniqueStore<'a, Item = Self::Target>
   where

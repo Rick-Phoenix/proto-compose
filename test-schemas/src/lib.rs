@@ -203,7 +203,8 @@ pub enum BadCelOneof {
 }
 
 // This checks if the validator is registered even if there are no
-// validators explicitely defined, but a field is a message
+// validators explicitely defined, but a field is a message that has
+// its own validators
 #[proto_message(no_auto_test)]
 pub struct DefaultValidatorTestMsg {
   #[proto(message)]
@@ -219,7 +220,7 @@ pub struct DefaultValidatorTestOneof {
 }
 
 // This checks if the default validator is registered
-// if a variant is a message
+// if a variant is a message with a validator
 #[proto_oneof(no_auto_test)]
 pub enum DefaultValidatorOneof {
   #[proto(message, tag = 1)]
@@ -229,7 +230,7 @@ pub enum DefaultValidatorOneof {
 }
 
 // Checks if the default validator is registered if there is a
-// repeated message field
+// repeated message with a validator
 #[proto_message(no_auto_test)]
 pub struct DefaultValidatorTestVec {
   #[proto(repeated(message))]
@@ -237,7 +238,7 @@ pub struct DefaultValidatorTestVec {
 }
 
 // Checks if the default validator is registered if there is a
-// map field with message values
+// map of messages that have validators
 #[proto_message(no_auto_test)]
 pub struct DefaultValidatorTestMap {
   #[proto(map(int32, message))]
