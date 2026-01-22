@@ -324,7 +324,7 @@ pub struct UniqueEnums {
 
 #[proto_message(no_auto_test)]
 pub struct UniqueFloats {
-  #[proto(tag = 1, validate = |v| v.unique())]
+  #[proto(tag = 1, validate = |v| v.unique().items(|i| i.abs_tolerance(0.0001)))]
   pub unique_floats: Vec<f32>,
 }
 

@@ -64,6 +64,16 @@ fn unique_floats() {
 
   msg.unique_floats = vec![1.5, 2.5];
   assert!(msg.validate().is_ok());
+
+  #[cfg(not(feature = "reflection"))]
+  {
+    // Testing if the tolerance is respected
+    msg.unique_floats = vec![1.0, 1.00001];
+    assert_violation_id(&msg, "repeated.unique", "unique floats");
+
+    msg.unique_floats = vec![1.0, 1.01];
+    assert!(msg.validate().is_ok());
+  }
 }
 
 #[test]
