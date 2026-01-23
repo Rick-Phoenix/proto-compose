@@ -1194,6 +1194,7 @@ dependencies = [
  "proto-types",
  "regex",
  "serde",
+ "serde_json",
  "similar-asserts",
  "thiserror 2.0.17",
 ]

@@ -32,6 +32,52 @@ pub enum OptionValue {
   Timestamp(Timestamp),
 }
 
+#[cfg(feature = "serde")]
+use serde_json::Value as JsonValue;
+
+#[cfg(feature = "serde")]
+impl TryFrom<JsonValue> for OptionValue {
+  type Error = String;
+
+  fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
+    match value {
+      JsonValue::Null => Err("OptionValue cannot be Null".to_string()),
+
+      JsonValue::Bool(b) => Ok(Self::Bool(b)),
+
+      JsonValue::Number(n) => {
+        if let Some(i) = n.as_i64() {
+          Ok(Self::Int(i))
+        } else if let Some(u) = n.as_u64() {
+          Ok(Self::Uint(u))
+        } else if let Some(f) = n.as_f64() {
+          Ok(Self::Float(f))
+        } else {
+          Err(format!("Number {n} is not representable"))
+        }
+      }
+
+      JsonValue::String(s) => Ok(Self::String(s.into())),
+
+      JsonValue::Array(arr) => {
+        let items: Result<Vec<Self>, _> = arr.into_iter().map(Self::try_from).collect();
+
+        Ok(Self::List(items.into_iter().collect()))
+      }
+
+      JsonValue::Object(map) => {
+        let mut builder = OptionMessageBuilder::new();
+
+        for (name, val) in map {
+          builder.set(name, Self::try_from(val)?);
+        }
+
+        Ok(Self::Message(builder.into()))
+      }
+    }
+  }
+}
+
 #[derive(Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct OptionMessage {
