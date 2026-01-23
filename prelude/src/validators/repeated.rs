@@ -342,8 +342,12 @@ where
     Ok(is_valid)
   }
 
-  fn as_proto_option(&self) -> Option<ProtoOption> {
-    Some(self.clone().into())
+  fn schema(&self) -> Option<ValidatorSchema> {
+    Some(ValidatorSchema {
+      schema: self.clone().into(),
+      cel_rules: self.cel_rules(),
+      imports: vec!["buf/validate/validate.proto".into()],
+    })
   }
 }
 
@@ -359,8 +363,8 @@ where
       .maybe_set("min_items", validator.min_items)
       .maybe_set("max_items", validator.max_items);
 
-    if let Some(items_option) = validator.items.and_then(|i| i.as_proto_option()) {
-      rules.set("items", items_option.value);
+    if let Some(items_option) = validator.items.and_then(|i| i.schema()) {
+      rules.set("items", items_option.schema.value);
     }
 
     let mut outer_rules = OptionMessageBuilder::new();

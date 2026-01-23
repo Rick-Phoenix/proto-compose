@@ -13,6 +13,7 @@ pub struct Field {
 pub struct ValidatorSchema {
   pub schema: ProtoOption,
   pub cel_rules: Vec<CelRule>,
+  pub imports: Vec<SharedStr>,
 }
 
 impl Field {
@@ -24,8 +25,12 @@ impl Field {
   }
 
   pub(crate) fn register_import_path(&self, imports: &mut FileImports) {
-    if !self.validators.is_empty() {
-      imports.insert_validate_proto();
+    for import in self
+      .validators
+      .iter()
+      .flat_map(|v| v.imports.clone())
+    {
+      imports.insert_internal(import);
     }
 
     match &self.type_ {

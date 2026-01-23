@@ -189,7 +189,7 @@ impl Into<ProtoFile> for &RegistryFile {
   fn into(self) -> ProtoFile {
     let mut file = ProtoFile::new(self.name, self.package);
 
-    file.imports.extend((self.imports)());
+    file.with_imports((self.imports)());
 
     let extensions = (self.extensions)();
 

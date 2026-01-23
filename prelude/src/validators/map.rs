@@ -282,8 +282,12 @@ where
     }
   }
 
-  fn as_proto_option(&self) -> Option<ProtoOption> {
-    Some(self.proto_option())
+  fn schema(&self) -> Option<ValidatorSchema> {
+    Some(ValidatorSchema {
+      schema: self.clone().into(),
+      cel_rules: <Self as Validator<M>>::cel_rules(self),
+      imports: vec!["buf/validate/validate.proto".into()],
+    })
   }
 
   fn validate_core<Val>(&self, ctx: &mut ValidationCtx, val: Option<&Val>) -> ValidatorResult
@@ -437,20 +441,12 @@ where
       .maybe_set("min_pairs", self.min_pairs)
       .maybe_set("max_pairs", self.max_pairs);
 
-    if let Some(keys_option) = self
-      .keys
-      .as_ref()
-      .and_then(|k| k.as_proto_option())
-    {
-      rules.set("keys", keys_option.value);
+    if let Some(keys_option) = self.keys.as_ref().and_then(|k| k.schema()) {
+      rules.set("keys", keys_option.schema.value);
     }
 
-    if let Some(values_option) = self
-      .values
-      .as_ref()
-      .and_then(|v| v.as_proto_option())
-    {
-      rules.set("values", values_option.value);
+    if let Some(values_option) = self.values.as_ref().and_then(|v| v.schema()) {
+      rules.set("values", values_option.schema.value);
     }
 
     let mut outer_rules = OptionMessageBuilder::new();

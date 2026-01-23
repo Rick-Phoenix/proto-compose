@@ -85,17 +85,8 @@ pub trait Validator<T: ?Sized>: Sized {
 
   #[inline(never)]
   #[cold]
-  fn as_proto_option(&self) -> Option<ProtoOption> {
-    None
-  }
-
-  #[inline(never)]
-  #[cold]
   fn schema(&self) -> Option<ValidatorSchema> {
-    self.as_proto_option().map(|opt| ValidatorSchema {
-      schema: opt,
-      cel_rules: self.cel_rules(),
-    })
+    None
   }
 
   #[inline(never)]

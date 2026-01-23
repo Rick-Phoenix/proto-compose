@@ -243,7 +243,7 @@ impl ProtoType {
   pub(crate) fn register_import(&self, imports: &mut FileImports) {
     match self {
       Self::Scalar { .. } => {}
-      Self::Message(path) | Self::Enum(path) => imports.insert_path(path),
+      Self::Message(path) | Self::Enum(path) => imports.insert_from_path(path),
     }
   }
 }

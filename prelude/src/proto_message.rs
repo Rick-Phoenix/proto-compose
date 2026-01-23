@@ -165,8 +165,12 @@ impl Message {
   }
 
   pub(crate) fn register_imports(&self, imports: &mut FileImports) {
-    if !self.validators.is_empty() {
-      imports.insert_validate_proto();
+    for import in self
+      .validators
+      .iter()
+      .flat_map(|v| v.imports.clone())
+    {
+      imports.insert_internal(import);
     }
 
     for entry in &self.entries {

@@ -161,8 +161,12 @@ where
     Ok(is_valid)
   }
 
-  fn as_proto_option(&self) -> Option<ProtoOption> {
-    Some(self.clone().into())
+  fn schema(&self) -> Option<ValidatorSchema> {
+    Some(ValidatorSchema {
+      schema: self.clone().into(),
+      cel_rules: <Self as Validator<T>>::cel_rules(self),
+      imports: vec!["buf/validate/validate.proto".into()],
+    })
   }
 }
 
@@ -248,8 +252,12 @@ where
     Ok(is_valid)
   }
 
-  fn as_proto_option(&self) -> Option<ProtoOption> {
-    Some(self.clone().into())
+  fn schema(&self) -> Option<ValidatorSchema> {
+    Some(ValidatorSchema {
+      schema: self.clone().into(),
+      cel_rules: <Self as Validator<T>>::cel_rules(self),
+      imports: vec!["buf/validate/validate.proto".into()],
+    })
   }
 }
 

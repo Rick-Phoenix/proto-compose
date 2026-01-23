@@ -43,20 +43,20 @@ impl Display for Edition {
 #[doc(hidden)]
 #[derive(PartialEq, Eq, Debug)]
 pub struct FileImports {
-  pub set: HashSet<&'static str>,
+  pub set: HashSet<SharedStr>,
   pub file: &'static str,
   pub added_validate_proto: bool,
 }
 
-impl Extend<&'static str> for FileImports {
-  fn extend<T: IntoIterator<Item = &'static str>>(&mut self, iter: T) {
+impl Extend<SharedStr> for FileImports {
+  fn extend<T: IntoIterator<Item = SharedStr>>(&mut self, iter: T) {
     self.set.extend(iter);
   }
 }
 
 impl IntoIterator for FileImports {
-  type Item = &'static str;
-  type IntoIter = hashbrown::hash_set::IntoIter<&'static str>;
+  type Item = SharedStr;
+  type IntoIter = hashbrown::hash_set::IntoIter<SharedStr>;
 
   fn into_iter(self) -> Self::IntoIter {
     self.set.into_iter()
@@ -73,22 +73,48 @@ impl FileImports {
     }
   }
 
-  pub fn insert_validate_proto(&mut self) {
+  pub(crate) fn insert_validate_proto(&mut self) {
     if !self.added_validate_proto {
-      self.set.insert("buf/validate/validate.proto");
+      self
+        .set
+        .insert("buf/validate/validate.proto".into());
       self.added_validate_proto = true;
     }
   }
 
-  pub fn insert_path(&mut self, path: &ProtoPath) {
+  pub(crate) fn insert_internal<S>(&mut self, import: S)
+  where
+    S: AsRef<str> + Into<SharedStr>,
+  {
+    let import_str = import.as_ref();
+
+    if import_str != self.file {
+      if import_str == "buf/validate/validate.proto" {
+        self.insert_validate_proto();
+      } else {
+        self.set.insert(import.into());
+      }
+    }
+  }
+
+  pub fn insert<S>(&mut self, import: S)
+  where
+    S: AsRef<str> + Into<SharedStr>,
+  {
+    if import.as_ref() != self.file {
+      self.set.insert(import.into());
+    }
+  }
+
+  pub fn insert_from_path(&mut self, path: &ProtoPath) {
     if path.file != self.file {
-      self.set.insert(path.file);
+      self.set.insert(path.file.into());
     }
   }
 
   #[must_use]
-  pub fn as_sorted_vec(&self) -> Vec<&'static str> {
-    let mut imports: Vec<&'static str> = self.set.iter().copied().collect();
+  pub fn as_sorted_vec(&self) -> Vec<SharedStr> {
+    let mut imports: Vec<SharedStr> = self.set.iter().cloned().collect();
 
     imports.sort_unstable();
 
@@ -117,8 +143,13 @@ impl ProtoFile {
     self
   }
 
-  pub fn with_imports(&mut self, imports: impl IntoIterator<Item = &'static str>) -> &mut Self {
-    self.imports.extend(imports);
+  pub fn with_imports(
+    &mut self,
+    imports: impl IntoIterator<Item = impl Into<SharedStr>>,
+  ) -> &mut Self {
+    self
+      .imports
+      .extend(imports.into_iter().map(|s| s.into()));
     self
   }
 
@@ -181,12 +212,12 @@ impl ProtoFile {
         .iter()
         .map(|h| (&h.request, &h.response))
       {
-        self.imports.insert_path(request);
-        self.imports.insert_path(response);
+        self.imports.insert_from_path(request);
+        self.imports.insert_from_path(response);
       }
 
       if service.file != self.name {
-        self.imports.set.insert(service.file);
+        self.imports.set.insert(service.file.into());
       }
 
       self.services.push(service);
@@ -199,7 +230,7 @@ impl ProtoFile {
     self
       .imports
       .set
-      .insert("google/protobuf/descriptor.proto");
+      .insert("google/protobuf/descriptor.proto".into());
 
     for ext in extensions {
       self.extensions.push(ext);

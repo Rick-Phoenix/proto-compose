@@ -99,8 +99,12 @@ impl Validator<bool> for BoolValidator {
     Ok(is_valid)
   }
 
-  fn as_proto_option(&self) -> Option<ProtoOption> {
-    Some(self.clone().into())
+  fn schema(&self) -> Option<ValidatorSchema> {
+    Some(ValidatorSchema {
+      schema: self.clone().into(),
+      cel_rules: self.cel_rules(),
+      imports: vec!["buf/validate/validate.proto".into()],
+    })
   }
 }
 
