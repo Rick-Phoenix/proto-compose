@@ -107,8 +107,8 @@ where
 impl<K, V> ProtoValidator for BTreeMap<K, V>
 where
   Self: Clone,
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidator + Send + Sync,
+  V: ProtoValidator + Send + Sync,
   K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
   V::Stored: Sized + Clone + TryIntoCel,
 {
@@ -129,8 +129,8 @@ impl<K, V, S> ProtoValidator for HashMap<K, V, S>
 where
   S: BuildHasher + Default + Clone,
   Self: Clone,
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidator + Send + Sync,
+  V: ProtoValidator + Send + Sync,
   K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
   V::Stored: Sized + Clone + TryIntoCel,
 {
@@ -150,8 +150,8 @@ where
 impl<K, V, M, S> ValidatorBuilderFor<M> for MapValidatorBuilder<K, V, S>
 where
   S: builder::state::State,
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidator + Send + Sync,
+  V: ProtoValidator + Send + Sync,
   M: ProtoMap<K, V> + ToOwned,
   M::Target: Clone + Default,
   K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
@@ -167,8 +167,8 @@ where
 
 impl<K, V, M> Validator<M> for MapValidator<K, V>
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidator + Send + Sync,
+  V: ProtoValidator + Send + Sync,
   M: ProtoMap<K, V> + ToOwned,
   M::Target: Clone + Default,
   K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,

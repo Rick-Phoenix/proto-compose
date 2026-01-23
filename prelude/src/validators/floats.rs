@@ -454,8 +454,10 @@ pub trait FloatWrapper:
   + ordered_float::FloatCore
   + ordered_float::PrimitiveFloat
   + float_eq::FloatEq<Tol = Self>
+  + Send
+  + Sync
 {
-  type ViolationEnum: Copy + Ord + Into<ViolationKind> + Debug;
+  type ViolationEnum: Copy + Ord + Into<ViolationKind> + Debug + Send + Sync;
   const LT_VIOLATION: Self::ViolationEnum;
   const LTE_VIOLATION: Self::ViolationEnum;
   const GT_VIOLATION: Self::ViolationEnum;

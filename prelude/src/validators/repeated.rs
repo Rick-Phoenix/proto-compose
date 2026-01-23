@@ -74,7 +74,7 @@ impl<T: AsProtoType> AsProtoField for Vec<T> {
 
 impl<T> ProtoValidator for Vec<T>
 where
-  T: ProtoValidator,
+  T: ProtoValidator + Send + Sync,
   T::Stored: TryIntoCel + Sized + Clone,
 {
   type Target = [T::Stored];
@@ -93,7 +93,7 @@ where
 impl<T, S> ValidatorBuilderFor<Vec<T>> for RepeatedValidatorBuilder<T, S>
 where
   S: builder::State,
-  T: ProtoValidator,
+  T: ProtoValidator + Send + Sync,
   T::Stored: TryIntoCel + Sized + Clone,
 {
   type Target = [T::Stored];
@@ -118,7 +118,7 @@ fn try_convert_to_cel<T: TryIntoCel>(list: Vec<T>) -> Result<::cel::Value, CelEr
 
 impl<T> Validator<Vec<T>> for RepeatedValidator<T>
 where
-  T: ProtoValidator,
+  T: ProtoValidator + Send + Sync,
   T::Stored: TryIntoCel + Sized + Clone,
 {
   type Target = [T::Stored];

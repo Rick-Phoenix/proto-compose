@@ -348,7 +348,7 @@ where
 #[allow(private_interfaces)]
 struct Sealed;
 
-pub trait IntWrapper: AsProtoType + Default + Copy {
+pub trait IntWrapper: AsProtoType + Default + Copy + Send + Sync {
   type RustType: PartialOrd
     + PartialEq
     + Copy
@@ -362,8 +362,10 @@ pub trait IntWrapper: AsProtoType + Default + Copy {
     + IntoCel
     + ListFormatter
     + AsProtoMapKey
+    + Send
+    + Sync
     + 'static;
-  type ViolationEnum: Copy + Ord + Into<ViolationKind> + Debug;
+  type ViolationEnum: Copy + Ord + Into<ViolationKind> + Debug + Send + Sync;
   const LT_VIOLATION: Self::ViolationEnum;
   const LTE_VIOLATION: Self::ViolationEnum;
   const GT_VIOLATION: Self::ViolationEnum;
