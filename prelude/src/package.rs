@@ -123,66 +123,79 @@ impl Package {
 
   #[cfg(feature = "cel")]
   pub fn check_unique_cel_rules(self) -> Result<(), String> {
-    let mut rules: HashMap<SharedStr, CelRule> = HashMap::default();
-    let mut duplicates: HashMap<SharedStr, Vec<CelRule>> = HashMap::default();
+    for mut message in self.files.into_iter().flat_map(|f| f.messages) {
+      let nested_messages = core::mem::take(&mut message.messages);
 
-    for rule in self
-      .files
-      .into_iter()
-      .flat_map(|f| f.messages.into_iter())
-      .flat_map(|message| {
-        message
-          .validators
-          .into_iter()
-          .flat_map(|v| v.cel_rules)
-          .chain(
-            message
-              .entries
-              .into_iter()
-              .flat_map(|entry| entry.cel_rules()),
-          )
-      })
-    {
-      let entry = rules.entry(rule.id.clone());
-
-      match entry {
-        Entry::Occupied(present) => {
-          let present_rule = present.get();
-
-          if *present_rule != rule {
-            duplicates
-              .entry(rule.id.clone())
-              .or_insert_with(|| vec![present_rule.clone()])
-              .push(rule);
-          }
-        }
-
-        Entry::Vacant(vacant) => {
-          vacant.insert(rule);
-        }
-      };
-    }
-
-    if !duplicates.is_empty() {
-      let mut error = String::new();
-
-      error.push_str("❌ Found one or more CEL rules with same ID but different content:\n");
-
-      for (id, rules) in duplicates {
-        writeln!(error, "  Entries for rule ID `{}`:", id.bright_yellow()).unwrap();
-
-        for (i, rule) in rules.iter().enumerate() {
-          let rule_str = format!("{rule:#?}");
-
-          let indented_rule = rule_str.replace("\n", "\n  ");
-
-          writeln!(error, "    [{}]: {indented_rule}", i.red()).unwrap();
-        }
+      for nested in nested_messages {
+        check_unique_rules_in_msg(nested)?;
       }
 
-      return Err(error);
+      check_unique_rules_in_msg(message)?;
     }
 
     Ok(())
   }
+}
+
+#[cfg(feature = "cel")]
+fn check_unique_rules_in_msg(message: Message) -> Result<(), String> {
+  let mut rules: HashMap<SharedStr, CelRule> = HashMap::default();
+  let mut duplicates: HashMap<SharedStr, Vec<CelRule>> = HashMap::default();
+
+  for rule in message
+    .validators
+    .into_iter()
+    .flat_map(|v| v.cel_rules)
+    .chain(
+      message
+        .entries
+        .into_iter()
+        .flat_map(|e| e.cel_rules()),
+    )
+  {
+    let entry = rules.entry(rule.id.clone());
+
+    match entry {
+      Entry::Occupied(present) => {
+        let present_rule = present.get();
+
+        if *present_rule != rule {
+          duplicates
+            .entry(rule.id.clone())
+            .or_insert_with(|| vec![present_rule.clone()])
+            .push(rule);
+        }
+      }
+
+      Entry::Vacant(vacant) => {
+        vacant.insert(rule);
+      }
+    };
+  }
+
+  if !duplicates.is_empty() {
+    let mut error = String::new();
+
+    let _ = writeln!(
+      error,
+      "❌ Found several CEL rules with the same ID in message `{}`:",
+      message.name
+    );
+
+    for (id, rules) in duplicates {
+      writeln!(error, "  Entries for rule ID `{}`:", id.bright_yellow()).unwrap();
+
+      for (i, rule) in rules.iter().enumerate() {
+        let rule_str = format!("{rule:#?}");
+
+        let indented_rule = rule_str.replace("\n", "\n  ");
+
+        writeln!(error, "    [{}]: {indented_rule}", i.red()).unwrap();
+      }
+    }
+
+    return Err(error);
+  }
+
+  Ok(())
 }
