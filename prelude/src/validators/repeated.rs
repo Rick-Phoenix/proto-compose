@@ -110,7 +110,7 @@ where
 fn try_convert_to_cel<T: TryIntoCel>(list: Vec<T>) -> Result<::cel::Value, CelError> {
   let values: Vec<::cel::Value> = list
     .into_iter()
-    .map(|i| i.try_into_cel())
+    .map(|i| i.__try_into_cel())
     .collect::<Result<Vec<::cel::Value>, CelError>>()?;
 
   Ok(values.into())

@@ -11,13 +11,16 @@ pub trait IntoCel: Into<::cel::Value> {}
 impl<T> IntoCel for T where T: Into<::cel::Value> {}
 
 #[cfg(not(feature = "cel"))]
+#[doc(hidden)]
 pub trait IntoCel {}
 #[cfg(not(feature = "cel"))]
+#[doc(hidden)]
 impl<T> IntoCel for T {}
 
 #[cfg(feature = "cel")]
+#[doc(hidden)]
 pub trait TryIntoCel: Clone {
-  fn try_into_cel(self) -> Result<::cel::Value, CelError>;
+  fn __try_into_cel(self) -> Result<::cel::Value, CelError>;
 }
 
 #[cfg(feature = "cel")]
@@ -27,7 +30,7 @@ where
   E: Display,
 {
   #[inline]
-  fn try_into_cel(self) -> Result<::cel::Value, CelError> {
+  fn __try_into_cel(self) -> Result<::cel::Value, CelError> {
     self
       .try_into()
       .map_err(|e| CelError::ConversionError(e.to_string()))
@@ -48,18 +51,24 @@ pub trait CelOneof: Sized + TryInto<::cel::Value, Error = CelConversionError> {
 }
 
 #[cfg(not(feature = "cel"))]
+#[doc(hidden)]
 pub trait CelOneof {}
 #[cfg(not(feature = "cel"))]
+#[doc(hidden)]
 impl<T> CelOneof for T {}
 
 #[cfg(not(feature = "cel"))]
+#[doc(hidden)]
 pub trait CelValue {}
 #[cfg(not(feature = "cel"))]
+#[doc(hidden)]
 impl<T> CelValue for T {}
 
 #[cfg(not(feature = "cel"))]
+#[doc(hidden)]
 pub trait TryIntoCel {}
 #[cfg(not(feature = "cel"))]
+#[doc(hidden)]
 impl<T> TryIntoCel for T {}
 
 #[doc(hidden)]

@@ -167,7 +167,6 @@ pub(crate) fn derive_cel_value_struct(item: &ItemStruct) -> Result<TokenStream2,
     impl TryFrom<#struct_name> for ::prelude::cel::Value {
       type Error = ::prelude::proto_types::cel::CelConversionError;
 
-      #[inline]
       fn try_from(value: #struct_name) -> Result<Self, Self::Error> {
         use ::prelude::{CelOneof as __CelOneof, CelValue as __CelValue};
 

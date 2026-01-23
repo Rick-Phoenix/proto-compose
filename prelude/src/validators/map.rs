@@ -539,7 +539,7 @@ where
   let mut cel_map: HashMap<::cel::objects::Key, ::cel::Value> = HashMap::new();
 
   for (k, v) in map {
-    cel_map.insert(k.into(), v.try_into_cel()?);
+    cel_map.insert(k.into(), v.__try_into_cel()?);
   }
 
   Ok(::cel::Value::Map(::cel::objects::Map {
