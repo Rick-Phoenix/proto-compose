@@ -81,8 +81,8 @@ impl Validator<Any> for AnyValidator {
 
     macro_rules! handle_violation {
       ($id:ident, $default:expr) => {
-        is_valid &= ctx.add_any_violation(
-          AnyViolation::$id,
+        is_valid &= ctx.add_violation(
+          ViolationKind::Any(AnyViolation::$id),
           self
             .error_messages
             .as_deref()

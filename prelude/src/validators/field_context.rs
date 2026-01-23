@@ -74,20 +74,6 @@ impl Default for ValidationCtx {
   }
 }
 
-macro_rules! violation_helpers {
-  ($($name:ident),*) => {
-    paste::paste! {
-      $(
-        pub(crate) fn [< add_ $name _violation >](&mut self, kind: [< $name:camel Violation >], error_message: CowStr) -> ValidatorResult {
-          self.add_violation(ViolationKind::[< $name:camel >](kind), error_message)
-        }
-      )*
-    }
-  };
-}
-
-type CowStr<'a> = Cow<'a, str>;
-
 impl ValidationCtx {
   #[inline]
   pub fn reset_field_context(&mut self) {
@@ -99,10 +85,6 @@ impl ValidationCtx {
     self.field_context = Some(field_context);
     self
   }
-
-  violation_helpers!(
-    any, bool, bytes, duration, string, timestamp, enum, field_mask, map, repeated
-  );
 
   #[inline]
   pub fn add_violation(
@@ -199,7 +181,7 @@ impl ValidationCtx {
 
   #[inline]
   pub fn add_required_violation(&mut self) -> ValidatorResult {
-    self.add_violation(ViolationKind::Required, Cow::Borrowed("is required"))
+    self.add_violation(ViolationKind::Required, "is required")
   }
 
   #[cfg(feature = "cel")]

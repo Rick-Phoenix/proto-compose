@@ -69,8 +69,8 @@ impl Validator<bool> for BoolValidator {
 
     macro_rules! handle_violation {
       ($id:ident, $default:expr) => {
-        is_valid &= ctx.add_bool_violation(
-          BoolViolation::$id,
+        is_valid &= ctx.add_violation(
+          ViolationKind::Bool(BoolViolation::$id),
           self
             .error_messages
             .as_deref()

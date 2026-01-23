@@ -346,8 +346,8 @@ impl Validator<String> for StringValidator {
 
     macro_rules! handle_violation {
       ($id:ident, $default:expr) => {
-        is_valid &= ctx.add_string_violation(
-          StringViolation::$id,
+        is_valid &= ctx.add_violation(
+          ViolationKind::String(StringViolation::$id),
           self
             .error_messages
             .as_deref()

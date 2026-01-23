@@ -341,8 +341,8 @@ where
 
       macro_rules! handle_violation {
         ($id:ident, $default:expr) => {
-          is_valid &= ctx.add_map_violation(
-            MapViolation::$id,
+          is_valid &= ctx.add_violation(
+            ViolationKind::Map(MapViolation::$id),
             self
               .error_messages
               .as_deref()

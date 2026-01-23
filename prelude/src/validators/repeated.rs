@@ -232,8 +232,8 @@ where
 
       macro_rules! handle_violation {
         ($id:ident, $default:expr) => {
-          is_valid &= ctx.add_repeated_violation(
-            RepeatedViolation::$id,
+          is_valid &= ctx.add_violation(
+            ViolationKind::Repeated(RepeatedViolation::$id),
             self
               .error_messages
               .as_deref()

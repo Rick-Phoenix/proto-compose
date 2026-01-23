@@ -110,8 +110,8 @@ impl Validator<FieldMask> for FieldMaskValidator {
 
     macro_rules! handle_violation {
       ($id:ident, $default:expr) => {
-        is_valid &= ctx.add_field_mask_violation(
-          FieldMaskViolation::$id,
+        is_valid &= ctx.add_violation(
+          ViolationKind::FieldMask(FieldMaskViolation::$id),
           self
             .error_messages
             .as_deref()

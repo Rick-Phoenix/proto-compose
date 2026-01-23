@@ -135,8 +135,8 @@ impl<T: ProtoEnum> Validator<T> for EnumValidator<T> {
 
     macro_rules! handle_violation {
       ($id:ident, $default:expr) => {
-        is_valid &= ctx.add_enum_violation(
-          EnumViolation::$id,
+        is_valid &= ctx.add_violation(
+          ViolationKind::Enum(EnumViolation::$id),
           self
             .error_messages
             .as_deref()

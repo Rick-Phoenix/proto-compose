@@ -120,8 +120,8 @@ impl Validator<Duration> for DurationValidator {
 
     macro_rules! handle_violation {
       ($id:ident, $default:expr) => {
-        is_valid &= ctx.add_duration_violation(
-          DurationViolation::$id,
+        is_valid &= ctx.add_violation(
+          ViolationKind::Duration(DurationViolation::$id),
           self
             .error_messages
             .as_deref()

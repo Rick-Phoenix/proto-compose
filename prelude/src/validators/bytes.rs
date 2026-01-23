@@ -186,8 +186,8 @@ impl Validator<Bytes> for BytesValidator {
 
     macro_rules! handle_violation {
       ($id:ident, $default:expr) => {
-        is_valid &= ctx.add_bytes_violation(
-          BytesViolation::$id,
+        is_valid &= ctx.add_violation(
+          ViolationKind::Bytes(BytesViolation::$id),
           self
             .error_messages
             .as_deref()

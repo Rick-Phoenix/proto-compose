@@ -163,8 +163,8 @@ impl Validator<Timestamp> for TimestampValidator {
 
     macro_rules! handle_violation {
       ($id:ident, $default:expr) => {
-        is_valid &= ctx.add_timestamp_violation(
-          TimestampViolation::$id,
+        is_valid &= ctx.add_violation(
+          ViolationKind::Timestamp(TimestampViolation::$id),
           self
             .error_messages
             .as_deref()
