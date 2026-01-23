@@ -97,6 +97,7 @@ pub use lazy::Lazy;
 pub use std::sync::LazyLock as Lazy;
 
 #[doc(hidden)]
+#[inline]
 pub fn apply<I, O, F>(input: I, f: F) -> O
 where
   F: FnOnce(I) -> O,

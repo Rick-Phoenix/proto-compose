@@ -203,7 +203,7 @@ impl ValidationCtx {
   }
 
   #[cfg(feature = "cel")]
-  pub fn add_cel_error_violation(&mut self, error: CelError) -> ValidatorResult {
+  pub(crate) fn add_cel_error_violation(&mut self, error: CelError) -> ValidatorResult {
     self.violations.push(ViolationCtx {
       meta: ViolationMeta {
         kind: ViolationKind::Cel,

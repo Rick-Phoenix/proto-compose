@@ -104,7 +104,6 @@ mod cel_impls {
 
   impl CelError {
     #[must_use]
-    #[inline]
     pub fn rule_id(&self) -> Option<&str> {
       match self {
         Self::ConversionError(_) => None,
@@ -117,13 +116,44 @@ mod cel_impls {
     // This is for runtime errors. If we get a CEL error we log the actual error while
     // producing a generic error message
     #[must_use]
-    #[inline]
-    pub fn into_violation(
+    pub(crate) fn into_violation(
       self,
       field_context: Option<&FieldContext>,
       parent_elements: &[FieldPathElement],
     ) -> Violation {
-      log::error!("{self}");
+      // We try to provide more context for this variant
+      // since it lacks a program id
+      if matches!(self, Self::ConversionError(_)) {
+        let mut item_path = String::new();
+
+        for name in parent_elements
+          .iter()
+          .filter_map(|e| e.field_name.as_ref())
+        {
+          if !item_path.is_empty() {
+            item_path.push('.');
+          }
+          item_path.push_str(name);
+        }
+
+        if let Some(field_name) = field_context.map(|fc| fc.proto_name) {
+          if !item_path.is_empty() {
+            item_path.push('.');
+          }
+          item_path.push_str(field_name);
+        }
+
+        if item_path.is_empty() {
+          item_path.push_str("unknown");
+        }
+
+        // A conversion error is due to user input so we don't assign a great priority to it
+        log::trace!("Cel execution failure for item at location `{item_path}`: {self}");
+      } else {
+        // Caused from a malformed CEL expression, so
+        // it has higher priority
+        log::error!("{self}");
+      }
 
       create_violation_core(
         self.rule_id(),
@@ -142,7 +172,6 @@ mod cel_impls {
       rule_id: SharedStr,
       value: ValueType,
     },
-    // Should use FieldPath here to at least get the context of the value?
     #[error("Failed to inject value in CEL program: {0}")]
     ConversionError(String),
     #[error("Failed to execute CEL program with id `{rule_id}`: {source}")]
@@ -297,7 +326,6 @@ mod cel_impls {
 
   impl CelProgram {
     #[must_use]
-    #[inline]
     pub const fn new(rule: CelRule) -> Self {
       Self {
         rule,
@@ -306,7 +334,6 @@ mod cel_impls {
     }
 
     // Potentially making this a result too, even with the automated tests
-    #[inline]
     pub fn get_program(&self) -> &Program {
       self.program.get_or_init(|| {
         Program::compile(&self.rule.expression).unwrap_or_else(|e| {
