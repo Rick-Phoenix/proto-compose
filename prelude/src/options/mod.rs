@@ -79,9 +79,59 @@ impl TryFrom<JsonValue> for OptionValue {
 }
 
 #[derive(Default, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct OptionMessage {
   inner: Arc<[ProtoOption]>,
+}
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for OptionMessage {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    let mut map = serializer.serialize_map(Some(self.inner.len()))?;
+
+    for option in self.inner.iter() {
+      serde::ser::SerializeMap::serialize_entry(&mut map, &option.name, &option.value)?;
+    }
+
+    serde::ser::SerializeMap::end(map)
+  }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for OptionMessage {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    struct OptionMessageVisitor;
+
+    impl<'de> serde::de::Visitor<'de> for OptionMessageVisitor {
+      type Value = OptionMessage;
+
+      fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+        formatter.write_str("a map of options")
+      }
+
+      fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
+      where
+        M: serde::de::MapAccess<'de>,
+      {
+        let mut options = Vec::with_capacity(access.size_hint().unwrap_or(0));
+
+        while let Some((key, value)) = access.next_entry::<FixedStr, OptionValue>()? {
+          options.push(ProtoOption { name: key, value });
+        }
+
+        Ok(OptionMessage {
+          inner: options.into(),
+        })
+      }
+    }
+
+    deserializer.deserialize_map(OptionMessageVisitor)
+  }
 }
 
 impl<'a> IntoIterator for &'a OptionMessage {
