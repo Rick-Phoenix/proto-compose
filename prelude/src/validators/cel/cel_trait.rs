@@ -38,23 +38,13 @@ where
 pub trait CelValue: Clone + TryInto<::cel::Value, Error = CelConversionError> {
   #[inline]
   fn try_into_cel(self) -> Result<::cel::Value, CelConversionError> {
-    self.try_into_cel_recursive(0)
+    self.try_into()
   }
-
-  fn try_into_cel_recursive(self, depth: usize) -> Result<::cel::Value, CelConversionError>;
 }
 
 #[cfg(feature = "cel")]
 pub trait CelOneof: Sized + TryInto<::cel::Value, Error = CelConversionError> {
-  #[inline]
-  fn try_into_cel(self) -> Result<(String, ::cel::Value), CelConversionError> {
-    self.try_into_cel_recursive(0)
-  }
-
-  fn try_into_cel_recursive(
-    self,
-    depth: usize,
-  ) -> Result<(String, ::cel::Value), CelConversionError>;
+  fn try_into_cel(self) -> Result<(String, ::cel::Value), CelConversionError>;
 }
 
 #[cfg(not(feature = "cel"))]

@@ -2,7 +2,7 @@ use crate::*;
 
 pub fn get_conversion_tokens(type_info: &TypeInfo, val_tokens: &TokenStream2) -> TokenStream2 {
   match type_info.type_.as_ref() {
-    RustType::Box(_) => quote! { (*#val_tokens).try_into_cel_recursive(depth + 1)? },
+    RustType::Box(_) => quote! { ::prelude::CelValue::try_into_cel(*#val_tokens)? },
     RustType::Float(_)
     | RustType::Uint(_)
     | RustType::Int(_)
@@ -40,11 +40,7 @@ pub fn derive_cel_value_oneof(item: &ItemEnum) -> Result<TokenStream2, Error> {
 
       match_arms.push(quote_spanned! {span=>
         #enum_ident::#variant_ident(val) => {
-          if depth >= 16 {
-            Ok((#proto_name.to_string(), ::prelude::cel::Value::Null))
-          } else {
-            Ok((#proto_name.to_string(), #into_expression))
-          }
+          Ok((#proto_name.to_string(), #into_expression))
         }
       });
     }
@@ -55,7 +51,7 @@ pub fn derive_cel_value_oneof(item: &ItemEnum) -> Result<TokenStream2, Error> {
   Ok(quote! {
     impl ::prelude::CelOneof for #enum_ident {
       #[doc(hidden)]
-      fn try_into_cel_recursive(self, depth: usize) -> Result<(String, ::prelude::cel::Value), ::prelude::proto_types::cel::CelConversionError> {
+      fn try_into_cel(self) -> Result<(String, ::prelude::cel::Value), ::prelude::proto_types::cel::CelConversionError> {
         use ::prelude::{CelOneof as __CelOneof, CelValue as __CelValue};
 
         match self {
@@ -69,7 +65,7 @@ pub fn derive_cel_value_oneof(item: &ItemEnum) -> Result<TokenStream2, Error> {
 
       #[inline]
       fn try_from(value: #enum_ident) -> Result<Self, Self::Error> {
-        Ok(<#enum_ident as ::prelude::CelOneof>::try_into_cel_recursive(value, 0)?.1)
+        Ok(<#enum_ident as ::prelude::CelOneof>::try_into_cel(value)?.1)
       }
     }
   })
@@ -105,8 +101,8 @@ pub(crate) fn derive_cel_value_struct(item: &ItemStruct) -> Result<TokenStream2,
 
     if is_oneof {
       tokens.extend(quote_spanned! {span=>
-        if let Some(oneof) = self.#field_ident {
-          let (oneof_field_name, cel_val) = ::prelude::CelOneof::try_into_cel_recursive(oneof, depth + 1)?;
+        if let Some(oneof) = value.#field_ident {
+          let (oneof_field_name, cel_val) = ::prelude::CelOneof::try_into_cel(oneof)?;
           fields.insert(oneof_field_name.into(), cel_val);
         }
       });
@@ -120,7 +116,7 @@ pub(crate) fn derive_cel_value_struct(item: &ItemStruct) -> Result<TokenStream2,
           let conversion_tokens = get_conversion_tokens(inner, &val_tokens);
 
           tokens.extend(quote_spanned! {span=>
-            if let Some(val) = self.#field_ident {
+            if let Some(val) = value.#field_ident {
               fields.insert(#field_name.into(), #conversion_tokens);
             } else {
               fields.insert(#field_name.into(), ::prelude::cel::Value::Null);
@@ -132,7 +128,7 @@ pub(crate) fn derive_cel_value_struct(item: &ItemStruct) -> Result<TokenStream2,
 
           tokens.extend(quote_spanned! {span=>
             let mut converted: Vec<::prelude::cel::Value> = Vec::new();
-            for val in self.#field_ident {
+            for val in value.#field_ident {
               converted.push(#conversion_tokens);
             }
 
@@ -146,7 +142,7 @@ pub(crate) fn derive_cel_value_struct(item: &ItemStruct) -> Result<TokenStream2,
           tokens.extend(quote_spanned! {span=>
             let mut field_map: ::std::collections::HashMap<::prelude::cel::objects::Key, ::prelude::cel::Value> = ::std::collections::HashMap::new();
 
-            for (key, val) in self.#field_ident {
+            for (key, val) in value.#field_ident {
               field_map.insert(key.into(), #values_conversion_tokens);
             }
 
@@ -154,7 +150,7 @@ pub(crate) fn derive_cel_value_struct(item: &ItemStruct) -> Result<TokenStream2,
           });
         }
         _ => {
-          let val_tokens = quote_spanned! {span=> self.#field_ident };
+          let val_tokens = quote_spanned! {span=> value.#field_ident };
           let conversion_tokens = get_conversion_tokens(&outer_type, &val_tokens);
 
           tokens.extend(quote_spanned! {span=>
@@ -166,20 +162,7 @@ pub(crate) fn derive_cel_value_struct(item: &ItemStruct) -> Result<TokenStream2,
   }
 
   Ok(quote! {
-    impl ::prelude::CelValue for #struct_name {
-      fn try_into_cel_recursive(self, depth: usize) -> Result<::prelude::cel::Value, ::prelude::proto_types::cel::CelConversionError> {
-        use ::prelude::{CelOneof as __CelOneof, CelValue as __CelValue};
-        if depth >= 16 {
-          return Ok(::prelude::cel::Value::Null);
-        }
-
-        let mut fields: ::std::collections::HashMap<::prelude::cel::objects::Key, ::prelude::cel::Value> = std::collections::HashMap::new();
-
-        #tokens
-
-        Ok(::prelude::cel::Value::Map(fields.into()))
-      }
-    }
+    impl ::prelude::CelValue for #struct_name {}
 
     impl TryFrom<#struct_name> for ::prelude::cel::Value {
       type Error = ::prelude::proto_types::cel::CelConversionError;
@@ -188,7 +171,11 @@ pub(crate) fn derive_cel_value_struct(item: &ItemStruct) -> Result<TokenStream2,
       fn try_from(value: #struct_name) -> Result<Self, Self::Error> {
         use ::prelude::{CelOneof as __CelOneof, CelValue as __CelValue};
 
-        value.try_into_cel_recursive(0)
+        let mut fields: ::std::collections::HashMap<::prelude::cel::objects::Key, ::prelude::cel::Value> = std::collections::HashMap::new();
+
+        #tokens
+
+        Ok(::prelude::cel::Value::Map(fields.into()))
       }
     }
   })
