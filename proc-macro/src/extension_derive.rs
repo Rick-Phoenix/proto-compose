@@ -45,7 +45,7 @@ pub fn process_extension_derive(
 
     fields_tokens.push(quote_spanned! {field.ident.span()=>
       ::prelude::Field {
-        name: #proto_name,
+        name: #proto_name.into(),
         tag: #tag,
         options: #options.into_iter().collect(),
         type_: #field_type_tokens,

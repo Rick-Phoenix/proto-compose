@@ -1,6 +1,7 @@
 use crate::*;
 
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Extension {
   pub target: ExtensionTarget,
   pub fields: Vec<Field>,
@@ -12,6 +13,7 @@ pub trait ProtoExtension {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(clippy::enum_variant_names)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ExtensionTarget {
   FileOptions,
   MessageOptions,

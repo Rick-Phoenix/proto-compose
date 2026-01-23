@@ -49,7 +49,7 @@ pub fn field_schema_tokens(data: &FieldData) -> TokenStream2 {
 
     quote_spanned! {*span=>
       ::prelude::Field {
-        name: #proto_name,
+        name: #proto_name.into(),
         tag: #tag,
         options: #options_tokens.into_iter().collect(),
         type_: #field_type_tokens,
@@ -185,9 +185,9 @@ impl MessageCtx<'_> {
 
         fn proto_path() -> ::prelude::ProtoPath {
           ::prelude::ProtoPath {
-            name: <Self as ::prelude::ProtoMessage>::proto_name(),
-            file: __PROTO_FILE.name,
-            package: __PROTO_FILE.package,
+            name: <Self as ::prelude::ProtoMessage>::proto_name().into(),
+            file: __PROTO_FILE.name.into(),
+            package: __PROTO_FILE.package.into(),
           }
         }
 
@@ -197,11 +197,11 @@ impl MessageCtx<'_> {
 
         fn proto_schema() -> ::prelude::Message {
           ::prelude::Message {
-            short_name: #proto_name,
-            name: <Self as ::prelude::ProtoMessage>::proto_name(),
-            file: __PROTO_FILE.name,
-            package: __PROTO_FILE.package,
-            reserved_names: vec![ #(#reserved_names),* ],
+            short_name: #proto_name.into(),
+            name: <Self as ::prelude::ProtoMessage>::proto_name().into(),
+            file: __PROTO_FILE.name.into(),
+            package: __PROTO_FILE.package.into(),
+            reserved_names: vec![ #(#reserved_names.into()),* ],
             reserved_numbers: #reserved_numbers,
             options: #options_tokens.into_iter().collect(),
             messages: vec![],

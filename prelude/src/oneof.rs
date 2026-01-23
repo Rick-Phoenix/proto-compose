@@ -68,16 +68,17 @@ pub trait ValidatedOneof: Clone {
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Oneof {
-  pub name: &'static str,
+  pub name: FixedStr,
   pub fields: Vec<Field>,
   pub options: Vec<ProtoOption>,
 }
 
 impl Oneof {
   #[must_use]
-  pub const fn with_name(mut self, name: &'static str) -> Self {
-    self.name = name;
+  pub fn with_name(mut self, name: impl Into<FixedStr>) -> Self {
+    self.name = name.into();
     self
   }
 }

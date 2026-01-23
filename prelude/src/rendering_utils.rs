@@ -34,7 +34,7 @@ pub(crate) fn render_reserved_numbers(ranges: &[Range<i32>]) -> Option<String> {
   Some(output_str)
 }
 
-pub(crate) fn render_reserved_names(names: &[&'static str]) -> Option<String> {
+pub(crate) fn render_reserved_names(names: &[FixedStr]) -> Option<String> {
   if names.is_empty() {
     return None;
   }

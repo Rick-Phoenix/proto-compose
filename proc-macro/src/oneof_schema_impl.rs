@@ -32,7 +32,7 @@ impl OneofCtx<'_> {
 
         fn proto_schema() -> ::prelude::Oneof {
           ::prelude::Oneof {
-            name: #proto_name,
+            name: #proto_name.into(),
             fields: vec![ #variants_tokens ],
             options: #options_tokens.into_iter().collect(),
           }

@@ -321,9 +321,9 @@ fn message_schema_output() {
     (
       "msg_field",
       FieldType::Normal(ProtoType::Message(ProtoPath {
-        name: "TestMessage.Nested1",
-        package: RENDERING_PKG.name,
-        file: RENDERING.name,
+        name: "TestMessage.Nested1".into(),
+        package: RENDERING_PKG.name.into(),
+        file: RENDERING.name.into(),
       })),
     ),
     (

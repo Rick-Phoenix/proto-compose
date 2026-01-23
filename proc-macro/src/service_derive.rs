@@ -96,7 +96,7 @@ pub fn process_service_derive(item: &ItemEnum) -> Result<TokenStream2, Error> {
 
     quote_spanned! {*span=>
       ::prelude::ServiceHandler {
-        name: #name,
+        name: #name.into(),
         request: <#request as ::prelude::ProtoMessage>::proto_path(),
         response: <#response as ::prelude::ProtoMessage>::proto_path(),
         options: #options_tokens.into_iter().collect()
@@ -120,9 +120,9 @@ pub fn process_service_derive(item: &ItemEnum) -> Result<TokenStream2, Error> {
     impl ::prelude::ProtoService for #ident {
       fn as_proto_service() -> ::prelude::Service {
         ::prelude::Service {
-          name: #service_name,
-          file: __PROTO_FILE.name,
-          package: __PROTO_FILE.package,
+          name: #service_name.into(),
+          file: __PROTO_FILE.name.into(),
+          package: __PROTO_FILE.package.into(),
           handlers: ::prelude::vec![ #(#handlers_tokens),* ],
           options: #options_tokens.into_iter().collect()
         }

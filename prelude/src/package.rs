@@ -20,8 +20,9 @@ impl PackageReference {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Package {
-  pub name: &'static str,
+  pub name: FixedStr,
   pub files: Vec<ProtoFile>,
 }
 
@@ -89,7 +90,7 @@ impl Package {
     std::fs::create_dir_all(output_root)?;
 
     for file in &self.files {
-      let file_path = output_root.join(file.name);
+      let file_path = output_root.join(file.name.as_ref());
 
       let mut file_buf = std::fs::File::create(file_path)?;
 
@@ -100,9 +101,9 @@ impl Package {
   }
 
   #[must_use]
-  pub const fn new(name: &'static str) -> Self {
+  pub fn new(name: impl Into<FixedStr>) -> Self {
     Self {
-      name,
+      name: name.into(),
       files: Vec::new(),
     }
   }
@@ -115,7 +116,7 @@ impl Package {
   #[must_use]
   pub fn with_files(mut self, files: impl IntoIterator<Item = ProtoFile>) -> Self {
     self.files.extend(files.into_iter().map(|mut f| {
-      f.package = self.name;
+      f.package = self.name.clone();
       f
     }));
     self

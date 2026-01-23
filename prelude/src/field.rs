@@ -1,8 +1,9 @@
 use crate::*;
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Field {
-  pub name: &'static str,
+  pub name: FixedStr,
   pub tag: i32,
   pub type_: FieldType,
   pub options: Vec<ProtoOption>,
@@ -10,6 +11,7 @@ pub struct Field {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ValidatorSchema {
   pub schema: ProtoOption,
   pub cel_rules: Vec<CelRule>,

@@ -56,16 +56,17 @@ pub trait ProtoMessage: Default {
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Template))]
 #[cfg_attr(feature = "std", template(path = "message.proto.j2"))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Message {
-  pub short_name: &'static str,
-  pub name: &'static str,
-  pub package: &'static str,
-  pub file: &'static str,
+  pub short_name: FixedStr,
+  pub name: FixedStr,
+  pub package: FixedStr,
+  pub file: FixedStr,
   pub entries: Vec<MessageEntry>,
   pub messages: Vec<Self>,
   pub enums: Vec<Enum>,
   pub options: Vec<ProtoOption>,
-  pub reserved_names: Vec<&'static str>,
+  pub reserved_names: Vec<FixedStr>,
   pub reserved_numbers: Vec<Range<i32>>,
   pub validators: Vec<ValidatorSchema>,
   // Not a static str because we compose this
@@ -110,6 +111,7 @@ impl Message {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MessageEntry {
   Field(Field),
   Oneof { oneof: Oneof, required: bool },

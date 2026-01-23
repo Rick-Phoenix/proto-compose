@@ -171,7 +171,7 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
     let options_tokens = options_tokens(*span, options, *deprecated);
 
     quote_spanned! {*span=>
-      ::prelude::EnumVariant { name: #name, options: #options_tokens.into_iter().collect(), tag: #tag, }
+      ::prelude::EnumVariant { name: #name.into(), options: #options_tokens.into_iter().collect(), tag: #tag, }
     }
   });
 
@@ -313,9 +313,9 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
     impl ::prelude::ProtoEnumSchema for #enum_ident {
       fn proto_path() -> ::prelude::ProtoPath {
         ::prelude::ProtoPath {
-          name: <Self as ::prelude::ProtoEnum>::proto_name(),
-          file: __PROTO_FILE.name,
-          package: __PROTO_FILE.package,
+          name: <Self as ::prelude::ProtoEnum>::proto_name().into(),
+          file: __PROTO_FILE.name.into(),
+          package: __PROTO_FILE.package.into(),
         }
       }
 
@@ -331,12 +331,12 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
 
       fn proto_schema() -> ::prelude::Enum {
         ::prelude::Enum {
-          short_name: #proto_name,
-          name: <Self as ::prelude::ProtoEnum>::proto_name(),
-          file: __PROTO_FILE.name,
-          package: __PROTO_FILE.package,
+          short_name: #proto_name.into(),
+          name: <Self as ::prelude::ProtoEnum>::proto_name().into(),
+          file: __PROTO_FILE.name.into(),
+          package: __PROTO_FILE.package.into(),
           variants: ::prelude::vec! [ #variants_tokens ],
-          reserved_names: ::prelude::vec![ #(#reserved_names),* ],
+          reserved_names: ::prelude::vec![ #(#reserved_names.into()),* ],
           reserved_numbers: #reserved_numbers,
           options: #options_tokens.into_iter().collect(),
           rust_path: #rust_path_field

@@ -1,23 +1,23 @@
 {% import "render_macros.j2" as macros %}
 
-{{ self.edition }};
+{{ edition }};
 
 package {{+ package }};
 
-{%~ set sorted_imports = self.imports.as_sorted_vec() ~%}
+{%~ set sorted_imports = imports.as_sorted_vec() ~%}
 
 {% for import in sorted_imports ~%}
 import "{{ import }}";
 {% endfor ~%}
 
-{%~ for option in self.options +%}
+{%~ for option in options +%}
 option {{+ option.name +}} = {{+ option.value }};
 {% endfor +%}
 
 {%~ for extension in extensions ~%}
 extend {{+ extension.target +}} {
   {% for field in extension.fields ~%}
-  {%+ call macros::render_field(field, self.package, 2) %}{% endcall %}
+  {%+ call macros::render_field(field, package, 2) %}{% endcall %}
   {% endfor ~%}
 }
 {%~ endfor %}

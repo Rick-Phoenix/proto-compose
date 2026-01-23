@@ -1,15 +1,15 @@
 {% import "render_macros.j2" as macros %}
 
-message {{+ self.short_name +}} {
-{% if let Some(names) = self.render_reserved_names() ~%}
+message {{+ short_name +}} {
+{% if let Some(names) = render_reserved_names() ~%}
   {{+ names ~}}
 {%~ endif %}
 
-{%~ if let Some(numbers) = self.render_reserved_numbers() ~%}
+{%~ if let Some(numbers) = render_reserved_numbers() ~%}
   {{+ numbers ~}}
 {%~ endif %}
 
-  {%~ for option in self.options_with_validators() +%}
+  {%~ for option in options_with_validators() +%}
   option {{+ option.name +}} = {{+ option.value | indent(2) }};
   {% endfor +%}
 
@@ -25,7 +25,7 @@ message {{+ self.short_name +}} {
 {%+ endfilter %}
 {% endfor %}
 
-{% for entry in self.entries %}
+{% for entry in entries %}
 {% match entry %}
   {%~ when MessageEntry::Oneof { oneof, required } +%}
 
@@ -40,11 +40,11 @@ message {{+ self.short_name +}} {
     {% endif %}
 
     {%~ for field in oneof.fields ~%}
-    {%+ call macros::render_field(field, self.package, 4) %}{% endcall %}
+    {%+ call macros::render_field(field, package, 4) %}{% endcall %}
     {% endfor +%}
   }
   {% when MessageEntry::Field(field) ~%}
-  {%+ call macros::render_field(field, self.package, 2) %}{% endcall %}
+  {%+ call macros::render_field(field, package, 2) %}{% endcall %}
 {% endmatch %}
 {% endfor +%}
 }

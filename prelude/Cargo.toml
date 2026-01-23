@@ -58,6 +58,7 @@ serde = [
   "bytes/serde",
   "proto-types/serde",
   "ordered-float/serde",
+  "hashbrown/serde",
 ]
 
 inventory = ["std", "dep:inventory"]

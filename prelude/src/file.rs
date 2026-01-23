@@ -2,11 +2,12 @@ use crate::*;
 use hashbrown::HashSet;
 
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", derive(Template))]
 #[cfg_attr(feature = "std", template(path = "file.proto.j2"))]
 pub struct ProtoFile {
-  pub name: &'static str,
-  pub package: &'static str,
+  pub name: FixedStr,
+  pub package: FixedStr,
   pub imports: FileImports,
   pub messages: Vec<Message>,
   pub enums: Vec<Enum>,
@@ -23,6 +24,7 @@ pub struct FileReference {
 }
 
 #[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Edition {
   Proto2,
   #[default]
@@ -42,9 +44,10 @@ impl Display for Edition {
 
 #[doc(hidden)]
 #[derive(PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FileImports {
   pub set: HashSet<FixedStr>,
-  pub file: &'static str,
+  pub file: FixedStr,
   pub added_validate_proto: bool,
 }
 
@@ -65,9 +68,9 @@ impl IntoIterator for FileImports {
 
 impl FileImports {
   #[must_use]
-  pub fn new(file: &'static str) -> Self {
+  pub fn new(file: impl Into<FixedStr>) -> Self {
     Self {
-      file,
+      file: file.into(),
       set: HashSet::default(),
       added_validate_proto: false,
     }
@@ -88,7 +91,7 @@ impl FileImports {
   {
     let import_str = import.as_ref();
 
-    if import_str != self.file {
+    if *import_str != *self.file {
       if import_str == "buf/validate/validate.proto" {
         self.insert_validate_proto();
       } else {
@@ -101,14 +104,14 @@ impl FileImports {
   where
     S: AsRef<str> + Into<FixedStr>,
   {
-    if import.as_ref() != self.file {
+    if self.file != import.as_ref() {
       self.set.insert(import.into());
     }
   }
 
   pub fn insert_from_path(&mut self, path: &ProtoPath) {
     if path.file != self.file {
-      self.set.insert(path.file.into());
+      self.set.insert(path.file.clone());
     }
   }
 
@@ -126,8 +129,8 @@ impl ProtoFile {
   #[must_use]
   pub fn new(name: &'static str, package: &'static str) -> Self {
     Self {
-      name,
-      package,
+      name: name.into(),
+      package: package.into(),
       imports: FileImports::new(name),
       messages: Default::default(),
       enums: Default::default(),
@@ -187,7 +190,7 @@ impl ProtoFile {
   pub fn with_messages<I: IntoIterator<Item = Message>>(&mut self, messages: I) -> &mut Self {
     for mut message in messages {
       message.register_imports(&mut self.imports);
-      message.file = self.name;
+      message.file = self.name.clone();
 
       self.messages.push(message);
     }
@@ -197,7 +200,7 @@ impl ProtoFile {
 
   pub fn with_enums<I: IntoIterator<Item = Enum>>(&mut self, enums: I) -> &mut Self {
     for mut enum_ in enums {
-      enum_.file = self.name;
+      enum_.file = self.name.clone();
 
       self.enums.push(enum_);
     }
@@ -216,8 +219,8 @@ impl ProtoFile {
         self.imports.insert_from_path(response);
       }
 
-      if service.file != self.name {
-        self.imports.set.insert(service.file.into());
+      if *service.file != *self.name {
+        self.imports.set.insert(service.file.clone());
       }
 
       self.services.push(service);

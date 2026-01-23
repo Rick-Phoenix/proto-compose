@@ -22,7 +22,7 @@ fn field_duplicate_rules() {
   file.with_messages([FieldDuplicateRules::proto_schema()]);
 
   let package = Package {
-    name: "abc",
+    name: "abc".into(),
     files: vec![file],
   };
 
@@ -44,7 +44,7 @@ fn msg_duplicate_rules() {
   file.with_messages([MsgDuplicateRules::proto_schema()]);
 
   let package = Package {
-    name: "abc",
+    name: "abc".into(),
     files: vec![file],
   };
 
@@ -66,7 +66,7 @@ fn msg_and_field_duplicate_rules() {
   file.with_messages([MsgAndFieldDuplicateRules::proto_schema()]);
 
   let package = Package {
-    name: "abc",
+    name: "abc".into(),
     files: vec![file],
   };
 
@@ -97,7 +97,7 @@ fn msg_and_oneof_duplicate_rules() {
   file.with_messages([MsgAndOneofDuplicateRules::proto_schema()]);
 
   let package = Package {
-    name: "abc",
+    name: "abc".into(),
     files: vec![file],
   };
 
@@ -120,7 +120,7 @@ fn field_and_oneof_duplicate_rules() {
   file.with_messages([FieldAndOneofDuplicateRules::proto_schema()]);
 
   let package = Package {
-    name: "abc",
+    name: "abc".into(),
     files: vec![file],
   };
 
@@ -150,7 +150,7 @@ fn oneof_duplicate_rules() {
   file.with_messages([OneofDuplicateRules::proto_schema()]);
 
   let package = Package {
-    name: "abc",
+    name: "abc".into(),
     files: vec![file],
   };
 
@@ -174,7 +174,7 @@ fn benign_duplicate_rules() {
   file.with_messages([BenignDuplicateRules::proto_schema()]);
 
   let package = Package {
-    name: "abc",
+    name: "abc".into(),
     files: vec![file],
   };
 

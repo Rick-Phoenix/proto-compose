@@ -16,6 +16,13 @@ pub enum FixedStr {
   Boxed(Box<str>),
 }
 
+impl Default for FixedStr {
+  #[inline]
+  fn default() -> Self {
+    Self::Static("")
+  }
+}
+
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for FixedStr {
   fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -29,6 +36,15 @@ impl<'de> serde::Deserialize<'de> for FixedStr {
 }
 
 impl FixedStr {
+  #[inline]
+  #[must_use]
+  pub fn into_cheaply_clonable(self) -> Self {
+    match self {
+      Self::Static(_) | Self::Shared(_) => self,
+      Self::Boxed(boxed) => Self::Shared(boxed.into()),
+    }
+  }
+
   #[must_use]
   pub fn as_str(&self) -> &str {
     match self {

@@ -32,6 +32,7 @@ impl<T: AsProtoType> AsProtoField for T {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum FieldType {
   Normal(ProtoType),
   Map {
@@ -53,6 +54,7 @@ pub trait AsProtoMapKey {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ProtoMapKey {
   String,
   Bool,
@@ -120,6 +122,7 @@ impl Display for ProtoMapKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ProtoScalar {
   Double,
   Float,
@@ -161,6 +164,7 @@ impl Display for ProtoScalar {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ProtoType {
   Scalar(ProtoScalar),
   Message(ProtoPath),
@@ -195,7 +199,7 @@ impl ProtoType {
 }
 
 impl FieldType {
-  pub(crate) fn render(&self, current_package: &'static str) -> Cow<'static, str> {
+  pub(crate) fn render(&self, current_package: &FixedStr) -> Cow<'_, str> {
     let name = self.render_name(current_package);
 
     match self {
@@ -211,7 +215,7 @@ impl FieldType {
     }
   }
 
-  pub(crate) fn render_name(&self, current_package: &'static str) -> Cow<'static, str> {
+  pub(crate) fn render_name(&self, current_package: &FixedStr) -> Cow<'_, str> {
     match self {
       Self::Normal(type_info) | Self::Repeated(type_info) | Self::Optional(type_info) => {
         type_info.render_name(current_package)
@@ -227,12 +231,12 @@ impl FieldType {
 }
 
 impl ProtoType {
-  pub(crate) fn render_name(&self, current_package: &'static str) -> Cow<'static, str> {
+  pub(crate) fn render_name(&self, current_package: &FixedStr) -> Cow<'_, str> {
     match self {
       Self::Scalar(scalar) => scalar.to_string().into(),
       Self::Message(path) | Self::Enum(path) => {
-        if path.package == current_package {
-          path.name.into()
+        if *path.package == **current_package {
+          path.name.as_ref().into()
         } else {
           format!("{}.{}", path.package, path.name).into()
         }
@@ -249,9 +253,9 @@ impl ProtoType {
 }
 
 impl ProtoPath {
-  pub(crate) fn render_name(&self, current_package: &'static str) -> Cow<'static, str> {
-    if self.package == current_package {
-      self.name.into()
+  pub(crate) fn render_name(&self, current_package: &FixedStr) -> Cow<'_, str> {
+    if self.package == *current_package {
+      self.name.as_ref().into()
     } else {
       format!("{}.{}", self.package, self.name).into()
     }
@@ -259,10 +263,11 @@ impl ProtoPath {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ProtoPath {
-  pub name: &'static str,
-  pub package: &'static str,
-  pub file: &'static str,
+  pub name: FixedStr,
+  pub package: FixedStr,
+  pub file: FixedStr,
 }
 
 impl Display for ProtoPath {

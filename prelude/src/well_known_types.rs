@@ -5,9 +5,9 @@ use crate::*;
 impl AsProtoType for Duration {
   fn proto_type() -> ProtoType {
     ProtoType::Message(ProtoPath {
-      name: "Duration",
-      package: "google.protobuf",
-      file: "google/protobuf/duration.proto",
+      name: "Duration".into(),
+      package: "google.protobuf".into(),
+      file: "google/protobuf/duration.proto".into(),
     })
   }
 }
@@ -15,9 +15,9 @@ impl AsProtoType for Duration {
 impl AsProtoType for Timestamp {
   fn proto_type() -> ProtoType {
     ProtoType::Message(ProtoPath {
-      name: "Timestamp",
-      package: "google.protobuf",
-      file: "google/protobuf/timestamp.proto",
+      name: "Timestamp".into(),
+      package: "google.protobuf".into(),
+      file: "google/protobuf/timestamp.proto".into(),
     })
   }
 }
@@ -25,9 +25,9 @@ impl AsProtoType for Timestamp {
 impl AsProtoType for Any {
   fn proto_type() -> ProtoType {
     ProtoType::Message(ProtoPath {
-      name: "Any",
-      package: "google.protobuf",
-      file: "google/protobuf/any.proto",
+      name: "Any".into(),
+      package: "google.protobuf".into(),
+      file: "google/protobuf/any.proto".into(),
     })
   }
 }
@@ -35,9 +35,9 @@ impl AsProtoType for Any {
 impl AsProtoType for () {
   fn proto_type() -> ProtoType {
     ProtoType::Message(ProtoPath {
-      name: "Empty",
-      package: "google.protobuf",
-      file: "google/protobuf/empty.proto",
+      name: "Empty".into(),
+      package: "google.protobuf".into(),
+      file: "google/protobuf/empty.proto".into(),
     })
   }
 }
@@ -45,9 +45,9 @@ impl AsProtoType for () {
 impl AsProtoType for FieldMask {
   fn proto_type() -> ProtoType {
     ProtoType::Message(ProtoPath {
-      name: "FieldMask",
-      package: "google.protobuf",
-      file: "google/protobuf/field_mask.proto",
+      name: "FieldMask".into(),
+      package: "google.protobuf".into(),
+      file: "google/protobuf/field_mask.proto".into(),
     })
   }
 }
@@ -55,9 +55,9 @@ impl AsProtoType for FieldMask {
 impl AsProtoType for Status {
   fn proto_type() -> ProtoType {
     ProtoType::Message(ProtoPath {
-      name: "Status",
-      package: "google.rpc",
-      file: "google/rpc/status.proto",
+      name: "Status".into(),
+      package: "google.rpc".into(),
+      file: "google/rpc/status.proto".into(),
     })
   }
 }
@@ -65,9 +65,9 @@ impl AsProtoType for Status {
 impl AsProtoType for Code {
   fn proto_type() -> ProtoType {
     ProtoType::Message(ProtoPath {
-      name: "Code",
-      package: "google.rpc",
-      file: "google/rpc/code.proto",
+      name: "Code".into(),
+      package: "google.rpc".into(),
+      file: "google/rpc/code.proto".into(),
     })
   }
 }
