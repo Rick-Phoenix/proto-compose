@@ -83,15 +83,29 @@ where
   T: ProtoValidation + Send + Sync,
   T::Stored: TryIntoCel + Sized + Clone,
 {
+  #[doc(hidden)]
   type Target = [T::Stored];
+  #[doc(hidden)]
   type Stored = Vec<T::Stored>;
   type Validator = RepeatedValidator<T>;
+  #[doc(hidden)]
   type Builder = RepeatedValidatorBuilder<T>;
 
+  #[doc(hidden)]
   type UniqueStore<'a>
     = UnsupportedStore<Self::Target>
   where
     Self: 'a;
+
+  #[inline(never)]
+  #[cold]
+  #[doc(hidden)]
+  fn make_unique_store<'a>(_: &Self::Validator, _: usize) -> Self::UniqueStore<'a>
+  where
+    Self: 'a,
+  {
+    UnsupportedStore::new()
+  }
 
   const HAS_DEFAULT_VALIDATOR: bool = T::HAS_DEFAULT_VALIDATOR;
 }

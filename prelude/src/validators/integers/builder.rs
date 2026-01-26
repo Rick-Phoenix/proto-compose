@@ -35,6 +35,8 @@ where
   S: State,
   N: IntWrapper,
 {
+  #[inline(never)]
+  #[cold]
   fn from(value: IntValidatorBuilder<N, S>) -> Self {
     value.build().into()
   }
@@ -45,6 +47,7 @@ where
   S: State,
   Num: IntWrapper,
 {
+  #[inline]
   pub fn with_error_messages(
     mut self,
     error_messages: impl IntoIterator<Item = (Num::ViolationEnum, impl Into<FixedStr>)>,

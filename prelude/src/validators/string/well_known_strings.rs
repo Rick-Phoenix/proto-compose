@@ -37,6 +37,8 @@ pub enum WellKnownStrings {
 }
 
 impl WellKnownStrings {
+  #[inline(never)]
+  #[cold]
   pub(crate) fn to_option(self) -> (FixedStr, OptionValue, bool) {
     let mut is_strict = false;
 

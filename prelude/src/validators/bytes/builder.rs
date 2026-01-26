@@ -12,9 +12,12 @@ pub struct BytesValidatorBuilder<S: State = Empty> {
 }
 
 impl ProtoValidation for Bytes {
+  #[doc(hidden)]
   type Target = Self;
+  #[doc(hidden)]
   type Stored = Self;
   type Validator = BytesValidator;
+  #[doc(hidden)]
   type Builder = BytesValidatorBuilder;
 
   type UniqueStore<'a>
@@ -47,6 +50,8 @@ impl<S: State> Default for BytesValidatorBuilder<S> {
 }
 
 impl<S: State> From<BytesValidatorBuilder<S>> for ProtoOption {
+  #[inline(never)]
+  #[cold]
   fn from(value: BytesValidatorBuilder<S>) -> Self {
     value.build().into()
   }

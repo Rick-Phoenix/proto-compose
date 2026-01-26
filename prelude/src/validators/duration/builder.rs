@@ -6,9 +6,12 @@ pub(crate) use state::*;
 use proto_types::Duration;
 
 impl ProtoValidation for Duration {
+  #[doc(hidden)]
   type Target = Self;
+  #[doc(hidden)]
   type Stored = Self;
   type Validator = DurationValidator;
+  #[doc(hidden)]
   type Builder = DurationValidatorBuilder;
 
   type UniqueStore<'a>
@@ -56,6 +59,8 @@ impl DurationValidator {
 }
 
 impl<S: State> From<DurationValidatorBuilder<S>> for ProtoOption {
+  #[inline(never)]
+  #[cold]
   fn from(value: DurationValidatorBuilder<S>) -> Self {
     value.build().into()
   }

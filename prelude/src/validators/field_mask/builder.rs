@@ -31,6 +31,8 @@ impl<S: State> ValidatorBuilderFor<FieldMask> for FieldMaskValidatorBuilder<S> {
 }
 
 impl<S: State> From<FieldMaskValidatorBuilder<S>> for ProtoOption {
+  #[inline(never)]
+  #[cold]
   fn from(value: FieldMaskValidatorBuilder<S>) -> Self {
     value.build().into()
   }

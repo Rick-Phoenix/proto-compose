@@ -7,6 +7,7 @@ macro_rules! pluralize {
 macro_rules! custom_error_messages_method {
   ($kind:ident) => {
     paste! {
+      #[inline]
       pub fn with_error_messages(
         mut self,
         error_messages: impl IntoIterator<Item = ([< $kind Violation >], impl Into<FixedStr>)>,

@@ -11,6 +11,7 @@ pub trait ValidationResultExt {
 }
 
 impl ValidationResultExt for ValidationResult {
+  #[doc(hidden)]
   #[allow(private_interfaces)]
   const SEALED: Sealed = Sealed;
 

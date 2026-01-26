@@ -62,6 +62,8 @@ where
   K: ProtoValidation,
   V: ProtoValidation,
 {
+  #[inline(never)]
+  #[cold]
   fn from(value: MapValidatorBuilder<K, V, S>) -> Self {
     value.build().into()
   }
@@ -100,6 +102,7 @@ where
     }
   }
 
+  #[inline]
   pub fn with_error_messages(
     self,
     error_messages: impl IntoIterator<Item = (MapViolation, impl Into<FixedStr>)>,

@@ -13,9 +13,12 @@ pub struct TimestampValidatorBuilder<S: State = Empty> {
 }
 
 impl ProtoValidation for Timestamp {
+  #[doc(hidden)]
   type Target = Self;
+  #[doc(hidden)]
   type Stored = Self;
   type Validator = TimestampValidator;
+  #[doc(hidden)]
   type Builder = TimestampValidatorBuilder;
 
   type UniqueStore<'a>
@@ -51,6 +54,8 @@ impl TimestampValidator {
 }
 
 impl<S: State> From<TimestampValidatorBuilder<S>> for ProtoOption {
+  #[inline(never)]
+  #[cold]
   fn from(value: TimestampValidatorBuilder<S>) -> Self {
     value.build().into()
   }

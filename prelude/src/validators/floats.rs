@@ -488,28 +488,42 @@ macro_rules! impl_float_wrapper {
   ($target_type:ty, $proto_type:ident) => {
     paste::paste! {
       impl FloatWrapper for $target_type {
+        #[doc(hidden)]
         type ViolationEnum = [< $proto_type Violation >];
         const LT_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Lt;
+        #[doc(hidden)]
         const LTE_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Lte;
+        #[doc(hidden)]
         const GT_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Gt;
+        #[doc(hidden)]
         const GTE_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Gte;
+        #[doc(hidden)]
         const CONST_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Const;
+        #[doc(hidden)]
         const FINITE_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Finite;
+        #[doc(hidden)]
         const IN_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::In;
+        #[doc(hidden)]
         const NOT_IN_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::NotIn;
+        #[doc(hidden)]
         const REQUIRED_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Required;
+        #[doc(hidden)]
         #[allow(private_interfaces)]
         const SEALED: Sealed = Sealed;
 
+        #[doc(hidden)]
         fn type_name() -> &'static str {
           stringify!([< $proto_type:lower >])
         }
       }
 
       impl ProtoValidation for $target_type {
+        #[doc(hidden)]
         type Target = Self;
+        #[doc(hidden)]
         type Stored = Self;
         type Validator = FloatValidator<Self>;
+        #[doc(hidden)]
         type Builder = FloatValidatorBuilder<Self>;
 
         type UniqueStore<'a>

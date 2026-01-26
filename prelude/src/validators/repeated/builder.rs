@@ -86,6 +86,7 @@ where
     }
   }
 
+  #[inline]
   pub fn with_error_messages(
     self,
     error_messages: impl IntoIterator<Item = (RepeatedViolation, impl Into<FixedStr>)>,
@@ -239,6 +240,8 @@ impl<T, S: State> From<RepeatedValidatorBuilder<T, S>> for ProtoOption
 where
   T: ProtoValidation,
 {
+  #[inline(never)]
+  #[cold]
   fn from(value: RepeatedValidatorBuilder<T, S>) -> Self {
     value.build().into()
   }

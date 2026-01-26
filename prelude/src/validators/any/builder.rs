@@ -30,9 +30,12 @@ impl AnyValidator {
 }
 
 impl ProtoValidation for Any {
+  #[doc(hidden)]
   type Target = Self;
+  #[doc(hidden)]
   type Stored = Self;
   type Validator = AnyValidator;
+  #[doc(hidden)]
   type Builder = AnyValidatorBuilder;
 
   type UniqueStore<'a>
@@ -133,6 +136,8 @@ impl<S: State> AnyValidatorBuilder<S> {
 }
 
 impl<S: State> From<AnyValidatorBuilder<S>> for ProtoOption {
+  #[inline(never)]
+  #[cold]
   fn from(value: AnyValidatorBuilder<S>) -> Self {
     value.build().into()
   }

@@ -35,6 +35,7 @@ where
   S: State,
   Num: FloatWrapper,
 {
+  #[inline]
   pub fn with_error_messages(
     mut self,
     error_messages: impl IntoIterator<Item = (Num::ViolationEnum, impl Into<FixedStr>)>,

@@ -10,11 +10,15 @@ pub struct BoolValidatorBuilder<S: State = Empty> {
 }
 
 impl ProtoValidation for bool {
+  #[doc(hidden)]
   type Target = Self;
+  #[doc(hidden)]
   type Stored = Self;
   type Validator = BoolValidator;
+  #[doc(hidden)]
   type Builder = BoolValidatorBuilder;
 
+  #[doc(hidden)]
   type UniqueStore<'a>
     = CopyHybridStore<Self>
   where
@@ -56,6 +60,8 @@ impl BoolValidator {
 }
 
 impl<S: State> From<BoolValidatorBuilder<S>> for ProtoOption {
+  #[inline(never)]
+  #[cold]
   fn from(value: BoolValidatorBuilder<S>) -> Self {
     value.build().into()
   }

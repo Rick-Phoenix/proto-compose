@@ -29,6 +29,8 @@ impl MessageValidator {
 }
 
 impl<S: State> From<MessageValidatorBuilder<S>> for ProtoOption {
+  #[inline(never)]
+  #[cold]
   fn from(value: MessageValidatorBuilder<S>) -> Self {
     value.build().into()
   }

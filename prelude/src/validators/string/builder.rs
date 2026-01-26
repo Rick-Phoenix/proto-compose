@@ -12,9 +12,12 @@ pub struct StringValidatorBuilder<S: State = Empty> {
 }
 
 impl ProtoValidation for String {
+  #[doc(hidden)]
   type Target = str;
+  #[doc(hidden)]
   type Stored = Self;
   type Validator = StringValidator;
+  #[doc(hidden)]
   type Builder = StringValidatorBuilder;
 
   type UniqueStore<'a>
@@ -50,6 +53,8 @@ impl StringValidator {
 }
 
 impl<S: State> From<StringValidatorBuilder<S>> for ProtoOption {
+  #[inline(never)]
+  #[cold]
   fn from(value: StringValidatorBuilder<S>) -> Self {
     value.build().into()
   }

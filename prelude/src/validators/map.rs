@@ -94,6 +94,7 @@ where
   K::Stored: Sized,
   V::Stored: Sized,
 {
+  #[doc(hidden)]
   type Target = BTreeMap<K::Stored, V::Stored>;
 }
 
@@ -105,6 +106,7 @@ where
   K::Stored: Sized,
   V::Stored: Sized,
 {
+  #[doc(hidden)]
   type Target = HashMap<K::Stored, V::Stored, S>;
 }
 
@@ -116,15 +118,29 @@ where
   K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
   V::Stored: Sized + Clone + TryIntoCel,
 {
+  #[doc(hidden)]
   type Target = BTreeMap<K::Stored, V::Stored>;
+  #[doc(hidden)]
   type Stored = BTreeMap<K::Stored, V::Stored>;
   type Validator = MapValidator<K, V>;
+  #[doc(hidden)]
   type Builder = MapValidatorBuilder<K, V>;
 
+  #[doc(hidden)]
   type UniqueStore<'a>
     = UnsupportedStore<Self::Target>
   where
     Self: 'a;
+
+  #[inline(never)]
+  #[cold]
+  #[doc(hidden)]
+  fn make_unique_store<'a>(_: &Self::Validator, _: usize) -> Self::UniqueStore<'a>
+  where
+    Self: 'a,
+  {
+    UnsupportedStore::new()
+  }
 
   const HAS_DEFAULT_VALIDATOR: bool = V::HAS_DEFAULT_VALIDATOR;
 }
@@ -138,15 +154,29 @@ where
   K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
   V::Stored: Sized + Clone + TryIntoCel,
 {
+  #[doc(hidden)]
   type Target = HashMap<K::Stored, V::Stored, S>;
+  #[doc(hidden)]
   type Stored = HashMap<K::Stored, V::Stored, S>;
   type Validator = MapValidator<K, V>;
+  #[doc(hidden)]
   type Builder = MapValidatorBuilder<K, V>;
 
+  #[doc(hidden)]
   type UniqueStore<'a>
     = UnsupportedStore<Self::Target>
   where
     Self: 'a;
+
+  #[inline(never)]
+  #[cold]
+  #[doc(hidden)]
+  fn make_unique_store<'a>(_: &Self::Validator, _: usize) -> Self::UniqueStore<'a>
+  where
+    Self: 'a,
+  {
+    UnsupportedStore::new()
+  }
 
   const HAS_DEFAULT_VALIDATOR: bool = V::HAS_DEFAULT_VALIDATOR;
 }

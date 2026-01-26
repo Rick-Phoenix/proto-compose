@@ -395,19 +395,31 @@ macro_rules! impl_int_wrapper {
   ($wrapper:ty, $target_type:ty, $proto_type:ident) => {
     paste::paste! {
       impl IntWrapper for $wrapper {
+        #[doc(hidden)]
         type RustType = $target_type;
+        #[doc(hidden)]
         type ViolationEnum = [< $proto_type Violation >];
+        #[doc(hidden)]
         const LT_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Lt;
+        #[doc(hidden)]
         const LTE_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Lte;
+        #[doc(hidden)]
         const GT_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Gt;
+        #[doc(hidden)]
         const GTE_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Gte;
+        #[doc(hidden)]
         const CONST_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Const;
+        #[doc(hidden)]
         const IN_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::In;
+        #[doc(hidden)]
         const NOT_IN_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::NotIn;
+        #[doc(hidden)]
         const REQUIRED_VIOLATION: Self::ViolationEnum = [< $proto_type Violation >]::Required;
+        #[doc(hidden)]
         #[allow(private_interfaces)]
         const SEALED: Sealed = Sealed;
 
+        #[doc(hidden)]
         fn type_name() -> &'static str {
           stringify!([< $proto_type:lower >])
         }
@@ -438,9 +450,12 @@ macro_rules! impl_int_validator {
   ($wrapper:ty, $rust_type:ty) => {
     $crate::paste! {
       impl ProtoValidation for $wrapper {
+        #[doc(hidden)]
         type Target = $rust_type;
+        #[doc(hidden)]
         type Stored = $rust_type;
         type Validator = IntValidator<$wrapper>;
+        #[doc(hidden)]
         type Builder = IntValidatorBuilder<$wrapper>;
 
         type UniqueStore<'a>

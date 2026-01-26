@@ -125,9 +125,12 @@ impl FieldMaskValidator {
 }
 
 impl ProtoValidation for FieldMask {
+  #[doc(hidden)]
   type Target = Self;
+  #[doc(hidden)]
   type Stored = Self;
   type Validator = FieldMaskValidator;
+  #[doc(hidden)]
   type Builder = FieldMaskValidatorBuilder;
 
   type UniqueStore<'a>

@@ -37,6 +37,8 @@ impl<T: ProtoEnum> EnumValidator<T> {
 }
 
 impl<T: ProtoEnum, S: State> From<EnumValidatorBuilder<T, S>> for ProtoOption {
+  #[inline(never)]
+  #[cold]
   fn from(value: EnumValidatorBuilder<T, S>) -> Self {
     value.build().into()
   }
@@ -48,6 +50,7 @@ impl<T: ProtoEnum, S: State> From<EnumValidatorBuilder<T, S>> for ProtoOption {
   clippy::return_self_not_must_use
 )]
 impl<T: ProtoEnum, S: State> EnumValidatorBuilder<T, S> {
+  #[inline]
   pub fn with_error_messages(
     mut self,
     error_messages: impl IntoIterator<Item = (EnumViolation, impl Into<FixedStr>)>,
