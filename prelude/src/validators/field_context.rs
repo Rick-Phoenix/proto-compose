@@ -63,7 +63,7 @@ impl FieldKind {
 pub struct ValidationCtx {
   pub field_context: Option<FieldContext>,
   pub parent_elements: Vec<FieldPathElement>,
-  pub violations: ViolationsAcc,
+  pub violations: ViolationErrors,
   pub fail_fast: bool,
 }
 
@@ -73,18 +73,13 @@ impl Default for ValidationCtx {
     Self {
       field_context: None,
       parent_elements: vec![],
-      violations: ViolationsAcc::new(),
+      violations: ViolationErrors::new(),
       fail_fast: true,
     }
   }
 }
 
 impl ValidationCtx {
-  #[inline]
-  pub fn reset_field_context(&mut self) {
-    self.field_context = None;
-  }
-
   #[inline]
   pub fn with_field_context(&mut self, field_context: FieldContext) -> &mut Self {
     self.field_context = Some(field_context);
@@ -96,14 +91,14 @@ impl ValidationCtx {
   pub fn add_violation(
     &mut self,
     kind: ViolationKind,
-    error_message: impl Display,
+    error_message: impl Into<String>,
   ) -> ValidationResult {
     let violation = create_violation_core(
       None,
       self.field_context.as_ref(),
       &self.parent_elements,
       kind.data(),
-      error_message.to_string(),
+      error_message.into(),
     );
 
     self.violations.push(ViolationCtx {
@@ -135,16 +130,16 @@ impl ValidationCtx {
   #[cold]
   pub fn add_violation_with_custom_id(
     &mut self,
-    rule_id: impl Display,
+    rule_id: impl Into<String>,
     kind: ViolationKind,
-    error_message: impl Display,
+    error_message: impl Into<String>,
   ) -> ValidationResult {
     let violation = create_violation_core(
-      Some(rule_id.to_string()),
+      Some(rule_id.into()),
       self.field_context.as_ref(),
       &self.parent_elements,
       kind.data(),
-      error_message.to_string(),
+      error_message.into(),
     );
 
     self.violations.push(ViolationCtx {
@@ -162,35 +157,22 @@ impl ValidationCtx {
     }
   }
 
-  #[inline(never)]
+  #[inline]
   #[cold]
   pub fn add_cel_violation(&mut self, rule: &CelRule) -> ValidationResult {
-    self
-      .violations
-      .add_cel_violation(rule, self.field_context.as_ref(), &self.parent_elements);
-
-    if self.fail_fast {
-      Err(FailFast)
-    } else {
-      Ok(IsValid::No)
-    }
+    self.add_violation_with_custom_id(&rule.id, ViolationKind::Cel, &rule.message)
   }
 
-  #[inline(never)]
+  #[inline]
   #[cold]
   pub fn add_required_oneof_violation(&mut self) -> ValidationResult {
-    self
-      .violations
-      .add_required_oneof_violation(&self.parent_elements);
-
-    if self.fail_fast {
-      Err(FailFast)
-    } else {
-      Ok(IsValid::No)
-    }
+    self.add_violation(
+      ViolationKind::RequiredOneof,
+      "at least one value must be set",
+    )
   }
 
-  #[inline(never)]
+  #[inline]
   #[cold]
   pub fn add_required_violation(&mut self) -> ValidationResult {
     self.add_violation(ViolationKind::Required, "is required")

@@ -23,6 +23,7 @@ impl From<CelRule> for CelProgram {
 }
 
 impl From<CelProgram> for CelRule {
+  #[inline]
   fn from(value: CelProgram) -> Self {
     value.rule
   }
@@ -95,7 +96,6 @@ mod cel_impls {
   }
 
   impl Clone for CelProgram {
-    #[inline]
     fn clone(&self) -> Self {
       Self {
         rule: self.rule.clone(),
@@ -113,6 +113,7 @@ mod cel_impls {
 
   impl CelError {
     #[must_use]
+    #[inline]
     pub fn rule_id(&self) -> Option<&str> {
       match self {
         Self::ConversionError(_) => None,
@@ -125,6 +126,8 @@ mod cel_impls {
     // This is for runtime errors. If we get a CEL error we log the actual error while
     // producing a generic error message
     #[must_use]
+    #[inline(never)]
+    #[cold]
     pub(crate) fn into_violation(
       self,
       field_context: Option<&FieldContext>,
@@ -261,15 +264,15 @@ mod cel_impls {
     Ok(ctx)
   }
 
-  pub struct ProgramsExecutionCtx<'a, CelT> {
+  pub struct ProgramsExecutionCtx<'a, T> {
     pub programs: &'a [CelProgram],
-    pub value: CelT,
+    pub value: T,
     pub ctx: &'a mut ValidationCtx,
   }
 
-  impl<CelT> ProgramsExecutionCtx<'_, CelT>
+  impl<T> ProgramsExecutionCtx<'_, T>
   where
-    CelT: TryIntoCel,
+    T: TryIntoCel,
   {
     pub fn execute_programs(self) -> ValidationResult {
       let Self {
@@ -303,6 +306,8 @@ mod cel_impls {
     }
   }
 
+  #[inline(never)]
+  #[cold]
   pub fn test_programs<T>(programs: &[CelProgram], value: T) -> Result<(), Vec<CelError>>
   where
     T: TryIntoCel,
@@ -332,6 +337,7 @@ mod cel_impls {
 
   impl CelProgram {
     #[must_use]
+    #[inline]
     pub const fn new(rule: CelRule) -> Self {
       Self {
         rule,
@@ -339,15 +345,21 @@ mod cel_impls {
       }
     }
 
-    // Potentially making this a result too, even with the automated tests
+    #[inline]
     pub fn get_program(&self) -> &Program {
-      self.program.get_or_init(|| {
-        Program::compile(&self.rule.expression).unwrap_or_else(|e| {
-          panic!(
-            "Failed to compile CEL program with id `{}`: {e}",
-            self.rule.id
-          )
-        })
+      self
+        .program
+        .get_or_init(|| self.compile_program())
+    }
+
+    #[inline(never)]
+    #[cold]
+    fn compile_program(&self) -> Program {
+      Program::compile(&self.rule.expression).unwrap_or_else(|e| {
+        panic!(
+          "Failed to compile CEL program with id `{}`: {e}",
+          self.rule.id
+        )
       })
     }
 

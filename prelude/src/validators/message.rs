@@ -5,7 +5,7 @@ use super::*;
 
 pub trait ValidatedMessage: ProtoValidation + Default + Clone {
   #[inline]
-  fn validate_all(&self) -> Result<(), ViolationsAcc> {
+  fn validate_all(&self) -> Result<(), ViolationErrors> {
     if !Self::HAS_DEFAULT_VALIDATOR {
       return Ok(());
     }
@@ -13,7 +13,7 @@ pub trait ValidatedMessage: ProtoValidation + Default + Clone {
     let mut ctx = ValidationCtx {
       field_context: None,
       parent_elements: vec![],
-      violations: ViolationsAcc::new(),
+      violations: ViolationErrors::new(),
       fail_fast: false,
     };
 
@@ -27,7 +27,7 @@ pub trait ValidatedMessage: ProtoValidation + Default + Clone {
   }
 
   #[inline]
-  fn validate(&self) -> Result<(), ViolationsAcc> {
+  fn validate(&self) -> Result<(), ViolationErrors> {
     if !Self::HAS_DEFAULT_VALIDATOR {
       return Ok(());
     }
@@ -53,7 +53,7 @@ pub trait ValidatedMessage: ProtoValidation + Default + Clone {
   }
 
   #[inline]
-  fn validated(self) -> Result<Self, ViolationsAcc> {
+  fn validated(self) -> Result<Self, ViolationErrors> {
     if !Self::HAS_DEFAULT_VALIDATOR {
       return Ok(self);
     }

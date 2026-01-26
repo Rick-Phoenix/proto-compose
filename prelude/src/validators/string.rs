@@ -61,6 +61,12 @@ impl From<FixedStr> for String {
   }
 }
 
+impl From<&FixedStr> for String {
+  fn from(value: &FixedStr) -> Self {
+    value.to_string()
+  }
+}
+
 impl Borrow<str> for FixedStr {
   #[inline]
   fn borrow(&self) -> &str {

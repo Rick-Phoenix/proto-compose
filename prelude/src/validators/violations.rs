@@ -12,7 +12,7 @@ pub struct ViolationMeta {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ViolationsAcc {
+pub struct ViolationErrors {
   metas: Vec<ViolationMeta>,
   violations: Vec<Violation>,
 }
@@ -31,6 +31,7 @@ pub struct ViolationCtxRef<'a> {
 
 impl ViolationCtxRef<'_> {
   #[must_use]
+  #[inline]
   pub fn into_owned(self) -> ViolationCtx {
     ViolationCtx {
       meta: self.meta,
@@ -39,6 +40,7 @@ impl ViolationCtxRef<'_> {
   }
 
   #[must_use]
+  #[inline]
   pub fn into_violation(self) -> Violation {
     self.into_owned().into_violation()
   }
@@ -52,6 +54,7 @@ pub struct ViolationCtxMut<'a> {
 
 impl ViolationCtxMut<'_> {
   #[must_use]
+  #[inline]
   pub fn into_owned(&self) -> ViolationCtx {
     ViolationCtx {
       meta: *self.meta,
@@ -60,6 +63,7 @@ impl ViolationCtxMut<'_> {
   }
 
   #[must_use]
+  #[inline]
   pub fn into_violation(&self) -> Violation {
     self.into_owned().into_violation()
   }
@@ -154,32 +158,36 @@ impl ExactSizeIterator for IterMut<'_> {
 
 impl ViolationCtx {
   #[must_use]
+  #[inline]
   pub fn into_violation(self) -> Violation {
     self.into()
   }
 }
 
-impl From<ViolationsAcc> for Violations {
-  fn from(value: ViolationsAcc) -> Self {
+impl From<ViolationErrors> for Violations {
+  #[inline]
+  fn from(value: ViolationErrors) -> Self {
     Self {
       violations: value.violations,
     }
   }
 }
 
-impl From<ViolationsAcc> for Vec<Violation> {
-  fn from(value: ViolationsAcc) -> Self {
+impl From<ViolationErrors> for Vec<Violation> {
+  #[inline]
+  fn from(value: ViolationErrors) -> Self {
     value.violations
   }
 }
 
 impl From<ViolationCtx> for Violation {
+  #[inline]
   fn from(value: ViolationCtx) -> Self {
     value.data
   }
 }
 
-impl IntoIterator for ViolationsAcc {
+impl IntoIterator for ViolationErrors {
   type IntoIter = IntoIter;
   type Item = ViolationCtx;
 
@@ -191,7 +199,7 @@ impl IntoIterator for ViolationsAcc {
   }
 }
 
-impl<'a> IntoIterator for &'a ViolationsAcc {
+impl<'a> IntoIterator for &'a ViolationErrors {
   type Item = ViolationCtxRef<'a>;
 
   type IntoIter = Iter<'a>;
@@ -207,7 +215,7 @@ impl<'a> IntoIterator for &'a ViolationsAcc {
   }
 }
 
-impl<'a> IntoIterator for &'a mut ViolationsAcc {
+impl<'a> IntoIterator for &'a mut ViolationErrors {
   type Item = ViolationCtxMut<'a>;
 
   type IntoIter = IterMut<'a>;
@@ -222,7 +230,7 @@ impl<'a> IntoIterator for &'a mut ViolationsAcc {
   }
 }
 
-impl Extend<ViolationCtx> for ViolationsAcc {
+impl Extend<ViolationCtx> for ViolationErrors {
   fn extend<T: IntoIterator<Item = ViolationCtx>>(&mut self, iter: T) {
     let iter = iter.into_iter();
 
@@ -239,8 +247,9 @@ impl Extend<ViolationCtx> for ViolationsAcc {
   }
 }
 
-impl ViolationsAcc {
-  pub fn merge(&mut self, mut other: Self) {
+impl ViolationErrors {
+  #[inline]
+  pub fn merge(&mut self, other: &mut Self) {
     self.metas.append(&mut other.metas);
     self.violations.append(&mut other.violations);
   }
@@ -282,53 +291,6 @@ impl ViolationsAcc {
     self.violations.truncate(keep_count);
   }
 
-  #[inline(never)]
-  #[cold]
-  pub fn add_required_oneof_violation(&mut self, parent_elements: &[FieldPathElement]) {
-    let violation = create_violation_core(
-      Some(ONEOF_REQUIRED_VIOLATION.name.to_string()),
-      None,
-      parent_elements,
-      ONEOF_REQUIRED_VIOLATION,
-      "at least one value must be set".into(),
-    );
-
-    self.push(ViolationCtx {
-      meta: ViolationMeta {
-        kind: ViolationKind::RequiredOneof,
-        field_kind: FieldKind::default(),
-      },
-      data: violation,
-    });
-  }
-
-  #[inline(never)]
-  #[cold]
-  pub fn add_cel_violation(
-    &mut self,
-    rule: &CelRule,
-    field_context: Option<&FieldContext>,
-    parent_elements: &[FieldPathElement],
-  ) {
-    let violation = create_violation_core(
-      Some(rule.id.to_string()),
-      field_context,
-      parent_elements,
-      CEL_VIOLATION,
-      rule.message.to_string(),
-    );
-
-    self.push(ViolationCtx {
-      meta: ViolationMeta {
-        kind: ViolationKind::Cel,
-        field_kind: field_context
-          .map(|fc| fc.field_kind)
-          .unwrap_or_default(),
-      },
-      data: violation,
-    });
-  }
-
   #[must_use]
   #[inline]
   pub const fn new() -> Self {
@@ -346,8 +308,7 @@ impl ViolationsAcc {
     }
   }
 
-  #[inline(never)]
-  #[cold]
+  #[inline]
   pub fn push(&mut self, v: ViolationCtx) {
     self.metas.push(v.meta);
     self.violations.push(v.data);
@@ -366,7 +327,7 @@ impl ViolationsAcc {
   }
 }
 
-impl Default for ViolationsAcc {
+impl Default for ViolationErrors {
   #[inline]
   fn default() -> Self {
     Self::new()
@@ -386,8 +347,7 @@ pub(crate) fn create_violation_core(
   let mut rule_elements: Vec<FieldPathElement> = Vec::new();
   let mut is_for_key = false;
 
-  // In case of a top level message with CEL violations applied to the message
-  // as a whole, there would be no field path
+  // In case of a top level validator there would be no field path
   if let Some(field_context) = field_context {
     let elements = field_elements.get_or_insert_default();
 

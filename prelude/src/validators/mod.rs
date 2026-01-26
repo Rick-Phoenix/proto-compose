@@ -117,7 +117,7 @@ pub trait Validator<T: ?Sized>: Sized + Send + Sync {
   }
 
   #[inline]
-  fn validate<V>(&self, val: &V) -> Result<(), ViolationsAcc>
+  fn validate<V>(&self, val: &V) -> Result<(), ViolationErrors>
   where
     V: Borrow<Self::Target> + ?Sized,
   {
@@ -133,7 +133,7 @@ pub trait Validator<T: ?Sized>: Sized + Send + Sync {
   }
 
   #[inline]
-  fn validate_option<V>(&self, val: Option<&V>) -> Result<(), ViolationsAcc>
+  fn validate_option<V>(&self, val: Option<&V>) -> Result<(), ViolationErrors>
   where
     V: Borrow<Self::Target> + ?Sized,
   {
@@ -149,7 +149,7 @@ pub trait Validator<T: ?Sized>: Sized + Send + Sync {
   }
 
   #[inline]
-  fn validate_with_ctx<V>(&self, mut ctx: ValidationCtx, val: &V) -> Result<(), ViolationsAcc>
+  fn validate_with_ctx<V>(&self, mut ctx: ValidationCtx, val: &V) -> Result<(), ViolationErrors>
   where
     V: Borrow<Self::Target> + ?Sized,
   {
@@ -167,7 +167,7 @@ pub trait Validator<T: ?Sized>: Sized + Send + Sync {
     &self,
     mut ctx: ValidationCtx,
     val: Option<&V>,
-  ) -> Result<(), ViolationsAcc>
+  ) -> Result<(), ViolationErrors>
   where
     V: Borrow<Self::Target> + ?Sized,
   {
