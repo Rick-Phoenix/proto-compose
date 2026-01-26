@@ -13,7 +13,7 @@ pub enum ConsistencyError {
   ContradictoryInput(String),
   #[error("{0}")]
   WrongOneofTags(String),
-  #[error("These custom messages with these IDs are never used: {0:?}")]
+  #[error("The custom messages with these IDs are never used: {0:?}")]
   UnusedCustomMessages(Vec<String>),
 }
 

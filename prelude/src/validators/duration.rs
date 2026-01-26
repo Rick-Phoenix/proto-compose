@@ -140,7 +140,10 @@ impl Validator<Duration> for DurationValidator {
 
       if let Some(const_val) = self.const_ {
         if val != const_val {
-          handle_violation!(Const, format!("must be equal to {const_val}"));
+          handle_violation!(
+            Const,
+            format!("must be equal to {}", const_val.to_human_readable_string())
+          );
         }
 
         // Using `const` implies no other rules
@@ -150,25 +153,43 @@ impl Validator<Duration> for DurationValidator {
       if let Some(gt) = self.gt
         && val <= gt
       {
-        handle_violation!(Gt, format!("must be longer than {gt}"));
+        handle_violation!(
+          Gt,
+          format!("must be longer than {}", gt.to_human_readable_string())
+        );
       }
 
       if let Some(gte) = self.gte
         && val < gte
       {
-        handle_violation!(Gte, format!("must be longer than or equal to {gte}"));
+        handle_violation!(
+          Gte,
+          format!(
+            "must be longer than or equal to {}",
+            gte.to_human_readable_string()
+          )
+        );
       }
 
       if let Some(lt) = self.lt
         && val >= lt
       {
-        handle_violation!(Lt, format!("must be shorter than {lt}"));
+        handle_violation!(
+          Lt,
+          format!("must be shorter than {}", lt.to_human_readable_string())
+        );
       }
 
       if let Some(lte) = self.lte
         && val > lte
       {
-        handle_violation!(Lte, format!("must be shorter than or equal to {lte}"));
+        handle_violation!(
+          Lte,
+          format!(
+            "must be shorter than or equal to {}",
+            lte.to_human_readable_string()
+          )
+        );
       }
 
       if let Some(allowed_list) = &self.in_

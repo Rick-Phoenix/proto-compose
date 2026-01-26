@@ -619,7 +619,7 @@ impl ListFormatter for Duration {
       }
 
       acc.push('"');
-      let _ = write!(&mut acc, "{item}");
+      acc.push_str(&item.to_human_readable_string());
       acc.push('"');
     }
 
