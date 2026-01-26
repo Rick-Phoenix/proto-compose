@@ -21,6 +21,99 @@ define_proto_file!(
   imports = ["some_pkg/some_import.proto"]
 );
 
+struct CustomValidator;
+
+fn custom_validator_schema() -> ValidatorSchema {
+  ValidatorSchema {
+    schema: ProtoOption {
+      name: "(custom_validator.setting)".into(),
+      value: true.into(),
+    },
+    cel_rules: vec![],
+    imports: vec!["custom_validator/validator.proto".into()],
+  }
+}
+
+impl Validator<OneofWithCustomValidator> for CustomValidator {
+  type Target = OneofWithCustomValidator;
+
+  fn schema(&self) -> Option<ValidatorSchema> {
+    Some(custom_validator_schema())
+  }
+
+  fn validate_core<V>(&self, _: &mut ValidationCtx, _: Option<&V>) -> ValidationResult
+  where
+    V: std::borrow::Borrow<Self::Target> + ?Sized,
+  {
+    Ok(IsValid::Yes)
+  }
+}
+
+impl Validator<MsgWithCustomValidator> for CustomValidator {
+  type Target = MsgWithCustomValidator;
+
+  fn schema(&self) -> Option<ValidatorSchema> {
+    Some(custom_validator_schema())
+  }
+
+  fn validate_core<V>(&self, _: &mut ValidationCtx, _: Option<&V>) -> ValidationResult
+  where
+    V: std::borrow::Borrow<Self::Target> + ?Sized,
+  {
+    Ok(IsValid::Yes)
+  }
+}
+
+#[proto_message]
+#[proto(skip_checks(all))]
+#[proto(validate = CustomValidator)]
+pub struct MsgWithCustomValidator {
+  #[proto(oneof(tags(1, 2)), validate = CustomValidator)]
+  oneof: Option<OneofWithCustomValidator>,
+}
+
+#[proto_oneof]
+#[proto(skip_checks(all))]
+#[proto(validate = CustomValidator)]
+pub enum OneofWithCustomValidator {
+  #[proto(tag = 1, message, validate = CustomValidator)]
+  Msg(Box<MsgWithCustomValidator>),
+  #[proto(tag = 2)]
+  B(i32),
+}
+
+#[test]
+fn custom_validators_schema() {
+  let schema = MsgWithCustomValidator::proto_schema();
+
+  assert!(
+    schema
+      .validators
+      .contains(&custom_validator_schema())
+  );
+
+  let MessageEntry::Oneof(oneof) = schema.entries.first().unwrap() else {
+    panic!()
+  };
+
+  // 1 from the oneof schema
+  // + 1 from the oneof as a field instance
+  // = 2
+  assert_eq_pretty!(oneof.validators.len(), 2);
+
+  for v in &oneof.validators {
+    assert_eq_pretty!(v, &custom_validator_schema());
+  }
+
+  let field = oneof.fields.first().unwrap();
+
+  assert_eq_pretty!(field.validators.len(), 1);
+
+  for v in &field.validators {
+    assert_eq_pretty!(v, &custom_validator_schema());
+  }
+}
+
 #[test]
 fn rendering_test() {
   let pkg = RENDERING_PKG.get_package();
@@ -31,12 +124,18 @@ fn rendering_test() {
 
   let manual_file = file_schema!(
     name = "rendering.proto",
-    messages = [TestMessage = { messages = [Nested1 = { messages = [Nested2] }] }],
+    messages = [
+      MsgWithCustomValidator,
+      TestMessage = { messages = [Nested1 = { messages = [Nested2] }] }
+    ],
     extensions = [TestExtension],
     options = test_options(),
     services = [TestService],
     enums = [TestEnum],
-    imports = ["some_pkg/some_import.proto"]
+    imports = [
+      "some_pkg/some_import.proto",
+      "custom_validator/validator.proto"
+    ]
   );
 
   let manual_pkg = package_schema!("rendering", files = [manual_file]);
