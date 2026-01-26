@@ -126,12 +126,12 @@ fn rendering_test() {
     name = "rendering.proto",
     messages = [
       MsgWithCustomValidator,
-      TestMessage = { messages = [Nested1 = { messages = [Nested2] }] }
+      TestMessage = { messages = [Nested1 = { messages = [Nested2] }], enums = [ TestEnum ] }
     ],
     extensions = [TestExtension],
     options = test_options(),
     services = [TestService],
-    enums = [TestEnum],
+    enums = [TopLevelEnum],
     imports = [
       "some_pkg/some_import.proto",
       "custom_validator/validator.proto"
@@ -265,7 +265,19 @@ fn service_schema_output() {
 #[proto(reserved_numbers(1, 2, 10..MAX))]
 #[proto(reserved_names("abc", "bcd"))]
 #[proto(options = test_options())]
+#[proto(parent_message = TestMessage)]
 pub enum TestEnum {
+  #[proto(options = test_options())]
+  AbcDeg,
+  B,
+}
+
+// Just to verify rendering for top level enums
+#[proto_enum]
+#[proto(reserved_numbers(1, 2, 10..MAX))]
+#[proto(reserved_names("abc", "bcd"))]
+#[proto(options = test_options())]
+pub enum TopLevelEnum {
   #[proto(options = test_options())]
   AbcDeg,
   B,
@@ -369,6 +381,9 @@ pub struct TestMessage {
   #[proto(map(sint32, sint32), validate = |v| v.min_pairs(5).max_pairs(15).keys(|k| k.gt(15)).values(|vals| vals.gt(56)))]
   pub map_field: HashMap<i32, i32>,
 
+  #[proto(enum_(TestEnum))]
+  pub enum_field: i32,
+
   #[proto(oneof(required, tags(200, 201)))]
   pub oneof_field: Option<OneofA>,
 }
@@ -401,7 +416,7 @@ fn message_schema_output() {
   assert_eq_pretty!(schema.reserved_numbers, &[1..2, 2..3, 3..9]);
   assert_eq_pretty!(schema.reserved_names, &["abc", "bcd"]);
 
-  assert_eq_pretty!(schema.entries.len(), 6);
+  assert_eq_pretty!(schema.entries.len(), 7);
 
   let fields = schema.entries.iter().filter_map(|e| e.as_field());
   let names_and_types = [
@@ -431,6 +446,14 @@ fn message_schema_output() {
         keys: ProtoMapKey::Sint32,
         values: ProtoType::Scalar(ProtoScalar::Sint32),
       },
+    ),
+    (
+      "enum_field",
+      FieldType::Normal(ProtoType::Enum(ProtoPath {
+        name: "TestMessage.TestEnum".into(),
+        package: RENDERING_PKG.name.into(),
+        file: RENDERING.name.into(),
+      })),
     ),
   ];
 
