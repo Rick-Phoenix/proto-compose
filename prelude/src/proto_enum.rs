@@ -3,8 +3,20 @@ use crate::*;
 pub trait ProtoEnum: TryFrom<i32> + Copy + Default + Into<i32> + Send + Sync {
   fn proto_name() -> &'static str;
 
-  fn as_int(&self) -> i32 {
-    (*self).into()
+  #[inline]
+  fn as_int(self) -> i32 {
+    self.into()
+  }
+
+  #[inline]
+  fn is_unspecified(&self) -> bool {
+    self.as_int() == 0
+  }
+
+  #[inline]
+  #[must_use]
+  fn from_int_or_default(int: i32) -> Self {
+    int.try_into().unwrap_or_default()
   }
 }
 
@@ -17,14 +29,8 @@ pub trait ProtoEnumSchema: TryFrom<i32> + Default + ProtoEnum {
 
   #[inline]
   #[must_use]
-  fn is_valid(int: i32) -> bool {
+  fn is_known_variant(int: i32) -> bool {
     Self::try_from(int).is_ok()
-  }
-
-  #[inline]
-  #[must_use]
-  fn from_int_or_default(int: i32) -> Self {
-    int.try_into().unwrap_or_default()
   }
 }
 

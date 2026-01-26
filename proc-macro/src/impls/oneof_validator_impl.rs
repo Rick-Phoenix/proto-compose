@@ -115,6 +115,7 @@ pub fn generate_oneof_validator(
         Self: 'a;
 
       const HAS_DEFAULT_VALIDATOR: bool = #has_default_validator_tokens;
+      #[doc(hidden)]
       const HAS_SHALLOW_VALIDATION: bool = #has_non_default_validators;
     }
   }
