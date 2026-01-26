@@ -226,7 +226,7 @@ impl MessageCtx<'_> {
               clippy::iter_on_single_items
             )]
             validators: [ #(::prelude::Validator::<#proto_struct>::schema(&#validators)),* ].into_iter().filter_map(|s| s).collect(),
-            rust_path: #rust_path_field
+            rust_path: #rust_path_field.into()
           }
         }
       }

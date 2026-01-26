@@ -339,7 +339,7 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
           reserved_names: ::prelude::vec![ #(#reserved_names.into()),* ],
           reserved_numbers: #reserved_numbers,
           options: #options_tokens.into_iter().collect(),
-          rust_path: #rust_path_field
+          rust_path: #rust_path_field.into()
         }
       }
     }

@@ -69,9 +69,7 @@ pub struct Message {
   pub reserved_names: Vec<FixedStr>,
   pub reserved_numbers: Vec<Range<i32>>,
   pub validators: Vec<ValidatorSchema>,
-  // Not a static str because we compose this
-  // by default with module_path!() + ident
-  pub rust_path: String,
+  pub rust_path: FixedStr,
 }
 
 impl Message {

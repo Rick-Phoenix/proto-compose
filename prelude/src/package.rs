@@ -38,7 +38,7 @@ fn insert_message_extern_path(message: &Message, entries: &mut Vec<(String, Stri
 
   let msg_entry = format!(".{package}.{full_name}");
 
-  entries.push((msg_entry, rust_path.clone()));
+  entries.push((msg_entry, rust_path.to_string()));
 
   for nested_msg in messages {
     insert_message_extern_path(nested_msg, entries);
@@ -59,7 +59,7 @@ fn insert_enum_extern_path(enum_: &Enum, entries: &mut Vec<(String, String)>) {
 
   let enum_entry = format!(".{package}.{full_name}");
 
-  entries.push((enum_entry, rust_path.clone()));
+  entries.push((enum_entry, rust_path.to_string()));
 }
 
 impl Package {

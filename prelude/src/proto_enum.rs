@@ -41,9 +41,7 @@ pub struct Enum {
   pub reserved_numbers: Vec<Range<i32>>,
   pub reserved_names: Vec<FixedStr>,
   pub options: Vec<ProtoOption>,
-  // Not a static str because we compose this
-  // by default with module_path!() + ident
-  pub rust_path: String,
+  pub rust_path: FixedStr,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
