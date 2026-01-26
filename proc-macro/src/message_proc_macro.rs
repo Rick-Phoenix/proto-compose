@@ -96,10 +96,11 @@ pub fn message_proc_macro(mut item: ItemStruct, macro_attrs: TokenStream2) -> To
         .collect();
     }
 
-    let shadow_struct_derives = message_attrs
-      .shadow_derives
-      .as_ref()
-      .map(|list| quote! { #[#list] });
+    let extra_proto_derives = (!message_attrs.proto_derives.is_empty()).then(|| {
+      let paths = &message_attrs.proto_derives;
+
+      quote! { #[derive(#(#paths),*)] }
+    });
 
     let conversions = ProtoConversions {
       proxy_ident: &item.ident,
@@ -115,7 +116,7 @@ pub fn message_proc_macro(mut item: ItemStruct, macro_attrs: TokenStream2) -> To
       #item
 
       #proto_derives
-      #shadow_struct_derives
+      #extra_proto_derives
       #[allow(clippy::use_self)]
       #proto_struct
 

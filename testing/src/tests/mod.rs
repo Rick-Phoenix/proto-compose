@@ -10,6 +10,7 @@ mod cel_tests;
 mod custom_validators_tests;
 mod enum_methods_tests;
 mod extern_paths_tests;
+mod message_methods_tests;
 mod oneof_tags_tests;
 mod recursion_tests;
 mod validation_tests;

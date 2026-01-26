@@ -16,11 +16,6 @@ pub trait OneofProxy: From<Self::Oneof> + Into<Self::Oneof> {
   fn into_oneof(self) -> Self::Oneof {
     self.into()
   }
-
-  #[inline]
-  fn from_oneof(oneof: Self::Oneof) -> Self {
-    oneof.into()
-  }
 }
 
 impl<T: OneofProxy> ProtoOneof for T {

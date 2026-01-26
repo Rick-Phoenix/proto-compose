@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(PartialEq, Eq)]
+#[derive(Default, PartialEq, Eq, Clone, Copy)]
 pub struct IntWrapper(i32);
 
 impl From<i32> for IntWrapper {
@@ -235,12 +235,32 @@ fn oneof_from_proto_only() {
   assert_eq_pretty!(proxy, OneofFromProtoOnly::A("from_proto".to_string()));
 }
 
-// This implicitly tests the automatic conversions
 #[proto_message(proxied)]
 #[proto(skip_checks(all))]
+// Implicitly checks proto derives working
+#[proto(derive(Copy))]
+#[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub struct ProxiedMessage1 {
-  #[proto(int32)]
+  #[proto(int32, validate = |v| v.const_(1))]
   id: IntWrapper,
+}
+
+#[test]
+fn conversion_helpers() {
+  let mut proxy = ProxiedMessage1::default();
+  let mut msg = ProxiedMessage1Proto::default();
+
+  assert_eq_pretty!(proxy, msg.into_proxy());
+  assert_eq_pretty!(msg, proxy.into_message());
+
+  assert!(proxy.into_validated_message().is_err());
+  assert!(ProxiedMessage1::from_validated_message(msg).is_err());
+
+  proxy.id = IntWrapper(1);
+  msg.id = 1;
+
+  assert_eq_pretty!(proxy.into_validated_message().unwrap(), msg);
+  assert_eq_pretty!(ProxiedMessage1::from_validated_message(msg).unwrap(), proxy);
 }
 
 // This just checks if the proxy is working
@@ -371,6 +391,8 @@ impl Default for OneofIgnoredFieldDefaultConversionProto {
 }
 
 #[proto_oneof(proxied)]
+// Implicitly checks that proto derives are compiling
+#[proto(derive(Copy))]
 #[proto(skip_checks(all))]
 pub enum OneofIgnoredFieldDefaultConversion {
   // This will use Default

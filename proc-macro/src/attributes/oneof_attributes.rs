@@ -6,7 +6,7 @@ pub struct OneofAttrs {
   pub name: String,
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
-  pub shadow_derives: Option<MetaList>,
+  pub proto_derives: Vec<Path>,
   pub is_proxied: bool,
   pub auto_tests: AutoTests,
   pub validators: Validators,
@@ -50,7 +50,7 @@ pub fn process_oneof_attrs(
   let mut name: Option<String> = None;
   let mut from_proto: Option<PathOrClosure> = None;
   let mut into_proto: Option<PathOrClosure> = None;
-  let mut shadow_derives: Option<MetaList> = None;
+  let mut shadow_derives: Vec<Path> = Vec::new();
   let mut auto_tests = AutoTests::default();
   let mut validators = Validators::default();
 
@@ -65,9 +65,7 @@ pub fn process_oneof_attrs(
         auto_tests = AutoTests::parse(&meta)?;
       }
       "derive" => {
-        let list = meta.parse_list::<MetaList>()?;
-
-        shadow_derives = Some(list);
+        shadow_derives = meta.parse_list::<PathList>()?.list;
       }
       "options" => {
         options.span = meta.input.span();
@@ -97,7 +95,7 @@ pub fn process_oneof_attrs(
     name: name.unwrap_or_else(|| to_snake_case(&enum_ident.to_string())),
     from_proto,
     into_proto,
-    shadow_derives,
+    proto_derives: shadow_derives,
     is_proxied: macro_attrs.is_proxied,
     auto_tests,
     validators,

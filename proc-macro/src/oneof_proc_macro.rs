@@ -109,10 +109,11 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
       .filter_map(|(variant, data)| matches!(data, FieldDataKind::Normal(_)).then_some(variant))
       .collect();
 
-    let shadow_enum_derives = oneof_attrs
-      .shadow_derives
-      .as_ref()
-      .map(|list| quote! { #[#list] });
+    let extra_proto_derives = (!oneof_attrs.proto_derives.is_empty()).then(|| {
+      let paths = &oneof_attrs.proto_derives;
+
+      quote! { #[derive(#(#paths),*)] }
+    });
 
     let conversions = ProtoConversions {
       proxy_ident: &item.ident,
@@ -128,7 +129,7 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
       #item
 
       #proto_derives
-      #shadow_enum_derives
+      #extra_proto_derives
       #[allow(clippy::use_self)]
       #proto_enum
 

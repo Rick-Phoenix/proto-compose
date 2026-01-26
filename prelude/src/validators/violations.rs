@@ -6,6 +6,7 @@ pub struct ViolationMeta {
   pub field_kind: FieldKind,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ViolationsAcc {
   metas: Vec<ViolationMeta>,
   violations: Vec<Violation>,
