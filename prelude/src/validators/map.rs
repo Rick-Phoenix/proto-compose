@@ -304,7 +304,7 @@ where
   }
 
   #[inline]
-  fn validate_core<Val>(&self, ctx: &mut ValidationCtx, val: Option<&Val>) -> ValidatorResult
+  fn validate_core<Val>(&self, ctx: &mut ValidationCtx, val: Option<&Val>) -> ValidationResult
   where
     Val: Borrow<Self::Target> + ?Sized,
   {
@@ -353,7 +353,7 @@ where
   K: ProtoValidation,
   V: ProtoValidation,
 {
-  pub fn validate_map<M>(&self, ctx: &mut ValidationCtx, val: Option<&M>) -> ValidatorResult
+  pub fn validate_map<M>(&self, ctx: &mut ValidationCtx, val: Option<&M>) -> ValidationResult
   where
     M: Map<K::Stored, V::Stored> + Clone,
     K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,

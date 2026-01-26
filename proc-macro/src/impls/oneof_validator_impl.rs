@@ -90,7 +90,7 @@ pub fn generate_oneof_validator(
   quote! {
     impl ::prelude::ValidatedOneof for #oneof_ident {
       #inline_if_empty
-      fn validate(&self, ctx: &mut ::prelude::ValidationCtx) -> ::prelude::ValidatorResult {
+      fn validate(&self, ctx: &mut ::prelude::ValidationCtx) -> ::prelude::ValidationResult {
         let mut is_valid = ::prelude::IsValid::Yes;
 
         #validators_tokens

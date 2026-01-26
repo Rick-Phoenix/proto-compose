@@ -158,7 +158,7 @@ impl Validator<Timestamp> for TimestampValidator {
     }
   }
 
-  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidatorResult
+  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidationResult
   where
     V: Borrow<Self::Target> + ?Sized,
   {

@@ -271,7 +271,7 @@ pub fn generate_message_validator(
     impl ::prelude::ValidatedMessage for #target_ident {
       #[doc(hidden)]
       #inline_if_empty
-      fn nested_validate(&self, ctx: &mut ::prelude::ValidationCtx) -> ::prelude::ValidatorResult {
+      fn nested_validate(&self, ctx: &mut ::prelude::ValidationCtx) -> ::prelude::ValidationResult {
         let mut is_valid = ::prelude::IsValid::Yes;
 
         #validators_tokens

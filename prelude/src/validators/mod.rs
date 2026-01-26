@@ -2,7 +2,7 @@ use crate::*;
 
 use proto_types::protovalidate::*;
 
-pub trait ValidatorResultExt {
+pub trait ValidationResultExt {
   #[allow(private_interfaces)]
   const SEALED: Sealed;
 
@@ -10,7 +10,7 @@ pub trait ValidatorResultExt {
   fn is_fail_fast(&self) -> bool;
 }
 
-impl ValidatorResultExt for ValidatorResult {
+impl ValidationResultExt for ValidationResult {
   #[allow(private_interfaces)]
   const SEALED: Sealed = Sealed;
 
@@ -39,6 +39,7 @@ pub enum IsValid {
 }
 
 impl From<IsValid> for bool {
+  #[inline]
   fn from(val: IsValid) -> Self {
     match val {
       IsValid::Yes => true,
@@ -49,11 +50,13 @@ impl From<IsValid> for bool {
 
 impl IsValid {
   #[must_use]
+  #[inline]
   pub fn is_valid(&self) -> bool {
     (*self).into()
   }
 
   #[must_use]
+  #[inline]
   pub const fn merge(self, other: Self) -> Self {
     match (self, other) {
       (Self::Yes, Self::Yes) => Self::Yes,
@@ -63,12 +66,13 @@ impl IsValid {
 }
 
 impl core::ops::BitAndAssign for IsValid {
+  #[inline]
   fn bitand_assign(&mut self, rhs: Self) {
     *self = self.merge(rhs);
   }
 }
 
-pub type ValidatorResult = Result<IsValid, FailFast>;
+pub type ValidationResult = Result<IsValid, FailFast>;
 
 // Here we use a generic for the target of the validator
 // AND an assoc. type for the actual type being validated
@@ -176,7 +180,7 @@ pub trait Validator<T: ?Sized>: Sized + Send + Sync {
     }
   }
 
-  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidatorResult
+  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidationResult
   where
     V: Borrow<Self::Target> + ?Sized;
 }
@@ -241,12 +245,12 @@ pub struct FnValidator<F, T: ?Sized> {
 impl<F, T> Validator<T> for FnValidator<F, T>
 where
   T: ToOwned + ?Sized + Send + Sync,
-  F: Fn(&mut ValidationCtx, Option<&T>) -> ValidatorResult + Send + Sync,
+  F: Fn(&mut ValidationCtx, Option<&T>) -> ValidationResult + Send + Sync,
 {
   type Target = T;
 
   #[inline]
-  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidatorResult
+  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidationResult
   where
     V: Borrow<Self::Target> + ?Sized,
   {
@@ -259,7 +263,7 @@ where
 pub const fn from_fn<T, F>(f: F) -> FnValidator<F, T>
 where
   T: ?Sized,
-  F: Fn(&mut ValidationCtx, Option<&T>) -> ValidatorResult,
+  F: Fn(&mut ValidationCtx, Option<&T>) -> ValidationResult,
 {
   FnValidator {
     func: f,

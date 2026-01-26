@@ -8,7 +8,7 @@ struct CustomValidator;
 impl Validator<i32> for CustomValidator {
   type Target = i32;
 
-  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidatorResult
+  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidationResult
   where
     V: std::borrow::Borrow<Self::Target> + ?Sized,
   {
@@ -19,7 +19,7 @@ impl Validator<i32> for CustomValidator {
 impl Validator<SimpleEnum> for CustomValidator {
   type Target = i32;
 
-  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidatorResult
+  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidationResult
   where
     V: std::borrow::Borrow<Self::Target> + ?Sized,
   {
@@ -37,7 +37,7 @@ fn test_violation() -> Violation {
   }
 }
 
-fn custom_int_validator(ctx: &mut ValidationCtx, val: Option<&i32>) -> ValidatorResult {
+fn custom_int_validator(ctx: &mut ValidationCtx, val: Option<&i32>) -> ValidationResult {
   let val = val.unwrap();
 
   if *val == 1 {
@@ -102,7 +102,7 @@ fn custom_validators() {
 impl Validator<CustomValidatorOneof> for CustomValidator {
   type Target = CustomValidatorOneof;
 
-  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidatorResult
+  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidationResult
   where
     V: std::borrow::Borrow<Self::Target> + ?Sized,
   {
@@ -113,7 +113,7 @@ impl Validator<CustomValidatorOneof> for CustomValidator {
 fn custom_oneof_validator(
   ctx: &mut ValidationCtx,
   val: Option<&CustomValidatorOneof>,
-) -> ValidatorResult {
+) -> ValidationResult {
   match val.unwrap() {
     CustomValidatorOneof::CustomFn(1) => Ok(IsValid::Yes),
     _ => {
@@ -133,7 +133,7 @@ fn custom_oneof_validator(
 impl Validator<MultipleValidatorsOneof> for CustomValidator {
   type Target = MultipleValidatorsOneof;
 
-  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidatorResult
+  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidationResult
   where
     V: std::borrow::Borrow<Self::Target> + ?Sized,
   {
@@ -144,7 +144,7 @@ impl Validator<MultipleValidatorsOneof> for CustomValidator {
 fn custom_oneof_validator2(
   ctx: &mut ValidationCtx,
   val: Option<&MultipleValidatorsOneof>,
-) -> ValidatorResult {
+) -> ValidationResult {
   match val.unwrap() {
     MultipleValidatorsOneof::A(1) => Ok(IsValid::Yes),
     _ => {
@@ -211,7 +211,7 @@ fn multiple_validators() {
 impl Validator<CustomTopLevelValidators> for CustomValidator {
   type Target = CustomTopLevelValidators;
 
-  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidatorResult
+  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidationResult
   where
     V: std::borrow::Borrow<Self::Target> + ?Sized,
   {
@@ -222,7 +222,7 @@ impl Validator<CustomTopLevelValidators> for CustomValidator {
 fn custom_top_level_validator(
   ctx: &mut ValidationCtx,
   val: Option<&CustomTopLevelValidators>,
-) -> ValidatorResult {
+) -> ValidationResult {
   let val = val.unwrap();
 
   if val.id == 1 {

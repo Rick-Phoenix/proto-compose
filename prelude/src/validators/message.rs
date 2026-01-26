@@ -65,7 +65,7 @@ pub trait ValidatedMessage: ProtoValidation + Default + Clone {
   }
 
   #[doc(hidden)]
-  fn nested_validate(&self, ctx: &mut ValidationCtx) -> ValidatorResult;
+  fn nested_validate(&self, ctx: &mut ValidationCtx) -> ValidationResult;
 }
 
 impl<T, S: builder::State> ValidatorBuilderFor<T> for MessageValidatorBuilder<S>
@@ -126,7 +126,7 @@ where
     }
   }
 
-  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidatorResult
+  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidationResult
   where
     V: Borrow<Self::Target> + ?Sized,
   {
@@ -244,7 +244,7 @@ where
     }
   }
 
-  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidatorResult
+  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidationResult
   where
     V: Borrow<Self::Target> + ?Sized,
   {

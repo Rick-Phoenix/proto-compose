@@ -97,7 +97,7 @@ impl ValidationCtx {
     &mut self,
     kind: ViolationKind,
     error_message: impl Display,
-  ) -> ValidatorResult {
+  ) -> ValidationResult {
     let violation = create_violation_core(
       None,
       self.field_context.as_ref(),
@@ -138,7 +138,7 @@ impl ValidationCtx {
     rule_id: impl Display,
     kind: ViolationKind,
     error_message: impl Display,
-  ) -> ValidatorResult {
+  ) -> ValidationResult {
     let violation = create_violation_core(
       Some(rule_id.to_string()),
       self.field_context.as_ref(),
@@ -164,7 +164,7 @@ impl ValidationCtx {
 
   #[inline(never)]
   #[cold]
-  pub fn add_cel_violation(&mut self, rule: &CelRule) -> ValidatorResult {
+  pub fn add_cel_violation(&mut self, rule: &CelRule) -> ValidationResult {
     self
       .violations
       .add_cel_violation(rule, self.field_context.as_ref(), &self.parent_elements);
@@ -178,7 +178,7 @@ impl ValidationCtx {
 
   #[inline(never)]
   #[cold]
-  pub fn add_required_oneof_violation(&mut self) -> ValidatorResult {
+  pub fn add_required_oneof_violation(&mut self) -> ValidationResult {
     self
       .violations
       .add_required_oneof_violation(&self.parent_elements);
@@ -192,14 +192,14 @@ impl ValidationCtx {
 
   #[inline(never)]
   #[cold]
-  pub fn add_required_violation(&mut self) -> ValidatorResult {
+  pub fn add_required_violation(&mut self) -> ValidationResult {
     self.add_violation(ViolationKind::Required, "is required")
   }
 
   #[cfg(feature = "cel")]
   #[inline(never)]
   #[cold]
-  pub(crate) fn add_cel_error_violation(&mut self, error: CelError) -> ValidatorResult {
+  pub(crate) fn add_cel_error_violation(&mut self, error: CelError) -> ValidationResult {
     self.violations.push(ViolationCtx {
       meta: ViolationMeta {
         kind: ViolationKind::Cel,

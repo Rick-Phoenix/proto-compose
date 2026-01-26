@@ -264,7 +264,7 @@ impl<T: ValidatedOneof + ProtoValidation> Validator<T> for OneofValidator {
   // Should be inlined because if the assoc. constant is false, it may promote
   // dead code elimination
   #[inline]
-  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidatorResult
+  fn validate_core<V>(&self, ctx: &mut ValidationCtx, val: Option<&V>) -> ValidationResult
   where
     V: Borrow<Self::Target> + ?Sized,
   {

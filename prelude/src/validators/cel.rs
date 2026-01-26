@@ -271,7 +271,7 @@ mod cel_impls {
   where
     CelT: TryIntoCel,
   {
-    pub fn execute_programs(self) -> ValidatorResult {
+    pub fn execute_programs(self) -> ValidationResult {
       let Self {
         programs,
         value,
