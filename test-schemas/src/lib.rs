@@ -243,6 +243,25 @@ pub enum DefaultValidatorOneof {
   B(u32),
 }
 
+// This checks if the default validator is registered
+// if a field is a required oneof, even if the oneof
+// doesn't have validators
+#[proto_message]
+#[proto(skip_checks(all))]
+pub struct DefaultValidatorRequiredOneof {
+  #[proto(oneof(required, tags(1, 2)))]
+  pub validator_required_oneof: Option<ValidatorRequiredOneof>,
+}
+
+#[proto_oneof]
+#[proto(skip_checks(all))]
+pub enum ValidatorRequiredOneof {
+  #[proto(tag = 1)]
+  A(i32),
+  #[proto(tag = 2)]
+  B(u32),
+}
+
 // Checks if the default validator is registered if there is a
 // repeated message with a validator
 #[proto_message]

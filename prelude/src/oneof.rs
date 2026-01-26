@@ -77,22 +77,6 @@ pub struct Oneof {
 }
 
 impl Oneof {
-  #[must_use]
-  pub fn required(mut self, required: bool) -> Self {
-    if required {
-      self.validators.push(ValidatorSchema {
-        schema: ProtoOption {
-          name: "(buf.validate.oneof).required".into(),
-          value: true.into(),
-        },
-        cel_rules: vec![],
-        imports: vec!["buf/validate/validate.proto".into()],
-      });
-    }
-
-    self
-  }
-
   pub(crate) fn options_with_validators(&self) -> impl Iterator<Item = &options::ProtoOption> {
     self
       .options

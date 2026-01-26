@@ -24,14 +24,13 @@ pub fn field_schema_tokens(data: &FieldData) -> TokenStream2 {
       }
     });
 
-  if let ProtoField::Oneof(OneofInfo { path, required, .. }) = proto_field {
+  if let ProtoField::Oneof(OneofInfo { path, .. }) = proto_field {
     quote_spanned! {*span=>
       ::prelude::MessageEntry::Oneof(
         <#path as ::prelude::ProtoOneof>::proto_schema()
           .with_name(#proto_name)
           .with_options(#options)
           .with_validators(::prelude::filter_validators([ #(#validator_schema_tokens),* ]))
-          .required(#required)
       )
     }
   } else {

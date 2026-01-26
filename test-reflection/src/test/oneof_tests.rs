@@ -4,10 +4,39 @@ use super::*;
 use crate::proto::oneof_tests::TestOneof;
 
 #[cfg(not(feature = "reflection"))]
+use test_schemas::DefaultValidatorRequiredOneof;
+
+#[cfg(feature = "reflection")]
+use crate::proto::DefaultValidatorRequiredOneof;
+
+#[cfg(not(feature = "reflection"))]
 use test_schemas::TestOneof;
 
 #[cfg(feature = "reflection")]
 use crate::proto::default_validator_test_oneof::DefaultValidatorOneof;
+
+#[cfg(not(feature = "reflection"))]
+use test_schemas::ValidatorRequiredOneof;
+
+#[cfg(feature = "reflection")]
+use crate::proto::default_validator_required_oneof::ValidatorRequiredOneof;
+
+#[test]
+fn required_oneof_validation() {
+  let mut msg = DefaultValidatorRequiredOneof {
+    validator_required_oneof: Some(ValidatorRequiredOneof::A(1)),
+  };
+
+  assert!(msg.validate().is_ok());
+
+  msg.validator_required_oneof = None;
+
+  assert_violation_id(
+    &msg,
+    "oneof.required",
+    "required oneof should trigger validation",
+  );
+}
 
 #[test]
 fn oneof_tests() {
