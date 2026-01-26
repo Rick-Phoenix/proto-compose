@@ -1,3 +1,8 @@
+use core::{
+  iter::{Copied, Zip},
+  slice,
+};
+
 use super::*;
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
@@ -12,9 +17,139 @@ pub struct ViolationsAcc {
   violations: Vec<Violation>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ViolationCtx {
   pub meta: ViolationMeta,
   pub data: Violation,
+}
+
+#[derive(Clone, Debug, Copy, PartialEq, Eq)]
+pub struct ViolationCtxRef<'a> {
+  pub meta: ViolationMeta,
+  pub data: &'a Violation,
+}
+
+impl ViolationCtxRef<'_> {
+  #[must_use]
+  pub fn into_owned(self) -> ViolationCtx {
+    ViolationCtx {
+      meta: self.meta,
+      data: self.data.clone(),
+    }
+  }
+
+  #[must_use]
+  pub fn into_violation(self) -> Violation {
+    self.into_owned().into_violation()
+  }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ViolationCtxMut<'a> {
+  pub meta: &'a mut ViolationMeta,
+  pub data: &'a mut Violation,
+}
+
+impl ViolationCtxMut<'_> {
+  #[must_use]
+  pub fn into_owned(&self) -> ViolationCtx {
+    ViolationCtx {
+      meta: *self.meta,
+      data: self.data.clone(),
+    }
+  }
+
+  #[must_use]
+  pub fn into_violation(&self) -> Violation {
+    self.into_owned().into_violation()
+  }
+}
+
+#[derive(Clone, Debug)]
+pub struct IntoIter {
+  iter: core::iter::Zip<alloc::vec::IntoIter<ViolationMeta>, alloc::vec::IntoIter<Violation>>,
+}
+
+impl Iterator for IntoIter {
+  type Item = ViolationCtx;
+
+  #[inline]
+  fn next(&mut self) -> Option<Self::Item> {
+    self
+      .iter
+      .next()
+      .map(|(meta, data)| ViolationCtx { meta, data })
+  }
+
+  #[inline]
+  fn size_hint(&self) -> (usize, Option<usize>) {
+    self.iter.size_hint()
+  }
+}
+
+impl ExactSizeIterator for IntoIter {
+  #[inline]
+  fn len(&self) -> usize {
+    self.iter.len()
+  }
+}
+
+#[derive(Clone, Debug)]
+pub struct Iter<'a> {
+  iter: Zip<Copied<slice::Iter<'a, ViolationMeta>>, slice::Iter<'a, Violation>>,
+}
+
+impl<'a> Iterator for Iter<'a> {
+  type Item = ViolationCtxRef<'a>;
+
+  #[inline]
+  fn next(&mut self) -> Option<Self::Item> {
+    self
+      .iter
+      .next()
+      .map(|(meta, data)| ViolationCtxRef { meta, data })
+  }
+
+  #[inline]
+  fn size_hint(&self) -> (usize, Option<usize>) {
+    self.iter.size_hint()
+  }
+}
+
+impl ExactSizeIterator for Iter<'_> {
+  #[inline]
+  fn len(&self) -> usize {
+    self.iter.len()
+  }
+}
+
+#[derive(Debug)]
+pub struct IterMut<'a> {
+  iter: Zip<core::slice::IterMut<'a, ViolationMeta>, core::slice::IterMut<'a, Violation>>,
+}
+
+impl<'a> Iterator for IterMut<'a> {
+  type Item = ViolationCtxMut<'a>;
+
+  #[inline]
+  fn next(&mut self) -> Option<Self::Item> {
+    self
+      .iter
+      .next()
+      .map(|(meta, data)| ViolationCtxMut { meta, data })
+  }
+
+  #[inline]
+  fn size_hint(&self) -> (usize, Option<usize>) {
+    self.iter.size_hint()
+  }
+}
+
+impl ExactSizeIterator for IterMut<'_> {
+  #[inline]
+  fn len(&self) -> usize {
+    self.iter.len()
+  }
 }
 
 impl ViolationCtx {
@@ -45,43 +180,45 @@ impl From<ViolationCtx> for Violation {
 }
 
 impl IntoIterator for ViolationsAcc {
-  type IntoIter = core::iter::Zip<vec::IntoIter<ViolationMeta>, vec::IntoIter<Violation>>;
-  type Item = (ViolationMeta, Violation);
+  type IntoIter = IntoIter;
+  type Item = ViolationCtx;
 
   #[inline]
   fn into_iter(self) -> Self::IntoIter {
-    self.metas.into_iter().zip(self.violations)
+    IntoIter {
+      iter: self.metas.into_iter().zip(self.violations),
+    }
   }
 }
 
 impl<'a> IntoIterator for &'a ViolationsAcc {
-  type Item = (ViolationMeta, &'a Violation);
+  type Item = ViolationCtxRef<'a>;
 
-  type IntoIter = core::iter::Zip<
-    core::iter::Copied<core::slice::Iter<'a, ViolationMeta>>,
-    core::slice::Iter<'a, Violation>,
-  >;
+  type IntoIter = Iter<'a>;
 
   fn into_iter(self) -> Self::IntoIter {
-    self
-      .metas
-      .iter()
-      .copied()
-      .zip(self.violations.iter())
+    Iter {
+      iter: self
+        .metas
+        .iter()
+        .copied()
+        .zip(self.violations.iter()),
+    }
   }
 }
 
 impl<'a> IntoIterator for &'a mut ViolationsAcc {
-  type Item = (&'a mut ViolationMeta, &'a mut Violation);
+  type Item = ViolationCtxMut<'a>;
 
-  type IntoIter =
-    core::iter::Zip<core::slice::IterMut<'a, ViolationMeta>, core::slice::IterMut<'a, Violation>>;
+  type IntoIter = IterMut<'a>;
 
   fn into_iter(self) -> Self::IntoIter {
-    self
-      .metas
-      .iter_mut()
-      .zip(self.violations.iter_mut())
+    IterMut {
+      iter: self
+        .metas
+        .iter_mut()
+        .zip(self.violations.iter_mut()),
+    }
   }
 }
 
@@ -95,83 +232,42 @@ impl Extend<ViolationCtx> for ViolationsAcc {
       self.violations.reserve(lower_bound);
     }
 
-    for ctx in iter {
-      self.metas.push(ctx.meta);
-      self.violations.push(ctx.data);
-    }
-  }
-}
-
-impl Extend<(ViolationMeta, Violation)> for ViolationsAcc {
-  fn extend<T: IntoIterator<Item = (ViolationMeta, Violation)>>(&mut self, iter: T) {
-    let iter = iter.into_iter();
-
-    let (lower_bound, _) = iter.size_hint();
-    if lower_bound > 0 {
-      self.metas.reserve(lower_bound);
-      self.violations.reserve(lower_bound);
-    }
-
-    for (meta, data) in iter {
-      self.metas.push(meta);
-      self.violations.push(data);
+    for v in iter {
+      self.metas.push(v.meta);
+      self.violations.push(v.data);
     }
   }
 }
 
 impl ViolationsAcc {
-  pub fn merge(&mut self, other: &mut Self) {
+  pub fn merge(&mut self, mut other: Self) {
     self.metas.append(&mut other.metas);
     self.violations.append(&mut other.violations);
   }
 
+  #[inline]
   #[must_use]
-  #[inline]
-  pub fn first(&self) -> Option<(ViolationMeta, &Violation)> {
-    self
-      .metas
-      .first()
-      .copied()
-      .and_then(|k| self.violations.first().map(|v| (k, v)))
-  }
-
-  #[must_use]
-  #[inline]
-  pub fn last(&self) -> Option<(ViolationMeta, &Violation)> {
-    self
-      .metas
-      .last()
-      .copied()
-      .and_then(|k| self.violations.last().map(|v| (k, v)))
-  }
-
-  #[inline]
-  pub fn iter(
-    &self,
-  ) -> core::iter::Zip<
-    core::iter::Copied<core::slice::Iter<'_, ViolationMeta>>,
-    core::slice::Iter<'_, Violation>,
-  > {
+  pub fn iter(&self) -> Iter<'_> {
     self.into_iter()
   }
 
   #[inline]
-  pub fn iter_mut(
-    &mut self,
-  ) -> core::iter::Zip<core::slice::IterMut<'_, ViolationMeta>, core::slice::IterMut<'_, Violation>>
-  {
+  pub fn iter_mut(&mut self) -> IterMut<'_> {
     self.into_iter()
   }
 
   pub fn retain<F>(&mut self, mut f: F)
   where
-    F: FnMut(ViolationMeta, &Violation) -> bool,
+    F: FnMut(ViolationCtxRef) -> bool,
   {
     let len = self.violations.len();
     let mut keep_count = 0;
 
     for i in 0..len {
-      let should_keep = f(self.metas[i], &self.violations[i]);
+      let should_keep = f(ViolationCtxRef {
+        meta: self.metas[i],
+        data: &self.violations[i],
+      });
 
       if should_keep {
         if keep_count != i {
