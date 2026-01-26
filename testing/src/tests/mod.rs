@@ -8,6 +8,7 @@
 
 mod cel_tests;
 mod custom_validators_tests;
+mod extern_paths_tests;
 mod oneof_tags_tests;
 mod recursion_tests;
 mod validation_tests;

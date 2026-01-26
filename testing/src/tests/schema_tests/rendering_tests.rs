@@ -10,7 +10,7 @@ use prelude::proto_types::{Duration, Timestamp};
 
 use super::*;
 
-proto_package!(RENDERING_PKG, name = "rendering");
+proto_package!(RENDERING_PKG, name = "rendering", no_cel_test);
 
 define_proto_file!(
   RENDERING,
