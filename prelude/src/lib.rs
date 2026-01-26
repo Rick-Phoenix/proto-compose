@@ -261,6 +261,19 @@ impl<T: ValidatedOneof + ProtoValidation> ValidatorBuilderFor<T> for OneofValida
 impl<T: ValidatedOneof + ProtoValidation> Validator<T> for OneofValidator {
   type Target = T;
 
+  #[cold]
+  #[inline(never)]
+  fn schema(&self) -> Option<ValidatorSchema> {
+    self.required.then(|| ValidatorSchema {
+      schema: ProtoOption {
+        name: "(buf.validate.oneof).required".into(),
+        value: true.into(),
+      },
+      cel_rules: vec![],
+      imports: vec!["buf/validate/validate.proto".into()],
+    })
+  }
+
   // Should be inlined because if the assoc. constant is false, it may promote
   // dead code elimination
   #[inline]

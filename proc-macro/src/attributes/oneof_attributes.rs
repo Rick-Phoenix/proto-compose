@@ -86,6 +86,12 @@ pub fn process_oneof_attrs(
     Ok(())
   })?;
 
+  for validator in &validators {
+    if validator.kind.is_closure() {
+      bail_with_span!(validator.span, "Closures are not supported for oneofs");
+    }
+  }
+
   Ok(OneofAttrs {
     options,
     name: name.unwrap_or_else(|| to_snake_case(&enum_ident.to_string())),

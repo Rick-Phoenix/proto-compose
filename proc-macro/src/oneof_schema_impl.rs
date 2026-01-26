@@ -19,6 +19,7 @@ impl OneofCtx<'_> {
     let OneofAttrs {
       options: options_tokens,
       name: proto_name,
+      validators,
       ..
     } = &self.oneof_attrs;
     let tags = &self.tags;
@@ -35,6 +36,12 @@ impl OneofCtx<'_> {
             name: #proto_name.into(),
             fields: vec![ #variants_tokens ],
             options: #options_tokens.into_iter().collect(),
+            #[allow(
+              clippy::filter_map_identity,
+              clippy::iter_on_empty_collections,
+              clippy::iter_on_single_items
+            )]
+            validators: [ #(::prelude::Validator::<#enum_ident>::schema(&#validators)),* ].into_iter().filter_map(|s| s).collect(),
           }
         }
       }

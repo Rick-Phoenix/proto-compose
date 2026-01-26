@@ -73,9 +73,33 @@ pub struct Oneof {
   pub name: FixedStr,
   pub fields: Vec<Field>,
   pub options: Vec<ProtoOption>,
+  pub validators: Vec<ValidatorSchema>,
 }
 
 impl Oneof {
+  #[must_use]
+  pub fn required(mut self, required: bool) -> Self {
+    if required {
+      self.validators.push(ValidatorSchema {
+        schema: ProtoOption {
+          name: "(buf.validate.oneof).required".into(),
+          value: true.into(),
+        },
+        cel_rules: vec![],
+        imports: vec!["buf/validate/validate.proto".into()],
+      });
+    }
+
+    self
+  }
+
+  pub(crate) fn options_with_validators(&self) -> impl Iterator<Item = &options::ProtoOption> {
+    self
+      .options
+      .iter()
+      .chain(self.validators.iter().map(|v| &v.schema))
+  }
+
   #[must_use]
   pub fn with_name(mut self, name: impl Into<FixedStr>) -> Self {
     self.name = name.into();

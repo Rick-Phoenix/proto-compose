@@ -350,6 +350,25 @@ fn message_schema_output() {
       );
     }
   }
+
+  let oneof = schema
+    .entries
+    .iter()
+    .find_map(|e| e.as_oneof())
+    .unwrap();
+
+  assert_eq_pretty!(
+    oneof.validators.first().unwrap().clone(),
+    ValidatorSchema {
+      schema: ProtoOption {
+        name: "(buf.validate.oneof).required".into(),
+        value: true.into(),
+      },
+      cel_rules: vec![],
+      imports: vec!["buf/validate/validate.proto".into()],
+    },
+    "oneof.required option should be present"
+  )
 }
 
 #[proto_message]
@@ -366,7 +385,7 @@ fn reusable_oneofs() {
 
   let msg = Nested1::proto_schema();
 
-  let MessageEntry::Oneof { oneof, .. } = msg.entries.first().unwrap() else {
+  let MessageEntry::Oneof(oneof) = msg.entries.first().unwrap() else {
     panic!()
   };
 

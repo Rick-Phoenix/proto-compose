@@ -86,7 +86,7 @@ impl Message {
     self.entries.iter().flat_map(|entry| {
       let (field_opt, oneof_vec) = match entry {
         MessageEntry::Field(f) => (Some(f), None),
-        MessageEntry::Oneof { oneof, .. } => (None, Some(&oneof.fields)),
+        MessageEntry::Oneof(oneof) => (None, Some(&oneof.fields)),
       };
 
       field_opt
@@ -112,14 +112,14 @@ impl Message {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MessageEntry {
   Field(Field),
-  Oneof { oneof: Oneof, required: bool },
+  Oneof(Oneof),
 }
 
 impl MessageEntry {
   pub(crate) fn cel_rules(self) -> impl Iterator<Item = CelRule> {
     let (field_opt, oneof_vec) = match self {
       Self::Field(f) => (Some(f), None),
-      Self::Oneof { oneof, .. } => (None, Some(oneof.fields)),
+      Self::Oneof(oneof) => (None, Some(oneof.fields)),
     };
 
     field_opt
@@ -153,6 +153,15 @@ impl MessageEntry {
       None
     }
   }
+
+  #[must_use]
+  pub const fn as_oneof(&self) -> Option<&Oneof> {
+    if let Self::Oneof(v) = self {
+      Some(v)
+    } else {
+      None
+    }
+  }
 }
 
 impl Message {
@@ -176,13 +185,7 @@ impl Message {
     for entry in &self.entries {
       match entry {
         MessageEntry::Field(field) => field.register_import_path(imports),
-        MessageEntry::Oneof {
-          oneof, required, ..
-        } => {
-          if *required {
-            imports.insert_validate_proto();
-          }
-
+        MessageEntry::Oneof(oneof) => {
           for field in &oneof.fields {
             field.register_import_path(imports)
           }

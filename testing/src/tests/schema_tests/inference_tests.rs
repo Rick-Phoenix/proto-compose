@@ -200,15 +200,14 @@ pub struct ProxiedInference {
 fn proxied_inference() {
   let schema = ProxiedInferenceProto::proto_schema();
 
-  let oneof = schema.entries.first().unwrap();
+  let MessageEntry::Oneof(oneof) = schema.entries.first().unwrap() else {
+    panic!()
+  };
 
   assert_eq_pretty!(
-    oneof,
-    &MessageEntry::Oneof {
-      // The name should be overridden
-      oneof: ProxiedOneofProto::proto_schema().with_name("oneof"),
-      required: false
-    }
+    oneof.name,
+    "oneof",
+    "The name should be overridden ('oneof', not 'proxied_oneof')"
   );
 
   let msg_field = schema.entries.last().unwrap();

@@ -27,17 +27,14 @@ message {{+ short_name +}} {
 
 {% for entry in entries %}
 {% match entry %}
-  {%~ when MessageEntry::Oneof { oneof, required } +%}
+  {%~ when MessageEntry::Oneof(oneof) +%}
 
   oneof {{+ oneof.name +}} {
     {% filter indent(4) %}
-    {% for option in oneof.options ~%}
+    {% for option in oneof.options_with_validators() ~%}
     option {{+ option.name +}} = {{+ option.value }};
     {% endfor %}
     {% endfilter ~%}
-    {% if required +%}
-    option (buf.validate.oneof).required = true;
-    {% endif %}
 
     {%~ for field in oneof.fields ~%}
     {%+ call macros::render_field(field, package, 4) %}{% endcall %}
