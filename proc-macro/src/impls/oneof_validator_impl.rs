@@ -61,8 +61,6 @@ pub fn generate_oneof_validator(
 
   let has_validators = !validators_tokens.is_empty();
 
-  let inline_if_empty = (!has_validators).then(|| quote! { #[inline(always)] });
-
   let ValidatorsData {
     has_non_default_validators,
     default_check_tokens,
@@ -87,6 +85,8 @@ pub fn generate_oneof_validator(
     tokens
   };
 
+  let inline_if_empty = (!has_validators).then(|| quote! { #[inline(always)] });
+
   quote! {
     impl ::prelude::ValidatedOneof for #oneof_ident {
       #inline_if_empty
@@ -99,7 +99,7 @@ pub fn generate_oneof_validator(
       }
     }
 
-    impl ::prelude::ProtoValidator for #oneof_ident {
+    impl ::prelude::ProtoValidation for #oneof_ident {
       #[doc(hidden)]
       type Target = Self;
       #[doc(hidden)]

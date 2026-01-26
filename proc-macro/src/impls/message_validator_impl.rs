@@ -48,18 +48,18 @@ pub fn field_validator_tokens(
             .default_check_tokens
             .push(if msg_info.boxed {
               quote! {
-                <#path as ::prelude::ProtoValidator>::HAS_SHALLOW_VALIDATION
+                <#path as ::prelude::ProtoValidation>::HAS_SHALLOW_VALIDATION
               }
             } else {
               quote! {
-                <#path as ::prelude::ProtoValidator>::HAS_DEFAULT_VALIDATOR
+                <#path as ::prelude::ProtoValidation>::HAS_DEFAULT_VALIDATOR
               }
             });
         } else if let ProtoField::Oneof(oneof) = proto_field {
           let path = &oneof.path;
 
           validators_data.default_check_tokens.push(quote! {
-            <#path as ::prelude::ProtoValidator>::HAS_DEFAULT_VALIDATOR
+            <#path as ::prelude::ProtoValidation>::HAS_DEFAULT_VALIDATOR
           });
         }
       } else {
@@ -143,7 +143,7 @@ pub fn field_validator_tokens(
 
     let output = if kind.is_default() {
       quote_spanned! {*span=>
-        if <#validator_target_type as ::prelude::ProtoValidator>::HAS_DEFAULT_VALIDATOR {
+        if <#validator_target_type as ::prelude::ProtoValidation>::HAS_DEFAULT_VALIDATOR {
           #validator_call
         }
       }
@@ -280,7 +280,7 @@ pub fn generate_message_validator(
       }
     }
 
-    impl ::prelude::ProtoValidator for #target_ident {
+    impl ::prelude::ProtoValidation for #target_ident {
       #[doc(hidden)]
       type Target = Self;
       #[doc(hidden)]

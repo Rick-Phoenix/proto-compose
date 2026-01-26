@@ -35,7 +35,7 @@ pub fn named_enum_derive(item: &ItemEnum) -> TokenStream2 {
       }
     }
 
-    impl ::prelude::ProtoValidator for #ident {
+    impl ::prelude::ProtoValidation for #ident {
       #[doc(hidden)]
       type Target = i32;
       #[doc(hidden)]

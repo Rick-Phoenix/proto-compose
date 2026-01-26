@@ -248,7 +248,7 @@ pub struct OneofValidator {
   pub required: bool,
 }
 
-impl<T: ValidatedOneof + ProtoValidator> ValidatorBuilderFor<T> for OneofValidator {
+impl<T: ValidatedOneof + ProtoValidation> ValidatorBuilderFor<T> for OneofValidator {
   type Target = T;
   type Validator = Self;
 
@@ -258,7 +258,7 @@ impl<T: ValidatedOneof + ProtoValidator> ValidatorBuilderFor<T> for OneofValidat
   }
 }
 
-impl<T: ValidatedOneof + ProtoValidator> Validator<T> for OneofValidator {
+impl<T: ValidatedOneof + ProtoValidation> Validator<T> for OneofValidator {
   type Target = T;
 
   // Should be inlined because if the assoc. constant is false, it may promote

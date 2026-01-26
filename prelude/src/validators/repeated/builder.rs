@@ -6,7 +6,7 @@ pub(crate) use state::*;
 #[derive(Clone, Debug)]
 pub struct RepeatedValidatorBuilder<T, S: State = Empty>
 where
-  T: ProtoValidator,
+  T: ProtoValidation,
 {
   _state: PhantomData<S>,
   _inner_type: PhantomData<T>,
@@ -27,7 +27,7 @@ where
 
 impl<T, S: State> Default for RepeatedValidatorBuilder<T, S>
 where
-  T: ProtoValidator,
+  T: ProtoValidation,
 {
   #[inline]
   fn default() -> Self {
@@ -47,7 +47,7 @@ where
 
 impl<T> RepeatedValidator<T>
 where
-  T: ProtoValidator,
+  T: ProtoValidation,
 {
   #[must_use]
   #[inline]
@@ -58,7 +58,7 @@ where
 
 impl<T, S: State> RepeatedValidatorBuilder<T, S>
 where
-  T: ProtoValidator,
+  T: ProtoValidation,
 {
   #[inline]
   pub fn build(self) -> RepeatedValidator<T> {
@@ -124,7 +124,7 @@ where
   pub fn items<F, FinalBuilder>(self, config_fn: F) -> RepeatedValidatorBuilder<T, SetItems<S>>
   where
     S::Items: IsUnset,
-    T: ProtoValidator,
+    T: ProtoValidation,
     FinalBuilder: ValidatorBuilderFor<T, Validator = T::Validator>,
     F: FnOnce(T::Builder) -> FinalBuilder,
   {
@@ -237,7 +237,7 @@ where
 
 impl<T, S: State> From<RepeatedValidatorBuilder<T, S>> for ProtoOption
 where
-  T: ProtoValidator,
+  T: ProtoValidation,
 {
   fn from(value: RepeatedValidatorBuilder<T, S>) -> Self {
     value.build().into()

@@ -3,7 +3,7 @@ pub use builder::MessageValidatorBuilder;
 
 use super::*;
 
-pub trait ValidatedMessage: ProtoValidator + Default + Clone {
+pub trait ValidatedMessage: ProtoValidation + Default + Clone {
   #[inline]
   fn validate_all(&self) -> Result<(), ViolationsAcc> {
     if !Self::HAS_DEFAULT_VALIDATOR {

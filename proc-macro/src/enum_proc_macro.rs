@@ -280,7 +280,7 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
       }
     }
 
-    impl ::prelude::ProtoValidator for #enum_ident {
+    impl ::prelude::ProtoValidation for #enum_ident {
       #[doc(hidden)]
       type Target = i32;
       #[doc(hidden)]

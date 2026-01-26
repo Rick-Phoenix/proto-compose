@@ -5,7 +5,7 @@ pub(crate) use state::*;
 
 use proto_types::Duration;
 
-impl ProtoValidator for Duration {
+impl ProtoValidation for Duration {
   type Target = Self;
   type Stored = Self;
   type Validator = DurationValidator;

@@ -9,7 +9,7 @@ pub struct BoolValidatorBuilder<S: State = Empty> {
   data: BoolValidator,
 }
 
-impl ProtoValidator for bool {
+impl ProtoValidation for bool {
   type Target = Self;
   type Stored = Self;
   type Validator = BoolValidator;

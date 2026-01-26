@@ -79,8 +79,8 @@ where
 
 pub trait ProtoMap<K, V>
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
   K::Stored: Sized,
   V::Stored: Sized,
 {
@@ -89,8 +89,8 @@ where
 
 impl<K, V> ProtoMap<K, V> for BTreeMap<K, V>
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
   K::Stored: Sized,
   V::Stored: Sized,
 {
@@ -100,19 +100,19 @@ where
 impl<K, V, S> ProtoMap<K, V> for HashMap<K, V, S>
 where
   S: BuildHasher,
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
   K::Stored: Sized,
   V::Stored: Sized,
 {
   type Target = HashMap<K::Stored, V::Stored, S>;
 }
 
-impl<K, V> ProtoValidator for BTreeMap<K, V>
+impl<K, V> ProtoValidation for BTreeMap<K, V>
 where
   Self: Clone,
-  K: ProtoValidator + Send + Sync + AsProtoType,
-  V: ProtoValidator + Send + Sync + AsProtoType,
+  K: ProtoValidation + Send + Sync + AsProtoType,
+  V: ProtoValidation + Send + Sync + AsProtoType,
   K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
   V::Stored: Sized + Clone + TryIntoCel,
 {
@@ -129,12 +129,12 @@ where
   const HAS_DEFAULT_VALIDATOR: bool = V::HAS_DEFAULT_VALIDATOR;
 }
 
-impl<K, V, S> ProtoValidator for HashMap<K, V, S>
+impl<K, V, S> ProtoValidation for HashMap<K, V, S>
 where
   S: BuildHasher + Default + Clone,
   Self: Clone,
-  K: ProtoValidator + Send + Sync + AsProtoType,
-  V: ProtoValidator + Send + Sync + AsProtoType,
+  K: ProtoValidation + Send + Sync + AsProtoType,
+  V: ProtoValidation + Send + Sync + AsProtoType,
   K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
   V::Stored: Sized + Clone + TryIntoCel,
 {
@@ -154,8 +154,8 @@ where
 impl<K, V, M, S> ValidatorBuilderFor<M> for MapValidatorBuilder<K, V, S>
 where
   S: builder::state::State,
-  K: ProtoValidator + Send + Sync + AsProtoType,
-  V: ProtoValidator + Send + Sync + AsProtoType,
+  K: ProtoValidation + Send + Sync + AsProtoType,
+  V: ProtoValidation + Send + Sync + AsProtoType,
   M: ProtoMap<K, V> + ToOwned,
   M::Target: Clone + Default,
   K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
@@ -172,8 +172,8 @@ where
 
 impl<K, V, M> Validator<M> for MapValidator<K, V>
 where
-  K: ProtoValidator + Send + Sync + AsProtoType,
-  V: ProtoValidator + Send + Sync + AsProtoType,
+  K: ProtoValidation + Send + Sync + AsProtoType,
+  V: ProtoValidation + Send + Sync + AsProtoType,
   M: ProtoMap<K, V> + ToOwned,
   M::Target: Clone + Default,
   K::Stored: Sized + Clone + IntoCelKey + Into<Subscript>,
@@ -324,8 +324,8 @@ where
 )]
 pub struct MapValidator<K, V>
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
 {
   /// The validation rules to apply to the keys of this map field.
   pub keys: Option<K::Validator>,
@@ -350,8 +350,8 @@ where
 
 impl<K, V> MapValidator<K, V>
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
 {
   pub fn validate_map<M>(&self, ctx: &mut ValidationCtx, val: Option<&M>) -> ValidatorResult
   where
@@ -515,8 +515,8 @@ impl<K: AsProtoMapKey, V: AsProtoType> AsProtoField for BTreeMap<K, V> {
 
 impl<K, V> Default for MapValidator<K, V>
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
 {
   #[inline]
   fn default() -> Self {
@@ -536,8 +536,8 @@ where
 
 impl<K, V> Clone for MapValidator<K, V>
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
 {
   fn clone(&self) -> Self {
     Self {
@@ -573,8 +573,8 @@ where
 
 impl<K, V> From<MapValidator<K, V>> for ProtoOption
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
 {
   #[inline(never)]
   #[cold]

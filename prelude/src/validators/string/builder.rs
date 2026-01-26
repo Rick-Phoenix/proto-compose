@@ -11,7 +11,7 @@ pub struct StringValidatorBuilder<S: State = Empty> {
   data: StringValidator,
 }
 
-impl ProtoValidator for String {
+impl ProtoValidation for String {
   type Target = str;
   type Stored = Self;
   type Validator = StringValidator;

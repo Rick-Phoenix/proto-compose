@@ -28,7 +28,7 @@ pub struct FieldMaskValidator {
   pub error_messages: Option<ErrorMessages<FieldMaskViolation>>,
 }
 
-impl ProtoValidator for FieldMask {
+impl ProtoValidation for FieldMask {
   type Target = Self;
   type Stored = Self;
   type Validator = FieldMaskValidator;

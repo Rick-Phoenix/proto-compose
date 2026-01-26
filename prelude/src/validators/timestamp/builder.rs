@@ -12,7 +12,7 @@ pub struct TimestampValidatorBuilder<S: State = Empty> {
   data: TimestampValidator,
 }
 
-impl ProtoValidator for Timestamp {
+impl ProtoValidation for Timestamp {
   type Target = Self;
   type Stored = Self;
   type Validator = TimestampValidator;

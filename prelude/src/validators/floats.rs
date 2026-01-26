@@ -506,7 +506,7 @@ macro_rules! impl_float_wrapper {
         }
       }
 
-      impl ProtoValidator for $target_type {
+      impl ProtoValidation for $target_type {
         type Target = Self;
         type Stored = Self;
         type Validator = FloatValidator<Self>;

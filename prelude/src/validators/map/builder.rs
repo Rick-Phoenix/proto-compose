@@ -6,8 +6,8 @@ pub(crate) use state::*;
 #[derive(Clone, Debug)]
 pub struct MapValidatorBuilder<K, V, S: State = Empty>
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
 {
   keys: Option<K::Validator>,
 
@@ -25,8 +25,8 @@ where
 
 impl<K, V, S: State> Default for MapValidatorBuilder<K, V, S>
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
 {
   #[inline]
   fn default() -> Self {
@@ -47,8 +47,8 @@ where
 
 impl<K, V> MapValidator<K, V>
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
 {
   #[must_use]
   #[inline]
@@ -59,8 +59,8 @@ where
 
 impl<K, V, S: State> From<MapValidatorBuilder<K, V, S>> for ProtoOption
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
 {
   fn from(value: MapValidatorBuilder<K, V, S>) -> Self {
     value.build().into()
@@ -69,8 +69,8 @@ where
 
 impl<S: State, K, V> MapValidatorBuilder<K, V, S>
 where
-  K: ProtoValidator,
-  V: ProtoValidator,
+  K: ProtoValidation,
+  V: ProtoValidation,
 {
   #[inline]
   pub fn build(self) -> MapValidator<K, V> {
@@ -240,7 +240,7 @@ where
   /// Sets the rules for the values of this map field.
   pub fn values<F, FinalBuilder>(self, config_fn: F) -> MapValidatorBuilder<K, V, SetValues<S>>
   where
-    V: ProtoValidator,
+    V: ProtoValidation,
     FinalBuilder: ValidatorBuilderFor<V, Validator = V::Validator>,
     F: FnOnce(V::Builder) -> FinalBuilder,
   {

@@ -224,7 +224,7 @@ pub struct DefaultValidatorTestMsg {
 }
 
 // This checks if the default validator is registered
-// if a field is a oneof
+// if a field is a oneof with a validator
 #[proto_message]
 #[proto(skip_checks(all))]
 pub struct DefaultValidatorTestOneof {
@@ -261,8 +261,8 @@ pub struct DefaultValidatorTestMap {
   pub map_test: HashMap<i32, DefaultValidatorTestCel>,
 }
 
-// This checks if the default validator is registered
-// if there are top level rules
+// This checks if a message with top level rules has its
+// validator triggered from consuming messages/oneofs
 #[allow(clippy::use_self)]
 #[proto_message]
 #[proto(skip_checks(all))]

@@ -437,7 +437,7 @@ macro_rules! impl_int {
 macro_rules! impl_int_validator {
   ($wrapper:ty, $rust_type:ty) => {
     $crate::paste! {
-      impl ProtoValidator for $wrapper {
+      impl ProtoValidation for $wrapper {
         type Target = $rust_type;
         type Stored = $rust_type;
         type Validator = IntValidator<$wrapper>;

@@ -17,7 +17,7 @@ use super::*;
 )]
 pub struct RepeatedValidator<T>
 where
-  T: ProtoValidator,
+  T: ProtoValidation,
 {
   #[cfg_attr(feature = "serde", serde(skip))]
   _inner_type: PhantomData<T>,
@@ -37,7 +37,7 @@ where
 
 impl<T> Clone for RepeatedValidator<T>
 where
-  T: ProtoValidator,
+  T: ProtoValidation,
 {
   fn clone(&self) -> Self {
     Self {
@@ -55,7 +55,7 @@ where
 
 impl<T> Default for RepeatedValidator<T>
 where
-  T: ProtoValidator,
+  T: ProtoValidation,
 {
   #[inline]
   fn default() -> Self {
@@ -78,9 +78,9 @@ impl<T: AsProtoType> AsProtoField for Vec<T> {
   }
 }
 
-impl<T> ProtoValidator for Vec<T>
+impl<T> ProtoValidation for Vec<T>
 where
-  T: ProtoValidator + Send + Sync,
+  T: ProtoValidation + Send + Sync,
   T::Stored: TryIntoCel + Sized + Clone,
 {
   type Target = [T::Stored];
@@ -99,7 +99,7 @@ where
 impl<T, S> ValidatorBuilderFor<Vec<T>> for RepeatedValidatorBuilder<T, S>
 where
   S: builder::State,
-  T: ProtoValidator + Send + Sync,
+  T: ProtoValidation + Send + Sync,
   T::Stored: TryIntoCel + Sized + Clone,
 {
   type Target = [T::Stored];
@@ -124,7 +124,7 @@ fn try_convert_to_cel<T: TryIntoCel>(list: Vec<T>) -> Result<::cel::Value, CelEr
 
 impl<T> Validator<Vec<T>> for RepeatedValidator<T>
 where
-  T: ProtoValidator + Send + Sync,
+  T: ProtoValidation + Send + Sync,
   T::Stored: TryIntoCel + Sized + Clone,
 {
   type Target = [T::Stored];
@@ -281,8 +281,8 @@ where
         let size = val.len();
 
         let store = match &self.items {
-          Some(v) => <T as ProtoValidator>::make_unique_store(v, size),
-          None => <T as ProtoValidator>::UniqueStore::default_with_capacity(size),
+          Some(v) => <T as ProtoValidation>::make_unique_store(v, size),
+          None => <T as ProtoValidation>::UniqueStore::default_with_capacity(size),
         };
 
         Some(store)
@@ -367,7 +367,7 @@ where
 
 impl<T> From<RepeatedValidator<T>> for ProtoOption
 where
-  T: ProtoValidator,
+  T: ProtoValidation,
 {
   #[inline(never)]
   #[cold]

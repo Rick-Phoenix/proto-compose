@@ -188,13 +188,14 @@ pub trait ValidatorBuilderFor<T: ?Sized>: Default {
   fn build_validator(self) -> Self::Validator;
 }
 
-pub trait ProtoValidator {
+pub trait ProtoValidation {
   type Target: ?Sized;
   type Stored: Borrow<Self::Target>;
   type Validator: Validator<Self, Target = Self::Target> + Clone + Default;
   type Builder: ValidatorBuilderFor<Self, Validator = Self::Validator>;
 
   const HAS_DEFAULT_VALIDATOR: bool = false;
+  #[doc(hidden)]
   const HAS_SHALLOW_VALIDATION: bool = false;
 
   type UniqueStore<'a>: UniqueStore<'a, Item = Self::Target>
