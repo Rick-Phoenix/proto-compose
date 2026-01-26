@@ -3,8 +3,8 @@ use super::*;
 proto_package!(EXTERN_PATH_TEST, name = "extern_path_test", no_cel_test);
 
 define_proto_file!(
-  NORMAL,
-  name = "normal.proto",
+  FILE,
+  name = "file.proto",
   package = EXTERN_PATH_TEST,
   extern_path = "testing"
 );
@@ -35,37 +35,32 @@ pub enum NormalNestedEnum {
   B,
 }
 
-pub(crate) mod priv_mod {
+pub mod submod {
   use super::*;
 
-  define_proto_file!(
-    RE_EXPORTED,
-    name = "re-exported.proto",
-    package = EXTERN_PATH_TEST,
-    extern_path = "testing"
-  );
+  use_proto_file!(FILE, extern_path = "testing::submod");
 
   #[proto_message]
-  pub struct ReExportedMsg {
+  pub struct SubmodMsg {
     pub id: i32,
   }
 
   #[proto_message]
-  #[proto(parent_message = ReExportedMsg)]
-  pub struct ReExportedNestedMsg {
+  #[proto(parent_message = SubmodMsg)]
+  pub struct SubmodNestedMsg {
     pub id: i32,
   }
 
   #[proto_enum]
-  pub enum ReExportedEnum {
+  pub enum SubmodEnum {
     Unspecified,
     A,
     B,
   }
 
   #[proto_enum]
-  #[proto(parent_message = ReExportedMsg)]
-  pub enum ReExportedNestedEnum {
+  #[proto(parent_message = SubmodMsg)]
+  pub enum SubmodNestedEnum {
     Unspecified,
     A,
     B,
@@ -79,20 +74,20 @@ fn test_extern_path() {
 
   let expected = [
     (
-      ".extern_path_test.ReExportedMsg",
-      "::testing::ReExportedMsg",
+      ".extern_path_test.SubmodMsg",
+      "::testing::submod::SubmodMsg",
     ),
     (
-      ".extern_path_test.ReExportedMsg.ReExportedNestedMsg",
-      "::testing::ReExportedNestedMsg",
+      ".extern_path_test.SubmodMsg.SubmodNestedMsg",
+      "::testing::submod::SubmodNestedMsg",
     ),
     (
-      ".extern_path_test.ReExportedEnum",
-      "::testing::ReExportedEnum",
+      ".extern_path_test.SubmodEnum",
+      "::testing::submod::SubmodEnum",
     ),
     (
-      ".extern_path_test.ReExportedMsg.ReExportedNestedEnum",
-      "::testing::ReExportedNestedEnum",
+      ".extern_path_test.SubmodMsg.SubmodNestedEnum",
+      "::testing::submod::SubmodNestedEnum",
     ),
     (".extern_path_test.NormalMsg", "::testing::NormalMsg"),
     (
