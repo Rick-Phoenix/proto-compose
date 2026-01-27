@@ -44,10 +44,8 @@ pub enum FieldType {
   Optional(ProtoType),
 }
 
-#[allow(private_interfaces)]
 pub(crate) struct Sealed;
 
-#[doc(hidden)]
 pub trait AsProtoMapKey {
   fn as_proto_map_key() -> ProtoMapKey;
   #[allow(private_interfaces)]

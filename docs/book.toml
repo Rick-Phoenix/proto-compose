@@ -1,0 +1,18 @@
+[book]
+authors = ["Rick-Phoenix"]
+language = "en"
+src = "src"
+title = "Protify"
+edition = "2024"
+
+[build]
+use-default-preprocessors = false
+
+[preprocessor]
+links = {}
+
+[output.html]
+additional-css = ["./theme/catppuccin.css"]
+default-theme = "mocha"
+preferred-dark-theme = "mocha"
+git-repository-url = ""

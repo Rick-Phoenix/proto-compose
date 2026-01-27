@@ -1,3 +1,7 @@
+[working-directory("docs")]
+open-docs:
+    mdbook serve --open
+
 check-code-elimination:
     cargo asm --release -p testing --example code_elimination trigger_validation
 
