@@ -24,7 +24,7 @@ mod test {
   }
 
   fn handle_violations(errors: ValidationErrors) -> Status {
-    let status_inner: GrpcStatus = errors.into_violations().into();
+    let status_inner: GrpcStatus = errors.into();
 
     Status::with_details(
       Code::InvalidArgument,

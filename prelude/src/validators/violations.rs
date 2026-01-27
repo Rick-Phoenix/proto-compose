@@ -3,6 +3,8 @@ use core::{
   slice,
 };
 
+use proto_types::Status;
+
 use super::*;
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
@@ -180,6 +182,13 @@ impl From<ValidationErrors> for Vec<Violation> {
   }
 }
 
+impl From<ValidationErrors> for Status {
+  #[inline]
+  fn from(value: ValidationErrors) -> Self {
+    value.into_violations().into()
+  }
+}
+
 impl From<ViolationCtx> for Violation {
   #[inline]
   fn from(value: ViolationCtx) -> Self {
@@ -298,6 +307,12 @@ impl ValidationErrors {
       metas: vec![],
       violations: vec![],
     }
+  }
+
+  #[inline]
+  #[must_use]
+  pub fn into_status(self) -> Status {
+    self.into()
   }
 
   #[inline]
