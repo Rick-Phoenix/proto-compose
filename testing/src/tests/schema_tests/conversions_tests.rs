@@ -266,6 +266,8 @@ fn conversion_helpers() {
 // This just checks if the proxy is working
 #[proto_message(proxied)]
 #[proto(skip_checks(all))]
+// Checks if attr forwarding works
+#[proto(attr(derive(Copy)))]
 pub struct ProxiedMessage2 {
   #[proto(message(proxied))]
   msg: Option<ProxiedMessage1>,

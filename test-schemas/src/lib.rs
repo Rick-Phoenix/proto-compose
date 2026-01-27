@@ -177,6 +177,8 @@ common_messages!(
 );
 
 #[proto_oneof]
+// Checks that proto derives are working
+#[proto(derive(Copy))]
 #[proto(skip_checks(all))]
 pub enum SimpleOneof {
   #[proto(tag = 1, validate = |v| v.const_(1))]

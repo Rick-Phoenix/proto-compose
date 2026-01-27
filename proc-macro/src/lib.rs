@@ -12,8 +12,8 @@ use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{ToTokens, format_ident, quote, quote_spanned};
 use syn::{
-  Attribute, Error, Expr, Field, Fields, Ident, ItemEnum, ItemStruct, Lit, LitBool, LitStr, Path,
-  RangeLimits, Token, Type, Variant, Visibility, bracketed,
+  Attribute, Error, Expr, Field, Fields, Ident, ItemEnum, ItemStruct, Lit, LitBool, LitStr, Meta,
+  Path, RangeLimits, Token, Type, Variant, Visibility, bracketed,
   meta::ParseNestedMeta,
   parse::{Parse, Parser},
   parse_macro_input, parse_quote, parse_quote_spanned,

@@ -172,6 +172,7 @@ pub struct FieldData {
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
   pub deprecated: bool,
+  pub forwarded_attrs: Vec<Meta>,
 }
 
 impl FieldData {
@@ -231,6 +232,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
   let mut from_proto: Option<PathOrClosure> = None;
   let mut into_proto: Option<PathOrClosure> = None;
   let mut deprecated = false;
+  let mut forwarded_attrs: Vec<Meta> = Vec::new();
   let field_ident = field.ident()?.clone();
   let type_info = TypeInfo::from_type(field.get_type()?)?;
 
@@ -250,6 +252,9 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
           let ident = meta.path.require_ident()?.to_string();
 
           match ident.as_str() {
+            "attr" => {
+              forwarded_attrs = meta.parse_list::<PunctuatedItems<Meta>>()?.list;
+            }
             "deprecated" => {
               let boolean = meta.parse_value::<LitBool>()?;
 
@@ -392,6 +397,7 @@ pub fn process_field_data(field: FieldOrVariant) -> Result<FieldDataKind, Error>
     ident: field_ident,
     type_info,
     deprecated,
+    forwarded_attrs,
   }))
 }
 

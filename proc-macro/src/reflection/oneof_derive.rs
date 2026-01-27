@@ -116,6 +116,7 @@ fn extract_oneof_data(item: &mut ItemEnum) -> Result<OneofDataReflection, Error>
       from_proto: None,
       into_proto: None,
       deprecated: false,
+      forwarded_attrs: vec![],
     }));
   }
 

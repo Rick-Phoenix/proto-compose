@@ -125,6 +125,7 @@ fn extract_fields_data(item: &mut ItemStruct) -> Result<ReflectionMsgData, Error
           from_proto: None,
           into_proto: None,
           deprecated: false,
+          forwarded_attrs: vec![],
         }));
 
         continue;
@@ -173,6 +174,7 @@ fn extract_fields_data(item: &mut ItemStruct) -> Result<ReflectionMsgData, Error
         from_proto: None,
         into_proto: None,
         deprecated: false,
+        forwarded_attrs: vec![],
       }));
     }
   }

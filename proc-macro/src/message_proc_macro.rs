@@ -111,12 +111,19 @@ pub fn message_proc_macro(mut item: ItemStruct, macro_attrs: TokenStream2) -> To
     }
     .generate_proto_conversions();
 
+    let forwarded_attrs = message_attrs.forwarded_attrs.iter().map(|meta| {
+      quote_spanned! {meta.span()=>
+        #[#meta]
+      }
+    });
+
     quote! {
       #[derive(::prelude::macros::Message)]
       #item
 
       #proto_derives
       #extra_proto_derives
+      #(#forwarded_attrs)*
       #[allow(clippy::use_self)]
       #proto_struct
 
@@ -265,6 +272,10 @@ where
           bail!(dst_field.ident()?, "Cannot ignore fields in a direct impl");
         }
       };
+
+      for attr in &field_data.forwarded_attrs {
+        dst_field.inject_attr(parse_quote!(#[#attr]));
+      }
 
       if !field_data.proto_field.is_oneof() && field_data.tag.is_none() {
         if let Some(tag_allocator) = tag_allocator.as_mut() {

@@ -173,10 +173,12 @@ fn message_inference() {
 }
 
 #[proto_oneof(proxied)]
+// Checks that forwarded attrs are working
+#[proto(attr(derive(Copy)))]
 #[proto(skip_checks(all))]
 pub enum ProxiedOneof {
   #[proto(tag = 1)]
-  A(String),
+  A(i32),
   #[proto(tag = 2)]
   B(i32),
 }

@@ -7,6 +7,7 @@ pub struct OneofAttrs {
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
   pub proto_derives: Vec<Path>,
+  pub forwarded_attrs: Vec<Meta>,
   pub is_proxied: bool,
   pub auto_tests: AutoTests,
   pub validators: Validators,
@@ -53,11 +54,15 @@ pub fn process_oneof_attrs(
   let mut shadow_derives: Vec<Path> = Vec::new();
   let mut auto_tests = AutoTests::default();
   let mut validators = Validators::default();
+  let mut forwarded_attrs: Vec<Meta> = Vec::new();
 
   parse_filtered_attrs(attrs, &["proto"], |meta| {
     let ident = meta.path.require_ident()?.to_string();
 
     match ident.as_str() {
+      "attr" => {
+        forwarded_attrs = meta.parse_list::<PunctuatedItems<Meta>>()?.list;
+      }
       "validate" => {
         validators = meta.parse_value::<Validators>()?;
       }
@@ -99,5 +104,6 @@ pub fn process_oneof_attrs(
     is_proxied: macro_attrs.is_proxied,
     auto_tests,
     validators,
+    forwarded_attrs,
   })
 }

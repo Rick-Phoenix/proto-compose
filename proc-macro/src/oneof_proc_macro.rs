@@ -124,12 +124,19 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
     }
     .generate_proto_conversions();
 
+    let forwarded_attrs = oneof_attrs.forwarded_attrs.iter().map(|meta| {
+      quote_spanned! {meta.span()=>
+        #[#meta]
+      }
+    });
+
     quote! {
       #[derive(::prelude::macros::Oneof)]
       #item
 
       #proto_derives
       #extra_proto_derives
+      #(#forwarded_attrs)*
       #[allow(clippy::use_self)]
       #proto_enum
 

@@ -12,6 +12,7 @@ pub struct MessageAttrs {
   pub from_proto: Option<PathOrClosure>,
   pub into_proto: Option<PathOrClosure>,
   pub proto_derives: Vec<Path>,
+  pub forwarded_attrs: Vec<Meta>,
   pub is_proxied: bool,
   pub auto_tests: AutoTests,
   pub deprecated: bool,
@@ -68,6 +69,7 @@ pub fn process_message_attrs(
   let mut deprecated = false;
   let mut validators = Validators::default();
   let mut auto_tests = AutoTests::default();
+  let mut forwarded_attrs: Vec<Meta> = Vec::new();
 
   for attr in attrs {
     let ident = if let Some(ident) = attr.path().get_ident() {
@@ -85,6 +87,9 @@ pub fn process_message_attrs(
           let ident = meta.path.require_ident()?.to_string();
 
           match ident.as_str() {
+            "attr" => {
+              forwarded_attrs = meta.parse_list::<PunctuatedItems<Meta>>()?.list;
+            }
             "skip_checks" => {
               auto_tests = AutoTests::parse(&meta)?;
             }
@@ -165,5 +170,6 @@ pub fn process_message_attrs(
     auto_tests,
     deprecated,
     validators,
+    forwarded_attrs,
   })
 }
