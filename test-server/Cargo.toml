@@ -13,7 +13,11 @@ tonic-prost = { workspace = true }
 prelude = { path = "../prelude/" }
 proto-types = { workspace = true, features = ["diesel-sqlite"] }
 diesel = { workspace = true }
+deadpool-diesel = { version = "0.6", features = ["sqlite"] }
+deadpool-sync = "0.1"
 test-schemas = { path = "../test-schemas/" }
+tokio = { version = "1.0", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["net"] }
 
 [build-dependencies]
 tonic-prost-build = { workspace = true }

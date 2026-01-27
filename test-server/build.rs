@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   config.compile_protos(files, include_paths)?;
 
   tonic_prost_build::configure()
-    .build_client(false)
+    .build_client(true)
     .compile_with_config(config, files, include_paths)?;
 
   Ok(())

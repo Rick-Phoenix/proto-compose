@@ -23,7 +23,6 @@ pub use schema::users;
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct User {
   #[diesel(skip_insertion)]
-  #[proto(validate = |v| v.gt(0))]
   pub id: i32,
   #[proto(validate = |v| v.min_len(3))]
   pub name: String,
