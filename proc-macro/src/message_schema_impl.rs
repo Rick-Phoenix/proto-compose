@@ -137,7 +137,7 @@ impl MessageCtx<'_> {
       impl ::prelude::AsProtoType for #proto_struct {
         fn proto_type() -> ::prelude::ProtoType {
           ::prelude::ProtoType::Message(
-            <Self as ::prelude::ProtoMessage>::proto_path()
+            <Self as ::prelude::MessagePath>::proto_path()
           )
         }
       }
@@ -159,6 +159,16 @@ impl MessageCtx<'_> {
         }
       }
 
+      impl ::prelude::MessagePath for #proto_struct {
+        fn proto_path() -> ::prelude::ProtoPath {
+          ::prelude::ProtoPath {
+            name: <Self as ::prelude::ProtoMessage>::proto_name().into(),
+            file: __PROTO_FILE.name.into(),
+            package: __PROTO_FILE.package.into(),
+          }
+        }
+      }
+
       impl ::prelude::ProtoMessage for #proto_struct {
         const PACKAGE: &str = __PROTO_FILE.package;
         const SHORT_NAME: &str = #proto_name;
@@ -177,14 +187,6 @@ impl MessageCtx<'_> {
           });
 
           &*NAME
-        }
-
-        fn proto_path() -> ::prelude::ProtoPath {
-          ::prelude::ProtoPath {
-            name: <Self as ::prelude::ProtoMessage>::proto_name().into(),
-            file: __PROTO_FILE.name.into(),
-            package: __PROTO_FILE.package.into(),
-          }
         }
 
         fn proto_name() -> &'static str {

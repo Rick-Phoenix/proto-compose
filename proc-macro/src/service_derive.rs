@@ -97,8 +97,8 @@ pub fn process_service_derive(item: &ItemEnum) -> Result<TokenStream2, Error> {
     quote_spanned! {*span=>
       ::prelude::ServiceHandler {
         name: #name.into(),
-        request: <#request as ::prelude::ProtoMessage>::proto_path(),
-        response: <#response as ::prelude::ProtoMessage>::proto_path(),
+        request: <#request as ::prelude::MessagePath>::proto_path(),
+        response: <#response as ::prelude::MessagePath>::proto_path(),
         options: #options_tokens.into_iter().collect()
       }
     }

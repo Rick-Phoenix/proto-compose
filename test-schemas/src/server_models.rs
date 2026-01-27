@@ -38,14 +38,8 @@ pub struct UserId {
   pub id: i32,
 }
 
-#[proto_message]
-#[proto(skip_checks(all))]
-pub struct Response {
-  pub success: bool,
-}
-
 #[proto_service]
 enum UserService {
   GetUser { request: UserId, response: User },
-  InsertUser { request: User, response: Response },
+  InsertUser { request: User, response: Empty },
 }

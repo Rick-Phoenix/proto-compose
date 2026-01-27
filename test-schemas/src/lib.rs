@@ -57,6 +57,77 @@ pub struct NestedCommonMessages {
   pub link: Option<help::Link>,
 }
 
+// Checks that service schemas can compile with common types
+#[proto_service]
+pub enum NestedCommonMessagesService {
+  PrecViolation {
+    request: precondition_failure::Violation,
+    response: precondition_failure::Violation,
+  },
+  QuotaViolation {
+    request: quota_failure::Violation,
+    response: quota_failure::Violation,
+  },
+  FieldViolation {
+    request: bad_request::FieldViolation,
+    response: bad_request::FieldViolation,
+  },
+  Link {
+    request: help::Link,
+    response: help::Link,
+  },
+}
+
+macro_rules! common_messages_service {
+  ($($name:ident),*) => {
+    paste! {
+      #[proto_service]
+      pub enum CommonMessagesService {
+        $(
+          [< $name Service >] {
+            request: $name,
+            response: $name
+          }
+        ),*
+      }
+    }
+  };
+}
+
+// Checks that service schemas can compile with common types
+common_messages_service!(
+  Date,
+  DateTime,
+  Empty,
+  Status,
+  Interval,
+  Money,
+  Color,
+  Fraction,
+  Decimal,
+  PostalAddress,
+  PhoneNumber,
+  Quaternion,
+  LocalizedText,
+  Expr,
+  LatLng,
+  TimeZone,
+  TimeOfDay,
+  ErrorInfo,
+  DebugInfo,
+  RetryInfo,
+  QuotaFailure,
+  PreconditionFailure,
+  BadRequest,
+  RequestInfo,
+  ResourceInfo,
+  Help,
+  LocalizedMessage,
+  HttpRequest,
+  HttpResponse,
+  HttpHeader
+);
+
 macro_rules! common_messages {
   ($($name:ident),*) => {
     paste! {

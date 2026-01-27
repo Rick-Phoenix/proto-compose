@@ -4,8 +4,9 @@ mod test {
   use diesel::prelude::*;
   use prelude::ValidatedMessage;
   use prelude::ValidationErrors;
+  use proto_types::Empty;
   use proto_types::Status as GrpcStatus;
-  use test_schemas::server_models::{Response as HandlerResponse, User, UserId, users::dsl::*};
+  use test_schemas::server_models::{User, UserId, users::dsl::*};
   use tonic::{Code, Request as TonicRequest, Response as TonicResponse, Status};
   use tonic_prost::prost::Message;
 
@@ -60,7 +61,7 @@ mod test {
     async fn insert_user(
       &self,
       request: tonic::Request<User>,
-    ) -> Result<tonic::Response<HandlerResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Empty>, tonic::Status> {
       let msg = request
         .into_inner()
         .validated()
@@ -72,17 +73,16 @@ mod test {
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
 
-      let success = conn
+      let _ = conn
         .interact(move |conn| {
           diesel::insert_into(users)
             .values(&msg)
             .execute(conn)
-            .is_ok()
         })
         .await
         .map_err(|_| Status::internal("Interaction failed"))?;
 
-      Ok(TonicResponse::new(HandlerResponse { success }))
+      Ok(TonicResponse::new(Empty))
     }
   }
 

@@ -36,11 +36,14 @@ pub trait MessageProxy: From<Self::Message> + Into<Self::Message> {
   }
 }
 
-pub trait ProtoMessage: Default {
+pub trait MessagePath {
+  fn proto_path() -> ProtoPath;
+}
+
+pub trait ProtoMessage: Default + MessagePath {
   const PACKAGE: &str;
   const SHORT_NAME: &str;
 
-  fn proto_path() -> ProtoPath;
   fn proto_schema() -> Message;
 
   fn proto_name() -> &'static str;

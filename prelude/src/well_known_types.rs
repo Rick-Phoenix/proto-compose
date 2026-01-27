@@ -3,7 +3,7 @@ use proto_types::{Any, Code, Duration, Empty, FieldMask, Status, Timestamp};
 use crate::*;
 
 macro_rules! impl_no_op_validator {
-  ($($name:path),*) => {
+  ($($name:ty),*) => {
     $(
       impl ProtoValidation for $name {
         #[doc(hidden)]
@@ -35,7 +35,7 @@ macro_rules! impl_no_op_validator {
   };
 }
 
-impl_no_op_validator!(Empty, Status, Code);
+impl_no_op_validator!(Empty, Status, Code, ());
 
 #[derive(Clone, Copy, Default)]
 pub struct NoOpValidator<T: ?Sized>(PhantomData<T>);
@@ -71,65 +71,59 @@ where
   }
 }
 
-impl AsProtoType for Duration {
-  fn proto_type() -> ProtoType {
-    ProtoType::Message(ProtoPath {
-      name: "Duration".into(),
-      package: "google.protobuf".into(),
-      file: "google/protobuf/duration.proto".into(),
-    })
-  }
+macro_rules! impl_msg_path {
+  ($name:ident, $package:expr, $file:expr) => {
+    impl MessagePath for $name {
+      fn proto_path() -> ProtoPath {
+        ProtoPath {
+          name: stringify!($name).into(),
+          package: $package.into(),
+          file: $file.into(),
+        }
+      }
+    }
+
+    impl AsProtoType for $name {
+      fn proto_type() -> ProtoType {
+        ProtoType::Message(Self::proto_path())
+      }
+    }
+  };
 }
 
-impl AsProtoType for Timestamp {
-  fn proto_type() -> ProtoType {
-    ProtoType::Message(ProtoPath {
-      name: "Timestamp".into(),
-      package: "google.protobuf".into(),
-      file: "google/protobuf/timestamp.proto".into(),
-    })
-  }
+macro_rules! impl_protobuf_types {
+  ($($name:ident),*) => {
+    paste! {
+      $(
+        impl_msg_path!(
+          $name,
+          "google.protobuf",
+          concat!("google/protobuf/", stringify!([< $name:snake >]), ".proto")
+        );
+      )*
+    }
+  };
 }
 
-impl AsProtoType for Any {
-  fn proto_type() -> ProtoType {
-    ProtoType::Message(ProtoPath {
-      name: "Any".into(),
-      package: "google.protobuf".into(),
-      file: "google/protobuf/any.proto".into(),
-    })
-  }
-}
+impl_protobuf_types!(Duration, Timestamp, FieldMask, Empty, Any);
 
-impl AsProtoType for Empty {
-  fn proto_type() -> ProtoType {
-    ProtoType::Message(ProtoPath {
+impl MessagePath for () {
+  fn proto_path() -> ProtoPath {
+    ProtoPath {
       name: "Empty".into(),
       package: "google.protobuf".into(),
       file: "google/protobuf/empty.proto".into(),
-    })
+    }
   }
 }
 
-impl AsProtoType for FieldMask {
+impl AsProtoType for () {
   fn proto_type() -> ProtoType {
-    ProtoType::Message(ProtoPath {
-      name: "FieldMask".into(),
-      package: "google.protobuf".into(),
-      file: "google/protobuf/field_mask.proto".into(),
-    })
+    ProtoType::Message(Self::proto_path())
   }
 }
 
-impl AsProtoType for Status {
-  fn proto_type() -> ProtoType {
-    ProtoType::Message(ProtoPath {
-      name: "Status".into(),
-      package: "google.rpc".into(),
-      file: "google/rpc/status.proto".into(),
-    })
-  }
-}
+impl_msg_path!(Status, "google.rpc", "google/rpc/status.proto");
 
 impl AsProtoType for Code {
   fn proto_type() -> ProtoType {
@@ -164,11 +158,19 @@ mod google_dot_type {
         $(
           impl AsProtoType for $name {
             fn proto_type() -> ProtoType {
-              ProtoType::Message(ProtoPath {
+              ProtoType::Message(
+                Self::proto_path()
+              )
+            }
+          }
+
+          impl MessagePath for $name {
+            fn proto_path() -> ProtoPath {
+              ProtoPath {
                 name: stringify!($name).into(),
                 package: "google.type".into(),
                 file: file_name!($name, $($file)?).into(),
-              })
+              }
             }
           }
 
@@ -221,11 +223,19 @@ mod rpc_types {
       $(
         impl AsProtoType for $name {
           fn proto_type() -> ProtoType {
-            ProtoType::Message(ProtoPath {
+            ProtoType::Message(
+              Self::proto_path()
+            )
+          }
+        }
+
+        impl MessagePath for $name {
+          fn proto_path() -> ProtoPath {
+            ProtoPath {
               name: stringify!($name).into(),
               package: "google.rpc".into(),
               file: concat!("google/rpc/", $file, ".proto").into(),
-            })
+            }
           }
         }
 
@@ -257,43 +267,67 @@ mod rpc_types {
     help::Link
   );
 
-  impl AsProtoType for quota_failure::Violation {
-    fn proto_type() -> ProtoType {
-      ProtoType::Message(ProtoPath {
+  impl MessagePath for quota_failure::Violation {
+    fn proto_path() -> ProtoPath {
+      ProtoPath {
         name: "QuotaFailure.Violation".into(),
         package: "google.rpc".into(),
         file: "google/rpc/error_details.proto".into(),
-      })
+      }
+    }
+  }
+
+  impl AsProtoType for quota_failure::Violation {
+    fn proto_type() -> ProtoType {
+      ProtoType::Message(Self::proto_path())
+    }
+  }
+
+  impl MessagePath for precondition_failure::Violation {
+    fn proto_path() -> ProtoPath {
+      ProtoPath {
+        name: "PreconditionFailure.Violation".into(),
+        package: "google.rpc".into(),
+        file: "google/rpc/error_details.proto".into(),
+      }
     }
   }
 
   impl AsProtoType for precondition_failure::Violation {
     fn proto_type() -> ProtoType {
-      ProtoType::Message(ProtoPath {
-        name: "PreconditionFailure.Violation".into(),
+      ProtoType::Message(Self::proto_path())
+    }
+  }
+
+  impl MessagePath for bad_request::FieldViolation {
+    fn proto_path() -> ProtoPath {
+      ProtoPath {
+        name: "BadRequest.FieldViolation".into(),
         package: "google.rpc".into(),
         file: "google/rpc/error_details.proto".into(),
-      })
+      }
     }
   }
 
   impl AsProtoType for bad_request::FieldViolation {
     fn proto_type() -> ProtoType {
-      ProtoType::Message(ProtoPath {
-        name: "BadRequest.FieldViolation".into(),
+      ProtoType::Message(Self::proto_path())
+    }
+  }
+
+  impl MessagePath for help::Link {
+    fn proto_path() -> ProtoPath {
+      ProtoPath {
+        name: "Help.Link".into(),
         package: "google.rpc".into(),
         file: "google/rpc/error_details.proto".into(),
-      })
+      }
     }
   }
 
   impl AsProtoType for help::Link {
     fn proto_type() -> ProtoType {
-      ProtoType::Message(ProtoPath {
-        name: "Help.Link".into(),
-        package: "google.rpc".into(),
-        file: "google/rpc/error_details.proto".into(),
-      })
+      ProtoType::Message(Self::proto_path())
     }
   }
 }
