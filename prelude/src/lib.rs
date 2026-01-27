@@ -45,12 +45,19 @@ use float_eq::{FloatEq, float_eq};
 #[doc(hidden)]
 #[cfg(feature = "inventory")]
 pub use inventory;
+pub use macros::*;
 use ordered_float::{FloatCore, OrderedFloat};
 use owo_colors::OwoColorize;
 #[doc(hidden)]
 use paste::paste;
-pub use proc_macro_impls as macros;
-pub use proc_macro_impls::*;
+pub mod macros {
+
+  pub use proc_macro_impls::{
+    CelOneof, CelValue, Enum, Extension, Message, Oneof, ProtoEnum, Service, ValidatedMessage,
+    ValidatedOneof, define_proto_file, file_schema, proto_enum, proto_extension, proto_message,
+    proto_oneof, proto_package, proto_service,
+  };
+}
 pub use proto_types;
 pub use proto_types::protovalidate::{FieldPathElement, Violations};
 use thiserror::Error;

@@ -2092,6 +2092,7 @@ dependencies = [
  "maplit",
  "paste",
  "prelude",
+ "proc-macro-impls",
  "prost",
  "regex",
  "similar-asserts",

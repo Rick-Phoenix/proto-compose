@@ -19,6 +19,7 @@ bytes = "1"
 maplit = "1"
 paste = "1"
 prelude = { path = "../prelude" }
+proc-macro-impls = { path = "../proc-macro" }
 prost = "0.14.1"
 env_logger = "0.11"
 

@@ -53,6 +53,12 @@ mod proto_types;
 mod reflection;
 mod service_derive;
 
+#[doc(hidden)]
+#[proc_macro_derive(AttrForwarding, attributes(forward))]
+pub fn attr_forwarding_derive_test(_: TokenStream) -> TokenStream {
+  TokenStream::new()
+}
+
 #[cfg(feature = "cel")]
 #[proc_macro_derive(CelOneof, attributes(cel))]
 pub fn cel_oneof_derive(input: TokenStream) -> TokenStream {
