@@ -3,35 +3,21 @@ mod test {
   use deadpool_diesel::sqlite::{Manager, Pool, Runtime};
   use diesel::prelude::*;
   use prelude::ValidatedMessage;
-  use prelude::ValidationErrors;
   use proto_types::Empty;
-  use proto_types::Status as GrpcStatus;
   use test_schemas::server_models::{User, UserId, users::dsl::*};
-  use tonic::{Code, Request as TonicRequest, Response as TonicResponse, Status};
-  use tonic_prost::prost::Message;
+  use tonic::{Request as TonicRequest, Response as TonicResponse, Status};
 
   mod proto {
     tonic::include_proto!("db_test");
   }
 
   use proto::user_service_server::UserService as UserServiceTrait;
-  use tonic_prost::prost::bytes::Bytes;
 
   use proto::user_service_client::UserServiceClient;
   use proto::user_service_server::UserServiceServer;
 
   struct UserService {
     pool: Pool,
-  }
-
-  fn handle_violations(errors: ValidationErrors) -> Status {
-    let status_inner: GrpcStatus = errors.into();
-
-    Status::with_details(
-      Code::InvalidArgument,
-      "Validation Error",
-      Bytes::from(status_inner.encode_to_vec()),
-    )
   }
 
   #[tonic::async_trait]
@@ -62,10 +48,7 @@ mod test {
       &self,
       request: tonic::Request<User>,
     ) -> Result<tonic::Response<Empty>, tonic::Status> {
-      let msg = request
-        .into_inner()
-        .validated()
-        .map_err(|e| handle_violations(e))?;
+      let msg = request.into_inner().validated()?;
 
       let conn = self
         .pool

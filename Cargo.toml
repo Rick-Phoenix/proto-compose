@@ -36,7 +36,7 @@ diesel = { version = "2", features = [
   "returning_clauses_for_sqlite_3_35",
 ] }
 proto-types = { version = "0.1.11", path = "../proto-types/proto-types/", default-features = false }
-tonic = "0.14"
+tonic = { version = "0.14", default-features = false }
 tonic-prost = "0.14"
 prost = "0.14"
 tonic-prost-build = "0.14.2"

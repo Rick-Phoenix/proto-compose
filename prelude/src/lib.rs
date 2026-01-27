@@ -51,12 +51,7 @@ use owo_colors::OwoColorize;
 #[doc(hidden)]
 use paste::paste;
 pub mod macros {
-
-  pub use proc_macro_impls::{
-    CelOneof, CelValue, Enum, Extension, Message, Oneof, ProtoEnum, Service, ValidatedMessage,
-    ValidatedOneof, define_proto_file, file_schema, proto_enum, proto_extension, proto_message,
-    proto_oneof, proto_package, proto_service,
-  };
+  pub use proc_macro_impls::*;
 }
 pub use proto_types;
 pub use proto_types::protovalidate::{FieldPathElement, Violations};

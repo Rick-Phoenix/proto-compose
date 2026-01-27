@@ -8,9 +8,9 @@ repository.workspace = true
 keywords.workspace = true
 
 [dependencies]
-tonic = { workspace = true }
+tonic = { workspace = true, features = ["default"] }
 tonic-prost = { workspace = true }
-prelude = { path = "../prelude/" }
+prelude = { path = "../prelude/", features = ["tonic"] }
 proto-types = { workspace = true, features = ["diesel-sqlite"] }
 diesel = { workspace = true }
 deadpool-diesel = { version = "0.6", features = ["sqlite"] }

@@ -19,6 +19,21 @@ pub struct ValidationErrors {
   violations: Vec<Violation>,
 }
 
+#[cfg(feature = "tonic")]
+impl From<ValidationErrors> for tonic::Status {
+  fn from(value: ValidationErrors) -> Self {
+    use tonic_prost::prost::Message;
+
+    let status_inner = value.into_status();
+
+    Self::with_details(
+      tonic::Code::InvalidArgument,
+      "Validation failure",
+      Bytes::from(status_inner.encode_to_vec()),
+    )
+  }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ViolationCtx {
   pub meta: ViolationMeta,

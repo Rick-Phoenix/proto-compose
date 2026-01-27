@@ -105,6 +105,7 @@ pub fn validated_message_derive(input: TokenStream) -> TokenStream {
   reflection::reflection_message_derive(&mut item).into()
 }
 
+#[doc(hidden)]
 #[proc_macro]
 pub fn builder_state_macro(input: TokenStream) -> TokenStream {
   match builder_macro::builder_macro(input.into()) {

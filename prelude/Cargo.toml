@@ -48,9 +48,13 @@ once_cell = { version = "1.21", default-features = false, features = [
 chrono = { version = "0.4", default-features = false, features = [
   "alloc",
 ], optional = true }
+tonic = { workspace = true, optional = true }
+tonic-prost = { workspace = true, optional = true }
 
 [features]
 default = ["std", "regex", "cel", "chrono", "inventory"]
+
+tonic = ["dep:tonic", "dep:tonic-prost"]
 
 serde = [
   "dep:serde",
