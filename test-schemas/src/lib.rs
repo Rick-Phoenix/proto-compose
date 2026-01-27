@@ -16,6 +16,8 @@ use prelude::{
 };
 use std::collections::HashMap;
 
+pub mod server_models;
+
 proto_package!(TEST_SCHEMAS, name = "test_schemas.v1", no_cel_test);
 define_proto_file!(
   TEST_SCHEMAS_FILE,

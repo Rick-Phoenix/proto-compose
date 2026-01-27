@@ -1,4 +1,4 @@
-use proto_types::{Any, Code, Duration, FieldMask, Status, Timestamp};
+use proto_types::{Any, Code, Duration, Empty, FieldMask, Status, Timestamp};
 
 use crate::*;
 
@@ -33,6 +33,16 @@ impl AsProtoType for Any {
 }
 
 impl AsProtoType for () {
+  fn proto_type() -> ProtoType {
+    ProtoType::Message(ProtoPath {
+      name: "Empty".into(),
+      package: "google.protobuf".into(),
+      file: "google/protobuf/empty.proto".into(),
+    })
+  }
+}
+
+impl AsProtoType for Empty {
   fn proto_type() -> ProtoType {
     ProtoType::Message(ProtoPath {
       name: "Empty".into(),

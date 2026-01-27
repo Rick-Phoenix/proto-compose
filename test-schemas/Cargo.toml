@@ -16,6 +16,8 @@ prelude = { path = "../prelude/" }
 prost = { workspace = true }
 paste = "1"
 bytes = { workspace = true }
+proto-types = { workspace = true, features = ["diesel-sqlite"] }
+diesel = { workspace = true }
 
 [lints]
 workspace = true

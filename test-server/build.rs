@@ -1,31 +1,34 @@
-// use tonic_prost_build::Config;
-//
+use std::env;
+
+use builder::set_up_validators;
+use tonic_prost_build::Config;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  //   println!("cargo:rerun-if-changed=../testing/proto_test/");
-  //
-  //   let package = testing::MYAPP_V1.get_package();
-  //
-  //   package.render_files("../testing/proto_test/")?;
-  //
-  //   let mut config = Config::new();
-  //
-  //   config
-  //     .extern_path(".google.protobuf", "::proto_types")
-  //     .extern_path(".buf.validate", "::proto_types::protovalidate")
-  //     .compile_well_known_types()
-  //     .bytes(["."]);
-  //
-  //   for (item, path) in package.extern_paths() {
-  //     config.extern_path(&item, &path);
-  //   }
-  //
-  //   let proto_include_paths = &["../testing/proto_test/", "proto_deps"];
-  //
-  //   let proto_files = &["../testing/proto_test/abc.proto"];
-  //
-  //   tonic_prost_build::configure()
-  //     .build_client(false)
-  //     .compile_with_config(config, proto_files, proto_include_paths)?;
-  //
+  println!("cargo:rerun-if-changed=../test-schemas/src/server_models.rs");
+
+  let pkg = test_schemas::server_models::DB_TEST.get_package();
+
+  pkg
+    .render_files(concat!(env!("CARGO_MANIFEST_DIR"), "/proto"))
+    .unwrap();
+
+  let include_paths = &["proto", "proto_deps"];
+
+  let files = &["proto/db_test.proto"];
+
+  let mut config = Config::new();
+
+  for (name, path) in pkg.extern_paths() {
+    config.extern_path(name, path);
+  }
+
+  let _ = set_up_validators(&mut config, files, include_paths, &["db_test"])?;
+
+  config.compile_protos(files, include_paths)?;
+
+  tonic_prost_build::configure()
+    .build_client(false)
+    .compile_with_config(config, files, include_paths)?;
+
   Ok(())
 }

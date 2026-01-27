@@ -31,6 +31,10 @@ maplit = "1"
 regex = "1"
 thiserror = "2"
 convert_case = "0.10"
+diesel = { version = "2", features = [
+  "sqlite",
+  "returning_clauses_for_sqlite_3_35",
+] }
 proto-types = { version = "0.1.11", path = "../proto-types/proto-types/", default-features = false }
 tonic = "0.14"
 tonic-prost = "0.14"

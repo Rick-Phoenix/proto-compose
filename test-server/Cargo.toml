@@ -11,12 +11,14 @@ keywords.workspace = true
 tonic = { workspace = true }
 tonic-prost = { workspace = true }
 prelude = { path = "../prelude/" }
-testing = { path = "../testing/" }
-proto-types = { workspace = true }
+proto-types = { workspace = true, features = ["diesel-sqlite"] }
+diesel = { workspace = true }
+test-schemas = { path = "../test-schemas/" }
 
 [build-dependencies]
 tonic-prost-build = { workspace = true }
-testing = { path = "../testing/" }
+builder = { path = "../builder" }
+test-schemas = { path = "../test-schemas/" }
 
 [lints]
 workspace = true
