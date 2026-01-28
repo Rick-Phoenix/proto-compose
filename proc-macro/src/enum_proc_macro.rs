@@ -223,7 +223,7 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
     quote! {
       match value {
         #(#tokens,)*
-        _ => Err(::prost::UnknownEnumValue(value))
+        _ => Err(::prelude::prost::UnknownEnumValue(value))
       }
     }
   };
@@ -246,7 +246,7 @@ pub fn enum_proc_macro(mut item: ItemEnum) -> TokenStream2 {
     }
 
     impl TryFrom<i32> for #enum_ident {
-      type Error = ::prost::UnknownEnumValue;
+      type Error = ::prelude::prost::UnknownEnumValue;
 
       #[inline]
       fn try_from(value: i32) -> Result<Self, Self::Error> {

@@ -142,7 +142,7 @@ impl MessageCtx<'_> {
         }
       }
 
-      impl ::prost::Name for #proto_struct {
+      impl ::prelude::prost::Name for #proto_struct {
         #[doc(hidden)]
         const PACKAGE: &str = <Self as ::prelude::ProtoMessage>::PACKAGE;
         #[doc(hidden)]

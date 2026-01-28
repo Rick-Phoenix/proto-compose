@@ -171,6 +171,8 @@ macro_rules! length_rule_value {
 ///  
 ///   proto_package!(MY_PKG, name = "my_pkg");
 ///   define_proto_file!(MY_FILE, name = "my_file.proto", package = MY_PKG);
+///
+///   pub use re_exported::Msg;
 ///  
 ///   mod re_exported {
 ///     use super::MY_FILE;
@@ -179,6 +181,12 @@ macro_rules! length_rule_value {
 ///     // The file is now in scope, and will be picked up automatically by all items defined in this module
 ///     // The items will have the extern path of the parent, so `::cratename::example`
 ///     inherit_proto_file!(MY_FILE);
+///
+///     // This will have the extern path `::cratename::example::Msg`
+///     #[proto_message]
+///     pub struct Msg {
+///       pub id: i32
+///     }
 ///   }
 /// }
 /// ```
@@ -211,6 +219,12 @@ macro_rules! inherit_proto_file {
 ///     // The file is now in scope, and will be picked up automatically by all items defined in this module
 ///     // The items will have the extern path of the `module_path!()` output in here, so `::cratename::example::submod`
 ///     use_proto_file!(MY_FILE);
+///
+///     // This will have the extern path `::cratename::example::submod::Msg`
+///     #[proto_message]
+///     pub struct Msg {
+///       pub id: i32
+///     }
 ///   }
 /// }
 /// ```

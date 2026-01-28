@@ -1441,6 +1441,7 @@ dependencies = [
  "owo-colors",
  "paste",
  "proc-macro-impls",
+ "prost",
  "proto-types",
  "regex",
  "serde",
@@ -1448,7 +1449,6 @@ dependencies = [
  "similar-asserts",
  "thiserror 2.0.17",
  "tonic",
- "tonic-prost",
 ]
 
 [[package]]

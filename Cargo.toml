@@ -38,7 +38,7 @@ diesel = { version = "2", features = [
 proto-types = { version = "0.1.11", path = "../proto-types/proto-types/", default-features = false }
 tonic = { version = "0.14", default-features = false }
 tonic-prost = "0.14"
-prost = "0.14"
+prost = { version = "0.14", default-features = false, features = ["derive"] }
 tonic-prost-build = "0.14.2"
 serde = { version = "1", features = ["derive"] }
 chrono = "0.4"

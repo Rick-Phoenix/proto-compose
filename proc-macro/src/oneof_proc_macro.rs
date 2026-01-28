@@ -86,12 +86,14 @@ pub fn process_oneof_proc_macro(mut item: ItemEnum, macro_attrs: TokenStream2) -
     // prost::Oneof already implements Debug and Default
     quote! {
       #[allow(clippy::derive_partial_eq_without_eq)]
-      #[derive(::prost::Oneof, Clone, PartialEq, ::prelude::CelOneof)]
+      #[derive(::prelude::prost::Oneof, Clone, PartialEq, ::prelude::CelOneof)]
+      #[prost(prost_path = "::prelude::prost")]
     }
   } else {
     quote! {
       #[allow(clippy::derive_partial_eq_without_eq)]
-      #[derive(::prost::Oneof, Clone, PartialEq)]
+      #[derive(::prelude::prost::Oneof, Clone, PartialEq)]
+      #[prost(prost_path = "::prelude::prost")]
     }
   };
 

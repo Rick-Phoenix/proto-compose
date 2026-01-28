@@ -70,12 +70,14 @@ pub fn message_proc_macro(mut item: ItemStruct, macro_attrs: TokenStream2) -> To
     // prost::Message already implements Debug and Default
     quote! {
       #[allow(clippy::derive_partial_eq_without_eq)]
-      #[derive(::prost::Message, Clone, PartialEq, ::prelude::CelValue)]
+      #[derive(::prelude::prost::Message, Clone, PartialEq, ::prelude::CelValue)]
+      #[prost(prost_path = "::prelude::prost")]
     }
   } else {
     quote! {
       #[allow(clippy::derive_partial_eq_without_eq)]
-      #[derive(::prost::Message, Clone, PartialEq)]
+      #[derive(::prelude::prost::Message, Clone, PartialEq)]
+      #[prost(prost_path = "::prelude::prost")]
     }
   };
 

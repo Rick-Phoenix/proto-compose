@@ -44,17 +44,17 @@ impl<'a> FallbackImpls<'a> {
       ItemKind::Oneof => {
         quote! {
           impl #target_ident {
-            pub fn encode(&self, buf: &mut impl ::prost::bytes::BufMut) {
+            pub fn encode(&self, buf: &mut impl ::prelude::prost::bytes::BufMut) {
               unimplemented!()
             }
 
             pub fn merge(
               _: &mut ::core::option::Option<Self>,
               _: u32,
-              _: ::prost::encoding::wire_type::WireType,
-              _: &mut impl ::prost::bytes::Buf,
-              _: ::prost::encoding::DecodeContext,
-            ) -> ::core::result::Result<(), ::prost::DecodeError>
+              _: ::prelude::prost::encoding::wire_type::WireType,
+              _: &mut impl ::prelude::prost::bytes::Buf,
+              _: ::prelude::prost::encoding::DecodeContext,
+            ) -> ::core::result::Result<(), ::prelude::prost::DecodeError>
             {
               unimplemented!()
             }
@@ -67,14 +67,14 @@ impl<'a> FallbackImpls<'a> {
       }
       ItemKind::Message => {
         quote! {
-          impl ::prost::Message for #target_ident {
+          impl ::prelude::prost::Message for #target_ident {
             fn encoded_len(&self) -> usize {
               unimplemented!()
             }
 
-            fn encode_raw(&self, _: &mut impl ::prost::bytes::buf::BufMut) { unimplemented!() }
+            fn encode_raw(&self, _: &mut impl ::prelude::prost::bytes::buf::BufMut) { unimplemented!() }
 
-            fn merge_field(&mut self, _: u32, _: prost::encoding::WireType, _: &mut impl ::prost::bytes::buf::Buf, _: prost::encoding::DecodeContext) -> std::result::Result<(), prost::DecodeError> { unimplemented!() }
+            fn merge_field(&mut self, _: u32, _: prost::encoding::WireType, _: &mut impl ::prelude::prost::bytes::buf::Buf, _: prost::encoding::DecodeContext) -> std::result::Result<(), prost::DecodeError> { unimplemented!() }
 
             fn clear(&mut self) {}
           }

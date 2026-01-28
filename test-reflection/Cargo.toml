@@ -10,7 +10,7 @@ keywords.workspace = true
 [dependencies]
 proto-types = { workspace = true, features = ["default", "all_common", "rpc"] }
 prelude = { path = "../prelude/", features = ["reflection"] }
-prost = { workspace = true }
+prost = { workspace = true, features = ["std"] }
 paste = "1"
 bytes = { workspace = true }
 test-schemas = { path = "../test-schemas" }

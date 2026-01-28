@@ -49,12 +49,12 @@ chrono = { version = "0.4", default-features = false, features = [
   "alloc",
 ], optional = true }
 tonic = { workspace = true, optional = true }
-tonic-prost = { workspace = true, optional = true }
+prost = { workspace = true }
 
 [features]
 default = ["std", "regex", "cel", "chrono", "inventory"]
 
-tonic = ["dep:tonic", "dep:tonic-prost"]
+tonic = ["dep:tonic"]
 
 serde = [
   "dep:serde",
@@ -72,6 +72,7 @@ chrono-wasm = ["chrono", "chrono/wasmbind", "proto-types/chrono-wasm"]
 
 std = [
   "dep:askama",
+  "prost/std",
   "ordermap/std",
   "ordered-float/std",
   "regex?/std",

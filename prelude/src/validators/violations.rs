@@ -22,7 +22,7 @@ pub struct ValidationErrors {
 #[cfg(feature = "tonic")]
 impl From<ValidationErrors> for tonic::Status {
   fn from(value: ValidationErrors) -> Self {
-    use tonic_prost::prost::Message;
+    use ::prost::Message;
 
     let status_inner = value.into_status();
 

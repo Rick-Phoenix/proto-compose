@@ -12,7 +12,7 @@ prelude = { path = "../prelude", default-features = false, features = [
   "reflection",
 ] }
 no-std-models = { path = "../no-std-models" }
-prost = { version = "0.14", default-features = false }
+prost = { workspace = true }
 maplit = "1"
 
 [build-dependencies]

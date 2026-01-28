@@ -7,6 +7,8 @@
 #[cfg(any(test, feature = "std"))]
 extern crate std;
 
+pub use prost;
+
 #[doc(hidden)]
 pub use alloc::{
   boxed::Box, collections::BTreeMap, format, string::String, string::ToString, sync::Arc, vec,
