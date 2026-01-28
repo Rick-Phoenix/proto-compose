@@ -168,55 +168,73 @@ pub fn define_proto_file(input: TokenStream) -> TokenStream {
 /// ```
 /// use prelude::*;
 ///
-/// #[proto_message]
-/// struct Msg1 {
-///   id: i32
-/// }
+/// // This would be the no_std crate where you define your models...
+/// mod imagine_this_is_the_models_crate {
+///   use super::*;
+///   
+///   // The package and file handles are still needed here,
+///   // but they do not collect the items automatically
+///   // when the inventory feature is disabled, so we must
+///   // create the schemas manually below...
+///   proto_package!(MY_PKG, name = "my_pkg");
+///   define_proto_file!(MY_FILE, name = "my_file.proto", package = MY_PKG);
+///   
+///   #[proto_message]
+///   pub struct Msg1 {
+///     pub id: i32
+///   }
 ///
-/// #[proto_message]
-/// #[proto(parent_message = Msg1)]
-/// struct Nested {
-///   id: i32
-/// }
+///   #[proto_message]
+///   #[proto(parent_message = Msg1)]
+///   pub struct Nested {
+///     pub id: i32
+///   }
 ///
-/// #[proto_message]
-/// struct Msg2 {
-///   id: i32
-/// }
+///   #[proto_message]
+///   pub struct Msg2 {
+///     pub id: i32
+///   }
 ///
-/// #[proto_enum]
-/// enum Enum1 {
-///   Unspecified, A, B
-/// }
+///   #[proto_enum]
+///   pub enum Enum1 {
+///     Unspecified, A, B
+///   }
 ///
-/// #[proto_enum]
-/// #[proto(parent_message = Msg1)]
-/// enum NestedEnum {
-///   Unspecified, A, B
-/// }
+///   #[proto_enum]
+///   #[proto(parent_message = Msg1)]
+///   pub enum NestedEnum {
+///     Unspecified, A, B
+///   }
 ///
 ///
-/// #[proto_service]
-/// enum MyService {
-///   GetMsg {
-///     request: Msg1,
-///     response: Msg2
+///   #[proto_service]
+///   pub enum MyService {
+///     GetMsg {
+///       request: Msg1,
+///       response: Msg2
+///     }
 ///   }
 /// }
 ///
+/// // From an external utility crate, or the build.rs file of the consuming crate:
+/// fn main() {
+///   use imagine_this_is_the_models_crate::*;
 ///
-/// let manual_file = file_schema!(
-///   name = "test.proto",
-///   messages = [
-///     Msg2,
-///     Msg1 = { messages = [ Nested ], enums = [ NestedEnum ] }
-///   ],
-///   services = [ MyService ],
-///   enums = [ Enum1 ],
-///   // Imports, options, etc...
-/// );
+///   let manual_file = file_schema!(
+///     name = "test.proto",
+///     messages = [
+///       Msg2,
+///       Msg1 = { messages = [ Nested ], enums = [ NestedEnum ] }
+///     ],
+///     services = [ MyService ],
+///     enums = [ Enum1 ],
+///     // Imports, options, etc...
+///   );
 ///
-/// let manual_pkg = package_schema!("my_pkg", files = [ manual_file ]);
+///   let manual_pkg = package_schema!("my_pkg", files = [ manual_file ]);
+///   // Now we can use the package handle to create the files,
+///   // access the `extern_path`s and so on...
+/// }
 /// ```
 #[proc_macro]
 pub fn file_schema(input: TokenStream) -> TokenStream {
@@ -235,16 +253,28 @@ pub fn file_schema(input: TokenStream) -> TokenStream {
 ///
 /// - `name` (required)
 ///     Type: string
-///     Example: `proto_package!(MY_PKG, name = "my_pkg")`
 ///     Description:
 ///         The name of the package.
 ///
 ///
 /// - `no_cel_test`
 ///     Type: Ident
-///     Example: `proto_package!(MY_PKG, name = "my_pkg", no_cel_test)`
 ///     Description:
 ///         By default, the macro will automatically generate a test that will check for collisions of CEL rules with the same ID within the same message. You can use this ident to disable this behaviour. The [`check_unique_cel_rules`](crate::Package::check_unique_cel_rules) method will still be available if you want to call it manually inside a test.
+///
+/// # Examples
+/// ```
+/// use prelude::*;
+///
+/// // If we want to skip the automatically generated
+/// // Test for conflicting CEL rules in the same scope
+/// proto_package!(WITHOUT_TEST, name = "without_test", no_cel_test);
+///
+/// // We create the package handle
+/// proto_package!(MY_PKG, name = "my_pkg");
+/// // And use it to assign newly defined files
+/// define_proto_file!(MY_FILE, name = "my_file.proto", package = MY_PKG);
+///
 /// ```
 #[proc_macro]
 pub fn proto_package(input: TokenStream) -> TokenStream {

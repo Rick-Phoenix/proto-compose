@@ -1478,6 +1478,7 @@ dependencies = [
  "bytes",
  "convert_case",
  "paste",
+ "prelude",
  "proc-macro2",
  "prost-reflect",
  "proto-types",

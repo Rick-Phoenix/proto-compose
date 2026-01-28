@@ -30,3 +30,6 @@ default = ["cel"]
 
 reflection = ["dep:prost-reflect"]
 cel = []
+
+[dev-dependencies]
+prelude = { path = "../prelude" }

@@ -81,7 +81,9 @@ impl Default for ProxiedOneofProto {
 
 fn main() {
     let msg = MsgProto::default();
+    // Using the `ProxiedMessage` trait
     let proxy = msg.into_proxy();
+    // Using the `MessageProxy` trait
     let msg_again = proxy.into_message();
 }
 ```

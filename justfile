@@ -6,8 +6,11 @@ check-code-elimination:
     cargo asm --release -p testing --example code_elimination trigger_validation
 
 [working-directory(".")]
-test-all: test-shared-schemas test-schemas test-no-std
+test-all: test-shared-schemas test-schemas test-no-std test-proc-macro
     cargo test -p prelude -- --nocapture
+
+test-proc-macro:
+    cargo test -p proc-macro-impls -- --nocapture
 
 test-no-std:
     cargo test --features reflection -p test-no-std -- --nocapture
