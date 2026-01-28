@@ -305,7 +305,7 @@ pub fn reflection_message_derive(item: &mut ItemStruct) -> TokenStream2 {
   )]);
 
   let consistency_checks = errors.is_empty().then(|| {
-    generate_message_consistency_checks(
+    generate_message_validators_consistency_checks(
       &item.ident,
       &fields_data,
       auto_tests,

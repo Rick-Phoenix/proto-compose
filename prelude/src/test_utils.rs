@@ -11,8 +11,6 @@ pub enum ConsistencyError {
   CelError(#[from] CelError),
   #[error("{0}")]
   ContradictoryInput(String),
-  #[error("{0}")]
-  WrongOneofTags(String),
   #[error("The custom messages with these IDs are never used: {0:?}")]
   UnusedCustomMessages(Vec<String>),
 }

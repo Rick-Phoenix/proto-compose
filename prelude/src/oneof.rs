@@ -34,7 +34,7 @@ pub trait ProtoOneof {
   fn proto_schema() -> Oneof;
 
   #[doc(hidden)]
-  fn check_tags(message: &str, found_tags: &mut [i32]) -> Result<(), ConsistencyError> {
+  fn check_tags(message: &str, found_tags: &mut [i32]) -> Result<(), String> {
     use similar_asserts::SimpleDiff;
 
     let expected = Self::TAGS;
@@ -51,7 +51,7 @@ pub trait ProtoOneof {
       let error =
         format!("Found tags mismatch for oneof {oneof_name} in message {message}:\n{diff}");
 
-      return Err(ConsistencyError::WrongOneofTags(error));
+      return Err(error);
     }
 
     Ok(())
