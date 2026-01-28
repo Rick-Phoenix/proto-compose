@@ -221,6 +221,7 @@ pub trait ProtoValidation {
     Self::Builder::default()
   }
 
+  #[inline]
   fn validator_from_closure<F, FinalBuilder>(config_fn: F) -> Self::Validator
   where
     F: FnOnce(Self::Builder) -> FinalBuilder,

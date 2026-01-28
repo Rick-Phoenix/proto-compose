@@ -55,12 +55,7 @@ fn extract_enum_data(item: &mut ItemEnum) -> syn::Result<EnumData> {
       options,
       name,
       deprecated,
-    } = process_derive_enum_variants_attrs(
-      &enum_attrs.name,
-      variant_ident,
-      &variant.attrs,
-      enum_attrs.no_prefix,
-    )?;
+    } = process_derive_enum_variants_attrs(&enum_attrs.name, variant_ident, &variant.attrs)?;
 
     if enum_attrs.reserved_names.contains(&name) {
       bail!(variant_ident, "Name `{name}` is reserved");

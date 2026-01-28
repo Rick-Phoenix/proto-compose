@@ -7,10 +7,14 @@
 #[cfg(any(test, feature = "std"))]
 extern crate std;
 
+#[doc(hidden)]
 pub use alloc::{
   boxed::Box, collections::BTreeMap, format, string::String, string::ToString, sync::Arc, vec,
   vec::Vec,
 };
+
+#[cfg(doc)]
+pub mod guide;
 
 #[doc(hidden)]
 pub extern crate alloc;
@@ -45,15 +49,18 @@ use float_eq::{FloatEq, float_eq};
 #[doc(hidden)]
 #[cfg(feature = "inventory")]
 pub use inventory;
+#[doc(inline)]
 pub use macros::*;
 use ordered_float::{FloatCore, OrderedFloat};
 use owo_colors::OwoColorize;
 #[doc(hidden)]
 use paste::paste;
 pub mod macros {
+  #[doc(inline)]
   pub use proc_macro_impls::*;
 }
 pub use proto_types;
+#[doc(inline)]
 pub use proto_types::protovalidate::{FieldPathElement, Violations};
 use thiserror::Error;
 mod oneof;
@@ -72,6 +79,7 @@ mod proto_type;
 mod rendering_utils;
 mod service;
 pub mod test_utils;
+#[doc(inline)]
 pub use test_utils::*;
 mod well_known_types;
 pub use field::*;

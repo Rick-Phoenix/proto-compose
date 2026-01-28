@@ -7,7 +7,6 @@ pub struct EnumAttrs {
   pub options: TokensOr<TokenStream2>,
   pub parent_message: Option<Ident>,
   pub name: ParsedStr,
-  pub no_prefix: bool,
   pub deprecated: bool,
 }
 
@@ -19,7 +18,6 @@ pub fn process_derive_enum_attrs(
   let mut reserved_numbers = ReservedNumbers::default();
   let mut options = TokensOr::<TokenStream2>::new(|_| quote! { ::prelude::vec![] });
   let mut proto_name: Option<ParsedStr> = None;
-  let mut no_prefix = false;
   let mut parent_message: Option<Ident> = None;
   let mut deprecated = false;
 
@@ -70,7 +68,6 @@ pub fn process_derive_enum_attrs(
             "name" => {
               proto_name = Some(meta.parse_value::<ParsedStr>()?);
             }
-            "no_prefix" => no_prefix = true,
             _ => return Err(meta.error("Unknown attribute")),
           };
 
@@ -90,7 +87,6 @@ pub fn process_derive_enum_attrs(
     options,
     parent_message,
     name,
-    no_prefix,
     deprecated,
   })
 }

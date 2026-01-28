@@ -10,7 +10,6 @@ pub fn process_derive_enum_variants_attrs(
   enum_name: &str,
   variant_ident: &Ident,
   attrs: &[Attribute],
-  no_prefix: bool,
 ) -> Result<EnumVariantAttrs, Error> {
   let mut options = TokensOr::<TokenStream2>::new(|_| quote! { ::prelude::vec![] });
   let mut name: Option<String> = None;
@@ -58,13 +57,9 @@ pub fn process_derive_enum_variants_attrs(
     name
   } else {
     let plain_name = to_upper_snake_case(&variant_ident.to_string());
+    let prefix = to_upper_snake_case(enum_name);
 
-    if no_prefix {
-      plain_name
-    } else {
-      let prefix = to_upper_snake_case(enum_name);
-      format!("{prefix}_{plain_name}")
-    }
+    format!("{prefix}_{plain_name}")
   };
 
   Ok(EnumVariantAttrs {
