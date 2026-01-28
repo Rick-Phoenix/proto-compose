@@ -6,7 +6,8 @@
 
 - Usage
     - From Proto
-    - With Schema
+    - From Rust
+        - Proxied Impls
     - No_std usage
 - [Schema Features]
     - Messages

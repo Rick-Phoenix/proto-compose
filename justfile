@@ -37,4 +37,4 @@ update-changelog version:
     git commit -m "updated changelog"
 
 build-docs:
-    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc -p prelude --all-features --open
+    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --no-deps -p prelude --all-features --open
