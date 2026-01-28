@@ -6,6 +6,7 @@ use proto_types::{Duration, Timestamp, protovalidate::Ignore};
 
 use crate::*;
 
+/// A struct representing a protobuf option.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ProtoOption {
@@ -14,6 +15,8 @@ pub struct ProtoOption {
 }
 
 /// An enum representing values for protobuf options.
+///
+/// These can be composed manually by using one of the many provided `From` impls, or With the `serde` feature, whcih allows conversion from [`serde_json::Value`].
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", derive(Template))]
@@ -78,6 +81,9 @@ impl TryFrom<JsonValue> for OptionValue {
   }
 }
 
+/// An object-like protobuf option, with keys and values.
+///
+/// Can be created with the [`option_message`] macro, from a map, or from a [`serde_json::Value::Object`] with the `serde` feature.
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct OptionMessage {
   inner: Arc<[ProtoOption]>,
@@ -160,10 +166,12 @@ where
 impl OptionMessage {
   #[must_use]
   #[inline]
+  /// Creates a new instance.
   pub fn new() -> Self {
     Self::default()
   }
 
+  /// Gets the value of a given key, if found.
   #[inline]
   #[must_use]
   pub fn get(&self, name: &str) -> Option<&OptionValue> {
@@ -173,12 +181,14 @@ impl OptionMessage {
       .find_map(|opt| (opt.name.as_ref() == name).then_some(&opt.value))
   }
 
+  /// Returns a ref iterator for each key/value pair, represented as a [`ProtoOption`].
   #[inline]
   pub fn iter(&self) -> core::slice::Iter<'_, ProtoOption> {
     self.inner.iter()
   }
 }
 
+/// A builder for building an [`OptionMessage`] with a map-like syntax.
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct OptionMessageBuilder {
   inner: Vec<ProtoOption>,
@@ -186,6 +196,7 @@ pub struct OptionMessageBuilder {
 
 impl OptionMessageBuilder {
   #[must_use]
+  /// Checks whether the builder has no values set.
   pub const fn is_empty(&self) -> bool {
     self.inner.is_empty()
   }
@@ -221,10 +232,12 @@ impl OptionMessageBuilder {
 
   #[inline]
   #[must_use]
+  /// Creates a new instance.
   pub fn new() -> Self {
     Self::default()
   }
 
+  /// Sets a new value.
   #[inline]
   pub fn set(&mut self, name: impl Into<FixedStr>, value: impl Into<OptionValue>) -> &mut Self {
     self.inner.push(ProtoOption {
@@ -234,6 +247,7 @@ impl OptionMessageBuilder {
     self
   }
 
+  /// Sets a new key/value pair from a [`ProtoOption`].
   #[inline]
   pub fn set_from_option(&mut self, option: impl Into<ProtoOption>) -> &mut Self {
     self.inner.push(option.into());
@@ -255,6 +269,7 @@ impl OptionMessageBuilder {
     self
   }
 
+  /// Returns an iterator of [`ProtoOption`] representing the key/value pairs.
   #[inline]
   pub fn iter(&self) -> core::slice::Iter<'_, ProtoOption> {
     self.inner.iter()
@@ -262,6 +277,7 @@ impl OptionMessageBuilder {
 
   #[inline]
   #[must_use]
+  /// Creates the [`OptionMessage`] instance with the given key-value pairs.
   pub fn build(self) -> OptionMessage {
     OptionMessage {
       inner: self.inner.into_boxed_slice().into(),
@@ -461,11 +477,15 @@ impl OptionValue {
     Self::List(items.into())
   }
 
+  /// Creates a new bytes option value.
   pub fn new_bytes(bytes: impl IntoBytes) -> Self {
     Self::Bytes(bytes.into_bytes())
   }
 }
 
+/// An list-like protobuf option.
+///
+/// Can be created with the [`option_list`] macro, from a vector, an array, a slice with values implementing Copy or from [`serde_json::Value::Array`] with the `serde` feature.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct OptionList {
