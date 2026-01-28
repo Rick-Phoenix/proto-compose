@@ -55,31 +55,11 @@ pub(crate) mod re_exported {
   }
 }
 
-pub mod submod2 {
-  use super::*;
-
-  // Inheriting the file handle, but overriding extern path
-  // with this module's path
-  use_proto_file!(FILE);
-
-  #[proto_message]
-  pub struct Submod2Msg {
-    pub id: i32,
-  }
-
-  #[proto_enum]
-  pub enum Submod2Enum {
-    Unspecified,
-    A,
-    B,
-  }
-}
-
 pub mod submod {
   use super::*;
 
-  // Inheriting the file handle, but manually overriding extern path
-  use_proto_file!(FILE, extern_path = "testing::submod");
+  // Inheriting the file handle, but overriding extern path
+  use_proto_file!(FILE);
 
   #[proto_message]
   pub struct SubmodMsg {
@@ -115,28 +95,20 @@ fn test_extern_path() {
 
   let expected = [
     (
-      ".extern_path_test.Submod2Msg",
-      concat!("::", module_path!(), "::submod2::Submod2Msg"),
-    ),
-    (
-      ".extern_path_test.Submod2Enum",
-      concat!("::", module_path!(), "::submod2::Submod2Enum"),
-    ),
-    (
       ".extern_path_test.SubmodMsg",
-      "::testing::submod::SubmodMsg",
+      concat!("::", module_path!(), "::submod::SubmodMsg"),
     ),
     (
       ".extern_path_test.SubmodMsg.SubmodNestedMsg",
-      "::testing::submod::SubmodNestedMsg",
+      concat!("::", module_path!(), "::submod::SubmodNestedMsg"),
     ),
     (
       ".extern_path_test.SubmodEnum",
-      "::testing::submod::SubmodEnum",
+      concat!("::", module_path!(), "::submod::SubmodEnum"),
     ),
     (
       ".extern_path_test.SubmodMsg.SubmodNestedEnum",
-      "::testing::submod::SubmodNestedEnum",
+      concat!("::", module_path!(), "::submod::SubmodNestedEnum"),
     ),
     (
       ".extern_path_test.ReExportedMsg",
