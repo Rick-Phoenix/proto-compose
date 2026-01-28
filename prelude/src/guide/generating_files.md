@@ -4,7 +4,10 @@ When the `inventory` feature is enabled, generating files is done in a single st
 
 # No_std usage
 
-Since the inventory feature relies on the `inventory` crate being available (which is not the case in a no_std crate), collecting the schema items needs one of the following workarounds.
+
+The inventory feature relies on the `inventory` crate being available, which is not the case in a no_std crate, and may also be undesirable for users with extreme binary size concerns, as the registry collection applied with inventory may increase the binary size slightly. 
+
+In cases such as these, we need a different method for collecting the schema items, which can use one of the following workarounds.
 
 1. You can create a utility crate in your workspace which builds your no_std crate, but enables the `inventory` feature. In this case, the inventory functionalities will work normally, all the items will be picked up automatically like in a std-compatible crate and you will be able to generate the files with a single method call as described above.
 This is in theory the simplest way, but there is a big catch. Since rust-analyzer compiles only one version per crate in a workspace (as of today), if you apply this workaround, your IDE will show all sorts of errors, because it will apply the checks to the version of the crate that is using the inventory feature, even if the actual crate is not using the feature. You can check this out by cloning the repo and looking inside the test-no-std crate which is where I tried applying exactly this. If you can find a workaround for this issue, then this should be the way to go.
