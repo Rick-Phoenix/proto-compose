@@ -14,9 +14,10 @@ For the scalar types, you can simply use their protobuf name (`sint32`, `bytes`)
     - Description:
         This can be used just as a plain ident to signal that the target type is an unproxied message. 
         Otherwise, these other attributes can be used inside parentheses:
-            - `proxied`: specifies that the message is proxied, so that the proto item will contain the proxied message and not the proxy itself. Only available for proxied impls.
+            - `proxied`: specifies that the message is proxied, so that the proto item will contain the proxied message with the `Proto` suffix and not the proxy itself. Only available for proxied impls.
             - `default`: allows the message to be used without being wrapped in `Option`. In this case, the default conversion from proto for the field will use `Default::default()` if the field is `None` in the proto item. Only available for proxied impls.
             - `boxed`: marks the message as boxed. Automatically inferred in most cases.
+            - `(any other path)`: this path will be assumed to be a custom proxy for the given message. Only available for proxied impls.
 
 - `oneof`
     - Type: MetaList
@@ -30,9 +31,13 @@ For the scalar types, you can simply use their protobuf name (`sint32`, `bytes`)
 
         Unlike other fields, the tags for a given oneof must be set manually, and they must match the tags of the oneof precisely. The macro will automatically generate a test that checks the accuracy of the tags.
 
+        For more information, visit [reusing oneofs].
+
         Other supported attributes are:
-            - `proxied`: specifies that the oneof is proxied, so that the proto message will contain the proxied oneof and not the proxy itself. Only available for proxied impls.
+            - `required`: adds a validator for this oneof that checks if a value is set. The `(buf.validate.oneof).required` option will also be added to the schema of the oneof (only for the specific instance of the oneof, not is other places where it's being reused unless specified).
+            - `proxied`: specifies that the oneof is proxied, so that the proto message will contain the proxied oneof with the `Proto` suffix and not the proxy itself. Only available for proxied impls.
             - `default`: allows the oneof to be used without being wrapped in `Option`. In this case, the default conversion from proto for the field will use `Default::default()` if the field is `None` in the proto item. `Default` should be implemented for the target oneof. Only available for proxied impls.
+            - `(any other path)`: this path will be assumed to be a custom proxy for the given oneof. Only available for proxied impls.
 
 - `enum_`
     - Type: Ident or MetaList

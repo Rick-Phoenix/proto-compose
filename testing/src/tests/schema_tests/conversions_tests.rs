@@ -529,6 +529,75 @@ fn message_ignored_field_global() {
   assert_eq_pretty!(proxy.other, 1);
 }
 
+#[proto_message]
+#[proto(skip_checks(all))]
+pub struct MsgWithCustomProxy {
+  pub id: i32,
+}
+
+pub struct CustomMsgProxy {
+  pub id: i32,
+}
+
+impl From<CustomMsgProxy> for MsgWithCustomProxy {
+  fn from(value: CustomMsgProxy) -> Self {
+    Self { id: value.id }
+  }
+}
+
+impl From<MsgWithCustomProxy> for CustomMsgProxy {
+  fn from(value: MsgWithCustomProxy) -> Self {
+    Self { id: value.id }
+  }
+}
+
+#[proto_oneof]
+#[proto(skip_checks(all))]
+pub enum OneofWithCustomProxy {
+  #[proto(tag = 1)]
+  A(i32),
+  #[proto(tag = 2)]
+  B(i32),
+}
+
+impl Default for OneofWithCustomProxy {
+  fn default() -> Self {
+    Self::A(1)
+  }
+}
+
+#[derive(Default)]
+pub enum CustomOneofProxy {
+  #[default]
+  A,
+  B,
+}
+
+impl From<CustomOneofProxy> for OneofWithCustomProxy {
+  fn from(_: CustomOneofProxy) -> Self {
+    Self::default()
+  }
+}
+
+impl From<OneofWithCustomProxy> for CustomOneofProxy {
+  fn from(_: OneofWithCustomProxy) -> Self {
+    Self::default()
+  }
+}
+
+#[proto_message(proxied)]
+#[proto(skip_checks(all))]
+pub struct CustomProxyTest {
+  #[proto(message(MsgWithCustomProxy))]
+  pub msg: Option<CustomMsgProxy>,
+  #[proto(message(default, MsgWithCustomProxy))]
+  pub with_default: CustomMsgProxy,
+  #[proto(oneof(tags(1, 2), OneofWithCustomProxy))]
+  pub oneof: Option<CustomOneofProxy>,
+  #[proto(oneof(default, tags(3, 4), OneofWithCustomProxy))]
+  pub oneof_with_default: CustomOneofProxy,
+}
+
 mod borderline_nonsensical {
   use super::*;
 
