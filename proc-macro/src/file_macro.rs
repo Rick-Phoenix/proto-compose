@@ -151,18 +151,42 @@ pub fn schema_file_macro(input: TokenStream2) -> syn::Result<TokenStream2> {
 
   parser.parse2(input)?;
 
+  let mut builder_tokens = TokenStream2::new();
+
+  if !messages.is_empty() {
+    builder_tokens.extend(quote! {
+      file.with_messages([ #(#messages),* ]);
+    });
+  }
+
+  if !services.is_empty() {
+    builder_tokens.extend(quote! {
+      file.with_services([ #(#services::as_proto_service()),* ]);
+    });
+  }
+
+  if !enums.is_empty() {
+    builder_tokens.extend(quote! {
+      file.with_enums([ #(#enums::proto_schema()),* ]);
+    });
+  }
+
+  if !imports.is_default() {
+    builder_tokens.extend(quote! {
+      file.with_imports(#imports);
+    });
+  }
+
   Ok(quote! {
     {
       let mut file = ::prelude::ProtoFile::new(#name, #package);
 
       file
-        .with_messages([ #(#messages),* ])
-        .with_enums([ #(#enums::proto_schema()),* ])
-        .with_services([ #(#services::as_proto_service()),* ])
-        .with_imports(#imports)
         .with_edition(#edition)
         .with_extensions([ #(#extensions::as_proto_extension()),* ])
         .with_options(#options);
+
+      #builder_tokens
 
       file
     }

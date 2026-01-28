@@ -1,3 +1,7 @@
+// For docs
+#[allow(unused)]
+use crate::*;
+
 macro_rules! pluralize {
   ($count:expr) => {
     if $count != 1 { "s" } else { "" }
@@ -31,6 +35,7 @@ macro_rules! custom_error_messages_method {
   };
 }
 
+#[doc(hidden)]
 #[cfg(feature = "inventory")]
 #[macro_export]
 macro_rules! register_proto_data {
@@ -39,12 +44,26 @@ macro_rules! register_proto_data {
   };
 }
 
+#[doc(hidden)]
 #[cfg(not(feature = "inventory"))]
 #[macro_export]
 macro_rules! register_proto_data {
   ($($tokens:tt)*) => {};
 }
 
+/// This macro can be used to manually create a package schema if the inventory feature is not available.
+///
+/// The first argument is the name of the package, and the second argument is a collection of the files to include.
+///
+/// ```
+/// use prelude::*;
+///
+/// let manual_file = file_schema!(
+///   name = "test.proto",
+/// );
+///
+/// let manual_pkg = package_schema!("my_pkg", files = [ manual_file ]);
+/// ```
 #[macro_export]
 macro_rules! package_schema {
   ($name:expr, files = $files:expr) => {
@@ -52,6 +71,22 @@ macro_rules! package_schema {
   };
 }
 
+/// This macro can be used to generate a [`ProtoOption`] with a concise syntax.
+///
+/// The input can be a single `key => value`, where the key should support [`Into`] [`FixedStr`]  and the value should support [`Into`] [`OptionValue`], or a bracketed series or key-value pairs to generate an [`OptionValue::Message`] for the value.
+///
+/// # Examples
+///
+/// ```
+/// use prelude::*;
+///
+/// let option = proto_option!("is_cool" => true);
+/// assert_eq!(option, ProtoOption { name: "is_cool".into(), value: true.into() });
+///
+/// let object_like_option = proto_option!("is_cool" => { "answer" => true });
+/// assert_eq!(object_like_option.name, "is_cool");
+/// assert_eq!(object_like_option.value, OptionValue::Message(option_message!("answer" => true)));
+/// ```
 #[macro_export]
 macro_rules! proto_option {
   ( $name:expr => { $($key:expr => $val:expr),* $(,)? } ) => {
@@ -69,6 +104,16 @@ macro_rules! proto_option {
   };
 }
 
+/// This macro can be used to create an [`OptionValue::List`] from an iterator of items that implement [`Into`] [`OptionValue`].
+///
+/// # Examples
+///
+/// ```
+/// use prelude::*;
+///
+/// let list = option_list!([ 1, 2 ]);
+/// assert!(matches!(list, OptionValue::List(_)));
+/// ```
 #[macro_export]
 macro_rules! option_list {
   ($list:expr) => {
@@ -76,6 +121,18 @@ macro_rules! option_list {
   };
 }
 
+/// This macro can be used to create an object-like protobuf option. It follows the syntax of crates like maplit, for creating key-value pairs.
+///
+/// # Examples
+///
+/// ```
+/// use prelude::*;
+///
+/// let option = option_message!("is_cool" => true);
+/// let value = option.get("is_cool").unwrap();
+///
+/// assert_eq!(value, &OptionValue::Bool(true));
+/// ```
 #[macro_export]
 macro_rules! option_message {
   ($($key:expr => $val:expr),* $(,)?) => {
@@ -102,6 +159,29 @@ macro_rules! length_rule_value {
   };
 }
 
+/// Brings a pre-defined proto file handle in scope so that it can be picked up by the proto items defined in the module where it's called.
+///
+/// It **retains** the `extern_path` of the original file, so it should be used only if the items are meant to be re-exported by the module where the original file is defined.
+///
+/// # Examples
+///
+/// ```rust
+/// mod example {
+///   use prelude::*;
+///  
+///   proto_package!(MY_PKG, name = "my_pkg");
+///   define_proto_file!(MY_FILE, name = "my_file.proto", package = MY_PKG);
+///  
+///   mod re_exported {
+///     use super::MY_FILE;
+///     use prelude::*;
+///  
+///     // The file is now in scope, and will be picked up automatically by all items defined in this module
+///     // The items will have the extern path of the parent, so `::cratename::example`
+///     inherit_proto_file!(MY_FILE);
+///   }
+/// }
+/// ```
 #[macro_export]
 macro_rules! inherit_proto_file {
   ($file:path) => {
@@ -111,6 +191,29 @@ macro_rules! inherit_proto_file {
   };
 }
 
+/// Brings a pre-defined proto file handle in scope so that it can be picked up by the proto items defined in the module where it's called.
+///
+/// The items defined in the module where this is called will have the `extern_path` set to the output of `module_path!()`. For re-exported items that are meant to inherit the same path as the parent module, use the [`inherit_proto_file`] macro instead.
+///
+/// # Examples
+///
+/// ```rust
+/// mod example {
+///   use prelude::*;
+///  
+///   proto_package!(MY_PKG, name = "my_pkg");
+///   define_proto_file!(MY_FILE, name = "my_file.proto", package = MY_PKG);
+///  
+///   pub mod submod {
+///     use super::MY_FILE;
+///     use prelude::*;
+///  
+///     // The file is now in scope, and will be picked up automatically by all items defined in this module
+///     // The items will have the extern path of the `module_path!()` output in here, so `::cratename::example::submod`
+///     use_proto_file!(MY_FILE);
+///   }
+/// }
+/// ```
 #[macro_export]
 macro_rules! use_proto_file {
   ($file:path, extern_path = $path:expr) => {
@@ -179,6 +282,12 @@ macro_rules! impl_testing_methods {
   };
 }
 
+/// Defines a new [`CelProgram`].
+///
+/// The inputs, in positional order, are:
+/// - id (expr, Into<[`FixedStr`]>): The id of the specific CEL rule. It should be unique within the same message scope.
+/// - msg (expr, Into<[`FixedStr`]>): The error message associated with the given rule.
+/// - expr (expr, Into<[`FixedStr`]>): The actual CEL expression to use when validating the target.
 #[macro_export]
 macro_rules! cel_program {
   (id = $id:expr, msg = $msg:expr, expr = $expr:expr) => {

@@ -122,6 +122,102 @@ pub fn define_proto_file(input: TokenStream) -> TokenStream {
   }
 }
 
+#[allow(clippy::doc_overindented_list_items)]
+/// This macro can be used to define file schemas manually when the inventory feature is not available.
+///
+/// The `file_schema` macro accepts all the inputs of the `define_proto_file` macro, plus the list of messages, enums and services, which are just bracketed lists of paths for each element.
+/// Nested messages and enums are defined by using `ParentMessage = { enums = [ NestedEnum ], messages = [ NestedMsg ] }` instead of just the message's name, as shown below.
+///
+/// Parameters:
+///
+/// - `name` (required)
+///     Type: string
+///     Example: `file_schema!(name = "my_file.proto")`
+///     Description:
+///         The name of the file.
+///
+/// - `options`
+///     - Type: Expr
+///     - Example: `file_schema!(name = "my_file.proto", options = vec![ my_option() ])`
+///     - Description:
+///         Specifies the options for the given file. It must resolve to an implementor of IntoIterator<Item = [`ProtoOption`](crate::ProtoOption).
+///
+/// - `imports`
+///     - Type: Expr
+///     - Example: `file_schema!(name = "my_file.proto", imports = vec![ "import1", "import2" ])`
+///     - Description:
+///         Specifies the imports for the given file. In most occasions, the necessary imports will be added automatically so this should only be used as a fallback mechanism. It should resolve to an implementor of `IntoIterator` with the items being either `String`, `Arc<str>`, `Box<str>` or `&'static str`.
+///
+///
+/// - `extensions`
+///     - Type: bracketed list of Paths
+///     - Example: `file_schema!(name = "my_file.proto", extensions = [ MyExtension ])`
+///     - Description:
+///         Specifies the extensions for the given file. The items inside the list should be structs marked with the `#[proto_extension]` macro or implementors of [`ProtoExtension`](crate::ProtoExtension).
+///
+///
+/// - `edition`
+///     - Type: [`Edition`](crate::Edition)
+///     - Example: `file_schema!(name = "my_file.proto", edition = Proto3)`
+///     - Description:
+///         A value from the [`Edition`](crate::Edition) enum. Supports editions from Proto3 onwards.
+///
+///
+/// # Example
+///
+/// ```
+/// use prelude::*;
+///
+/// #[proto_message]
+/// struct Msg1 {
+///   id: i32
+/// }
+///
+/// #[proto_message]
+/// #[proto(parent_message = Msg1)]
+/// struct Nested {
+///   id: i32
+/// }
+///
+/// #[proto_message]
+/// struct Msg2 {
+///   id: i32
+/// }
+///
+/// #[proto_enum]
+/// enum Enum1 {
+///   Unspecified, A, B
+/// }
+///
+/// #[proto_enum]
+/// #[proto(parent_message = Msg1)]
+/// enum NestedEnum {
+///   Unspecified, A, B
+/// }
+///
+///
+/// #[proto_service]
+/// enum MyService {
+///   GetMsg {
+///     request: Msg1,
+///     response: Msg2
+///   }
+/// }
+///
+///
+/// let manual_file = file_schema!(
+///   name = "test.proto",
+///   messages = [
+///     Msg2,
+///     Msg1 = { messages = [ Nested ], enums = [ NestedEnum ] }
+///   ],
+///   services = [ MyService ],
+///   enums = [ Enum1 ],
+///   // Imports, options, etc...
+/// );
+///
+/// let manual_pkg = package_schema!("my_pkg", files = [ manual_file ]);
+/// ```
 #[proc_macro]
 pub fn file_schema(input: TokenStream) -> TokenStream {
   match schema_file_macro(input.into()) {

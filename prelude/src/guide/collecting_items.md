@@ -81,7 +81,10 @@ The other parameters are not positional and are as follows:
 
 ### Reusing A File
 
-If you want to define items in different rust files that are descendants of the same module, and place them into the same proto file, you can use the [`use_proto_file`](crate::use_proto_file) macro to bring the file into scope.
+If you want to define items in different rust files that are descendants of the same module, and place them into the same proto file, you can use one of two macros to bring the file into scope.
+
+- The [`use_proto_file`](crate::use_proto_file) macro, which brings the file into scope and applies the extern path of its own `module_path!()` output
+- The [`inherit_proto_file`](crate::inherit_proto_file) macro, which does the same but keeps the import path of the parent module (for re-exported items).
 
 ```rust
 use prelude::*;
@@ -89,11 +92,31 @@ use prelude::*;
 proto_package!(MY_PKG, name = "my_pkg");
 define_proto_file!(MY_FILE, name = "my_file.proto", package = MY_PKG);
 
-mod submod {
+pub mod submod {
     use super::MY_FILE;
     
     // The file is now in scope, and will be picked up automatically by all items defined in this module
     use_proto_file!(MY_FILE);
+
+    // This message will have the extern path of the `module_path!()` output in here, so `::cratename::submod`
+    #[proto_message]
+    pub struct Msg {
+       pub id: i32
+    }
+}
+
+pub use re_exported::Msg;
+mod re_exported {
+    use super::MY_FILE;
+
+    // The file is now in scope, and will be picked up automatically by all items defined in this module
+    inherit_proto_file!(MY_FILE);
+
+    // This message will have the extern path of the parent module
+    #[proto_message]
+    pub struct Msg {
+        pub id: i32
+    }
 }
 
 ```
