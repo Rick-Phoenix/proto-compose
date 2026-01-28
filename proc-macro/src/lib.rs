@@ -390,6 +390,40 @@ pub fn enum_empty_derive(_input: TokenStream) -> TokenStream {
   TokenStream::new()
 }
 
+/// Implements protobuf schema and validation features for a rust enum.
+///
+/// Implements [`prost::Oneof`](prelude::prost::Oneof) for the enum, as well as [`ProtoOneof`](prelude::ProtoOneof) and [`ValidatedOneof`](prelude::ValidatedOneof). In case of a proxied oneof, it implements [`ProxiedOneof`](prelude::ProxiedOneof) for the proto-facing enum and [`OneofProxy`](prelude::OneofProxy) for the proxy.
+///
+/// # Examples
+/// ```
+/// use prelude::*;
+///
+/// #[proto_oneof]
+/// pub enum NormalOneof {
+///   #[proto(tag = 1)]
+///   A(i32),
+///   #[proto(tag = 2)]
+///   B(u32)
+/// }
+///
+/// // Generates `ProxiedOneofProto` as the proto-facing version
+/// #[proto_oneof(proxied)]
+/// pub enum ProxiedOneof {
+///   #[proto(tag = 1)]
+///   A(i32),
+///   #[proto(tag = 2)]
+///   B(u32)
+/// }
+///
+/// fn main() {
+///   use prelude::*;
+///
+///   // `ProxiedOneof` and `OneofProxy` methods
+///   let oneof = ProxiedOneofProto::A(1);
+///   let proxy = oneof.into_proxy();
+///   let oneof_again = proxy.into_oneof();
+/// }
+/// ```
 #[proc_macro_attribute]
 pub fn proto_oneof(args: TokenStream, input: TokenStream) -> TokenStream {
   let item = parse_macro_input!(input as ItemEnum);
